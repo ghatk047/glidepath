@@ -189,7 +189,7 @@ title: "Display view-models for derived series (ADR-021)"
 epic: DOM
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: high

@@ -191,7 +191,7 @@ title: "What-if session core: ModelCache, subscribe, preview, delta"
 epic: API
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: xhigh
