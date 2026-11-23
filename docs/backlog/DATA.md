@@ -324,7 +324,7 @@ title: "Neon readiness: migrations, seed and runtime over sslmode=require"
 epic: DATA
 milestone: M4
 priority: should
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
@@ -379,3 +379,31 @@ merged_at: "2026-11-23"
 ```
 
 First half of G7.
+
+## DATA-12 · Same-tenant references: composite foreign keys
+
+```yaml
+id: DATA-12
+title: "Same-tenant references: composite foreign keys"
+epic: DATA
+milestone: M1
+priority: must
+status: in_progress
+stream: B
+model: opus
+effort: high
+depends_on: [DATA-10]
+tier: 3
+package: "tier3-data/migrations (manual overlay) + tier2-logic/data-access"
+contract: "a tenant row can only reference rows of its own tenant (G7)"
+inputs:
+  - "docs/architecture/04_data_and_api.md#Tenancy and row-level security"
+  - "tier2-logic/data-access/test/leak (DATA-10 finding)"
+acceptance:
+  - "every reference column between tenant tables (e.g. solver_run.scenario_id, changeset.scenario_id) is a composite (tenant_id, x) foreign key or carries an equivalent restrictive same-tenant check; a tenant-A row pointing at a tenant-B id is refused (test in leak suite)"
+  - "the DATA-10 catalog check fails when such a reference lacks the guard (self-test)"
+  - "migrations stay forward-only and idempotent; seed, golden parity and the leak suite stay green"
+gates: [G1, G2, G7]
+size: S
+notes: "Found by DATA-10: references without FK accepted tenant B ids (nothing of B read or changed)."
+```
