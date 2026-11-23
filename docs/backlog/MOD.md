@@ -61,7 +61,7 @@ title: "Cockpit tiles: VP rings, Shareholder, Odds, Fastest path"
 epic: MOD
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
