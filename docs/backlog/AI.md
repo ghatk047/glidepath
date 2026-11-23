@@ -56,7 +56,7 @@ title: "Pipeline schemas and prompts"
 epic: AI
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
