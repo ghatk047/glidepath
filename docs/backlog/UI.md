@@ -199,7 +199,7 @@ title: "Flight strip, Status chip, Toast (#3, #18, #27)"
 epic: UI
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -219,6 +219,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The always-visible HUD and feedback.
