@@ -1,4 +1,4 @@
-import { createDb, dbOptionsFromEnv } from '@glidepath/data-access';
+import { connectionConfig, createDb, dbOptionsFromEnv } from '@glidepath/data-access';
 import type { DbHandle, DbOptions } from '@glidepath/data-access';
 import { PgBoss } from './boss';
 import type { Job } from './boss';
@@ -98,7 +98,8 @@ export class WorkerRuntime {
     const handle = createDb(o.databaseUrl, { poolMax: this.concurrency + 2, ...(o.dbOptions ?? dbOptionsFromEnv()) });
     const install = o.installSchema ?? false;
     const boss = new PgBoss({
-      connectionString: o.databaseUrl,
+      // libpq sslmode semantics (require = TLS without verification), as data-access uses.
+      ...connectionConfig(o.databaseUrl),
       schema,
       application_name: 'glidepath-worker',
       max: this.concurrency + 4,

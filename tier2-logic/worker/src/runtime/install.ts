@@ -1,3 +1,4 @@
+import { connectionConfig } from '@glidepath/data-access';
 import { PgBoss } from './boss';
 import { DEFAULT_BOSS_SCHEMA } from './config';
 import type { QueueSettings } from './types';
@@ -30,7 +31,7 @@ export async function installQueueSchema(opts: InstallQueueSchemaOptions): Promi
     if (!isQueueName(q)) throw new Error(`worker: '${q}' is not a queue name (solver.*, excel.* or ai.*)`);
   }
   const boss = new PgBoss({
-    connectionString: opts.ownerUrl,
+    ...connectionConfig(opts.ownerUrl),
     schema,
     application_name: 'glidepath-worker-install',
     max: 2,
