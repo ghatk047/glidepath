@@ -1,21 +1,24 @@
 import { TenantSlug } from '@glidepath/api-contract';
 import type { MembershipRole, TenantId, UserId } from '@glidepath/api-contract';
-import type { Db } from '@glidepath/data-access';
-import { sql } from 'drizzle-orm';
+import { withTenant as dataAccessWithTenant } from '@glidepath/data-access';
+import type { Db, TenantTx } from '@glidepath/data-access';
 import type { Context, MiddlewareHandler } from 'hono';
 import type { Logger } from './logger';
 import { ApiError } from './problem';
 
 /** Transaction handed to tenant-scoped handlers (Drizzle, RLS settings already applied). */
-export type TenantTx = Parameters<Parameters<Db['transaction']>[0]>[0];
+export type { TenantTx };
 
 /**
  * `withTenant(tenantId, userId, fn)` runs `fn` in one transaction that first sets `app.tenant_id` and
- * `app.user_id` with SET LOCAL semantics (ADR-015). This is the signature of DATA-05's data-access
- * `withTenant`; until that lands {@link localWithTenant} is the stand-in, and the server swaps it in
- * through {@link AppDeps.withTenant} with no change here.
+ * `app.user_id` with SET LOCAL semantics (ADR-015). {@link bindWithTenant} binds data-access's
+ * `withTenant(db, ...)` to the app's database; tests may substitute their own through `AppDeps.withTenant`.
  */
-export type WithTenant = <T>(tenantId: TenantId, userId: UserId, fn: (tx: TenantTx) => Promise<T>) => Promise<T>;
+export type WithTenant = <T>(
+  tenantId: TenantId,
+  userId: UserId,
+  fn: (tx: TenantTx) => Promise<T>,
+) => Promise<T>;
 
 /** The caller's standing in one tenant. */
 export interface TenantMembership {
@@ -25,7 +28,10 @@ export interface TenantMembership {
 }
 
 /** Resolves a user's membership of the tenant named in the path; `null` when there is none. */
-export type MembershipResolver = (userId: UserId, tenant: TenantSlug) => Promise<TenantMembership | null>;
+export type MembershipResolver = (
+  userId: UserId,
+  tenant: TenantSlug,
+) => Promise<TenantMembership | null>;
 
 /** Identifies the caller of a request; `null` when unauthenticated. Replaced by cookie auth in API-02. */
 export type Authenticator = (c: Context) => Promise<UserId | null> | UserId | null;
@@ -56,15 +62,9 @@ export function staticMemberships(
   };
 }
 
-/** Stand-in for data-access `withTenant`: one transaction, `set_config(..., is_local => true)` first. */
-export function localWithTenant(db: Db): WithTenant {
-  return (tenantId, userId, fn) =>
-    db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select set_config('app.tenant_id', ${tenantId}, true), set_config('app.user_id', ${userId}, true)`,
-      );
-      return fn(tx);
-    });
+/** data-access `withTenant` bound to one database. */
+export function bindWithTenant(db: Db): WithTenant {
+  return (tenantId, userId, fn) => dataAccessWithTenant(db, tenantId, userId, fn);
 }
 
 /** Thrown inside the transaction after an error response was produced, to roll it back. */

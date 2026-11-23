@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { requestSecrets } from './logger';
 import type { Logger } from './logger';
 import { errorHandler, notFoundHandler, problemResponse } from './problem';
-import { localWithTenant, noAuthentication, noMemberships, tenantMiddleware } from './tenant';
+import { bindWithTenant, noAuthentication, noMemberships, tenantMiddleware } from './tenant';
 import type { AppEnv, Authenticator, MembershipResolver, WithTenant } from './tenant';
 
 export const HEALTH_TIMEOUT_MS = 2_000;
@@ -84,7 +84,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
     tenantMiddleware({
       authenticate: deps.authenticate ?? noAuthentication,
       membership: deps.membership ?? noMemberships,
-      withTenant: deps.withTenant ?? localWithTenant(db.db),
+      withTenant: deps.withTenant ?? bindWithTenant(db.db),
     }),
   );
 

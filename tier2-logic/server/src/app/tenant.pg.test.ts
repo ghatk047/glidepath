@@ -1,8 +1,7 @@
 import { PROBLEM_CONTENT_TYPE, Problem, problemTypes } from '@glidepath/api-contract';
 import type { UserId } from '@glidepath/api-contract';
-import { createDb } from '@glidepath/data-access';
+import { createDb, sql } from '@glidepath/data-access';
 import type { DbHandle } from '@glidepath/data-access';
-import { sql } from 'drizzle-orm';
 import type { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from './app';
@@ -26,7 +25,8 @@ beforeAll(async () => {
   app = createApp({
     logger,
     db,
-    authenticate: (c) => (c.req.header('x-test-user') ? (c.req.header('x-test-user') as UserId) : null),
+    authenticate: (c) =>
+      c.req.header('x-test-user') ? (c.req.header('x-test-user') as UserId) : null,
     // Stubbed membership until DATA-05: ana is an owner of aa, bob belongs to nothing.
     membership: staticMemberships([{ userId: ana, tenantId: aaId, slug: aa, role: 'owner' }]),
   });
@@ -88,7 +88,9 @@ describe('tenant middleware on /api/t/:tenant/*', () => {
   });
 
   it('commits when the handler succeeds and rolls back when it fails', async () => {
-    expect((await app.request('/api/t/aa/scratch/ok', { method: 'POST', ...asUser(ana) })).status).toBe(200);
+    expect(
+      (await app.request('/api/t/aa/scratch/ok', { method: 'POST', ...asUser(ana) })).status,
+    ).toBe(200);
     const failed = await app.request('/api/t/aa/scratch/fail', { method: 'POST', ...asUser(ana) });
     expect(failed.status).toBe(500);
     expect(Problem.parse(await failed.json()).status).toBe(500);

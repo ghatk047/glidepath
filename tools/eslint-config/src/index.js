@@ -15,6 +15,8 @@ import {
 
 export const SOURCE_GLOB = '**/*.{ts,tsx,js,jsx}';
 export const TEST_GLOBS = ['**/*.test.*', '**/*.spec.*', '**/test/**', '**/tests/**'];
+/** Test-support helpers that live beside source (e.g. server/src/app/testing/pg.ts). */
+export const TESTING_GLOBS = ['**/testing/**'];
 
 /** Dependency rules of 02 §1: package -> allowed target packages (own package always allowed). */
 export const dependencyMatrix = {
@@ -42,8 +44,35 @@ const elements = [
   { type: 'tier3', pattern: 'tier3-data' },
 ];
 
-/** Banned database drivers outside tier2-logic/data-access. */
-export const dbPackages = ['pg', 'pg-*', 'pg/*', 'drizzle-orm', 'drizzle-orm/*', 'drizzle-kit'];
+/**
+ * Banned database drivers outside tier2-logic/data-access (G13): the npm packages `pg`, `pg-*`,
+ * `drizzle-orm` (and subpaths) and `drizzle-kit`, matched exactly. Names are exact `paths` plus anchored
+ * `regex` patterns, never gitignore-style globs: those would also catch relative imports such as
+ * './testing/pg' and workspace packages such as '@glidepath/pg-local'.
+ */
+export const dbPackages = ['pg', 'drizzle-orm', 'drizzle-kit'];
+export const dbPackagePatterns = ['^pg-.+', '^pg/.+', '^drizzle-orm/.+'];
+/** The local Postgres harness (ADR-016): test support only. */
+export const pgLocalPackage = '@glidepath/pg-local';
+
+const dbMessage = 'Only tier2-logic/data-access may import pg or drizzle (G13).';
+const dbImportRule = ({ banPgLocal }) => [
+  'error',
+  {
+    paths: [
+      ...dbPackages.map((name) => ({ name, message: dbMessage })),
+      ...(banPgLocal
+        ? [
+            {
+              name: pgLocalPackage,
+              message: 'pg-local is test support: import it only from tests or testing/ helpers.',
+            },
+          ]
+        : []),
+    ],
+    patterns: [{ regex: dbPackagePatterns.join('|'), message: dbMessage }],
+  },
+];
 
 export const airlineWords = ['AA', 'American', 'Sabre', 'DXC', 'Hyderabad'];
 export const airlineExemptGlobs = [
@@ -54,6 +83,8 @@ export const airlineExemptGlobs = [
   'docs/**',
   // The rule definitions themselves, and the spec package's seed-reader tests (they name the seed tenant).
   'tools/eslint-config/src/**',
+  // Test infrastructure that names the AA seed tenant on purpose (QA-01).
+  'tools/testkit/**',
   'tier2-logic/spec/**/*.test.ts',
 ];
 
@@ -113,23 +144,16 @@ export function createConfig(options = {}) {
         'no-restricted-syntax': syntax(airlineRule),
       },
     },
-    // Database drivers: data-access only.
+    // Database drivers: data-access only. @glidepath/pg-local is test support: tests and testing/ only.
     {
       files: [tier1, 'tier2-logic/**/*.{ts,tsx,js,jsx}', 'contract/**/*.ts'],
       ignores: ['tier2-logic/data-access/**'],
-      rules: {
-        'no-restricted-imports': [
-          'error',
-          {
-            patterns: [
-              {
-                group: dbPackages,
-                message: 'Only tier2-logic/data-access may import pg or drizzle (G13).',
-              },
-            ],
-          },
-        ],
-      },
+      rules: { 'no-restricted-imports': dbImportRule({ banPgLocal: true }) },
+    },
+    {
+      files: [...TEST_GLOBS, ...TESTING_GLOBS].map((g) => `tier2-logic/${g}`),
+      ignores: ['tier2-logic/data-access/**'],
+      rules: { 'no-restricted-imports': dbImportRule({ banPgLocal: false }) },
     },
     // Tier 1: format module restrictions; no hex colours or raw px outside tokens.
     {

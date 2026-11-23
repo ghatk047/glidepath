@@ -120,15 +120,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.11
         version: 2.1.11(hono@4.13.20)
-      drizzle-orm:
-        specifier: ^0.45.4
-        version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
       hono:
         specifier: ^4.13.20
         version: 4.13.20
-      pg:
-        specifier: ^8.23.1
-        version: 8.23.1
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -136,9 +130,6 @@ importers:
       '@glidepath/pg-local':
         specifier: workspace:*
         version: link:../../tools/pg-local
-      '@types/pg':
-        specifier: ^8.23.1
-        version: 8.23.1
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2

@@ -6,7 +6,13 @@ export { createLogger, secretsFrom, requestSecrets, REDACTED } from './logger';
 export type { Logger, LogFields, LoggerOptions } from './logger';
 export { ApiError, problemResponse, toProblem, errorToProblem } from './problem';
 export type { ProblemInit } from './problem';
-export { tenantMiddleware, staticMemberships, noMemberships, noAuthentication, localWithTenant } from './tenant';
+export {
+  tenantMiddleware,
+  staticMemberships,
+  noMemberships,
+  noAuthentication,
+  bindWithTenant,
+} from './tenant';
 export type {
   AppEnv,
   Authenticator,

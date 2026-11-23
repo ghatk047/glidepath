@@ -103,6 +103,64 @@ describe('database drivers', () => {
   });
 });
 
+describe('database drivers: exact package names only (G13)', () => {
+  const restricted = (m: Msg[]) => m.filter((x) => x.ruleId === 'no-restricted-imports');
+  const from = (pkg: string, spec: string, file = fileOf(pkg)) =>
+    lint(file, `import * as v from '${spec}';\nexport const a = v;\n`);
+
+  it('rejects the npm packages from server and domain', async () => {
+    for (const spec of [
+      'pg',
+      'pg/lib/client',
+      'pg-pool',
+      'pg-types',
+      'drizzle-orm',
+      'drizzle-orm/pg-core',
+      'drizzle-kit',
+    ]) {
+      expect(restricted(await from('server', spec)), spec).toHaveLength(1);
+      expect(restricted(await from('domain', spec)), spec).toHaveLength(1);
+    }
+  });
+  it('allows relative paths that merely end in pg', async () => {
+    for (const spec of ['./testing/pg', '../testing/pg', './pg', './pg-helpers']) {
+      expect(restricted(await from('server', spec)), spec).toHaveLength(0);
+    }
+  });
+  it('allows other workspace packages with pg in the name (not pg-local outside tests)', async () => {
+    expect(restricted(await from('server', '@glidepath/pg-tools'))).toHaveLength(0);
+    expect(restricted(await from('server', 'pgp'))).toHaveLength(0);
+  });
+  it('@glidepath/pg-local is allowed in tier-2 tests and testing/ helpers', async () => {
+    for (const file of [
+      'tier2-logic/server/src/app/x.test.ts',
+      'tier2-logic/server/src/app/x.pg.test.ts',
+      'tier2-logic/server/src/x.spec.ts',
+      'tier2-logic/server/src/app/testing/pg.ts',
+      'tier2-logic/engine/src/testing/pg.ts',
+    ]) {
+      expect(restricted(await from('server', '@glidepath/pg-local', file)), file).toHaveLength(0);
+    }
+  });
+  it('@glidepath/pg-local is rejected in production source', async () => {
+    expect(restricted(await from('server', '@glidepath/pg-local'))).toHaveLength(1);
+  });
+  it('pg and drizzle are still rejected in tier-2 tests and testing/ helpers', async () => {
+    for (const file of [
+      'tier2-logic/server/src/app/x.test.ts',
+      'tier2-logic/server/src/app/testing/pg.ts',
+    ]) {
+      expect(restricted(await from('server', 'pg', file)), file).toHaveLength(1);
+      expect(restricted(await from('server', 'drizzle-orm', file)), file).toHaveLength(1);
+    }
+  });
+  it('data-access may import pg-local and every driver', async () => {
+    for (const spec of ['pg', 'pg-pool', '@glidepath/pg-local', 'drizzle-orm/pg-core']) {
+      expect(restricted(await from('data-access', spec)), spec).toHaveLength(0);
+    }
+  });
+});
+
 describe('magic numbers', () => {
   const code = 'export const a = (x: number) => x * 42;\nexport const b = [0, 1, -1];\n';
   for (const pkg of ['engine', 'solvers', 'domain', 'excel']) {
@@ -137,6 +195,13 @@ describe('airline strings', () => {
         'no-restricted-syntax',
       );
     }
+  });
+  it('passes in tools/testkit (test infrastructure naming the AA seed)', async () => {
+    const msgs = await lint(
+      'tools/testkit/src/x.ts',
+      "export const a = 'AA';\nexport const b = 'Sabre';\n",
+    );
+    expect(ids(msgs)).not.toContain('no-restricted-syntax');
   });
   it('does not flag words that merely contain the letters', async () => {
     const msgs = await lint(fileOf('server'), "export const a = 'AAA';\n");

@@ -12,4 +12,8 @@ export {
   DEFAULT_POOL_MAX,
 } from './config';
 export type { DbOptions, ResolvedDbOptions } from './config';
+export { withTenant } from './tenant';
+export type { TenantTx } from './tenant';
+/** Raw SQL fragments for callers that hold a transaction or Db but may not import drizzle (G13). */
+export { sql } from 'drizzle-orm';
 export * as schema from './schema';
