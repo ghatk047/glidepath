@@ -357,7 +357,7 @@ title: "AI reconfig and market refresh routes"
 epic: API
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -376,6 +376,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Airlines module and the freeze-day market refresh.

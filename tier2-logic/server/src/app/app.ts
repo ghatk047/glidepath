@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
+import { listMyMemberships, withUser } from '@glidepath/data-access';
 import type { DbHandle } from '@glidepath/data-access';
+import type { TenantId } from '@glidepath/api-contract';
 import { Hono } from 'hono';
 import type { Auth } from '../auth/auth';
 import { tenantWriteGuard } from '../auth/guard';
 import { dbMemberships } from '../auth/memberships';
 import { requestSecrets } from './logger';
 import type { Logger } from './logger';
+import { registerAiRoutes, registerMarketRoutes } from '../routes/ai';
+import type { AiRoutesDeps } from '../routes/ai';
 import { registerExcelRoutes } from '../routes/excel';
 import type { ExcelRoutesDeps } from '../routes/excel';
 import { registerExplainRoutes } from '../routes/explain';
@@ -46,6 +50,8 @@ export interface AppDeps {
   excel?: ExcelRoutesDeps;
   /** Solver routes (API-09): quick runs on the session model and worker jobs; absent = the routes are not mounted. */
   solver?: SolverRoutesDeps;
+  /** AI reconfiguration routes (API-11): the job port and object store; absent = `/api/ai/*` is not mounted. */
+  ai?: AiRoutesDeps;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
   /** What-if sessions (API-06): mounts the `GET /ws/session` handshake; `listen` wires the upgrades. */
@@ -139,7 +145,19 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   const hub = deps.hub ?? deps.sessions;
   registerWriteRoutes(app, { specBundle, ...(hub ? { hub } : {}) });
   registerExplainRoutes(app, { specBundle });
+  registerMarketRoutes(app, { specBundle });
   if (deps.excel) registerExcelRoutes(app, deps.excel);
+  if (deps.ai) {
+    registerAiRoutes(app, {
+      ...deps.ai,
+      authenticate: deps.authenticate ?? deps.auth?.authenticate ?? noAuthentication,
+      withTenant: deps.withTenant ?? bindWithTenant(db.db),
+      memberships: (userId) =>
+        withUser(db.db, userId, async (tx) =>
+          (await listMyMemberships(tx)).map((m) => ({ tenantId: m.tenant.id as TenantId, slug: m.tenant.slug, currency: m.tenant.currency, role: m.role })),
+        ),
+    });
+  }
   if (deps.solver) registerSolverRoutes(app, { ...(hub ? { hub } : {}), ...deps.solver });
 
   app.onError(errorHandler());

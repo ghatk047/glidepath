@@ -4,6 +4,7 @@ import { PostgresObjectStore, createDb, dbOptionsFromEnv } from '@glidepath/data
 import { authFromConfig } from '../auth/auth';
 import { allowedOrigin } from '../auth/guard';
 import type { Mailer } from '../auth/mailer';
+import { aiJobsOverQueue } from '../compose/ai-jobs';
 import { excelJobsOverQueue } from '../compose/excel-jobs';
 import { createJobQueue } from '../compose/queue';
 import type { JobQueue } from '../compose/queue';
@@ -92,6 +93,10 @@ export async function startServer(
       jobs: excelJobsOverQueue(queue, logger),
       objects: (who) => new PostgresObjectStore(db.db, who.tenantId, who.userId),
       maxUploadBytes: importMaxBytes(env),
+    },
+    ai: {
+      jobs: aiJobsOverQueue(queue),
+      objects: (who) => new PostgresObjectStore(db.db, who.tenantId, who.userId),
     },
     solver: { loader, specBundle, submit: createSolverSubmitter({ withTenant, enqueue: queue.enqueue, logger }) },
     ...deps,

@@ -39,6 +39,7 @@ export type ReconfigStep = z.infer<typeof ReconfigStep>;
 /**
  * `ai_reconfig_job.status` (free text in schema.json; these values are the contract's):
  * `estimated` = a dry run answered with plan and cost estimate, nothing queued.
+ * `budget_exceeded` = the job stopped at `AI_MAX_TOKENS_PER_JOB` (06 §2 cost guard); what it had is kept.
  */
 export const ReconfigStatus = z.enum([
   'estimated',
@@ -47,6 +48,7 @@ export const ReconfigStatus = z.enum([
   'review',
   'applied',
   'failed',
+  'budget_exceeded',
   'cancelled',
 ]);
 export type ReconfigStatus = z.infer<typeof ReconfigStatus>;
