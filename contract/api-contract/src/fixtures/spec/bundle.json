@@ -24,7 +24,8 @@
       "source": "spec",
       "confidence": "H",
       "note": "Lets another airline set '10% of base' instead of a dollar figure.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.target_net",
@@ -46,7 +47,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User 2026-11-22: $100M = 4 VPs x $25M (~10% of ~$1B).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.target_pct",
@@ -68,7 +70,8 @@
       "source": "user",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "g.absorb_growth",
@@ -90,7 +93,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User: CY27 spend must be below CY26 after COLA/merit, so the gross bar = target + growth.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.head_start",
@@ -112,7 +116,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Moves every lever's start month earlier (floor = January).",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "g.ot_in_year",
@@ -134,7 +139,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Reinterpreted from v0.3 'share expensed in 2027': the non-CY27 share is treated as incurred in CY26, outside both tests.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "g.ot_out_share",
@@ -156,7 +162,8 @@
       "source": "user",
       "confidence": "M",
       "note": "User: some can be funded outside IT. 50% is an assumption. Still hits AA's P&L.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "g.it_dep_life",
@@ -178,7 +185,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Merges levers dep_life and corporate it_life (both 5).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.da_first_year_factor",
@@ -200,7 +208,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.vp_target_method",
@@ -222,7 +231,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User decision 2026-11-22: proportional.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.chargeback_on",
@@ -244,7 +254,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User: shared infra savings credited back to VPs by usage.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "g.vp_alloc_method",
@@ -266,7 +277,8 @@
       "source": "spec",
       "confidence": "M",
       "note": "Method 2 allocates each pool a lever touches (e.g. GCC cost added by relocation) by that pool's ownership.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.us",
@@ -288,7 +300,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User confirmed 2026-11-22.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.us_seed",
@@ -310,7 +323,8 @@
       "source": "baseline",
       "confidence": "H",
       "note": "Calibration constant: US labour lines scale by hc.us / hc.us_seed.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.gcc",
@@ -332,7 +346,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User confirmed ~900 (press May 2026 said ~400).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.gcc_seed",
@@ -354,7 +369,8 @@
       "source": "baseline",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.ctr",
@@ -376,7 +392,8 @@
       "source": "user",
       "confidence": "H",
       "note": "User ~800. Scales long-tail SI and staff-aug lines; preferred SIs held at book.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.ctr_seed",
@@ -398,7 +415,8 @@
       "source": "baseline",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "hc.ctr_on_share",
@@ -420,7 +438,8 @@
       "source": "user",
       "confidence": "M",
       "note": "User OK'd 35% onshore.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "rate.ctr_on_hourly",
@@ -442,7 +461,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "= v0.3 $0.19M/FTE at 1,880 hrs.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "rate.ctr_off_hourly",
@@ -464,7 +484,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "= v0.3 $0.059M/FTE at 1,880 hrs.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "rate.billable_hours",
@@ -486,7 +507,8 @@
       "source": "baseline",
       "confidence": "H",
       "note": "Reconciled: baseline 1,880 (H) vs levers 1,900.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "wf.prod_factor",
@@ -508,7 +530,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Range 1.1-1.3.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "wf.us_attrition",
@@ -530,7 +553,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Reconciled: levers 9% kept (drives lever 5); baseline said 8% but did not use it in any formula.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "wf.change_share",
@@ -552,7 +576,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "vendor.book",
@@ -576,7 +601,8 @@
       "source": "baseline",
       "confidence": "M",
       "note": "Reconciled to baseline Vendors tab (system of record). v0.3 levers had IBM 18 / Cognizant 15 / #6 14. DXC and Infosys are user figures.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "line.amount",
@@ -600,7 +626,8 @@
       "source": "baseline",
       "confidence": "M",
       "note": "415 lines from AA_IT_Cost_Baseline_v0.1 'Counted 2026 outlay'. Converted $ -> $M.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "line.capex_share",
@@ -624,7 +651,8 @@
       "source": "baseline",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "addr.share",
@@ -648,7 +676,8 @@
       "source": "baseline",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "pool.growth",
@@ -672,7 +701,8 @@
       "source": "baseline",
       "confidence": "L",
       "note": "Advisor estimates (merit, COLA, renewal uplifts, consumption). Weighted ~4.3%.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "pool.shared",
@@ -696,7 +726,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "pool.swb_flag",
@@ -720,7 +751,8 @@
       "source": "spec",
       "confidence": "H",
       "note": "Replaces the corporate model's flat 30% it_swb assumption.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "sub.sw_ms_share",
@@ -742,7 +774,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "v0.3: $35M of $157.2M.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "sub.dc_maint_share",
@@ -764,7 +797,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "v0.3: $6M maint + $6M colo.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "portfolio.apps",
@@ -786,7 +820,8 @@
       "source": "user",
       "confidence": "M",
       "note": "Upper bound for lever 9.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "portfolio.app_cost",
@@ -808,7 +843,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "portfolio.app_lab",
@@ -830,7 +866,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "org.dom_share",
@@ -855,7 +892,8 @@
       "source": "user",
       "confidence": "H",
       "note": "Each domain row must sum to 1 (memo domain to 0). User confirmed Infra owns shared platforms, EUC, telco, cyber; Corporate owns HR/Finance systems; CIO office assumed Infra.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "org.ss_flag",
@@ -879,7 +917,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Exactly one VP should be 1.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "org.usage_override_on",
@@ -901,7 +940,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "org.usage_override",
@@ -925,7 +965,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Should sum to 1.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "org.manual_target",
@@ -949,7 +990,8 @@
       "source": "user",
       "confidence": "H",
       "note": "Original CIO split: $25M each.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "lev.L01.cut",
@@ -971,7 +1013,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "Benchmark 10-20% of discretionary change spend is low-value or duplicative. Internal capacity freed is redeployed, not cut.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L01.rel",
@@ -993,7 +1036,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "Contractor freeze, end of over-staffed T&M teams, ticket-volume-based AMS sizing. Fastest, near-zero one-time cost.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L02.cut",
@@ -1015,7 +1059,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "CFO sign-off above threshold, re-scope, use GCC for analysis. Benchmark 15-30%.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L03.pct",
@@ -1037,7 +1082,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Keep onshore only roles needing physical presence (airport, ops centre, exec-facing). Benchmark: mature captives run 70-80% offshore.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L03.tc",
@@ -1059,7 +1105,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "~3 months double-running of an onshore contractor + GCC recruiting.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L04.pct",
@@ -1081,7 +1128,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Arbitrage is thin (~15-20%): the prize is control and knowledge, not cost. Watch non-solicit clauses.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L04.tc",
@@ -1103,7 +1151,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L04.pf",
@@ -1125,7 +1174,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.nb",
@@ -1147,7 +1197,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "The core GCC hypothesis: GCC grew additively, US base never shrank. Fix: default backfill location = Hyderabad.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L05.bf",
@@ -1169,7 +1220,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L05.sl",
@@ -1191,7 +1243,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Move to 1:8+ spans. Involves severance; HR/legal sensitive.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L05.rel",
@@ -1213,7 +1266,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Planned role moves with severance; reputational and retention risk in DFW/PHX.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L05.vac",
@@ -1235,7 +1289,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Large IT budgets typically carry 3-6% vacancy. Immediate, no one-time cost, but only real if the budget line is actually cut.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L05.sev",
@@ -1257,7 +1312,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L06.gain",
@@ -1279,7 +1335,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Published GenAI gains: 20-45% on coding tasks, 10-25% at team level.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L06.cap",
@@ -1301,7 +1358,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Without an 'AI dividend' clause vendors keep the gain as margin.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L06.tool",
@@ -1323,7 +1381,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "~$20-40/user/month for coding assistants.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L07.pct",
@@ -1345,7 +1404,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Tail typically 30-45% of SI spend; consolidate to 6-8 strategic + niche specialists.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L07.diff",
@@ -1367,7 +1427,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Volume tiers, rebates, fewer markups. Benchmark 8-15%.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L08.cov",
@@ -1389,7 +1450,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Contracts that can be reopened before renewal; leverage = volume consolidation.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L08.cut",
@@ -1411,7 +1473,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Benchmark 3-8% achievable; >10% triggers quality/attrition issues.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L08.leak",
@@ -1433,7 +1496,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Vendors protect margin by shifting seniority mix and change orders.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L09.n",
@@ -1455,7 +1519,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Typical first-wave: 5-10% of portfolio. Duplicates from US Airways merger heritage are likely candidates.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L09.dc",
@@ -1477,7 +1542,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.L10.shelf",
@@ -1499,7 +1565,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Typical 10-30% of licences unused; harvest 3-8% of spend.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L10.ms",
@@ -1521,7 +1588,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L10.ren",
@@ -1543,7 +1611,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L10.rcut",
@@ -1565,7 +1634,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Benchmark 10-20% with competitive tension; airline ops software is stickier.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L11.pct",
@@ -1587,7 +1657,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "FinOps Foundation / vendor benchmarks: 20-30% waste is common in first 2 years.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L12.tpm",
@@ -1609,7 +1680,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "TPM saves 30-50% vs OEM on out-of-warranty kit.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L12.life",
@@ -1631,7 +1703,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Cuts cash outlay in the year it is decided; a 4-to-5-year cycle cuts annual purchases ~20%.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L12.colo",
@@ -1653,7 +1726,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L13.pct",
@@ -1675,7 +1749,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Benchmark 10-20%; airport circuits constrained by SITA/airport authority.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L14.pct",
@@ -1697,7 +1772,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L15.pct",
@@ -1719,7 +1795,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "PSS per-pax hosting, SITA/ARINC, nav data: few alternatives, multi-year contracts. Show as mostly locked.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L16.pct",
@@ -1741,7 +1818,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "Recovery audits typically find 0.5-1.5% of spend; contingency-fee based.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L17.cola",
@@ -1763,7 +1841,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Under AA's definition (2027 outlay vs 2026), an avoided increase counts as much as a cut.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L17.sw",
@@ -1785,7 +1864,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Multi-year price holds, competitive tension, walk-away options.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L17.cl",
@@ -1807,7 +1887,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Demand gates and unit-cost targets for new workloads.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L01.ot_pct",
@@ -1829,7 +1910,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L02.ot_pct",
@@ -1851,7 +1933,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L05.reloc_sev",
@@ -1873,7 +1956,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "lev.L05.hire_cost",
@@ -1895,7 +1979,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "lev.L06.setup",
@@ -1917,7 +2002,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "lev.L07.ot_pct",
@@ -1939,7 +2025,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L08.ot_pct",
@@ -1961,7 +2048,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L09.split_sw",
@@ -1983,7 +2071,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L09.split_cloud",
@@ -2005,7 +2094,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L10.ot_pct",
@@ -2027,7 +2117,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L11.setup",
@@ -2049,7 +2140,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "lev.L12.tpm_saving",
@@ -2071,7 +2163,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L12.ot_pct",
@@ -2093,7 +2186,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L13.ot_pct",
@@ -2115,7 +2209,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L14.ot_pct",
@@ -2137,7 +2232,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L15.ot_pct",
@@ -2159,7 +2255,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L16.ot_pct",
@@ -2181,7 +2278,8 @@
       "source": "levers",
       "confidence": "L",
       "note": "Was a constant inside the v0.3 formula; promoted to an input.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.start",
@@ -2205,7 +2303,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Per lever.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.ramp",
@@ -2229,7 +2328,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Per lever.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": null
     },
     {
       "id": "lev.conf",
@@ -2253,7 +2353,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Per lever.",
-      "scenarioVaries": true
+      "scenarioVaries": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.realize",
@@ -2277,7 +2378,8 @@
       "source": "spec",
       "confidence": "H",
       "note": "Set by Monte Carlo draws; users normally leave at 1.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "lev.on",
@@ -2301,7 +2403,8 @@
       "source": "spec",
       "confidence": "H",
       "note": "New: lets solvers and users drop a lever without zeroing its inputs.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.gdp",
@@ -2325,7 +2428,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Drives yield and load factor through the elasticities below.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.gdp_ref",
@@ -2349,7 +2453,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "GDP above this lifts yield and load factor; below it cuts them.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.yield_gdp",
@@ -2373,7 +2478,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Airline yields are pro-cyclical; 1-2x is a common rule of thumb.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lf_gdp",
@@ -2397,7 +2503,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cpi",
@@ -2421,7 +2528,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Feeds 'Other' opex inflation.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.fx_share",
@@ -2445,7 +2553,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "International is ~1/3 of ASMs (S1 p.3); part is sold in USD.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.usd",
@@ -2469,7 +2578,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.brent",
@@ -2493,7 +2603,8 @@
       "source": "market",
       "confidence": "M",
       "note": "2025 $69.04 actual; 2026 $97.44 and 2027 $85.78 = EIA STEO Nov 2026 (as of 10 Nov 2026). Spot ~ $92 on 11 Nov.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.crack",
@@ -2517,7 +2628,8 @@
       "source": "calibrated",
       "confidence": "M",
       "note": "2025 solved to the $2.39/gal reported (S1 p.2). 2026-27 implied by EIA wholesale jet ($3.60, $3.45/gal) less Brent (S6); EIA expects cracks to stay elevated.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.fuel_tax",
@@ -2541,7 +2653,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.fuel_mode",
@@ -2565,7 +2678,8 @@
       "source": "assumption",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.jet_direct",
@@ -2589,7 +2703,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "FY2025 actual $2.39/gal incl. taxes (S1 p.2). AA does not hedge fuel.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.sofr",
@@ -2613,7 +2728,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Floating-rate debt and cash yield move with this.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.asm25",
@@ -2635,7 +2751,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.2: 299,411m.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.asm_g",
@@ -2659,7 +2776,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Q1 2026 guide was +3-5% (S2) before the fuel shock. AA says growth slows considerably in 2027 (S8).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.lf",
@@ -2683,7 +2801,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "FY2025 83.6% (S1 p.2).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.yield25",
@@ -2705,7 +2824,8 @@
       "source": "calibrated",
       "confidence": "H",
       "note": "Reported 19.83 cents (S1 p.2); fine-tuned so passenger revenue = $49,643M.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.yield_g",
@@ -2729,7 +2849,8 @@
       "source": "calibrated",
       "confidence": "M",
       "note": "2026 solved so FY2026E adj. EPS ~ -$0.75 (estimate from TTM EPS -$0.73 and Q4 loss guide, S7/S8): fares rose to pass on fuel. 2027: fares broadly hold while fuel eases ~4% (assumption).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.cargo25",
@@ -2751,7 +2872,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cargo_g",
@@ -2775,7 +2897,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.other25",
@@ -2797,7 +2920,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.other_g",
@@ -2821,7 +2945,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Loyalty/co-brand growth; new Citi co-brand deal from 2026.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.gpa25",
@@ -2843,7 +2968,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "4,488m gallons / 299,411m ASMs (S1 p.2).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.fuel_eff",
@@ -2867,7 +2993,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.ben_load",
@@ -2891,7 +3018,8 @@
       "source": "calibrated",
       "confidence": "M",
       "note": "2025 solved so salaries, wages and benefits = $17,566M reported (S1 p.1).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.ps_rate",
@@ -2915,7 +3043,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Simplified version of AA's plan. Any profit gain, including IT savings, leaks partly to employees through this.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.ac25",
@@ -2937,7 +3066,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.2: 1,013 mainline.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.ac_add",
@@ -2961,7 +3091,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Deliveries less retirements; placeholder.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lease_n",
@@ -2985,7 +3116,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Estimate. Aircraft rent $1,220M (S1 p.1) / leased count gives the implied rate.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lease_rate25",
@@ -3007,7 +3139,8 @@
       "source": "calibrated",
       "confidence": "M",
       "note": "Solved: $1,220M / leased aircraft / 12.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lease_g",
@@ -3031,7 +3164,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Tight aircraft market keeps lease rates rising.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.dpa25",
@@ -3053,7 +3187,8 @@
       "source": "calibrated",
       "confidence": "L",
       "note": "Solved: ($1,890M mainline D&A less non-aircraft D&A) / owned aircraft.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.dpa_g",
@@ -3077,7 +3212,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.oda25",
@@ -3099,7 +3235,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Estimate. IT capex savings reduce this line over time.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.oda_g",
@@ -3123,7 +3260,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.mxr25",
@@ -3145,7 +3283,8 @@
       "source": "calibrated",
       "confidence": "H",
       "note": "$3,844M (S1 p.1) / 1,013 aircraft.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.mx_infl",
@@ -3169,7 +3308,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.dep25",
@@ -3191,7 +3331,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.2: 1,175k.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.gauge_g",
@@ -3215,7 +3356,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Departures grow with ASMs less gauge.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.aptr25",
@@ -3237,7 +3379,8 @@
       "source": "calibrated",
       "confidence": "H",
       "note": "$3,476M (S1 p.1) / departures.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.apt_infl",
@@ -3261,7 +3404,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.sell_pct",
@@ -3285,7 +3429,8 @@
       "source": "calibrated",
       "confidence": "H",
       "note": "$1,997M / $49,643M (S1 p.1).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.reg25",
@@ -3307,7 +3452,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.1.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.reg_da25",
@@ -3329,7 +3475,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.1.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.reg_cap_g",
@@ -3353,7 +3500,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.reg_infl",
@@ -3377,7 +3525,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.oth25",
@@ -3399,7 +3548,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.1. Catering, ground handling, crew hotels, IT, insurance, etc.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.oth_vol",
@@ -3423,7 +3573,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.oth_prem",
@@ -3447,7 +3598,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.si",
@@ -3471,7 +3623,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "FY2025: mainline $159M + regional $3M (S1 p.1). Projections assume none.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.debt_open",
@@ -3493,7 +3646,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "Current $5,322M + noncurrent $25,154M (S1 p.9).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.debt_chg",
@@ -3517,7 +3671,8 @@
       "source": "filing",
       "confidence": "M",
       "note": "2025 actual gives $29,007M at YE (S1 p.10). 2026-27: deleveraging assumed paused (refinance maturities) given negative FCF in the fuel shock.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.fix_share",
@@ -3541,7 +3696,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.fix_rate",
@@ -3565,7 +3721,8 @@
       "source": "calibrated",
       "confidence": "M",
       "note": "2025 solved so interest expense = $1,716M (S1 p.1).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.flt_spread",
@@ -3589,7 +3746,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.cash_open",
@@ -3611,7 +3769,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "$804M + $6,180M (S1 p.9).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cash_spread",
@@ -3635,7 +3794,8 @@
       "source": "calibrated",
       "confidence": "L",
       "note": "2025 solved so interest income = $357M (S1 p.1).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.oth_inc",
@@ -3659,7 +3819,8 @@
       "source": "filing",
       "confidence": "M",
       "note": "2026 guide: total adj. nonoperating expense ~ $1.25B (S2).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.tax",
@@ -3683,7 +3844,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "FY2025 adj. effective rate 32.7% ($115M/$352M); 2026 guide 25% (S2).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.cash_tax",
@@ -3707,7 +3869,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.shares",
@@ -3731,7 +3894,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "FY2025 661.1m diluted (S1 p.1). Small creep from stock comp.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.buyback",
@@ -3755,7 +3919,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Shares retired = buyback / current share price.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.capex",
@@ -3779,7 +3944,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "FY2025 $3,779M (S1 p.6). Jan 2026 guide: 2026 ~$4.0-4.5B, 2027+ ~$4.5B (S3); not updated for the fuel shock.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.slb",
@@ -3803,7 +3969,8 @@
       "source": "filing",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.wc",
@@ -3827,7 +3994,8 @@
       "source": "calibrated",
       "confidence": "L",
       "note": "2025 solved so operating cash flow = $3,099M (S1 p.6). 2026-27 assumption near the 2025 level.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.oth_inv",
@@ -3851,7 +4019,8 @@
       "source": "calibrated",
       "confidence": "L",
       "note": "2025 solved so FCF = -$83M (S1 p.7).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.oth_fin",
@@ -3875,7 +4044,8 @@
       "source": "calibrated",
       "confidence": "L",
       "note": "2025 solved so cash and ST investments = $5,836M (S1 p.9).",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.oplease",
@@ -3899,7 +4069,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.10.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.pension",
@@ -3923,7 +4094,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "S1 p.10.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.price_now",
@@ -3945,7 +4117,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Close on 20 Nov 2026 (S7). Refresh before the demo.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.pe",
@@ -3967,7 +4140,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Sector-normal ~7x (US network carriers ~5-10x). Off by default (weight 0) because FY2026-27 EPS is depressed by the fuel shock.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.ev_mult",
@@ -3989,7 +4163,8 @@
       "source": "calibrated",
       "confidence": "M",
       "note": "Default is market-implied: (current price x shares + FY2027E net debt) / FY2027E base EBITDAR, so the default case reproduces $11.90. Elevated vs a normal ~5-6x because the market looks through trough 2026-27 earnings.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.w_pe",
@@ -4011,7 +4186,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "0 = EV/EBITDAR only (default while earnings are near zero). P/E is ignored automatically when EPS is negative.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.it_on",
@@ -4033,7 +4209,8 @@
       "source": "assumption",
       "confidence": "H",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.it_risk",
@@ -4055,7 +4232,8 @@
       "source": "levers",
       "confidence": "H",
       "note": "1 scales gross savings so 2027 net matches the lever model's risk-adjusted net.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.it_ot_si",
@@ -4077,7 +4255,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "0 is conservative: transition costs reduce adjusted EPS in 2027.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.it_swb",
@@ -4099,7 +4278,8 @@
       "source": "levers",
       "confidence": "M",
       "note": "Rest lands in 'Other' opex. Moves nothing at EBITDA level; changes the P&L line.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.cust_opex",
@@ -4121,7 +4301,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cust_capex",
@@ -4143,7 +4324,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cust_ot",
@@ -4165,7 +4347,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cust_opex28",
@@ -4187,7 +4370,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cust_capex28",
@@ -4209,7 +4393,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lab_hc25",
@@ -4233,7 +4418,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Labor split by group is an analyst estimate.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lab_rate25",
@@ -4257,7 +4443,8 @@
       "source": "assumption",
       "confidence": "L",
       "note": "Labor split by group is an analyst estimate.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.lab_hc_g",
@@ -4282,7 +4469,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Labor split by group is an analyst estimate.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.lab_wage_g",
@@ -4307,7 +4495,8 @@
       "source": "assumption",
       "confidence": "M",
       "note": "Labor split by group is an analyst estimate.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": "points"
     },
     {
       "id": "corp.it_override",
@@ -4329,7 +4518,8 @@
       "source": "spec",
       "confidence": "H",
       "note": "Replaces corporate it_scen = 6 'Custom'. Scenario choice now comes from the active scenario.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.it_swb_mode",
@@ -4351,7 +4541,8 @@
       "source": "spec",
       "confidence": "M",
       "note": "Only moves savings between P&L lines; EBITDA and EPS unaffected.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cal_ocf25",
@@ -4373,7 +4564,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "Solves the FY2025 working-capital / other investing / other financing plugs.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cal_fcf25",
@@ -4395,7 +4587,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "Solves the FY2025 working-capital / other investing / other financing plugs.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     },
     {
       "id": "corp.cal_cash25",
@@ -4417,7 +4610,8 @@
       "source": "filing",
       "confidence": "H",
       "note": "Solves the FY2025 working-capital / other investing / other financing plugs.",
-      "scenarioVaries": false
+      "scenarioVaries": false,
+      "percentScale": null
     }
   ],
   "nodes": [
@@ -4430,7 +4624,8 @@
       ],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.line_outlay",
@@ -4441,7 +4636,8 @@
       ],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.line_capex",
@@ -4452,7 +4648,8 @@
       ],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.line_addressable",
@@ -4463,7 +4660,8 @@
       ],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.line_growth",
@@ -4474,7 +4672,8 @@
       ],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.pool_outlay",
@@ -4485,7 +4684,8 @@
       ],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.pool_capex",
@@ -4496,7 +4696,8 @@
       ],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.pool_addressable",
@@ -4507,7 +4708,8 @@
       ],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.pool_growth",
@@ -4518,7 +4720,8 @@
       ],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.pool_capex_share",
@@ -4529,7 +4732,8 @@
       ],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "base.total",
@@ -4538,7 +4742,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.capex_total",
@@ -4547,7 +4752,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.opex_total",
@@ -4556,7 +4762,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.addressable_total",
@@ -4565,7 +4772,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.headwinds",
@@ -4574,7 +4782,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.locked_total",
@@ -4583,7 +4792,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "base.locked_share",
@@ -4592,7 +4802,8 @@
       "dims": [],
       "layer": "baseline",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "base.fees_addressable",
@@ -4601,7 +4812,8 @@
       "dims": [],
       "layer": "baseline",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.us_total",
@@ -4610,7 +4822,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.us_cost",
@@ -4619,7 +4832,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.gcc_total",
@@ -4628,7 +4842,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.gcc_cost",
@@ -4637,7 +4852,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.on0",
@@ -4646,7 +4862,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.off0",
@@ -4655,7 +4872,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.on_cost",
@@ -4664,7 +4882,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.off_cost",
@@ -4673,7 +4892,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.ext",
@@ -4682,7 +4902,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.ctr_cost",
@@ -4691,7 +4912,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.ms0",
@@ -4700,7 +4922,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.pref",
@@ -4709,7 +4932,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.tail",
@@ -4718,7 +4942,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.cons",
@@ -4727,7 +4952,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.sw",
@@ -4736,7 +4962,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.sw_ms",
@@ -4745,7 +4972,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.cloud",
@@ -4754,7 +4982,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.dc_capex",
@@ -4763,7 +4992,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.dc_opex",
@@ -4772,7 +5002,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.dc_maint",
@@ -4781,7 +5012,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.dc_colo",
@@ -4790,7 +5022,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.net",
@@ -4799,7 +5032,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.euc",
@@ -4808,7 +5042,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.fees",
@@ -4817,7 +5052,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lv.fees_addr",
@@ -4826,7 +5062,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L01.f",
@@ -4835,7 +5072,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L01.rr",
@@ -4844,7 +5082,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L01.ot",
@@ -4853,7 +5092,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L01.on1",
@@ -4862,7 +5102,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L01.off1",
@@ -4871,7 +5112,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L01.ms1",
@@ -4880,7 +5122,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L02.rr",
@@ -4889,7 +5132,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L02.ot",
@@ -4898,7 +5142,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L03.h",
@@ -4907,7 +5152,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L03.rr",
@@ -4916,7 +5162,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L03.ot",
@@ -4925,7 +5172,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L03.on3",
@@ -4934,7 +5182,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L03.gcc_add",
@@ -4943,7 +5192,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L04.h",
@@ -4952,7 +5202,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L04.rr",
@@ -4961,7 +5212,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L04.ot",
@@ -4970,7 +5222,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L04.off4",
@@ -4979,7 +5232,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.h",
@@ -4988,7 +5242,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.r",
@@ -4997,7 +5252,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.us_saving",
@@ -5006,7 +5262,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.gcc_added",
@@ -5015,7 +5272,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.rr",
@@ -5024,7 +5282,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L05.ot",
@@ -5033,7 +5292,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L06.g",
@@ -5042,7 +5302,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.L06.pool",
@@ -5051,7 +5312,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L06.si_saving",
@@ -5060,7 +5322,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L06.rr",
@@ -5069,7 +5332,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L06.ot",
@@ -5078,7 +5342,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L07.ext",
@@ -5087,7 +5352,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L07.rr",
@@ -5096,7 +5362,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L07.ot",
@@ -5105,7 +5372,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L08.ext",
@@ -5114,7 +5382,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L08.rr",
@@ -5123,7 +5392,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L08.ot",
@@ -5132,7 +5402,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L09.rr",
@@ -5141,7 +5412,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L09.ot",
@@ -5150,7 +5422,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L09.sw9",
@@ -5159,7 +5432,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L09.cl9",
@@ -5168,7 +5442,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L10.msp",
@@ -5177,7 +5452,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L10.rr",
@@ -5186,7 +5462,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L10.ot",
@@ -5195,7 +5472,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L11.rr",
@@ -5204,7 +5482,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L11.ot",
@@ -5213,7 +5492,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L12.capex_saving",
@@ -5222,7 +5502,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L12.rr",
@@ -5231,7 +5512,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L12.ot",
@@ -5240,7 +5522,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L13.rr",
@@ -5249,7 +5532,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L13.ot",
@@ -5258,7 +5542,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L14.rr",
@@ -5267,7 +5552,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L14.ot",
@@ -5276,7 +5562,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L15.rr",
@@ -5285,7 +5572,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L15.ot",
@@ -5294,7 +5582,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L16.pool",
@@ -5303,7 +5592,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L16.rr",
@@ -5312,7 +5602,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L16.ot",
@@ -5321,7 +5612,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L17.si_avoid",
@@ -5330,7 +5622,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L17.sw_avoid",
@@ -5339,7 +5632,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L17.cl_avoid",
@@ -5348,7 +5642,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L17.rr",
@@ -5357,7 +5652,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.L17.ot",
@@ -5366,7 +5662,8 @@
       "dims": [],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.rr",
@@ -5377,7 +5674,8 @@
       ],
       "layer": "levers",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.ot",
@@ -5388,7 +5686,8 @@
       ],
       "layer": "levers",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.eff_start",
@@ -5399,7 +5698,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.ramp_factor",
@@ -5410,7 +5710,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.iy",
@@ -5421,7 +5722,8 @@
       ],
       "layer": "levers",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.iy_risk",
@@ -5432,7 +5734,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.eff",
@@ -5444,7 +5747,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.rr_check",
@@ -5455,7 +5759,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.capex_rr",
@@ -5466,7 +5771,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "lev.cx",
@@ -5477,7 +5783,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "lev.swb_rr",
@@ -5488,7 +5795,8 @@
       ],
       "layer": "levers",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.tot_rr",
@@ -5497,7 +5805,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.tot_iy",
@@ -5506,7 +5815,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.tot_ot_raw",
@@ -5515,7 +5825,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.tot_ot_all",
@@ -5524,7 +5835,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.tot_ot_it",
@@ -5533,7 +5845,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.tot_ot_out",
@@ -5542,7 +5855,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.net",
@@ -5551,7 +5865,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.risk_gross",
@@ -5560,7 +5875,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.risk",
@@ -5569,7 +5885,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.target",
@@ -5578,7 +5895,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.bar",
@@ -5587,7 +5905,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.gap",
@@ -5596,7 +5915,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.gap_risk",
@@ -5605,7 +5925,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.coverage",
@@ -5614,7 +5935,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "res.rate_share",
@@ -5623,7 +5945,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "res.cy27_outlay",
@@ -5632,7 +5955,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.cy27_vs_cy26_pct",
@@ -5641,7 +5965,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "res.fte_us",
@@ -5650,7 +5975,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.fte_on",
@@ -5659,7 +5985,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.fte_off",
@@ -5668,7 +5995,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.fte_gcc",
@@ -5677,7 +6005,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "res.offshore_mix",
@@ -5686,7 +6015,8 @@
       "dims": [],
       "layer": "results",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "pnl.o27",
@@ -5695,7 +6025,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.c27",
@@ -5704,7 +6035,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.ot27",
@@ -5713,7 +6045,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.ot27_it",
@@ -5722,7 +6055,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.ot27_out",
@@ -5731,7 +6065,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.e27",
@@ -5740,7 +6075,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.e27x",
@@ -5749,7 +6085,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.d27",
@@ -5758,7 +6095,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.ebit27",
@@ -5767,7 +6105,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.cash27",
@@ -5776,7 +6115,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.cash27_co",
@@ -5785,7 +6125,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.o28",
@@ -5794,7 +6135,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.c28",
@@ -5803,7 +6145,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.e28",
@@ -5812,7 +6155,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.d28",
@@ -5821,7 +6165,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.ebit28",
@@ -5830,7 +6175,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.cash28",
@@ -5839,7 +6185,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.swb27",
@@ -5848,7 +6195,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pnl.swb_share27",
@@ -5857,7 +6205,8 @@
       "dims": [],
       "layer": "pnl",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.pool_usd",
@@ -5869,7 +6218,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.alloc",
@@ -5881,7 +6231,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.outlay",
@@ -5892,7 +6243,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.addressable",
@@ -5903,7 +6255,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.ss_alloc",
@@ -5914,7 +6267,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.nonshared",
@@ -5925,7 +6279,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.usage_default",
@@ -5936,7 +6291,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.usage",
@@ -5947,7 +6303,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.eff_alloc",
@@ -5959,7 +6316,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.ss_shared_addr",
@@ -5968,7 +6326,8 @@
       "dims": [],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.eff_addr",
@@ -5979,7 +6338,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.growth",
@@ -5990,7 +6350,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.n_active",
@@ -5999,7 +6360,8 @@
       "dims": [],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.target",
@@ -6010,7 +6372,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.bar",
@@ -6021,7 +6384,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.key_share",
@@ -6033,7 +6397,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.lever_share",
@@ -6045,7 +6410,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.savings",
@@ -6056,7 +6422,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.savings_risk",
@@ -6067,7 +6434,8 @@
       ],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.one_time",
@@ -6078,7 +6446,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.net",
@@ -6089,7 +6458,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.gap",
@@ -6100,7 +6470,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.gap_risk",
@@ -6111,7 +6482,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "vp.coverage",
@@ -6122,7 +6494,8 @@
       ],
       "layer": "vp",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "vp.check",
@@ -6131,7 +6504,8 @@
       "dims": [],
       "layer": "vp",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.opex27_src",
@@ -6140,7 +6514,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.capex27_src",
@@ -6149,7 +6524,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.ot27_src",
@@ -6158,7 +6534,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.opex28_src",
@@ -6167,7 +6544,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.capex28_src",
@@ -6176,7 +6554,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.risk_factor",
@@ -6185,7 +6564,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.opex27",
@@ -6194,7 +6574,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.capex27",
@@ -6203,7 +6584,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.opex28",
@@ -6212,7 +6594,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.capex28",
@@ -6221,7 +6604,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.ot27",
@@ -6230,7 +6614,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.da27",
@@ -6239,7 +6624,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.da28",
@@ -6248,7 +6634,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.swb_share",
@@ -6257,7 +6644,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "fraction"
     },
     {
       "id": "it.swb27",
@@ -6266,7 +6654,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.oth27",
@@ -6275,7 +6664,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.ot_adj",
@@ -6284,7 +6674,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "it.ot_si",
@@ -6293,7 +6684,8 @@
       "dims": [],
       "layer": "it_bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.asm",
@@ -6304,7 +6696,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.gap",
@@ -6315,7 +6708,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.lf",
@@ -6326,7 +6720,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "points"
     },
     {
       "id": "pl.rpm",
@@ -6337,7 +6732,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.yield",
@@ -6348,7 +6744,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.rev_pax",
@@ -6359,7 +6756,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.rev_cargo",
@@ -6370,7 +6768,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.rev_other",
@@ -6381,7 +6780,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.rev",
@@ -6392,7 +6792,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.gpa",
@@ -6403,7 +6804,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.gal",
@@ -6414,7 +6816,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.jet",
@@ -6425,7 +6828,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.fuel",
@@ -6436,7 +6840,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.wages",
@@ -6447,7 +6852,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.benefits",
@@ -6458,7 +6864,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.it_swb",
@@ -6469,7 +6876,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.swb_xps",
@@ -6480,7 +6888,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ac",
@@ -6491,7 +6900,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.mxr",
@@ -6502,7 +6912,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.maint",
@@ -6513,7 +6924,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.dep",
@@ -6524,7 +6936,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.aptr",
@@ -6535,7 +6948,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.airport",
@@ -6546,7 +6960,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.leaser",
@@ -6557,7 +6972,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.rent",
@@ -6568,7 +6984,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.selling",
@@ -6579,7 +6996,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.regcap",
@@ -6590,7 +7008,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.regional",
@@ -6601,7 +7020,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.oth_base",
@@ -6612,7 +7032,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.it_oth",
@@ -6623,7 +7044,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.it_ot",
@@ -6634,7 +7056,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.other",
@@ -6645,7 +7068,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.dpa",
@@ -6656,7 +7080,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.da_ac",
@@ -6667,7 +7092,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.da_oth",
@@ -6678,7 +7104,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.da",
@@ -6689,7 +7116,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.reg_da",
@@ -6700,7 +7128,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.opex_xps",
@@ -6711,7 +7140,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.debt_close",
@@ -6722,7 +7152,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.debt_avg",
@@ -6733,7 +7164,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.rate",
@@ -6744,7 +7176,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "points"
     },
     {
       "id": "pl.int_exp",
@@ -6755,7 +7188,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cash_open",
@@ -6766,7 +7200,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.int_inc",
@@ -6777,7 +7212,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.oth_inc",
@@ -6788,7 +7224,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.pretax_pps",
@@ -6799,7 +7236,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ps",
@@ -6810,7 +7248,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.swb",
@@ -6821,7 +7260,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.opex",
@@ -6832,7 +7272,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ebit",
@@ -6843,7 +7284,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.op_margin",
@@ -6854,7 +7296,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "points"
     },
     {
       "id": "pl.ebitda",
@@ -6865,7 +7308,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ebitdar",
@@ -6876,7 +7320,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.casm_x",
@@ -6887,7 +7332,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.pretax",
@@ -6898,7 +7344,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.taxx",
@@ -6909,7 +7356,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ni",
@@ -6920,7 +7368,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.sh",
@@ -6931,7 +7380,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.eps",
@@ -6942,7 +7392,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.si",
@@ -6953,7 +7404,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ni_gaap",
@@ -6964,7 +7416,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.eps_gaap",
@@ -6975,7 +7428,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_int",
@@ -6986,7 +7440,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_tax",
@@ -6997,7 +7452,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_si",
@@ -7008,7 +7464,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_wc",
@@ -7019,7 +7476,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.ocf",
@@ -7030,7 +7488,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_capex",
@@ -7041,7 +7500,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_slb",
@@ -7052,7 +7512,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_oi",
@@ -7063,7 +7524,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.fcf",
@@ -7074,7 +7536,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cf_of",
@@ -7085,7 +7548,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.cash_close",
@@ -7096,7 +7560,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.total_debt",
@@ -7107,7 +7572,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.net_debt",
@@ -7118,7 +7584,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.lev",
@@ -7129,7 +7596,8 @@
       ],
       "layer": "corporate",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.lab_hc",
@@ -7141,7 +7609,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.lab_rate",
@@ -7153,7 +7622,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "pl.lab_cost",
@@ -7165,7 +7635,8 @@
       ],
       "layer": "corporate",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.pe_valid",
@@ -7174,7 +7645,8 @@
       "dims": [],
       "layer": "valuation",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.ev",
@@ -7185,7 +7657,8 @@
       ],
       "layer": "valuation",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.eqv",
@@ -7196,7 +7669,8 @@
       ],
       "layer": "valuation",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.px_ev",
@@ -7207,7 +7681,8 @@
       ],
       "layer": "valuation",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.px_pe",
@@ -7218,7 +7693,8 @@
       ],
       "layer": "valuation",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.px",
@@ -7229,7 +7705,8 @@
       ],
       "layer": "valuation",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "val.px_vs",
@@ -7240,7 +7717,8 @@
       ],
       "layer": "valuation",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "points"
     },
     {
       "id": "val.mcap",
@@ -7251,7 +7729,8 @@
       ],
       "layer": "valuation",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ebitda27",
@@ -7260,7 +7739,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ebit27",
@@ -7269,7 +7749,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.pretax27",
@@ -7278,7 +7759,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ni27",
@@ -7287,7 +7769,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.eps27",
@@ -7296,7 +7779,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.eps_gaap27",
@@ -7305,7 +7789,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.fcf27",
@@ -7314,7 +7799,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.net_debt27",
@@ -7323,7 +7809,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ps27",
@@ -7332,7 +7819,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.px27",
@@ -7341,7 +7829,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.mcap27",
@@ -7350,7 +7839,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.eps_pct27",
@@ -7359,7 +7849,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": "points"
     },
     {
       "id": "br.int28",
@@ -7368,7 +7859,8 @@
       "dims": [],
       "layer": "bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.pps28",
@@ -7377,7 +7869,8 @@
       "dims": [],
       "layer": "bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ps28",
@@ -7386,7 +7879,8 @@
       "dims": [],
       "layer": "bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ebitda28",
@@ -7395,7 +7889,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.pretax28",
@@ -7404,7 +7899,8 @@
       "dims": [],
       "layer": "bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.ni28",
@@ -7413,7 +7909,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.eps28",
@@ -7422,7 +7919,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.fcf28",
@@ -7431,7 +7929,8 @@
       "dims": [],
       "layer": "bridge",
       "output": false,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.px28",
@@ -7440,7 +7939,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     },
     {
       "id": "br.fuel_equiv_cents",
@@ -7449,7 +7949,8 @@
       "dims": [],
       "layer": "bridge",
       "output": true,
-      "overridable": true
+      "overridable": true,
+      "percentScale": null
     }
   ],
   "dimensions": [

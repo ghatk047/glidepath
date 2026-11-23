@@ -315,7 +315,7 @@ title: "Percent-point units shown correctly everywhere"
 epic: WEB
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -333,4 +333,5 @@ acceptance:
 gates: [G1, G2, G3, G13]
 size: S
 notes: "From MOD-08 review."
+merged_at: "2026-11-23"
 ```

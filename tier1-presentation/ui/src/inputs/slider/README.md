@@ -22,6 +22,7 @@ Import as `@glidepath/ui/inputs/slider`.
 />
 ```
 
+- `percentScale` (optional, the bundle's): `'points'` makes a `%` value label read 2.0% for 2, `'fraction'` (default) 10.0% for 0.1. `formatByUnit(value, unit, step, scale?)` is the shared label format.
 - Native `input type=range`, labelled by its `<label>`; `aria-valuetext` is the formatted value.
 - `decision`: white thumb, accent fill. `estimate`: grey fill, lock icon in the label and a glass
   tooltip "Estimate: solvers never move it" (on lock hover and keyboard focus, and in

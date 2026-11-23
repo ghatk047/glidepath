@@ -1,9 +1,5 @@
-import {
-  EditableNumber,
-  parseNumber,
-  type EditableNumberPopover,
-} from '@glidepath/ui/inputs/editable';
-import { formatFor, type FormatProp } from './format';
+import { EditableNumber, type EditableNumberPopover } from '@glidepath/ui/inputs/editable';
+import { formatFor, parseFor, type FormatProp } from './format';
 import { useVariable } from './useVariable';
 import { Value } from './Value';
 
@@ -33,15 +29,6 @@ export interface BoundEditableOutputProps extends Common {
 
 export type BoundEditableProps = BoundEditableInputProps | BoundEditableOutputProps;
 
-/** Percent cells are decimals (0.12); a typed "12" means 12%, the inverse of `fmt.pct`. */
-const parseFor = (unit: string) =>
-  unit === '%'
-    ? (text: string) => {
-        const n = parseNumber(text);
-        return n === null ? null : n / 100;
-      }
-    : undefined;
-
 function BoundInput({
   variable,
   member = '',
@@ -51,9 +38,11 @@ function BoundInput({
 }: BoundEditableInputProps) {
   const v = useVariable(variable, member);
   const d = v.definition;
-  const show = formatFor(format, d?.unit, d?.step);
+  const show = formatFor(format, d?.unit, d?.step, d?.percentScale);
   const fail = () => undefined; // WEB-05 surfaces commit errors; the session shows tier 2's.
 
+  // A typed "12" means 12% for either scale: fraction cells store 0.12, points cells 12.
+  const parse = d ? parseFor(d.unit, d.percentScale) : undefined;
   const popover: EditableNumberPopover | undefined =
     d && d.min !== null && d.max !== null && d.step !== null
       ? {
@@ -66,7 +55,7 @@ function BoundInput({
           confidence: d.confidence,
           // Unknown default reads "Default —"; Reset never sends it (it clears the own value).
           defaultValue: d.default ?? Number.NaN,
-          ...(parseFor(d.unit) ? { parse: parseFor(d.unit) } : {}),
+          ...(parse ? { parse } : {}),
           onChange: (next) => {
             v.preview(next);
             void v.commit(next).catch(fail);

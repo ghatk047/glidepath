@@ -14,6 +14,8 @@ Every body is checked against its contract schema before it is sent (`mappers.ts
 
 ## Bundle: fields filled from the spec
 
+`percentScale` of each variable and node is derived here (WEB-10) by `@glidepath/spec`'s `variablePercentScale` / `nodePercentScale` from the unit, the layer and the node's expressions (`corporate` percents are percentage points, `corp.gdp` 2.0 = 2.0%; everything else is a fraction, `g.target_pct` 0.1 = 10%; a node whose formula ends in `* 100` is points). The expression itself never leaves tier 2. `percent-scale.test.ts` proves it for every percent variable and node, against the engine's magnitudes at the five presets.
+
 `variable_def` and `dimension_def` lack `kind`, `scenario_varies`, `source`, `confidence`, `note` and the dimension `label`. `buildBundle` takes those from the spec bundle (`@glidepath/spec`) of the tenant's pinned model version and everything else from the database. Lists follow the spec's order. `SpecBundleSource` (`spec-source.ts`) answers the bundle for a `model_version.semver`; the default reads `variables.json` and `formula_graph.json` from `SPEC_DIR`, else the repository's `docs/spec`, and answers only for the version the spec declares (`spec_version`). No bundle for the pinned version is a 500. Deployment: the `logic` image has no `docs/`; its Dockerfile copies `variables.json` and `formula_graph.json` read-only to `/app/spec` and sets `SPEC_DIR=/app/spec` (`ops/docker/logic/README.md`). A migration adding the columns would make the spec source unnecessary.
 
 ## editsCount (two numbers, two names of meaning)

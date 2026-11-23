@@ -1,7 +1,8 @@
 /**
  * Display formatting. The only place in the front end allowed to use toFixed / Intl
  * (enforced by ./eslint-rule). Values arrive from tier 2 in model units:
- * money in $M (float), percentages as decimals (0.208 = 20.8%), FTE as head counts,
+ * money in $M (float), percentages as decimals (0.208 = 20.8%; corporate drivers are percentage
+ * points, 2.0 = 2.0%, `scale: 'points'`), FTE as head counts,
  * multiples as plain numbers, EPS in $ per share, cents in cents per gallon.
  */
 
@@ -17,6 +18,17 @@ export interface DigitsOpt {
   digits?: number;
   /** Prefix positive values with "+". Negative values always use the minus sign. */
   signed?: boolean;
+}
+
+/**
+ * How a percent value is stored (the bundle's `percentScale`, set by tier 2): `fraction` 0.1 is
+ * 10%, `points` 2.0 is 2.0%.
+ */
+export type PercentScale = 'fraction' | 'points';
+
+export interface PctOpt extends DigitsOpt {
+  /** Storage scale of the value; default `fraction`. */
+  scale?: PercentScale | null;
 }
 
 export interface CentsOpt extends DigitsOpt {
@@ -63,9 +75,9 @@ const render = (
 const money = (v: Maybe, o: DigitsOpt = {}): string =>
   render(v, o.digits ?? 1, o.signed, '$', 'M');
 
-/** Input is a decimal: 0.208 -> "20.8%". */
-const pct = (v: Maybe, o: DigitsOpt = {}): string =>
-  render(isNum(v) ? v * 100 : v, o.digits ?? 1, o.signed, '', '%');
+/** Input is a decimal (0.208 -> "20.8%"), or percentage points with `scale: 'points'` (2 -> "2.0%"). */
+const pct = (v: Maybe, o: PctOpt = {}): string =>
+  render(isNum(v) && o.scale !== 'points' ? v * 100 : v, o.digits ?? 1, o.signed, '', '%');
 
 const fte = (v: Maybe, o: Pick<DigitsOpt, 'signed'> = {}): string =>
   render(v, 0, o.signed, '', '');

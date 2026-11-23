@@ -498,3 +498,74 @@ describe('AC4: all 194 inputs editable', () => {
     expect(new Set(t.searches.map((s) => s.q))).toEqual(new Set(variables.map((v) => v.id)));
   }, 120_000);
 });
+
+describe('WEB-10: the edit popover shows and parses both percent scales', () => {
+  const POINTS_VAR = 'corp.gdp';
+  const FRACTION_VAR = 'g.target_pct';
+
+  it('popover_percent_scale_display_and_parse', async () => {
+    const t = await mount('market');
+    const points = vars.get(POINTS_VAR)!;
+    const fraction = vars.get(FRACTION_VAR)!;
+    expect([points.percentScale, fraction.percentScale]).toEqual(['points', 'fraction']);
+    const member = firstMember(POINTS_VAR);
+
+    // points: corp.gdp 2 reads 2.0% in the field and the Default chip; typing 2.5 commits 2.5
+    act(() => t.controller.openPopover({ kind: 'input', variable: POINTS_VAR, member }));
+    await t.until(() => expect(popover()).not.toBeNull());
+    let pop = popover()!;
+    expect(C.cells[`${POINTS_VAR}[${member}]`]).toBe(2);
+    let field = within(pop).getByRole('textbox') as HTMLInputElement;
+    expect(field.value).toBe('2.0%');
+    fireEvent.change(field, { target: { value: '2.5' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    await waitFor(() => expect(t.posts).toHaveLength(1), { timeout: 3000 });
+    expect(t.posts[0]!.changes).toEqual([
+      { target: 'variable', key: POINTS_VAR, member, value: 2.5 },
+    ]);
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    // fraction: g.target_pct 0.1 reads 10.0%; typing 12 commits 0.12
+    act(() => t.controller.openPopover({ kind: 'input', variable: FRACTION_VAR }));
+    await t.until(() => expect(popover()).not.toBeNull());
+    pop = popover()!;
+    expect(C.cells[`${FRACTION_VAR}[]`]).toBe(0.1);
+    field = within(pop).getByRole('textbox') as HTMLInputElement;
+    expect(field.value).toBe('10.0%');
+    fireEvent.change(field, { target: { value: '12' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+    await waitFor(() => expect(t.posts).toHaveLength(2), { timeout: 3000 });
+    expect(t.posts[1]!.changes).toEqual([
+      { target: 'variable', key: FRACTION_VAR, member: '', value: 0.12 },
+    ]);
+  });
+
+  it('the trace drawer renders a percent cell by the bundle scale', () => {
+    const scaleOf = (cell: string) =>
+      vars.get(cell.slice(0, cell.indexOf('[')))?.percentScale ??
+      nodes.find((n) => n.id === cell.slice(0, cell.indexOf('[')))?.percentScale ??
+      null;
+    const content = traceContent(
+      {
+        ...explain,
+        node: 'pl.op_margin',
+        unit: '%',
+        value: 2.976,
+        upstream: [
+          {
+            cell: 'g.target_pct[]',
+            kind: 'input',
+            label: 'Target %',
+            unit: '%',
+            value: 0.1,
+            depth: 1,
+          },
+        ],
+        drivers: [],
+      } as never,
+      (cell) => (cell === 'pl.op_margin' ? 'points' : scaleOf(cell)),
+    );
+    expect(content.value).toBe('3.0%');
+    expect(content.upstream?.[0]?.value).toBe('10.0%');
+  });
+});

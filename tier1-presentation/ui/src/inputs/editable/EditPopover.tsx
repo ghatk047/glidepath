@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import type { PercentScale } from '../../format';
 import { GlassPanel } from '../../glass';
 import { useEditableStyles } from './styles';
 
@@ -50,6 +51,19 @@ export function parseNumber(text: string): number | null {
   if (!/[0-9]/.test(cleaned)) return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Parser for a percent field: the user types what the field shows ("12" is 12%, "2.5" is 2.5%).
+ * `fraction` cells store 0.12 (typed / 100); `points` cells store 2.5 as typed.
+ */
+export function parsePercent(
+  scale: PercentScale | null | undefined,
+): (text: string) => number | null {
+  return (text) => {
+    const n = parseNumber(text);
+    return n === null || scale === 'points' ? n : n / 100;
+  };
 }
 
 const POP_GAP_Y = 10;

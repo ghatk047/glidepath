@@ -70,6 +70,8 @@ interface SpecNode {
   layer: string;
   output: boolean;
   overridable?: boolean;
+  expr?: string;
+  cases?: { expr: string }[];
 }
 interface SpecDimension {
   id: string;
@@ -100,6 +102,34 @@ function check<S extends z.ZodType>(schema: S, value: z.input<S>, what: string):
 }
 
 const cell = (id: string, member = '') => `${id}[${member}]`;
+
+/**
+ * Percent scale (WEB-10). The same rule as tier 2's bundle builder (`@glidepath/spec`
+ * `percent-scale.ts`, which this package may not import): percent family = unit starts with `%`;
+ * layer `corporate` is percentage points; a node whose every expression ends in `* 100` is
+ * points; everything else is a fraction. `percent-scale-parity.test.ts` in tier 2's server
+ * checks the generated bundle against the real builder rule for every variable and node.
+ */
+const isPercentUnit = (unit: string) => unit.startsWith('%');
+function endsInTimes100(expr: string): boolean {
+  const text = expr.trim();
+  if (!/\*\s*100$/.test(text)) return false;
+  let depth = 0;
+  for (const ch of text) {
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth--;
+    else if (depth === 0 && (ch === '+' || ch === '-')) return false;
+  }
+  return depth === 0;
+}
+const variableScale = (v: SpecVariable): 'fraction' | 'points' | null =>
+  !isPercentUnit(v.unit) ? null : v.layer === 'corporate' ? 'points' : 'fraction';
+function nodeScale(n: SpecNode): 'fraction' | 'points' | null {
+  if (!isPercentUnit(n.unit)) return null;
+  if (n.layer === 'corporate') return 'points';
+  const exprs = [...(n.cases ?? []).map((c) => c.expr), ...(n.expr !== undefined ? [n.expr] : [])];
+  return exprs.length > 0 && exprs.every(endsInTimes100) ? 'points' : 'fraction';
+}
 
 // ---------------------------------------------------------------------------
 // Generation
@@ -153,6 +183,7 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
         confidence: v.confidence,
         note: v.note,
         scenarioVaries: v.scenario_varies,
+        percentScale: variableScale(v),
       })) as z.input<typeof BundleResponse>['variables'],
       nodes: graph.nodes.map((n) => ({
         id: n.id,
@@ -163,6 +194,7 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
         output: n.output,
         // 03b: "Every node is overridable (pinnable) per scenario unless noted."
         overridable: n.overridable ?? true,
+        percentScale: nodeScale(n),
       })),
       dimensions: graph.dimensions.map((d) => ({
         id: d.id,

@@ -78,7 +78,7 @@ function Rolled({
 export function Value({ node, member = '', format, onTrace, className }: ValueProps) {
   const ctx = useBindContext();
   const bound = useNode(node, member);
-  const show = formatFor(format, bound.def?.unit);
+  const show = formatFor(format, bound.def?.unit, undefined, bound.def?.percentScale);
   const trace = onTrace ?? ctx.onTrace;
 
   if (trace) {

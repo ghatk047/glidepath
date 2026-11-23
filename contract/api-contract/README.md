@@ -18,6 +18,8 @@ It imports `zod` and nothing else (G13; enforced by `eslint.config.js` and `src/
   `CellKey` = `id[member]` as in the engine (`res.net[]`, `hc.rate[pilots,fy27]`); `toCellKey()` formats one.
 - Field names are camelCase; spec ids and enum values are verbatim from `docs/spec`.
 
+Every `VariableDef` and `NodeDef` of the bundle carries `percentScale` (`'fraction' | 'points' | null`), set by tier 2; see **Percent scale** below.
+
 `src/fixtures/core.ts` holds one wire fixture per route; `schemas.spec.ts` round-trips them.
 
 ## WebSocket session (CON-02)
@@ -147,3 +149,21 @@ app bundles never carry fixture JSON):
 - The hand-written CON-01 / CON-02 / CON-05 fixtures (`coreRouteFixtures`,
   `changesetConflictFixture`, `serverMessageFixtures`, `openFixture`,
   `scratchLifecycleFixtures`, …).
+
+## Percent scale (WEB-10)
+
+Percent values are stored on two scales, so the bundle says which one each percent variable and node uses and tier 1 never hard-codes an id:
+
+| `percentScale` | Meaning                   | Examples                                                                        |
+| -------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| `fraction`     | 0.1 is 10%                | `g.target_pct` 0.1, `lev.L10.shelf` 0.1, `res.coverage` 0.057                   |
+| `points`       | 2.0 is 2.0%               | `corp.gdp` 2.0, `corp.lf` 84.2, `pl.op_margin` 2.976                            |
+| `null`         | the unit is not a percent | `$M`, `x`, `FTE`, and `pts` (a percentage-point difference, e.g. `corp.lf_gdp`) |
+
+Tier 2 derives it from registry fields only (`@glidepath/spec` `core/percent-scale.ts`):
+
+1. Percent family: the unit starts with `%` (`%`, `%/yr`, `% of US FTE`, `% of US cost`); any other unit is `null`.
+2. A variable in layer `corporate` is `points`; every other layer is `fraction`.
+3. A node in layer `corporate` is `points` (built from corporate point inputs, `pl.lf = corp.lf + ...`); otherwise `points` when every expression of the node ends in `* 100` (`pl.ebit / pl.rev * 100`, `val.px_vs`, `br.eps_pct27`), else `fraction`.
+
+The rule is checked against every percent variable and node of the spec (`tier2-logic/spec/src/percent-scale.test.ts`: registry ranges; `tier2-logic/server/src/routes/read/percent-scale.test.ts`: the engine's magnitudes at the five presets, and the generated contract fixtures against the builder). Only five nodes are `points`: `pl.lf`, `pl.rate`, `pl.op_margin`, `val.px_vs`, `br.eps_pct27`.

@@ -19,7 +19,7 @@ interface Member {
 function DriverCell({ def, member, label }: { def: VariableDef; member: string; label: string }) {
   const v = useVariable(def.id, member);
   if (typeof v.value !== 'number') return null;
-  const show = driverFormat(def.unit, def.step);
+  const show = driverFormat(def.unit, def.step, def.percentScale);
   return (
     <div className="gp-market-cell" data-member={member} data-stale={v.stale || undefined}>
       {label && <span className="gp-market-cell-member">{label}</span>}

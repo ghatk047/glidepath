@@ -6,7 +6,7 @@ import { TraceChain, type TraceChainNode } from '@glidepath/ui/rows';
 import { useNode } from '../../bind';
 import { overlayController, useTraceCell } from '../../global/overlays';
 import { COPY, DRIVER_YEAR, TRACE_COPY, TRACE_IDS, VALUATION, type TraceId } from './copy';
-import { asCost, pctPoints } from './format';
+import { asCost } from './format';
 
 const linkGlyph = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
@@ -32,7 +32,9 @@ function useNotes(): Partial<Record<TraceId, ReactNode>> {
   const mult = usesPe ? pe.value : ev.value;
   return {
     'br.eps27':
-      typeof pct.value === 'number' ? `${pctPoints(pct.value, 1, true)} ${COPY.vsBase}` : '',
+      typeof pct.value === 'number'
+        ? `${fmt.pct(pct.value, { digits: 1, signed: true, scale: pct.def?.percentScale })} ${COPY.vsBase}`
+        : '',
     'br.px27':
       typeof mult === 'number' ? `${usesPe ? COPY.basisPe : COPY.basisEv} ${fmt.mult(mult)}` : '',
     'br.mcap27':

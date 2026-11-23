@@ -32,6 +32,14 @@ describe('fmt acceptance: values (test table)', () => {
     ['pct digits', () => fmt.pct(0.5, { digits: 0 }), '50%'],
     ['pct zero', () => fmt.pct(0), '0.0%'],
     ['pct above 100', () => fmt.pct(12.345), '1,234.5%'],
+    // percent scale (WEB-10): the bundle's `percentScale` says how the value is stored
+    ['pct fraction scale is the default', () => fmt.pct(0.1, { scale: 'fraction' }), '10.0%'],
+    ['pct points: corp.gdp 2 reads 2.0%', () => fmt.pct(2, { scale: 'points' }), '2.0%'],
+    ['pct points: corp.lf 84.2', () => fmt.pct(84.2, { scale: 'points' }), '84.2%'],
+    ['pct points negative', () => fmt.pct(-1.5, { scale: 'points' }), `${MINUS}1.5%`],
+    ['pct points signed', () => fmt.pct(1.588, { scale: 'points', signed: true }), '+1.6%'],
+    ['pct points digits', () => fmt.pct(2.05, { scale: 'points', digits: 2 }), '2.05%'],
+    ['pct null scale is a fraction', () => fmt.pct(0.1, { scale: null }), '10.0%'],
     // FTE integers
     ['fte integer', () => fmt.fte(2692), '2,692'],
     ['fte rounds', () => fmt.fte(2691.6), '2,692'],

@@ -104,7 +104,7 @@ function valueText(
   if (v === null) return EM_DASH;
   if (typeof v === 'string') return v;
   const def = bundle?.variables.find((d) => d.id === c.key);
-  return def ? formatByUnit(v, def.unit, def.step ?? 0.01) : String(v);
+  return def ? formatByUnit(v, def.unit, def.step ?? 0.01, def.percentScale) : String(v);
 }
 
 /** Rows tier 2 says need a look (conflict, changed in file, new, deleted), conflicts first. */

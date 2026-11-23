@@ -12,6 +12,7 @@ import {
   EditableNumber,
   editableCss,
   parseNumber,
+  parsePercent,
   type EditableNumberPopover,
 } from './index';
 
@@ -375,5 +376,46 @@ describe('UI-09 no formulas or business rules: values arrive as props', () => {
     const res = await axe.run(document.body, { rules: { 'color-contrast': { enabled: false } } });
     expect(res.violations.map((x) => x.id)).toEqual([]);
     void container;
+  });
+});
+
+describe('WEB-10 percent scale: the popover parses what the field shows', () => {
+  it('parsePercent: a fraction cell stores typed / 100, a points cell stores the typed number', () => {
+    expect(parsePercent('fraction')('5.5%')).toBe(0.055);
+    expect(parsePercent(undefined)('12')).toBe(0.12);
+    expect(parsePercent(null)('12')).toBe(0.12);
+    expect(parsePercent('points')('2.5')).toBe(2.5);
+    expect(parsePercent('points')('2.5%')).toBe(2.5);
+    expect(parsePercent('points')(`${'\u2212'}4`)).toBe(-4);
+    expect(parsePercent('points')('abc')).toBeNull();
+    expect(parsePercent('fraction')('abc')).toBeNull();
+  });
+
+  it('typing 2.5 in a points field commits 2.5 (and the field shows 2.5%)', () => {
+    const onChange = vi.fn();
+    render(
+      wrap(
+        <EditPopover
+          {...target({
+            label: 'Real GDP growth',
+            unit: '%',
+            min: -4,
+            max: 5,
+            step: 0.1,
+            defaultValue: 2,
+          })}
+          value={2}
+          format={(v) => fmt.pct(v, { scale: 'points' })}
+          parse={parsePercent('points')}
+          onChange={onChange}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const num = screen.getByRole('textbox');
+    expect((num as HTMLInputElement).value).toBe('2.0%');
+    fireEvent.change(num, { target: { value: '2.5' } });
+    fireEvent.blur(num);
+    expect(onChange).toHaveBeenCalledWith(2.5);
   });
 });

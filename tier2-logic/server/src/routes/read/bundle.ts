@@ -1,6 +1,6 @@
 import { BundleResponse } from '@glidepath/api-contract';
 import type { ModelDefs } from '@glidepath/data-access';
-import type { ModelBundle } from '@glidepath/spec';
+import { nodePercentScale, variablePercentScale, type ModelBundle } from '@glidepath/spec';
 
 /** The bundle cannot be built: the spec bundle lacks something the pinned model version defines. */
 export class BundleError extends Error {
@@ -8,6 +8,16 @@ export class BundleError extends Error {
     super(message);
     this.name = 'BundleError';
   }
+}
+
+/** The `expr` of each case of a node_def row's `cases` column (jsonb, so `unknown`). */
+function caseExprs(cases: unknown): { expr: string }[] {
+  if (!Array.isArray(cases)) return [];
+  return cases.flatMap((c: unknown) =>
+    typeof c === 'object' && c !== null && typeof (c as { expr?: unknown }).expr === 'string'
+      ? [{ expr: (c as { expr: string }).expr }]
+      : [],
+  );
 }
 
 /** `items` in the order `ids` lists their keys (the spec's); keys the list does not know follow, by key. */
@@ -26,7 +36,9 @@ function inSpecOrder<T>(items: readonly T[], keyOf: (t: T) => string, ids: reado
 /**
  * The bundle of the pinned model version: what the database holds (`defs`, DATA-05) with the fields its
  * tables lack taken from the spec bundle of the same version: variable `kind`, `scenario_varies`,
- * `source`, `confidence`, `note` and the dimension `label`. Nothing but labels and metadata: node
+ * `source`, `confidence`, `note` and the dimension `label`. `percentScale` (WEB-10) is derived from the
+ * registry's unit and layer (and, for a node, whether its formula ends in `* 100`) by
+ * `@glidepath/spec` `percent-scale.ts`: the formula is read, never sent. Nothing but labels and metadata: node
  * expressions (`expr`, `cases`) stay in tier 2. Lists follow the spec's order (registry and graph order).
  * The result is validated against the contract; a gap in the spec bundle throws {@link BundleError}.
  */
@@ -55,6 +67,7 @@ export function buildBundle(defs: ModelDefs, spec: ModelBundle): BundleResponse 
       confidence: s.confidence,
       note: s.note ?? '',
       scenarioVaries: s.scenario_varies,
+      percentScale: variablePercentScale(v),
     };
   });
 
@@ -66,6 +79,12 @@ export function buildBundle(defs: ModelDefs, spec: ModelBundle): BundleResponse 
     layer: n.layer,
     output: n.output,
     overridable: n.overridable,
+    percentScale: nodePercentScale({
+      unit: n.unit,
+      layer: n.layer,
+      cases: caseExprs(n.cases),
+      ...(n.expr !== null ? { expr: n.expr } : {}),
+    }),
   }));
 
   const dimensions = inSpecOrder(defs.dimensions, (d) => d.dim_key, spec.dimensions.map((d) => d.id)).map((d) => {

@@ -1,3 +1,4 @@
+import type { PercentScale } from '../format';
 import { formatByUnit, percentOf } from '../inputs/slider';
 import { tipProps } from '../overlays/drawer';
 import { RowStyles } from './RowStyles';
@@ -15,6 +16,8 @@ export interface MoveRowProps {
   max: number;
   /** Registry unit, picks the "from → to" format. */
   unit: string;
+  /** Storage scale of a percent unit (the bundle's `percentScale`); default `fraction`. */
+  percentScale?: PercentScale | null;
   /** Step of the variable; sets the digits shown. Default 1. */
   step?: number;
   /** 1-based position in the solver's move list; shown as "01". */
@@ -36,12 +39,13 @@ export function MoveRow({
   min,
   max,
   unit,
+  percentScale,
   step = 1,
   rank,
   fromLabel = 'C',
   format,
 }: MoveRowProps) {
-  const text = format ?? ((x: number) => formatByUnit(x, unit, step));
+  const text = format ?? ((x: number) => formatByUnit(x, unit, step, percentScale));
   const a = clampPct(percentOf(from, min, max));
   const b = clampPct(percentOf(to, min, max));
   const fromText = text(from);

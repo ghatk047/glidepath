@@ -9,23 +9,14 @@ import {
   type Violation,
 } from '@glidepath/api-contract';
 import { EM_DASH } from '@glidepath/ui/format';
-import { EditPopover, parseNumber } from '@glidepath/ui/inputs/editable';
-import { formatFor, useBindContext, useNode, useVariable } from '../../bind';
+import { EditPopover } from '@glidepath/ui/inputs/editable';
+import { formatFor, parseFor, useBindContext, useNode, useVariable } from '../../bind';
 import { useCommitState } from '../../commit';
 import { useApiClient, useInputs } from '../../data';
 import type { PopoverTarget } from './controller';
 
 /** Source chip of an output (a formula node has no registry source). */
 export const OUTPUT_SOURCE = 'Calculated';
-
-/** Percent cells are decimals (0.12); a typed "12" means 12%, the inverse of `fmt.pct`. */
-const parseFor = (unit: string) =>
-  unit === '%'
-    ? (text: string) => {
-        const n = parseNumber(text);
-        return n === null ? null : n / 100;
-      }
-    : undefined;
 
 const num = (v: number | null | undefined) => (typeof v === 'number' ? v : Number.NaN);
 /** No registry step: HTML reads a non-positive range step as its default; typing is unrestricted. */
@@ -88,7 +79,7 @@ function InputPopover({ variable, member, anchor, onClose }: Common & { variable
   const d = v.definition;
   if (!d) return null;
   const value = num(v.value);
-  const parse = parseFor(d.unit);
+  const parse = parseFor(d.unit, d.percentScale);
   return (
     <EditPopover
       mode="input"
@@ -103,7 +94,7 @@ function InputPopover({ variable, member, anchor, onClose }: Common & { variable
       defaultValue={num(d.default)}
       warnings={warnings}
       value={value}
-      format={formatFor(undefined, d.unit, d.step)}
+      format={formatFor(undefined, d.unit, d.step, d.percentScale)}
       {...(parse ? { parse } : {})}
       onChange={(next) => {
         v.preview(next);
@@ -141,7 +132,7 @@ function OutputPopover({ node, member, anchor, onClose }: Common & { node: strin
     value: v,
     ...(note !== undefined ? { note } : {}),
   });
-  const parse = parseFor(def.unit);
+  const parse = parseFor(def.unit, def.percentScale);
   return (
     <EditPopover
       mode="output"
@@ -155,7 +146,7 @@ function OutputPopover({ node, member, anchor, onClose }: Common & { node: strin
       defaultValue={Number.NaN}
       warnings={warnings}
       value={value}
-      format={formatFor(undefined, def.unit)}
+      format={formatFor(undefined, def.unit, undefined, def.percentScale)}
       {...(parse ? { parse } : {})}
       onChange={setDraft}
       onPin={({ value: v, reason }) => {

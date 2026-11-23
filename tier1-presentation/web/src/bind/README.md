@@ -23,6 +23,7 @@ folder feeds it the values tier 2 pushed and sends intent back. Nothing is compu
   resolved input), `from`, `stale`, `preview(v)` (session preview) and `commit(v | null, note?)`
   (`null` clears the scenario's own value). `default` is the tenant default when tier 2 resolves the
   cell from the tenant layer, else `null`: the bundle carries no default (contract gap, see WEB-04 notes).
+- Percent cells (WEB-10): `definition.percentScale` is the bundle's scale (`fraction` 0.1 = 10%, `points` 2.0 = 2.0%, `null` for other units), set by tier 2 from the registry. `formatFor(format, unit, step?, scale?)` and `parseFor(unit, scale?)` are the one display and parse path; `<Value>`, `<BoundEditable>`, `<BoundSlider>`, the edit popover, the trace drawer and the edits list all pass the scale through, so no module scales percentages itself and no id is hard-coded.
 - `useView(view, params)`: ADR-021 view-models (`bridge`, `baseline.groups {by}`, ...); params are
   compared by value. `useTrace(cell)`: `GET /nodes/:cell/explain`, refetched on a new version.
 - `useGhosts(id, member, keys)`: values of the cell in the scenarios with those keys, from tier 2's

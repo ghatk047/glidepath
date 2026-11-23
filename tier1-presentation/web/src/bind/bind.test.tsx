@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import type { ReactNode } from 'react';
@@ -259,6 +259,7 @@ describe('AC2: useVariable', () => {
       max: def.max,
       step: def.step,
       kind: def.kind,
+      percentScale: def.percentScale, // WEB-10: the bundle's scale, as sent
       source: def.source,
       confidence: def.confidence,
       default: null, // the scenario sets it itself: tier 2 sent no tenant default
@@ -484,5 +485,95 @@ describe('useTrace', () => {
     await t.settle();
     expect(t.session.store.getState().version).toBe(C.version + 1);
     await waitFor(() => expect(t.hits.get(`explain:${OUTPUT}[]`)).toBe(2));
+  });
+});
+
+// Percent scale (WEB-10): the bundle's `percentScale`, set by tier 2 from the registry.
+const POINTS_VAR = 'corp.gdp'; // layer corporate, unit %, percentage points
+const POINTS_MEMBER = 'fy27';
+const FRACTION_VAR = 'g.target_pct'; // unit %, a fraction
+
+describe('WEB-10: both percent scales on the shared bound path', () => {
+  it('BoundEditable shows corp.gdp 2 as 2.0% and g.target_pct 0.1 as 10.0%', async () => {
+    const t = await setup();
+    render(
+      <>
+        <BoundEditable variable={POINTS_VAR} member={POINTS_MEMBER} />
+        <BoundEditable variable={FRACTION_VAR} />
+      </>,
+      { wrapper: t.wrapper },
+    );
+    await t.settle();
+    expect(bundleVar(POINTS_VAR).percentScale).toBe('points');
+    expect(bundleVar(FRACTION_VAR).percentScale).toBe('fraction');
+    expect(C.cells[`${POINTS_VAR}[${POINTS_MEMBER}]`]).toBe(2);
+    expect(C.cells[`${FRACTION_VAR}[]`]).toBe(0.1);
+    const text = async (id: string) =>
+      (
+        await waitFor(() => {
+          const el = document.querySelector(`[data-id="${id}"]`);
+          if (!el?.textContent) throw new Error('not ready');
+          return el;
+        })
+      ).textContent;
+    expect(await text(POINTS_VAR)).toBe('2.0%');
+    expect(await text(FRACTION_VAR)).toBe('10.0%');
+  });
+
+  it('the slider label of a points variable reads the same way (2.0%, not 200.0%)', async () => {
+    const t = await setup();
+    const { container } = render(<BoundSlider variable={POINTS_VAR} member={POINTS_MEMBER} />, {
+      wrapper: t.wrapper,
+    });
+    await t.settle();
+    await waitFor(() => expect(container.querySelector('.gp-slider-value')).not.toBeNull());
+    expect(container.querySelector('.gp-slider-value')!.textContent).toBe('2.0%');
+    const def = bundleVar(POINTS_VAR);
+    expect(formatByUnit(2, def.unit, def.step!, def.percentScale)).toBe('2.0%');
+  });
+
+  it('typing 2.5 for a points variable commits 2.5; typing 12 for a fraction variable commits 0.12', async () => {
+    const t = await setup();
+    render(
+      <>
+        <BoundEditable variable={POINTS_VAR} member={POINTS_MEMBER} />
+        <BoundEditable variable={FRACTION_VAR} />
+      </>,
+      { wrapper: t.wrapper },
+    );
+    await t.settle();
+
+    const open = async (id: string) => {
+      const b = await waitFor(() => {
+        const el = document.querySelector(`[data-id="${id}"]`);
+        if (!el?.getAttribute('aria-haspopup')) throw new Error('not ready');
+        return el as HTMLElement;
+      });
+      fireEvent.click(b);
+      return screen.findByRole('dialog');
+    };
+
+    const points = await open(POINTS_VAR);
+    const pointsField = within(points).getByRole('textbox');
+    expect((pointsField as HTMLInputElement).value).toBe('2.0%');
+    fireEvent.change(pointsField, { target: { value: '2.5' } });
+    fireEvent.blur(pointsField);
+    await t.settle();
+    await waitFor(() => expect(t.posted).toHaveLength(1));
+    expect(t.posted[0]).toMatchObject({
+      changes: [{ target: 'variable', key: POINTS_VAR, member: POINTS_MEMBER, value: 2.5 }],
+    });
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    const fraction = await open(FRACTION_VAR);
+    const fractionField = within(fraction).getByRole('textbox');
+    expect((fractionField as HTMLInputElement).value).toBe('10.0%');
+    fireEvent.change(fractionField, { target: { value: '12' } });
+    fireEvent.blur(fractionField);
+    await t.settle();
+    await waitFor(() => expect(t.posted).toHaveLength(2));
+    expect(t.posted[1]).toMatchObject({
+      changes: [{ target: 'variable', key: FRACTION_VAR, member: '', value: 0.12 }],
+    });
   });
 });

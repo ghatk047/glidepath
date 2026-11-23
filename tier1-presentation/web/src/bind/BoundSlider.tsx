@@ -56,7 +56,8 @@ export function BoundSlider({
   }
 
   const fail = () => undefined; // WEB-05 surfaces commit errors.
-  const label = format !== undefined ? { format: formatFor(format, d.unit, d.step) } : {};
+  const label =
+    format !== undefined ? { format: formatFor(format, d.unit, d.step, d.percentScale) } : {};
   return (
     <div data-stale={v.stale || undefined} className={className}>
       <Slider
@@ -67,6 +68,7 @@ export function BoundSlider({
         max={d.max}
         step={d.step}
         unit={d.unit}
+        percentScale={d.percentScale}
         ghosts={ghostTicks}
         onPreview={v.preview}
         onCommit={(next) => void v.commit(next).catch(fail)}

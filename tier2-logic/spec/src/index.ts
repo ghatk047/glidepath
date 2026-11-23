@@ -4,6 +4,14 @@ export const packageName = '@glidepath/spec';
 export { loadModelBundle } from './core/load';
 export { membersHash } from './core/members-hash';
 export { sha256Hex } from './core/sha256';
+export {
+  endsInTimes100,
+  isPercentUnit,
+  nodePercentScale,
+  POINTS_LAYER,
+  variablePercentScale,
+} from './core/percent-scale';
+export type { PercentScale } from './core/percent-scale';
 export { parseTenantSeed, seedToTenantData } from './core/seed';
 export type {
   CellKey,

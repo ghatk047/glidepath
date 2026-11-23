@@ -4494,7 +4494,7 @@
     "epic": "WEB",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "C",
     "model": "sonnet",
     "effort": "high",
@@ -4521,7 +4521,8 @@
       "G13"
     ],
     "size": "S",
-    "notes": "From MOD-08 review."
+    "notes": "From MOD-08 review.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "MOD-01",

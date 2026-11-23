@@ -8,6 +8,7 @@ export {
 export {
   EditPopover,
   parseNumber,
+  parsePercent,
   type EditPopoverProps,
   type EditVariableDef,
 } from './EditPopover';

@@ -111,6 +111,14 @@ export type Confidence = z.infer<typeof Confidence>;
 export const DimensionScope = z.enum(['global', 'tenant', 'system', 'global+tenant']);
 export type DimensionScope = z.infer<typeof DimensionScope>;
 
+/**
+ * How a percent-unit value is stored (set by tier 2 from the registry, WEB-10): `fraction` 0.1 is
+ * 10% (levers, targets, baseline, VPs); `points` 2.0 is 2.0% (corporate drivers such as `corp.gdp`).
+ * `null` when the unit is not a percent. Tier 1 shows and parses by this and never by id.
+ */
+export const PercentScale = z.enum(['fraction', 'points']);
+export type PercentScale = z.infer<typeof PercentScale>;
+
 export const VariableDef = z.object({
   id: VarKey,
   label: z.string(),
@@ -129,6 +137,8 @@ export const VariableDef = z.object({
   confidence: Confidence,
   note: z.string(),
   scenarioVaries: z.boolean(),
+  /** Scale of a percent-unit variable (`%`, `%/yr`, ...); `null` for any other unit. */
+  percentScale: PercentScale.nullable(),
 });
 export type VariableDef = z.infer<typeof VariableDef>;
 
@@ -144,6 +154,8 @@ export const NodeDef = z.strictObject({
   layer: z.string(),
   output: z.boolean(),
   overridable: z.boolean(),
+  /** Scale of a percent-unit node; `null` for any other unit. */
+  percentScale: PercentScale.nullable(),
 });
 export type NodeDef = z.infer<typeof NodeDef>;
 

@@ -11,7 +11,7 @@ export { useVariable, type BoundVariable, type VariableDefinition } from './useV
 export { useView, type BoundView } from './useView';
 export { traceKey, useTrace } from './useTrace';
 export { useGhosts } from './useGhosts';
-export { formatFor, type FormatName, type FormatProp } from './format';
+export { formatFor, parseFor, type FormatName, type FormatProp, type PercentScale } from './format';
 export { Value, type ValueProps } from './Value';
 export {
   BoundEditable,

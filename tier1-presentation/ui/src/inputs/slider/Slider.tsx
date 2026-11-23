@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type KeyboardEvent,
 } from 'react';
+import type { PercentScale } from '../../format';
 import { formatByUnit, percentOf, snapToStep } from './display';
 import { sliderCss } from './styles';
 import { latestThrottle, type LatestThrottle } from './throttle';
@@ -33,6 +34,8 @@ export interface SliderProps {
   step: number;
   /** Registry unit (`%`, `$M`, `FTE`, `x`, ...): picks the value label format. */
   unit: string;
+  /** Storage scale of a percent unit (the bundle's `percentScale`); default `fraction`. */
+  percentScale?: PercentScale | null;
   /** Reference ticks (C and D). Ghosts outside [min, max] are not drawn. */
   ghosts?: readonly SliderGhost[];
   /** While dragging: at most once per 33 ms, latest value wins. */
@@ -98,6 +101,7 @@ export function Slider({
   max,
   step,
   unit,
+  percentScale,
   ghosts = [],
   onPreview,
   onCommit,
@@ -119,7 +123,7 @@ export function Slider({
   }
 
   const shown = snapToStep(local?.value ?? value, min, max, step);
-  const text = (v: number) => (format ? format(v) : formatByUnit(v, unit, step));
+  const text = (v: number) => (format ? format(v) : formatByUnit(v, unit, step, percentScale));
 
   // Handlers read refs, so a burst of events inside one frame sees the latest value.
   const inputRef = useRef<HTMLInputElement>(null);

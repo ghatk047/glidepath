@@ -43,7 +43,7 @@ function describe(change: ChangeRecord, bundle: BundleResponse | undefined) {
   const label = def?.label ?? change.key;
   const what = change.member ? `${label} · ${change.member}` : label;
   const step = def && 'step' in def ? def.step : undefined;
-  const show = formatFor(undefined, def?.unit, step);
+  const show = formatFor(undefined, def?.unit, step, def?.percentScale);
   const text = (v: unknown): string => {
     if (v === null || v === undefined) return EM_DASH;
     if (typeof v === 'number') return Number.isFinite(v) ? show(v) : String(v);

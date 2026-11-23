@@ -51,7 +51,7 @@ function DriverDial({
         max={d.max}
         step={d.step}
         defaultValue={d.default ?? v.value}
-        format={driverFormat(d.unit, d.step)}
+        format={driverFormat(d.unit, d.step, d.percentScale)}
         onChange={(next) => {
           setDrag(next);
           v.preview(next);

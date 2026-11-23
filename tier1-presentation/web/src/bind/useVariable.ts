@@ -6,6 +6,7 @@ import type {
   MemberKey,
   ResolvedFrom,
   VariableDef,
+  PercentScale,
   VariableKind,
   VarKey,
 } from '@glidepath/api-contract';
@@ -21,6 +22,8 @@ export interface VariableDefinition {
   readonly max: number | null;
   readonly step: number | null;
   readonly kind: VariableKind;
+  /** How a percent unit is stored (fraction 0.1 = 10%, points 2.0 = 2.0%); `null` for other units. */
+  readonly percentScale: PercentScale | null;
   /** Registry source (`levers`, `spec`, ...). */
   readonly source: string;
   /** The scenario's own confidence for the cell when it has one, else the registry's. */
@@ -80,6 +83,7 @@ export function useVariable(id: string, member = ''): BoundVariable {
         max: def.max,
         step: def.step,
         kind: def.kind,
+        percentScale: def.percentScale,
         source: def.source,
         confidence: resolved?.confidence ?? def.confidence,
         default: resolved?.from === 'tenant' ? resolved.value : null,

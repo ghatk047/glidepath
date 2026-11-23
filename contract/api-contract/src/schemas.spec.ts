@@ -17,6 +17,7 @@ import {
   type RouteDef,
 } from './index';
 import { coreRouteFixtures } from './fixtures/core';
+import { specFixtures } from './testing';
 
 const specDir = fileURLToPath(new URL('../../../docs/spec/', import.meta.url));
 const readSpec = (file: string): unknown => JSON.parse(readFileSync(specDir + file, 'utf8'));
@@ -164,6 +165,12 @@ describe('schemas.spec: bundle accepts the real model spec', () => {
   }
 
   it('every variable, node and dimension in the spec fits the bundle schema', () => {
+    // The scale is tier 2's (the spec has none): taken from the generated fixture bundle.
+    const scaleOf = new Map(
+      [...specFixtures.bundle.variables, ...specFixtures.bundle.nodes].map(
+        (d) => [d.id, d.percentScale] as const,
+      ),
+    );
     const vars = (readSpec('variables.json') as { variables: SpecVariable[] }).variables;
     const graph = readSpec('formula_graph.json') as { nodes: SpecNode[]; dimensions: SpecDim[] };
     const bundle = {
@@ -186,6 +193,7 @@ describe('schemas.spec: bundle accepts the real model spec', () => {
         confidence: v.confidence,
         note: v.note,
         scenarioVaries: v.scenario_varies,
+        percentScale: scaleOf.get(v.id),
       })),
       nodes: graph.nodes.map((n) => ({
         id: n.id,
@@ -195,6 +203,7 @@ describe('schemas.spec: bundle accepts the real model spec', () => {
         layer: n.layer,
         output: n.output,
         overridable: true,
+        percentScale: scaleOf.get(n.id),
       })),
       dimensions: graph.dimensions,
     };

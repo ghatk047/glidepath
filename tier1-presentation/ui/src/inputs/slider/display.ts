@@ -3,7 +3,7 @@
  * Input clamping uses the display metadata tier 2 sends with the variable (min, max, step);
  * it is what a native range does, made exact so 0.1 + 0.2 shows as 0.3. No model maths here.
  */
-import { fmt } from '../../format';
+import { fmt, type PercentScale } from '../../format';
 
 /** Fraction digits of a step such as 0.05 (2) or 1e-7 (7). */
 export function decimalsOf(n: number): number {
@@ -47,9 +47,22 @@ export function percentOf(value: number, min: number, max: number): number {
  * The value label for a registry unit (variables.json `unit`), through the format module.
  * Digits follow the step, so a 1-point percentage step reads "18%" and a $0.5M step "$12.5M".
  * Units with no `fmt` kind read as the plain value plus the unit ("6 months").
+ *
+ * Percent units (`%`, `%/yr`, `% of US FTE`) read by `scale` (the bundle's `percentScale`):
+ * `fraction` (default; 0.1 is 10%, digits = step digits - 2) or `points` (2 is 2.0%, digits =
+ * step digits). Without a scale only `%` and `%/yr` are percent, as fractions.
  */
-export function formatByUnit(value: number, unit: string, step: number): string {
+export function formatByUnit(
+  value: number,
+  unit: string,
+  step: number,
+  scale?: PercentScale | null,
+): string {
   const d = decimalsOf(step);
+  if (scale && unit.startsWith('%')) {
+    const digits = scale === 'points' ? d : Math.max(0, d - 2);
+    return `${fmt.pct(value, { digits, scale })}${unit.slice(1)}`;
+  }
   switch (unit) {
     case '%':
       return fmt.pct(value, { digits: Math.max(0, d - 2) });

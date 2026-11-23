@@ -76,11 +76,20 @@ describe('GET bundle (variables, nodes, dims of the pinned model_version) with E
     }
   });
 
-  it('carries no formula: nodes expose label, unit, dims, layer, output, overridable only', async () => {
+  it('carries no formula: nodes expose label, unit, dims, layer, output, overridable, percentScale only', async () => {
     const text = await (await get('/api/t/aa/bundle')).text();
     const body = JSON.parse(text) as { nodes: Record<string, unknown>[] };
     for (const n of body.nodes) {
-      expect(Object.keys(n).sort()).toEqual(['dims', 'id', 'label', 'layer', 'output', 'overridable', 'unit']);
+      expect(Object.keys(n).sort()).toEqual([
+        'dims',
+        'id',
+        'label',
+        'layer',
+        'output',
+        'overridable',
+        'percentScale',
+        'unit',
+      ]);
     }
     expect(text).not.toContain('"expr"');
     expect(text).not.toContain('"cases"');

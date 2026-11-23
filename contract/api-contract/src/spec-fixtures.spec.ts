@@ -47,6 +47,26 @@ describe('contract fixtures are generated from docs/spec and golden_results.json
     expect(text).not.toContain('aa_default');
   });
 
+  it('WEB-10: every corporate % variable is points, g.target_pct is fraction, other units have no scale', () => {
+    const vars = specFixtures.bundle.variables;
+    const corporatePct = vars.filter((v) => v.layer === 'corporate' && v.unit.startsWith('%'));
+    expect(corporatePct.length).toBeGreaterThan(30);
+    for (const v of corporatePct) expect([v.id, v.percentScale]).toEqual([v.id, 'points']);
+    const byId = (id: string) => vars.find((v) => v.id === id)?.percentScale;
+    expect(byId('corp.gdp')).toBe('points');
+    expect(byId('g.target_pct')).toBe('fraction');
+    for (const v of vars.filter((x) => !x.unit.startsWith('%'))) {
+      expect([v.id, v.percentScale]).toEqual([v.id, null]);
+    }
+    // nodes: the corporate P&L percentages and the two `* 100` ratios are points
+    const nodes = specFixtures.bundle.nodes;
+    const points = nodes.filter((n) => n.percentScale === 'points').map((n) => n.id);
+    expect(points.sort()).toEqual(
+      ['br.eps_pct27', 'pl.lf', 'pl.op_margin', 'pl.rate', 'val.px_vs'].sort(),
+    );
+    expect(nodes.find((n) => n.id === 'res.coverage')?.percentScale).toBe('fraction');
+  });
+
   it('scenarios are the seeded presets, locked', () => {
     const seed = readSpec<{ scenarios: { id: string; label: string }[] }>(
       `seed/${specFixtures.tenant}/scenarios.json`,

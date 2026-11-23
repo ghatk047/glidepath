@@ -11,6 +11,9 @@ import {
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import axe from 'axe-core';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { useEffect } from 'react';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -34,7 +37,8 @@ import { GlobalLayout } from '../../global/shell';
 import { GlobalOverlays, overlayController } from '../../global/overlays';
 import { createSessionClient } from '../../session';
 import { CORPORATE_GROUP, DRIVER_GROUPS, TRACE_IDS } from './copy';
-import { asCost, epsFmt, pctPoints } from './format';
+import * as marketFormat from './format';
+import { asCost, epsFmt } from './format';
 import Market from './index';
 
 // Spec ids verbatim; every value is read from the generated fixtures, never typed in.
@@ -218,7 +222,7 @@ describe('AC1: trace chain', () => {
       fmt.signed(num(cell('br.eps27')), 'eps'),
     );
     expect(text(node('br.eps27'), '.gp-tnode-note')).toBe(
-      `${pctPoints(num(cell('br.eps_pct27')), 1, true)} vs base`,
+      `${fmt.pct(num(cell('br.eps_pct27')), { digits: 1, signed: true, scale: 'points' })} vs base`,
     );
     expect(text(node('br.px27'), '.gp-tnode-value')).toBe(
       fmt.eps(num(cell('br.px27')), { digits: 2, signed: true }),
@@ -285,8 +289,9 @@ describe('AC2: drivers', () => {
     }
     // percent drivers are percentage points: GDP 2 reads 2.0%, not 200%
     expect(text(dial('corp.gdp'), '.gp-dial-value')).toBe(
-      pctPoints(num(cell('corp.gdp', 'fy27')), 1),
+      fmt.pct(num(cell('corp.gdp', 'fy27')), { digits: 1, scale: 'points' }),
     );
+    expect(text(dial('corp.gdp'), '.gp-dial-value')).toMatch(/^[0-9]\.[0-9]%$/);
     expect(text(dial('corp.brent'), '.gp-dial-value')).toBe(
       fmt.eps(num(cell('corp.brent', 'fy27')), { digits: 0 }),
     );
@@ -457,5 +462,45 @@ describe('AC5: values come from the session', () => {
       () => expect(within(screen.getByTestId('market-price')).getByText(epsFmt(13))).toBeTruthy(),
       { timeout: 3000 },
     );
+  });
+});
+
+describe('WEB-10: percent scale on the shared path', () => {
+  it('the Market module drops its local scaling: no pctPoints, no "/ 100" in format.ts; percent units go through formatByUnit with the bundle scale', () => {
+    expect('pctPoints' in marketFormat).toBe(false);
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'format.ts'), 'utf8');
+    expect(source).not.toMatch(/\/\s*100/);
+    expect(source).toContain('formatByUnit');
+    const gdp = def('corp.gdp');
+    expect(gdp.percentScale).toBe('points');
+    expect(marketFormat.driverFormat(gdp.unit, gdp.step, gdp.percentScale)(2)).toBe('2.0%');
+    // a fraction percent shows the same way through the same path
+    const target = def('g.target_pct');
+    expect(target.percentScale).toBe('fraction');
+    expect(marketFormat.driverFormat(target.unit, target.step, target.percentScale)(0.1)).toBe(
+      '10.0%',
+    );
+  });
+
+  it('every scalar percent driver of the Corporate group lists as points in More drivers (none reads 100x too large)', async () => {
+    const t = await mount();
+    fireEvent.click(screen.getByRole('button', { name: `More drivers, all ${corporate.length}` }));
+    await t.until(() =>
+      expect(document.querySelectorAll('.gp-market-driver').length).toBe(corporate.length),
+    );
+    const pct = corporate.filter((v) => v.unit === '%' && v.dims.length === 0);
+    expect(pct.length).toBeGreaterThan(0);
+    for (const v of pct) {
+      const raw = C.cells[cell(v.id)];
+      if (typeof raw !== 'number') continue;
+      // scoped to the More drivers panel: the same id may also carry a Drivers-panel control
+      const row = document.querySelector<HTMLElement>(
+        `[data-testid="market-more"] [data-variable-id="${v.id}"]`,
+      )!;
+      await t.until(() => expect(row.querySelector('input')).not.toBeNull());
+      expect(row.querySelector<HTMLInputElement>('input')!.value, v.id).toBe(
+        marketFormat.driverFormat(v.unit, v.step, 'points')(raw),
+      );
+    }
   });
 });

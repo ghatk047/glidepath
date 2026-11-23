@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ESTIMATE_TOOLTIP,
+  formatByUnit,
   PREVIEW_INTERVAL_MS,
   Slider,
   sliderCss,
@@ -447,5 +448,49 @@ describe('UI-08 G12 accessibility (axe-core)', () => {
     expect(a!.id).not.toBe('');
     expect(b!.id).toBe('in-other');
     expect(screen.getByLabelText('Other')).toBe(b);
+  });
+});
+
+const MINUS_SIGN = '\u2212';
+
+describe('WEB-10 percent scale: formatByUnit and the slider label read the bundle scale', () => {
+  it('formatByUnit: fraction (0.1 -> 10.0%) and points (2 -> 2.0%), with the step for the digits', () => {
+    // fraction: a 0.005 step keeps one decimal of a percent (g.target_pct)
+    expect(formatByUnit(0.1, '%', 0.005, 'fraction')).toBe('10.0%');
+    expect(formatByUnit(0.1, '%', 0.005)).toBe('10.0%'); // scale absent = fraction
+    // points: a 0.1 step keeps one decimal (corp.gdp)
+    expect(formatByUnit(2, '%', 0.1, 'points')).toBe('2.0%');
+    expect(formatByUnit(84.2, '%', 0.1, 'points')).toBe('84.2%');
+    expect(formatByUnit(40, '%', 1, 'points')).toBe('40%');
+    // the unit's own suffix survives both scales
+    expect(formatByUnit(-2, '%/yr', 0.1, 'points')).toBe(`${MINUS_SIGN}2.0%/yr`);
+    expect(formatByUnit(0.04, '%/yr', 0.005, 'fraction')).toBe('4.0%/yr');
+    expect(formatByUnit(0.02, '% of US FTE', 0.005, 'fraction')).toBe('2.0% of US FTE');
+    // other units are untouched by the scale
+    expect(formatByUnit(12.5, '$M', 0.5, 'points')).toBe('$12.5M');
+  });
+
+  it('the slider label of a points variable reads 2.0%, not 200.0%', () => {
+    const { container } = renderSlider({
+      value: 2,
+      min: -4,
+      max: 5,
+      step: 0.1,
+      unit: '%',
+      percentScale: 'points',
+    });
+    expect(valueLabel(container)).toBe('2.0%');
+  });
+
+  it('the slider label of a fraction variable still reads 10.0%', () => {
+    const { container } = renderSlider({
+      value: 0.1,
+      min: 0.02,
+      max: 0.2,
+      step: 0.005,
+      unit: '%',
+      percentScale: 'fraction',
+    });
+    expect(valueLabel(container)).toBe('10.0%');
   });
 });

@@ -106,6 +106,7 @@ export const coreRouteFixtures = {
           confidence: 'H',
           note: '',
           scenarioVaries: true,
+          percentScale: null,
         },
       ],
       nodes: [
@@ -117,6 +118,7 @@ export const coreRouteFixtures = {
           layer: 'results',
           output: true,
           overridable: true,
+          percentScale: null,
         },
       ],
       dimensions: [{ id: 'vp', label: 'Org unit (VP)', scope: 'tenant', attributes: ['label'] }],

@@ -83,3 +83,16 @@ const data = seedToTenantData(seed, 'C', bundle);                  // { members,
 ## Tests
 
 `pnpm turbo run typecheck lint test --filter=@glidepath/spec...`. Acceptance tests load the real `docs/spec` (194 variables, 307 nodes), check JSON-path errors on invalid fixtures, the hash properties, and that `src/core` and `src/index.ts` import no node builtin.
+
+## Percent scale (WEB-10)
+
+`variablePercentScale(v)` and `nodePercentScale(n)` answer `'fraction' | 'points' | null` for a
+registry variable or a formula node, from its unit, layer and (for a node) its expressions:
+
+- unit starts with `%` or there is no scale (`null`);
+- layer `corporate` is `points` (`corp.gdp` 2.0 = 2.0%), every other layer `fraction` (0.1 = 10%);
+- a non-corporate node is `points` only when every one of its expressions ends in `* 100`
+  (`endsInTimes100`), which is how the graph turns a ratio into points (`pl.ebit / pl.rev * 100`).
+
+The server's bundle builder puts the answer in `BundleResponse`, so tier 1 shows and parses percent
+cells by data instead of by id. `src/percent-scale.test.ts` checks the rule over the whole spec.

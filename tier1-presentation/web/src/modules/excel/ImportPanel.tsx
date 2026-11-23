@@ -150,9 +150,12 @@ export function ImportPanel({ lastExport }: { lastExport: ExportResult | null })
         Array.isArray(e[1]),
       )
     : [];
+  // Nodes carry no step: one decimal of the shown unit (a fraction percent needs 0.001 for that),
+  // and the bundle's percent scale so a points percent is not shown 100x too large (WEB-10).
   const nodeText = (id: string, v: number) => {
     const n = bundle.data?.nodes.find((d) => d.id === id);
-    return n ? formatByUnit(v, n.unit, n.unit === '%' ? 0.001 : 0.1) : String(v);
+    if (!n) return String(v);
+    return formatByUnit(v, n.unit, n.percentScale === 'fraction' ? 0.001 : 0.1, n.percentScale);
   };
 
   return (
