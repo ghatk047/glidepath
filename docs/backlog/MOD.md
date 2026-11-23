@@ -25,7 +25,7 @@ title: "Cockpit hero: Net savings gauge, Bridge, Your inputs"
 epic: MOD
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high

@@ -222,7 +222,7 @@ title: "Global layer II: ⌘K, edit popover, trace drawer wired"
 epic: WEB
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high

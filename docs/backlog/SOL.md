@@ -160,7 +160,7 @@ title: "Constraints, VP-feasible plan, binding constraints"
 epic: SOL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh

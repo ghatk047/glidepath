@@ -151,7 +151,7 @@ title: "Steps 6–8: lever tuning, review payload, apply"
 epic: AI
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
