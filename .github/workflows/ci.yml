@@ -151,9 +151,14 @@ jobs:
           fi
       - name: Boundary lint (tier imports)
         run: pnpm turbo run lint --filter="...[$TURBO_BASE]"
+      # WEB-01 has landed, so the bundle is built here and a missing bundle fails the gate
+      # (without it tier-check would skip with exit 0 and the gate would be green by default).
+      - name: Build the web bundle (input of tier-check)
+        if: steps.probe.outputs.ready == 'true'
+        run: pnpm --filter "@glidepath/web..." --if-present run build
       - name: tier-check (no tier 2 code or SQL in the web bundle)
         if: steps.probe.outputs.ready == 'true'
-        run: pnpm tier-check
+        run: pnpm tier-check --require-bundle
 
   parity-golden:
     name: G3 Golden parity

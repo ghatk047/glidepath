@@ -84,6 +84,28 @@ case "${args[0]}" in
         done
         exit 0 ;;
       exec)
+        # INT-01: exec -T db psql ... -c SQL  /  exec -T web sh -c 'cat <css>'
+        if [ "$2" = db ]; then
+          sql="${*: -1}"
+          echo "exec db psql" >> "$D/order.log"
+          mig=tier3-data/migrations
+          case "$sql" in
+            *schema_migration*)
+              { (cd "$mig" && ls -1 ./*.sql) | sed 's#^\./##'; (cd "$mig/manual" && ls -1 ./*.sql) | sed 's#^\./#manual/#'; } |
+                if [ "$sc" = migration-missing ]; then sed '$d'; else cat; fi ;;
+            *relrowsecurity*) if [ "$sc" = rls-missing ]; then echo "20|line_item"; else echo "20|"; fi ;;
+            *pg_views*)
+              grep -ohE 'CREATE (OR REPLACE )?VIEW [a-z_]+' "$mig"/*.sql "$mig"/manual/*.sql | awk '{print $NF}' |
+                if [ "$sc" = view-missing ]; then grep -v v_dimension_members; else cat; fi ;;
+            *"FROM tenant"*) if [ "$sc" = seed-missing ]; then echo 0; else echo 1; fi ;;
+          esac
+          exit 0
+        fi
+        if [ "$2" = web ] && [ "$3" = sh ]; then
+          echo "exec web css" >> "$D/order.log"
+          if [ "$sc" = tokens-missing ]; then echo ':root{--unrelated:1}'; else cat tier1-presentation/ui/src/tokens/tokens.css; fi
+          exit 0
+        fi
         # exec -T web getent hosts HOST
         host="${*: -1}"
         echo "exec getent hosts $host" >> "$D/order.log"

@@ -109,6 +109,12 @@ if [ "$(sed -n 's/^ARG STRICT_ENTRYPOINTS=//p' ops/docker/logic/Dockerfile 2>/de
 
 dc() { docker compose -p "$PROJECT" --env-file "$ENV_FILE" -f "$ROOT/docker-compose.yml" "$@"; }
 
+# M0 checks (INT-01): migrations the migrate service must have applied, the tenant its
+# `--seed <id>` argument loads, and the token stylesheet tier 1 must serve.
+MIGRATIONS_DIR=tier3-data/migrations
+TOKENS_CSS=tier1-presentation/ui/src/tokens/tokens.css
+SEED="$(sed -n 's/.*"--seed", *"\([a-z0-9_-]*\)".*/\1/p' docker-compose.yml | head -n 1)"
+
 # image:Dockerfile; ops/test/compose-check.spec.ts keeps this in step with docker-compose.yml
 IMAGES="glidepath/logic:ops/docker/logic/Dockerfile glidepath/web:ops/docker/web/Dockerfile"
 
@@ -132,10 +138,17 @@ if [ "$DRY_RUN" = 1 ]; then
   echo "       docker compose -p $PROJECT exec -T web getent hosts objects  -> must exit 2 (not found)"
   echo "       docker compose -p $PROJECT exec -T web getent hosts logic    -> control, must resolve"
   echo "       docker inspect web: not attached to the data network"
+  echo "  7. data tier (M0, INT-01), once migrate has completed, in the db container (psql as postgres):"
+  echo "       every tier3-data/migrations/{,manual/}*.sql recorded in schema_migration"
+  echo "       every tenant table (tenant, or a tenant_id column) has relrowsecurity and relforcerowsecurity"
+  echo "       every CREATE VIEW of the migrations present in pg_views"
+  echo "       the tenant of the migrate command's --seed (${SEED:-none}) has a row in tenant"
+  echo "  8. design tokens (M0, INT-01): every custom property of tier1-presentation/ui/src/tokens/tokens.css"
+  echo "       appears in the CSS that web serves from /srv"
   if [ "$KEEP" = 1 ]; then
-    echo "  7. teardown skipped (--keep)"
+    echo "  9. teardown skipped (--keep)"
   else
-    echo "  7. teardown: docker compose -p $PROJECT down -v --remove-orphans"
+    echo "  9. teardown: docker compose -p $PROJECT down -v --remove-orphans"
   fi
   echo "exit codes: 0 PASS, 1 FAIL, 2 USAGE, 3 BUDGET, 4 PENDING = stubbed services (precedence 1, 4, 3)"
   echo "compose-check: DRY-RUN: plan printed, nothing started"
@@ -469,12 +482,128 @@ else
   esac
 fi
 
+# ------------------------------------------------------------------ M0 data tier (INT-01)
+echo
+echo "Data tier (M0): schema, RLS and views applied by migrate, seed loaded"
+DATA_CHECKED=0
+mig_state="$(cat "$TMP/r.migrate" 2>/dev/null)"
+has_db=0
+has_migrate=0
+for svc in $SERVICES; do
+  [ "$svc" = db ] && has_db=1
+  [ "$svc" = migrate ] && has_migrate=1
+done
+db_q() { # db_q SQL: one query as the bootstrap superuser of the local db container
+  dc exec -T db psql -U postgres -d glidepath -At -v ON_ERROR_STOP=1 -c "$1" 2>"$TMP/psql.err"
+}
+if [ "$has_db" = 0 ] || [ "$has_migrate" = 0 ]; then
+  echo "  data tier: not checked, no db and migrate services in this project"
+elif [ "$mig_state" != completed ]; then
+  echo "  data tier: not checked, migrate did not complete (${mig_state:-not started})"
+else
+  DATA_CHECKED=1
+  # 1. every migration file recorded as applied
+  if applied="$(db_q "SELECT id FROM schema_migration ORDER BY id")"; then
+    expected=0
+    missing=""
+    for f in "$MIGRATIONS_DIR"/*.sql "$MIGRATIONS_DIR"/manual/*.sql; do
+      [ -f "$f" ] || continue
+      id="${f#"$MIGRATIONS_DIR"/}"
+      expected=$((expected + 1))
+      echo "$applied" | grep -Fxq "$id" || missing="${missing:+$missing, }$id"
+    done
+    if [ "$expected" = 0 ]; then
+      add_fail "no migration files under $MIGRATIONS_DIR"
+    elif [ -n "$missing" ]; then
+      echo "  migrations NOT applied: $missing  FAIL"
+      add_fail "migrations not applied by migrate: $missing"
+    else
+      echo "  migrations applied: $expected of $expected  ok"
+    fi
+  else
+    add_fail "cannot read schema_migration (migrate applied nothing?): $(tail -n 1 "$TMP/psql.err")"
+  fi
+  # 2. RLS enabled and forced on every tenant table (the tenant table itself, or a tenant_id column)
+  rls="$(db_q "SELECT count(*) || '|' || coalesce(string_agg(c.relname, ',' ORDER BY c.relname) FILTER (WHERE NOT (c.relrowsecurity AND c.relforcerowsecurity)), '') FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND (c.relname = 'tenant' OR EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped))")" ||
+    rls="ERR"
+  case "$rls" in
+    ERR) add_fail "RLS catalog query failed: $(tail -n 1 "$TMP/psql.err")" ;;
+    0\|*) add_fail "no tenant tables found after migrate" ;;
+    *\|) echo "  RLS enabled and forced on all ${rls%|} tenant tables  ok" ;;
+    *)
+      echo "  RLS missing on: ${rls#*|}  FAIL"
+      add_fail "RLS not enabled and forced on tenant tables: ${rls#*|}"
+      ;;
+  esac
+  # 3. every view the migrations create
+  want_views="$(grep -ohE 'CREATE (OR REPLACE )?VIEW [a-z_]+' "$MIGRATIONS_DIR"/*.sql "$MIGRATIONS_DIR"/manual/*.sql 2>/dev/null | awk '{print $NF}')"
+  if have_views="$(db_q "SELECT viewname FROM pg_views WHERE schemaname = 'public'")"; then
+    missing=""
+    for v in $want_views; do
+      echo "$have_views" | grep -Fxq "$v" || missing="${missing:+$missing, }$v"
+    done
+    if [ -n "$missing" ]; then
+      echo "  views missing: $missing  FAIL"
+      add_fail "views missing after migrate: $missing"
+    else
+      echo "  views present: $(echo "$want_views" | tr '\n' ' ' | sed 's/ *$//; s/ /, /g')  ok"
+    fi
+  else
+    add_fail "pg_views query failed: $(tail -n 1 "$TMP/psql.err")"
+  fi
+  # 4. the seeded tenant (slug = the --seed argument of the migrate command)
+  if [ -n "$SEED" ]; then
+    n="$(db_q "SELECT count(*) FROM tenant WHERE slug = '$SEED'")" || n="ERR"
+    case "$n" in
+      ERR) add_fail "tenant query failed: $(tail -n 1 "$TMP/psql.err")" ;;
+      0)
+        echo "  seed tenant \"$SEED\" NOT loaded  FAIL"
+        add_fail "seed tenant \"$SEED\" not loaded by migrate"
+        ;;
+      *) echo "  seed tenant \"$SEED\" loaded  ok" ;;
+    esac
+  fi
+fi
+
+# ------------------------------------------------------------------ M0 design tokens (INT-01)
+echo
+echo "Design tokens (M0): tokens.css custom properties in the CSS that web serves"
+if [ ! -f "$TOKENS_CSS" ]; then
+  add_fail "$TOKENS_CSS not found (UI-01 generates it)"
+elif [ "$(snap_field web 2)" != running ]; then
+  echo "  not checked, web is not running"
+else
+  # shellcheck disable=SC2016 # the globs expand inside the container
+  dc exec -T web sh -c 'cat /srv/*.css /srv/assets/*.css 2>/dev/null; true' >"$TMP/served.css" 2>&1
+  total=0
+  absent=0
+  first=""
+  grep -o -- '--[A-Za-z0-9_-]*:' "$TOKENS_CSS" | sort -u >"$TMP/tokens.props"
+  while IFS= read -r prop; do
+    total=$((total + 1))
+    if ! grep -Fq -- "$prop" "$TMP/served.css"; then
+      absent=$((absent + 1))
+      [ -n "$first" ] || first="${prop%:}"
+    fi
+  done <"$TMP/tokens.props"
+  if [ "$total" = 0 ]; then
+    add_fail "$TOKENS_CSS defines no custom properties"
+  elif [ "$absent" -gt 0 ]; then
+    echo "  design tokens in the served CSS: $((total - absent)) of $total (first missing $first)  FAIL"
+    add_fail "web serves no design token CSS: $absent of $total custom properties missing (first $first)"
+  else
+    echo "  design tokens in the served CSS: $total of $total  ok"
+  fi
+fi
+
 # ------------------------------------------------------------------ verdict
 echo
 if [ -n "$FAILS" ]; then
   finish 1 FAIL "$FAILS"
 elif [ -n "$STUBS" ]; then
-  finish 4 PENDING "stubbed (exit $STUB_EXIT, entry not built): $STUBS; stack incomplete${BLOCKED:+, not ready: $BLOCKED}; start-up time not verified"
+  data_note=""
+  [ "$DATA_CHECKED" = 1 ] || data_note="; data tier not verified"
+  finish 4 PENDING "stubbed (exit $STUB_EXIT, entry not built): $STUBS; stack incomplete${BLOCKED:+, not ready: $BLOCKED}; start-up time not verified$data_note"
 elif [ -n "$SLOW" ]; then
   finish 3 BUDGET "$SLOW"
 else

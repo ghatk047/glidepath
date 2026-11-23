@@ -39,7 +39,7 @@ acceptance:
   - "docs/status/2026-11-24.md written with the M0 status and the DATA-08 seed timing (test: file exists)"
 gates: [G1, G2, G13, G14]
 size: S
-notes: "Fixes only wiring; anything bigger becomes a new item."
+notes: "merged wiring 2026-11-23; G14 PENDING until DATA-08 migrate entry and JOB-01 worker entry land, then set STRICT_ENTRYPOINTS=1"
 ```
 
 Closes M0.

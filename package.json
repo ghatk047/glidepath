@@ -22,7 +22,7 @@
     "tier-check": "tsx tools/tier-check/src/cli.ts",
     "e2e": "echo 'not implemented yet'",
     "e2e:storyline": "echo 'not implemented yet'",
-    "bench": "echo 'not implemented yet'"
+    "bench": "turbo run bench"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

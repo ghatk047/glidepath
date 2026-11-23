@@ -87,6 +87,33 @@ describe('ci.yml [FND-04]', () => {
     expect(jobs['parity-fuzz'].if).toContain("'schedule'");
   });
 
+  it('G13 builds the web bundle and tier-check requires it [INT-01]', () => {
+    const steps = stepsOf('G13');
+    const build = steps.findIndex((s) => /@glidepath\/web\.\.\..*run build/.test(s.run ?? ''));
+    const check = steps.findIndex((s) => /^pnpm tier-check/.test(s.run ?? ''));
+    expect(build, 'web build step').toBeGreaterThanOrEqual(0);
+    expect(check, 'tier-check step').toBeGreaterThan(build);
+    expect(steps[check].run).toContain('--require-bundle');
+  });
+
+  it('G3 path filter covers the parity tool and the root package.json [INT-01]', () => {
+    const run: string = stepsOf('changes').find((s) => s.id === 'paths').run;
+    const line = run.split('\n').find((l) => l.trim().startsWith('out spec '))!;
+    const re = new RegExp(line.match(/'([^']+)'/)![1]!);
+    for (const f of ['tools/parity/src/cli.ts', 'package.json', 'docs/spec/schema.json', 'tier3-data/x.sql']) {
+      expect(re.test(f), f).toBe(true);
+    }
+    expect(re.test('ops/package.json')).toBe(false);
+  });
+
+  it('root bench script is wired to the package benches, not a placeholder [INT-01]', () => {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    expect(pkg.scripts.bench).not.toMatch(/not implemented/);
+    expect(pkg.scripts.bench).toMatch(/turbo run bench/);
+    const turbo = JSON.parse(readFileSync(join(root, 'turbo.json'), 'utf8'));
+    expect(turbo.tasks.bench).toBeDefined();
+  });
+
   it('references secrets only via ${{ secrets.* }} and carries no inline credentials', () => {
     const bare = raw.replace(/\$\{\{\s*secrets\.[A-Za-z0-9_]+\s*\}\}/g, '');
     expect(bare).not.toMatch(/secrets/i);

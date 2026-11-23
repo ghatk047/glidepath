@@ -201,6 +201,15 @@ describe('denylist derivation', () => {
     expect(deny.symbols.get('readFromDisk')).toEqual(['@glidepath/newpkg']);
   });
 
+  it('ignores generic names that every bundle contains (zod .parse, JSON.parse)', () => {
+    pkg('tier2-logic/engine', '@glidepath/engine', `export function parse() {}\nexport function parseFormula() {}\n`);
+    bundle('assets/app.js', 'const v = schema.parse(JSON.parse(raw)); render(v);');
+    const r = runTierCheck({ root, log });
+    expect(r.exitCode).toBe(EXIT_CLEAN);
+    expect(deriveDenylist(root).symbols.has('parse')).toBe(false);
+    expect(deriveDenylist(root).symbols.get('parseFormula')).toEqual(['@glidepath/engine']);
+  });
+
   it('derives a non-trivial denylist from the real repo', () => {
     const deny = deriveDenylist(REPO_ROOT);
     expect(deny.packageNames).toContain('@glidepath/engine');

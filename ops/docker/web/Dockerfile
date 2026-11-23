@@ -8,7 +8,12 @@ FROM node:22.23.5-bookworm-slim AS spa
 ENV PNPM_HOME=/pnpm CI=true
 ENV PATH=$PNPM_HOME:$PATH
 # Same pnpm as the repo pin (package.json "packageManager").
-RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+# Optional BuildKit secret `extra-ca` (a PEM file): extra CA certificates for the build's
+# network access behind a TLS-inspecting proxy, as in the logic image. Not needed on an open
+# network.  docker build --secret id=extra-ca,src=/path/ca.pem ...
+RUN --mount=type=secret,id=extra-ca,required=false \
+    if [ -f /run/secrets/extra-ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra-ca; fi \
+ && corepack enable && corepack prepare pnpm@10.28.0 --activate
 WORKDIR /repo
 
 # Tier 1 only: the web package, the ui package, the contract and the workspace manifests.
@@ -19,7 +24,9 @@ COPY contract ./contract
 COPY ops/docker/web/build-spa.sh ./ops/docker/web/build-spa.sh
 COPY ops/docker/web/placeholder ./ops/docker/web/placeholder
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile --filter "@glidepath/web..."
+    --mount=type=secret,id=extra-ca,required=false \
+    if [ -f /run/secrets/extra-ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra-ca; fi \
+ && pnpm install --frozen-lockfile --filter "@glidepath/web..."
 RUN sh ops/docker/web/build-spa.sh /out
 
 # ------------------------------------------------------------------ runtime: Caddy

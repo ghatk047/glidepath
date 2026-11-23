@@ -16,6 +16,8 @@ const COMPOSE = parseComposeYaml(COMPOSE_TEXT) as {
 };
 // The script runs with COMPOSE_PROFILES=dev (from .env.example), so every service is in play.
 const SERVICES = Object.keys(COMPOSE.services);
+// The tenant migrate seeds, from its command in docker-compose.yml (`--seed <id>`).
+const SEED = /"--seed",\s*"([a-z0-9_-]+)"/.exec(COMPOSE_TEXT)![1]!;
 
 // ---------------------------------------------------------------------- fake docker
 // ops/test/fake-docker.sh plays the scenarios; FAKE_SCENARIO picks one.
@@ -263,6 +265,50 @@ describe('ops/compose-check.sh', () => {
       const r = check('data-net');
       expect(r.code).toBe(1);
       expect(verdict(r)).toMatch(/web is attached to the data network/);
+    });
+  });
+
+  // INT-01 (M0 exit, 09 §1): what migrate applied and what web serves, checked in the running stack.
+  describe('M0: schema + RLS + views applied by migrate, seed loaded, tokens served as CSS [INT-01]', () => {
+    it('all present: the data-tier and token checks run and print ok, verdict stays PASS', () => {
+      const r = check('ok');
+      expect(r.code, r.err + r.out).toBe(0);
+      expect(r.order).toContain('exec db psql');
+      expect(r.order).toContain('exec web css');
+      expect(r.out).toMatch(/migrations applied: \d+ of \d+\s+ok/);
+      expect(r.out).toMatch(/RLS enabled and forced on all \d+ tenant tables\s+ok/);
+      expect(r.out).toMatch(/views present: v_inputs_resolved, v_dimension_members\s+ok/);
+      expect(r.out).toContain(`seed tenant "${SEED}" loaded`);
+      expect(r.out).toMatch(/design tokens in the served CSS: \d+ of \d+\s+ok/);
+    });
+
+    it.each([
+      ['migration-missing', /migrations not applied by migrate: manual\/\S+\.sql/],
+      ['rls-missing', /RLS not enabled and forced on tenant tables: line_item/],
+      ['view-missing', /views missing after migrate: v_dimension_members/],
+      ['seed-missing', new RegExp(`seed tenant "${SEED}" not loaded by migrate`)],
+      ['tokens-missing', /web serves no design token CSS: \d+ of \d+ custom properties missing/],
+    ])('%s is a FAIL with a one-line reason', (sc, re) => {
+      const r = check(sc);
+      expect(r.code, r.out).toBe(1);
+      expect(verdict(r)).toMatch(/^compose-check: FAIL: /);
+      expect(verdict(r)).toMatch(re);
+    });
+
+    it('stubbed migrate: the data-tier check is reported as not run (PENDING), the token check still runs', () => {
+      const r = check('stub');
+      expect(r.code).toBe(4);
+      expect(r.out).toMatch(/data tier: not checked, migrate did not complete \(stub\)/);
+      expect(r.order).not.toContain('exec db psql');
+      expect(r.out).toMatch(/design tokens in the served CSS: \d+ of \d+\s+ok/);
+      expect(verdict(r)).toMatch(/data tier not verified/);
+    });
+
+    it('the dry-run plan names both checks', () => {
+      const r = run(['--dry-run']);
+      expect(r.out).toMatch(/schema_migration/);
+      expect(r.out).toMatch(/relrowsecurity/);
+      expect(r.out).toMatch(/tokens\.css/);
     });
   });
 

@@ -11,7 +11,8 @@ export const SHARED_DIRS = ['contract', 'tier1-presentation'] as const;
 export const MIN_SYMBOL_LENGTH = 5;
 /** Exported by every package as a skeleton marker; carries no tier 2 meaning. */
 // Generic words that collide with ordinary identifiers in any bundle (zod, React); 'schema' is data-access's Drizzle namespace.
-const IGNORED_NAMES = new Set(['packageName', 'default', 'schema']);
+// 'parse' is the engine's expression parser, and also zod's `.parse()` and `JSON.parse` in every bundle.
+const IGNORED_NAMES: ReadonlySet<string> = new Set(['packageName', 'default', 'schema', 'parse']);
 
 export interface PackageInfo {
   /** Directory name under its tier directory, e.g. `engine`. */

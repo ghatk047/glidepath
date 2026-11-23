@@ -5007,7 +5007,7 @@
       "G14"
     ],
     "size": "S",
-    "notes": "Fixes only wiring; anything bigger becomes a new item."
+    "notes": "merged wiring 2026-11-23; G14 PENDING until DATA-08 migrate entry and JOB-01 worker entry land, then set STRICT_ENTRYPOINTS=1"
   },
   {
     "id": "INT-02",
