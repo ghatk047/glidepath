@@ -5,3 +5,4 @@ export * from './problem';
 export * from './changeset';
 export * from './core';
 export * from './routes';
+export * from './ws';

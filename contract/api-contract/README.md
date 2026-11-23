@@ -19,3 +19,28 @@ It imports `zod` and nothing else (G13; enforced by `eslint.config.js` and `src/
 - Field names are camelCase; spec ids and enum values are verbatim from `docs/spec`.
 
 `src/fixtures/core.ts` holds one wire fixture per route; `schemas.spec.ts` round-trips them.
+
+## WebSocket session (CON-02)
+
+`src/ws.ts`: `WS /ws/session?tenant&scenario` (`SessionQuery`). Every frame is one JSON object
+with `type` and protocol `v` (`WS_PROTOCOL_VERSION` = 1). `parseClientMessage` /
+`parseServerMessage` take JSON text or an object and reject an unknown `type`, another `v` or a
+malformed body with a one-line `detail`.
+
+- Client → server: `subscribe{cells}`, `unsubscribe{cells}`, `subscribeView{view, params}`,
+  `unsubscribeView{view, params}`, `preview{var, member, value, seq}`, `cancelPreview{seq}`.
+- Server → client: `snapshot{scenarioId, version, cells}`, `delta{seq, cells}`,
+  `view{view, params, seq, payload}`, `warnings{seq, violations, problem?}`,
+  `job{id, status, progress, note}`, `changeset{scenarioId, version, editsCount, forkedFrom?}`.
+- Coalescing (documented on `PREVIEW_MAX_PER_SECOND`): the client sends ≤ 30 previews/s per
+  input cell; `seq` is one increasing counter per connection; the server keeps the latest `seq`
+  per cell, drops superseded previews unanswered and answers each rerun with the highest `seq`
+  it applied. `seq: null` on `delta` / `view` / `warnings` means a commit or job, not a preview.
+  `cancelPreview` carries a fresh `seq` and voids the scratch copy.
+- Views (ADR-021, `viewSchemas`): `bridge`, `baseline.groups` (`by` pool | domain | vp),
+  `baseline.summary`, `levers.families`, `levers.monthly`, `levers.scale`, `vps.domain_outlay`;
+  each has strict `params` and a typed `payload` computed by tier 2 (DOM-06), so tier 1 draws
+  without arithmetic.
+
+`src/fixtures/ws.ts` holds one fixture per message type and per view, plus the coalescing
+walk-through; `ws-protocol.spec.ts` checks them.

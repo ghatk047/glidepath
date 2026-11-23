@@ -26,6 +26,10 @@ export type ChangesetId = z.infer<typeof ChangesetId>;
 export const ModelVersionId = id<'ModelVersionId'>();
 export type ModelVersionId = z.infer<typeof ModelVersionId>;
 
+/** A background job (`solver_run.id`), as reported in WS `job` messages. */
+export const JobId = id<'JobId'>();
+export type JobId = z.infer<typeof JobId>;
+
 /** Registry variable id, e.g. `g.target_net`. */
 export const VarKey = id<'VarKey'>();
 export type VarKey = z.infer<typeof VarKey>;

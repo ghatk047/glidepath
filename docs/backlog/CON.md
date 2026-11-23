@@ -54,7 +54,7 @@ title: "WebSocket session protocol (incl. view subscriptions)"
 epic: CON
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -75,6 +75,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The streaming half of the contract: previews in, deltas out.
