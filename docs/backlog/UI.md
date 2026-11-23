@@ -391,7 +391,7 @@ title: "Gauge and Ring tile (#16, #17)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
@@ -423,7 +423,7 @@ title: "Bridge / waterfall (#19)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high

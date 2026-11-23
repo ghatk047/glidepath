@@ -57,7 +57,7 @@ title: "Validation rules VR01–VR04, VR06, VR07, VR09, VR10 (input rules)"
 epic: DOM
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
