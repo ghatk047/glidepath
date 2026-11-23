@@ -84,7 +84,7 @@ title: "Solver job handlers and save-as-scenario"
 epic: JOB
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -104,6 +104,7 @@ acceptance:
 gates: [G1, G2, G5]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Long solvers off the request path.

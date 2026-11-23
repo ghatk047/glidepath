@@ -325,6 +325,9 @@ importers:
       '@glidepath/excel':
         specifier: workspace:*
         version: link:../excel
+      '@glidepath/solvers':
+        specifier: workspace:*
+        version: link:../solvers
       '@glidepath/spec':
         specifier: workspace:*
         version: link:../spec

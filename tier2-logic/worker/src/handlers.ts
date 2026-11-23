@@ -4,5 +4,6 @@
  * Add one import line per handler module (JOB-03 onward).
  */
 import './jobs/excel';
+import './jobs/solver';
 
 export {};

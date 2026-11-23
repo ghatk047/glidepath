@@ -19,6 +19,7 @@
     "@glidepath/domain": "workspace:*",
     "@glidepath/engine": "workspace:*",
     "@glidepath/excel": "workspace:*",
+    "@glidepath/solvers": "workspace:*",
     "@glidepath/spec": "workspace:*",
     "pg-boss": "12.39.0"
   },
