@@ -160,6 +160,12 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^1.12.0
         version: 1.12.0(zod@4.6.7)
+      '@glidepath/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@glidepath/engine':
+        specifier: workspace:*
+        version: link:../engine
       '@glidepath/spec':
         specifier: workspace:*
         version: link:../spec

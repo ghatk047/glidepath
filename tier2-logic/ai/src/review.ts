@@ -9,6 +9,9 @@ import { ChecklistStepId } from './onboarding/checklist';
  * - `missing_value`: a variable of a drafted seed section got no value.
  * - `plan_mismatch`: the tenant record disagrees with the plan (years, currency).
  * - `incomplete_checklist`: an onboarding plan leaves out checklist steps.
+ * - `calibration_miss`: a figure of the last reported year does not tie within tolerance, or has no reported value.
+ * - `invariant_broken`: an invariant of 06 §4 fails on the draft (pool effects, VP nets, base vs IT revenue).
+ * - `repair_dropped`: a calibration repair change was not applied (a variable or member key it may not change).
  */
 export const ReviewFlagKind = z.enum([
   'unsourced',
@@ -17,6 +20,9 @@ export const ReviewFlagKind = z.enum([
   'missing_value',
   'plan_mismatch',
   'incomplete_checklist',
+  'calibration_miss',
+  'invariant_broken',
+  'repair_dropped',
 ]);
 export type ReviewFlagKind = z.infer<typeof ReviewFlagKind>;
 

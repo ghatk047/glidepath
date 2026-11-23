@@ -115,3 +115,47 @@ export {
   type SeedBundle,
   type SeedSectionPlan,
 } from './steps/seed-draft';
+
+// AI-04: pipeline steps 4-5 (validate the draft, calibrate against the last reported year with one repair round).
+export {
+  CALIBRATION,
+  CalibrationMetricId,
+  normaliseLabel,
+  parseCalibrationConfig,
+  type CalibrationConfig,
+  type CalibrationMetricDef,
+  type InvariantDef,
+} from './calibration/catalog';
+export {
+  CalibrationRepair,
+  CalibrationReport,
+  CalibrationRound,
+  CalibrationTarget,
+  DraftCheck,
+  DraftValidationEntry,
+  InvariantResult,
+  MetricResult,
+  MetricStatus,
+  RepairChange,
+  RepairChangeRecord,
+  ValidationReport,
+} from './schemas/calibration';
+export { CALIBRATION_REPAIR_INSTRUCTIONS } from './prompts/system';
+export {
+  renderCalibrationRepairPrompt,
+  type CalibrationRepairPromptInput,
+  type RepairPromptVariable,
+} from './prompts/render';
+export { draftStates, type CompileDraft, type DraftState } from './steps/draft-model';
+export { validateDraft, type SeedDraft, type ValidateDraftOptions } from './steps/validate';
+export {
+  calibrate,
+  calibrationRepairStep,
+  CalibrationSetupError,
+  checkInvariants,
+  lastReportedYear,
+  targetsFromFacts,
+  type CalibrateInput,
+  type CalibrateOptions,
+  type CalibrationResult,
+} from './steps/calibrate';

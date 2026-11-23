@@ -64,6 +64,30 @@ SDK and this package's client/audit/config/retry/testing modules in `src/steps` 
   checked: a wrong section, tenant record or foreign dimension/variable rejects the reply (`ModelOutputError`);
   unsourced values become `L` + flag, unknown fact ids are dropped + flagged, left-out variables are flagged.
 
+## Pipeline steps 4–5 (AI-04)
+
+No model call unless calibration misses. Data in `src/calibration/calibration.json` (`CALIBRATION`): the eleven
+metrics with the node each ties to (`pl.rev`, `pl.fuel`, `pl.swb`, `pl.opex`, `pl.ebit`, `pl.int_exp`, `pl.ni`, `pl.ocf`,
+`pl.fcf`, `pl.cash_close`, `pl.net_debt`) and the fact labels that name them, the tolerance (1%), one repair round, the
+repairable registry layers (`corporate`), units, the invariants of 06 §4 and the member references checked.
+
+- `validateDraft(draft, bundle)` → `ValidationReport { ok, entries }` (step 4). Member integrity first (dimensions known
+  and non-empty, every value and pin of the defaults and each scenario on a registry id with a valid member key,
+  member references such as `year.prev`, `line.addr`, `lever.alloc_key`), then the domain's input rules VR01–VR10 on the
+  tenant defaults and on each scenario, and VR05/VR08 on an engine evaluation of each. VR04 (registry bounds) follows
+  `BOUNDS_POLICY`: an error for a drafted value (`ai_reconfig` rejects), a warning for one copied from the global
+  presets (`seed`). Identical entries of several states are merged with their `scopes` (null = tenant defaults).
+- `targetsFromFacts(factBase, lastReportedYear)` → `CalibrationTarget[]`: per metric, a numeric fact of that year whose
+  normalised label is one of the metric's aliases (first alias wins, then confidence), converted to $M.
+- `calibrate(client, { draft, bundle, targets, facts?, promptBar? })` → `StepResult<{ draft, report, validation,
+  openQuestions }>` (step 5). The engine rebuilds the last reported year (the `year` member with an empty `prev`) on the
+  tenant defaults and compares each metric. On a miss: one `calibration-repair` call (effort `high`, structured output
+  `CalibrationRepair`) with the residuals and the repairable inputs; changes to other variables or member keys are
+  dropped (`repair_dropped` flag); the repaired copy is validated again and rebuilt. `report.tied` needs every metric
+  tied and every invariant holding; misses and broken invariants become review flags.
+- `checkInvariants(draft, bundle)`: `lev.rr_check` = 0, `vp.check` = 0, and `pl.rev` equal across year columns of the
+  same input year (FY27 base vs FY27 + IT), on the defaults and every scenario.
+
 ## Configuration
 
 `loadAiConfig(env)`: `ANTHROPIC_API_KEY` (required, secret: never logged or persisted), optional

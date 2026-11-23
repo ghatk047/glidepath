@@ -43,13 +43,20 @@ export const LEVER_TUNING_INSTRUCTIONS = `Job: lever tuning (step 6). Propose te
 - Each change names the variable id verbatim, the member key or null, the scenario id or null for the tenant default, a value within the given bounds, a one or two sentence reason, the factIds it rests on and a confidence.
 - Fewer, well-founded changes beat many weak ones. Put doubts in openQuestions.`;
 
+export const CALIBRATION_REPAIR_INSTRUCTIONS = `Job: calibration repair (step 5, one round). The engine rebuilt the last reported fiscal year from the seed draft and some figures miss the reported ones by more than the tolerance in <calibration>.
+- <residuals> lists each figure: the reported value, the engine's value, residual (engine minus reported) and relative residual. Only figures with status miss need repair; missing figures have no reported value and cannot be repaired here.
+- Change only variables listed in <variables>, verbatim, keeping their member keys. Prefer the input that most directly drives a missing figure (a last-reported-year level or rate) over growth rates for later years.
+- Each change gives the new value within the variable's bounds, a reason naming the residual it closes, a source (a fact URL or a short description of the calculation), confidence and the factIds it rests on.
+- Do not force a tie with a value the facts contradict: when the reported figure itself looks wrong or uses another definition, leave the input and say so in openQuestions.`;
+
 /** Model steps of the pipeline that have a prompt. */
-export type PromptStep = 'scope' | 'research' | 'seed_draft' | 'lever_tuning';
+export type PromptStep = 'scope' | 'research' | 'seed_draft' | 'calibration_repair' | 'lever_tuning';
 
 const STEP_INSTRUCTIONS: Record<PromptStep, string> = {
   scope: SCOPE_INSTRUCTIONS,
   research: RESEARCH_INSTRUCTIONS,
   seed_draft: SEED_DRAFT_INSTRUCTIONS,
+  calibration_repair: CALIBRATION_REPAIR_INSTRUCTIONS,
   lever_tuning: LEVER_TUNING_INSTRUCTIONS,
 };
 

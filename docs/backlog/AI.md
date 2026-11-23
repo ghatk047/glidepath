@@ -119,7 +119,7 @@ title: "Steps 4–5: validate and calibrate against the last reported year"
 epic: AI
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -138,6 +138,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The engine proves the AI's seed ties.

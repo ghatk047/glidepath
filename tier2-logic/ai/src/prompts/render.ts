@@ -115,3 +115,32 @@ export function renderLeverTuningPrompt(input: LeverTuningPromptInput): string {
     'Return the LeverTuningDraft.',
   ].join('\n\n');
 }
+
+/** A variable the calibration repair may change, with its current tenant default. */
+export interface RepairPromptVariable extends PromptVariable {
+  /** The scalar value, or one entry per member key. */
+  value: number | readonly { key: string; value: number }[];
+}
+
+export interface CalibrationRepairPromptInput {
+  promptBar: string;
+  /** The year member rebuilt, its label and the relative tolerance of a tie. */
+  calibration: { year: string; label: string; tolerance: number };
+  /** One entry per figure: reported, engine value, residual, status. */
+  residuals: readonly unknown[];
+  variables: readonly RepairPromptVariable[];
+  /** The checked fact base of step 2, when the job has one. */
+  facts: FactBase | null;
+}
+
+export function renderCalibrationRepairPrompt(input: CalibrationRepairPromptInput): string {
+  return [
+    USER_INPUT_NOTE,
+    quotePromptBar(input.promptBar),
+    jsonBlock('calibration', input.calibration),
+    jsonBlock('residuals', input.residuals),
+    jsonBlock('variables', input.variables),
+    ...(input.facts ? [WEB_DATA_NOTE, jsonBlock('fact_base', input.facts)] : []),
+    'Return the CalibrationRepair.',
+  ].join('\n\n');
+}
