@@ -124,7 +124,7 @@ title: "Minimum-risk lever mix (total bar)"
 epic: SOL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
@@ -255,7 +255,7 @@ title: "Stress presets"
 epic: SOL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: high
