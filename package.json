@@ -13,6 +13,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "scaffold-check": "tsx tools/scaffold-check/src/cli.ts",
+    "gen:types": "tsx tools/gen-types/src/cli.ts",
     "parity:golden": "echo 'not implemented yet'",
     "parity:fuzz": "echo 'not implemented yet'",
     "test:excel": "echo 'not implemented yet'",

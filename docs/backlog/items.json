@@ -639,7 +639,7 @@
     "epic": "SPEC",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "haiku",
     "effort": "low",
@@ -667,7 +667,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "SPEC-02",

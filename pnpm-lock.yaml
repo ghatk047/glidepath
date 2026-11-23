@@ -58,7 +58,11 @@ importers:
 
   tier2-logic/solvers: {}
 
-  tier2-logic/spec: {}
+  tier2-logic/spec:
+    dependencies:
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   tier2-logic/worker: {}
 
@@ -1097,6 +1101,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -2027,3 +2034,5 @@ snapshots:
   word-wrap@1.2.5: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@4.6.7: {}
