@@ -298,6 +298,12 @@ importers:
         specifier: ^8.23.1
         version: 8.23.1
     devDependencies:
+      '@glidepath/domain':
+        specifier: workspace:*
+        version: link:../../tier2-logic/domain
+      '@glidepath/engine':
+        specifier: workspace:*
+        version: link:../../tier2-logic/engine
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1

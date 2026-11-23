@@ -17,6 +17,8 @@
     "pg": "^8.23.1"
   },
   "devDependencies": {
+    "@glidepath/domain": "workspace:*",
+    "@glidepath/engine": "workspace:*",
     "@types/pg": "^8.23.1"
   }
 }

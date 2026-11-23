@@ -56,7 +56,7 @@ title: "Synthetic second tenant zz"
 epic: QA
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -75,6 +75,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Multi-tenant tests need a tenant that is not AA.
