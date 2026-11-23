@@ -22,7 +22,7 @@ title: "Monorepo scaffold with tier folders, pnpm and Turborepo"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: medium
@@ -153,7 +153,7 @@ title: "ADRs 001–024 in docs/adr"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: medium
