@@ -166,7 +166,7 @@ title: "Shell components: Rail, Scenario bar, Tenant button (#1, #2, #6)"
 epic: UI
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -186,6 +186,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The frame around every module.
