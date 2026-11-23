@@ -517,7 +517,7 @@ title: "Trace node, Move row, Diff row (#23, #24, #25)"
 epic: UI
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
