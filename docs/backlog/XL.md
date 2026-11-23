@@ -212,7 +212,7 @@ title: "Round-trip suite: the eight tests plus fixtures"
 epic: XL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -231,6 +231,7 @@ acceptance:
 gates: [G1, G2, G6]
 size: M
 notes: "Excel-for-Mac fixture: the owner saves one exported file on the Mac; until then the test is marked pending with the reason (orchestrator asks once)."
+merged_at: "2026-11-23"
 ```
 
 G6 in one file.

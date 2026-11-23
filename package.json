@@ -18,7 +18,7 @@
     "gen:types": "tsx tools/gen-types/src/cli.ts",
     "parity:golden": "tsx tools/parity/src/cli.ts",
     "parity:fuzz": "echo 'not implemented yet'",
-    "test:excel": "echo 'not implemented yet'",
+    "test:excel": "pnpm --filter @glidepath/excel run test:roundtrip",
     "test:leak": "echo 'not implemented yet'",
     "tier-check": "tsx tools/tier-check/src/cli.ts",
     "e2e": "echo 'not implemented yet'",
