@@ -22,3 +22,5 @@ export { fictitiousUsers, insertFictitiousUsers, FICTITIOUS_EMAIL_DOMAIN } from 
 export type { FictitiousUser } from './users';
 
 export { repoRoot, specDir, aaSeedDir, goldenResultsPath, excelFixturesDir } from './paths';
+
+export { zzSeedDir, zzSeed, zzTenantData } from '../seed/zz';
