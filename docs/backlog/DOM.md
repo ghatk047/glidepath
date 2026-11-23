@@ -21,7 +21,7 @@ title: "Changeset model, member keys, scenario resolution, ports"
 epic: DOM
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -44,6 +44,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "No engine numbers involved; allowed before the parity gate."
+merged_at: "2026-11-23"
 ```
 
 The vocabulary of every write.
