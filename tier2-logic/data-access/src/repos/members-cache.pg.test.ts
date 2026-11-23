@@ -7,7 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { createDb } from '../db';
 import type { DbHandle } from '../db';
 import { migrate } from '../migrate';
-import { dimension_member, scenario, tenant, tenant_membership, variable_value } from '../schema';
+import { changeset, dimension_member, scenario, tenant, tenant_membership, variable_value } from '../schema';
 import { withTenant } from '../tenant';
 import { createAppRoleDb, recordQueries } from '../testing/app-db';
 import type { RecordedQuery } from '../testing/app-db';
@@ -38,6 +38,7 @@ let log: RecordedQuery[];
 const TENANT_C = '00000000-0000-4000-8000-0000000000c0';
 const PRESET_C = '00000000-0000-4000-8000-0000000000c1';
 const USER_C = '00000000-0000-4000-8000-0000000000c2';
+const SEED_CS = '00000000-0000-4000-8000-00000000c5ed';
 const at = (s: string): Date => new Date(s);
 
 const bundle = {
@@ -64,7 +65,8 @@ beforeAll(async () => {
       { tenant_id: TENANT_C, id: PRESET_C, key: 'rates', label: 'Rates', kind: 'preset', parent_id: null, model_version_id: MV1, version: 0, locked: true, created_by: ANA, created_at: at('2026-10-01T00:00:00Z') },
       { tenant_id: TENANT_C, id: USER_C, key: 'mine', label: 'Mine', kind: 'user', parent_id: PRESET_C, model_version_id: MV1, version: 0, locked: false, created_by: ANA, created_at: at('2026-10-02T00:00:00Z') },
     ]);
-    await tx.insert(variable_value).values({ tenant_id: TENANT_C, var_key: 'g.target_net', member_key: '', value: '100', source_id: null, confidence: 'H', note: '', changeset_id: PRESET_C, updated_at: at('2026-10-01T00:00:00Z') });
+    await tx.insert(changeset).values({ tenant_id: TENANT_C, id: SEED_CS, origin: 'seed', scenario_id: PRESET_C, base_scenario_version: 0, status: 'applied', summary: {}, created_by: ANA, created_at: at('2026-10-01T00:00:00Z'), reverts_id: null });
+    await tx.insert(variable_value).values({ tenant_id: TENANT_C, var_key: 'g.target_net', member_key: '', value: '100', source_id: null, confidence: 'H', note: '', changeset_id: SEED_CS, updated_at: at('2026-10-01T00:00:00Z') });
     await tx.insert(dimension_member).values({ tenant_id: TENANT_C, dim_key: 'vp', member_key: 'vp_ops', label: 'Operations', attrs: {}, sort: 1, active: true });
   });
   app = createAppRoleDb(adminUrl, owned.database);
