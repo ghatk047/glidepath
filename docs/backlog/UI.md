@@ -230,7 +230,7 @@ title: "Command palette and Edits tray (#4, #5)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
