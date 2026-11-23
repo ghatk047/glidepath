@@ -123,7 +123,7 @@ title: "docker-compose.dev.yml hot-reload override and mailpit"
 epic: OPS
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: medium

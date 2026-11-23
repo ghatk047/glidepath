@@ -458,7 +458,7 @@ title: "Treemap (#20)"
 epic: UI
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
