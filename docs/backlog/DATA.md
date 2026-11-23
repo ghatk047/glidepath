@@ -142,7 +142,7 @@ acceptance:
   - "each manual migration file names ADR-023 in a header comment (test: grep)"
 gates: [G1, G2]
 size: S
-notes: "Spec gap: schema.json has no progress/cancel or auth storage."
+notes: "Spec gap: schema.json has no progress/cancel or auth storage. Also add scenario.archived boolean default false (CON-01 scenario schema has archived; schema.json lacks it)."
 ```
 
 Small, explicit additions to the generated schema.

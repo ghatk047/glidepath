@@ -54,7 +54,7 @@ title: "WebSocket session protocol (incl. view subscriptions)"
 epic: CON
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high

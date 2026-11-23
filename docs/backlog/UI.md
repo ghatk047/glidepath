@@ -102,7 +102,7 @@ title: "Format module: money, percent, FTE, multiples, EPS"
 epic: UI
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: medium
@@ -132,7 +132,7 @@ title: "Motion: number roll, springs, reduced motion"
 epic: UI
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
