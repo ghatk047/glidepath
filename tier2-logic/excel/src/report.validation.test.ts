@@ -58,6 +58,12 @@ describe('buildReport: validation and modes', () => {
     expect(built.report.impact).toEqual({ scenario: '' });
   });
 
+  it("an unchanged re-import names the export's first scenario in the impact slot when the caller says so (XL-09)", async () => {
+    const built = await report(fx, await freshBook(fx), fx.values, { scenario: 'C' });
+    expect(built.report.changes).toEqual([]);
+    expect(built.report.impact).toEqual({ scenario: 'C' });
+  });
+
   it('a blocking entry (VR04, type) marks the cell invalid and adds its message', async () => {
     const book = await freshBook(fx);
     put(book, 'Targets', 'g.target_net', '', header(fx, 'Targets', 'default'), 5000); // VR04, max 150

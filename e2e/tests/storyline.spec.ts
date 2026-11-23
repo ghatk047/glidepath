@@ -36,6 +36,8 @@ import { expect, goldenOf, HEADLINE, test } from './fixtures';
  */
 
 const TARGET = 'g.target_net';
+/** Beat 10's conflict cell: a lever, which varies by scenario (the net target does not, so Excel locks it there). */
+const CONFLICT_LEVER = 'lev.L10.shelf';
 const OUTSIDE = 'g.ot_out_share';
 /** The Cockpit sliders: the registry's `ui.hero` inputs, found by their spec id. */
 const slider = (page: Page, id: string) =>
@@ -429,11 +431,7 @@ test.describe('Demo storyline: run of show (QA-05, G10)', () => {
   });
 
   // 18:00 Excel: export C + D, show the import review with one conflict.
-  // Blocked by an open defect in the worker (XL-08): the pg-boss runtime drops the handler output of
-  // non-solver queues, so POST /exports answers 500 "excel.export job answered no result". The body is the
-  // full, unweakened assertion set (it passed against a local worker fix, see the QA-05 report); the
-  // validation-line check also waits on D's seed (VR04: lever values above the registry maximum).
-  test.fixme('beat_10_excel_exports_c_and_d_and_the_import_review_shows_one_conflict [XL-08]', async ({ stack }) => {
+  test('beat_10_excel_exports_c_and_d_and_the_import_review_shows_one_conflict', async ({ stack }) => {
     test.setTimeout(180_000);
     const dir = mkdtempSync(join(tmpdir(), 'gp-storyline-'));
     const tenant = { tenant: config.tenant };
@@ -457,17 +455,21 @@ test.describe('Demo storyline: run of show (QA-05, G10)', () => {
     // "The app reads it back": the unchanged export has nothing to apply
     await page.getByLabel('Workbook file').setInputFiles(exported);
     await expect(page.getByText('No differences to apply.')).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByTestId('validation-line')).toContainText(/VR01.VR10 passed/);
+    // no errors: D's seed holds lever values above the registry maximum, listed as VR04 warnings (XL-09)
+    const validation = page.getByTestId('validation-line');
+    await expect(validation).toContainText(/VR01.VR10 passed|VR04/);
+    await expect(validation).not.toContainText(/VR(0[1-3]|0[6-9]|10):/);
 
     // One conflict. The presets are locked and the UI exports only presets, so the conflict is made on
     // a Custom scenario: export it (the API), edit the net target in the file, change the same target
-    // in the app afterwards, then hand the file to the review screen.
-    const target = variable(TARGET);
+    // in the app afterwards, then hand the file to the review screen. The cell is a lever (Levers sheet, one
+    // value column per scenario): the net target does not vary by scenario, so its scenario cells are locked.
+    const target = variable(CONFLICT_LEVER);
     const step = target.step!;
     const a = target.min! + 3 * step;
     const change = (value: number) => ({
       target: 'variable' as const,
-      key: TARGET as VarKey,
+      key: CONFLICT_LEVER as VarKey,
       member: '' as MemberKey,
       value,
     });
@@ -485,11 +487,11 @@ test.describe('Demo storyline: run of show (QA-05, G10)', () => {
     const label = scenarios.find((s) => s.id === fork.scenarioId)!.label;
     const made = await stack.api.exportCreate({
       params: tenant,
-      body: { scenarioIds: [fork.scenarioId], sheets: ['Targets'] },
+      body: { scenarioIds: [fork.scenarioId], sheets: ['Levers'] },
     });
     const file = await stack.api.fileDownload({ params: { ...tenant, id: made.file.id } });
     const column = new RegExp(escapeRe(label), 'i');
-    const edited = await writeCell(file.bytes, { sheet: 'Targets', key: TARGET, column }, a + step);
+    const edited = await writeCell(file.bytes, { sheet: 'Levers', key: CONFLICT_LEVER, column }, a + step);
     await stack.api.changesetApply({
       params: tenant,
       body: {

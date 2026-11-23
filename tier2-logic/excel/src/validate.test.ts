@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
-  VALIDATION_RULES,
   vr01DomainOwnership,
   vr02SharedServicesOwner,
   vr03UsageKeys,
@@ -151,6 +150,65 @@ beforeAll(async () => {
   vb = { sheets: defs, model, members };
 });
 
+describe('validateParsed: an unchanged re-import of a seed past registry bounds (XL-09)', () => {
+  const rawBundle = async (): Promise<{ book: ExcelJS.Workbook; current: ValidationBundle }> => {
+    const raw: ExportValues = {
+      defaults: rowsOf(seed.variableValues),
+      scenarios: scenarios.map(({ id, label }) => ({
+        id,
+        label,
+        values: rowsOf(seed.scenarios.scenarios.find((x) => x.id === id)?.values ?? {}),
+      })),
+    };
+    const out = await writeWorkbook(buildWorkbook(defs, raw, meta).workbook);
+    const book = new ExcelJS.Workbook();
+    await book.xlsx.load(out as unknown as ArrayBuffer);
+    return {
+      book,
+      current: {
+        ...vb,
+        current: {
+          defaults: raw.defaults,
+          scenarios: Object.fromEntries(raw.scenarios.map((s) => [s.id, s.values])),
+        },
+      },
+    };
+  };
+  const outside = (): boolean => {
+    const bounds = new Map(model.variables.map((v) => [v.id, v]));
+    return [
+      ...rowsOf(seed.variableValues),
+      ...scenarios.flatMap((sc) =>
+        rowsOf(seed.scenarios.scenarios.find((x) => x.id === sc.id)?.values ?? {}),
+      ),
+    ].some((r) => {
+      const b = bounds.get(r.var_key);
+      return b !== undefined && ((b.max ?? Infinity) < r.value || (b.min ?? -Infinity) > r.value);
+    });
+  };
+
+  it('unchanged: zero errors, the out-of-range seed cells are VR04 warnings', async () => {
+    expect(outside()).toBe(true); // the fixture really holds a value past a bound
+    const { book, current } = await rawBundle();
+    const entries = validate(book, current);
+    expect(entries.filter((e) => e.severity === 'error')).toEqual([]);
+    const warned = entries.filter((e) => e.code === 'out_of_range');
+    expect(warned.length).toBeGreaterThan(0);
+    expect(warned.every((e) => e.rule === 'VR04' && e.severity === 'warning')).toBe(true);
+  });
+
+  it('a changed cell outside min/max is still an error, next to the unchanged warnings', async () => {
+    const { book, current } = await rawBundle();
+    set(book, 'Workforce', 'hc.us', '', 'Default', 999999);
+    const entries = validate(book, current);
+    const errors = entries.filter((e) => e.severity === 'error');
+    expect(errors.map((e) => [e.code, e.rule, e.cells[0]])).toEqual([
+      ['out_of_range', 'VR04', 'hc.us[]'],
+    ]);
+    expect(entries.some((e) => e.severity === 'warning' && e.code === 'out_of_range')).toBe(true);
+  });
+});
+
 describe('validateParsed: an unchanged export', () => {
   it('has no entries', async () => {
     expect(validate(await freshBook())).toEqual([]);
@@ -219,7 +277,8 @@ describe('validateParsed: per-cell checks', () => {
       ['out_of_range', 'VR04', 'g.target_net[]'],
       ['out_of_range', 'VR04', 'hc.us[]'],
     ]);
-    expect(entries.every((e) => e.severity === VALIDATION_RULES.VR04.severity)).toBe(true);
+    // a changed cell past a bound is rejected on import (applyChangeset: excel_import -> reject)
+    expect(entries.every((e) => e.severity === 'error')).toBe(true);
     expect(entries[0]?.message).toContain('below the minimum');
     expect(entries[1]?.message).toContain('above the maximum');
 

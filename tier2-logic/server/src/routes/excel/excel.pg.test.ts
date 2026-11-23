@@ -209,6 +209,21 @@ describe('API-10 Excel and file routes', () => {
     expect(anon.status).toBe(401);
   }, 120_000);
 
+  it('an unchanged C+D export re-imports with no error: the seed cells past a registry bound are VR04 warnings, nothing to apply [XL-09]', async () => {
+    const res = await post('/api/t/aa/exports', { scenarioIds: [presetId('C'), presetId('D')] });
+    expect(res.status).toBe(201);
+    const result = await assertContract('exportCreate', res);
+    expect(result.file.filename).toMatch(/^aa_it_savings_C\+D_\d{8}-\d{4}\.xlsx$/);
+    const dl = await get(`/api/t/aa/files/${result.file.id}`);
+    const job = await importBook(await loadBook(new Uint8Array(await dl.arrayBuffer())));
+    expect(job).toMatchObject({ status: 'awaiting_review', exportId: result.id, error: null });
+    expect(job.report!.summary).toMatchObject({ changed_in_excel: 0, changed_in_app: 0, conflict: 0, invalid: 0 });
+    expect(job.report!.impact.scenario).toBe('C'); // the contract wants a scenario key even when nothing changed
+    expect(job.violations.filter((v) => v.severity === 'error')).toEqual([]);
+    expect(job.violations.length).toBeGreaterThan(0);
+    expect(job.violations.every((v) => v.rule === 'VR04' && v.severity === 'warning')).toBe(true);
+  }, 180_000);
+
   it('import upload (size limit from env) -> preview job; GET returns a contract-valid delta report; apply with decisions creates one changeset', async () => {
     // the limit comes from IMPORT_MAX_BYTES
     expect(importMaxBytes({ IMPORT_MAX_BYTES: '4096' })).toBe(4096);

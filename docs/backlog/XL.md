@@ -274,7 +274,7 @@ title: "Unchanged re-import passes validation; storyline beat 10 runs"
 epic: XL
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -294,4 +294,5 @@ acceptance:
 gates: [G1, G2, G6, G10]
 size: S
 notes: "From QA-05. The worker job-output fix from INT-04 is already on develop. Stack use under flock /tmp/glidepath-stack.lock."
+merged_at: "2026-11-23"
 ```

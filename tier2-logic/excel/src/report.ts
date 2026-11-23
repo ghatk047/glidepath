@@ -22,8 +22,8 @@ import type { CellLocation, ValidationEntry } from './validate';
  * list) and the `impact` slot. The types mirror `DeltaReport` of `contract/api-contract` (CON-03) without importing
  * it: tier 2 core packages stay off the contract, and a test keeps the keys equal to the spec's.
  *
- * `invalid`: a validation entry that blocks (severity `error`, or VR04 `out_of_range`, which `applyChangeset` rejects
- * for origin `excel_import`) turns every entry it points at into `invalid`. Invalid entries are reported, never
+ * `invalid`: a validation entry that blocks (severity `error`; VR04 `out_of_range` is one when the cell changes the stored value, which
+ * `applyChangeset` rejects for origin `excel_import`, and a warning when it equals it) turns every entry it points at into `invalid`. Invalid entries are reported, never
  * applied (`toChangeset.ts`).
  *
  * `changes[]` entries carry only the schema's keys, so they cannot say which column of a row a cell is (the Default,
@@ -125,18 +125,20 @@ export interface ReportOptions {
   readonly exportJobId?: string | null;
   /** The impact preview (step 5). Default: an empty slot for the first scenario the changes touch. */
   readonly impact?: DeltaImpact;
+  /**
+   * The scenario the empty impact slot names when no change touches one (an unchanged re-import): the contract
+   * wants a non-empty key. Default `''`; the worker passes the first scenario of the export.
+   */
+  readonly scenario?: string;
 }
 
 // ----------------------------------------------------------------------------------------------
 // Validation entries -> blocking, places
 // ----------------------------------------------------------------------------------------------
 
-/** VR04 is a warning in `validate.ts`, but `applyChangeset` rejects an out-of-bounds value from an Excel import. */
-const BOUNDS_RULE = 'VR04';
-
 /** Does the entry stop the cells it points at from being applied? */
 export function blocks(entry: ValidationEntry): boolean {
-  return entry.severity === 'error' || entry.rule === BOUNDS_RULE || entry.code === 'out_of_range';
+  return entry.severity === 'error';
 }
 
 const CELL_KEY = /^(.*)\[(.*)\]$/;
@@ -323,7 +325,8 @@ export function buildReport(
     deleted_rows: count('deleted_row'),
     ignored: count('already_applied') + count('missing_row') + unplaced.length + warnings.length,
   };
-  const firstScenario = changes.find((c) => c.scenario !== null)?.scenario ?? '';
+  const firstScenario =
+    changes.find((c) => c.scenario !== null)?.scenario ?? options.scenario ?? '';
   return {
     report: {
       import_job_id: options.importJobId ?? '',

@@ -203,6 +203,7 @@ function buildStored(
   const built = buildReport(diffResult, entries, {
     importJobId: payload.importJobId,
     exportJobId: exported?.snapshot.exportJobId ?? null,
+    ...(columns[0] === undefined ? {} : { scenario: columns[0].id }),
   });
 
   const layers: Record<string, LayerVersion> = Object.fromEntries(

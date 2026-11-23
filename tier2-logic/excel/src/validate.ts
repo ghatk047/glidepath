@@ -35,7 +35,11 @@ export type ValidationCode =
   | 'unknown_key'
   /** A value of the wrong type: text in a number cell, a fraction in a whole-number cell. */
   | 'type'
-  /** VR04: a number outside the variable's min/max. */
+  /**
+   * VR04: a number outside the variable's min/max. An `error` when the cell changes the stored value (the
+   * import policy of `applyChangeset` is `reject`); a `warning` when it equals the stored value (an unchanged
+   * re-import of a seed that holds a value past the registry bound: nothing is written, nothing to reject).
+   */
   | 'out_of_range'
   /** A value that is not one of the cell's dropdown choices (enum, bool, pool, domain, action, ...). */
   | 'not_in_list'
@@ -204,6 +208,7 @@ interface SheetContext {
   readonly lists: ReadonlyMap<string, ListDef>;
   readonly vars: ReadonlyMap<string, { readonly dims: readonly string[] }>;
   readonly nodes: ReadonlySet<string>;
+  readonly current: CurrentValues | undefined;
   readonly out: Collector;
 }
 
@@ -234,7 +239,7 @@ export function validateParsed(
       const cd = def.columns.find((c) => c.id === pc.defId);
       if (cd !== undefined) colDefs.set(pc.id, cd);
     }
-    validateSheet({ def, sheet, colDefs, lists, vars, nodes, out });
+    validateSheet({ def, sheet, colDefs, lists, vars, nodes, current: bundle.current, out });
   }
 
   return [...out.entries, ...crossRow(bundle, out)];
@@ -441,6 +446,7 @@ function checkCell(
   const below = min !== null && value < min - slack(min);
   const above = max !== null && value > max + slack(max);
   if (below || above) {
+    const unchanged = isStoredValue(sc, pc, varId, cellKey, value);
     const range =
       min !== null && max !== null
         ? `keep it within ${show(min, unit)} to ${show(max, unit)}`
@@ -449,12 +455,35 @@ function checkCell(
           : `keep it at ${show(max, unit)} or less`;
     push(
       'out_of_range',
-      VALIDATION_RULES.VR04.severity,
-      `${show(value, unit)} is ${below ? `below the minimum ${show(min, unit)}` : `above the maximum ${show(max, unit)}`}; ${range}.`,
+      unchanged ? VALIDATION_RULES.VR04.severity : 'error',
+      `${show(value, unit)} is ${below ? `below the minimum ${show(min, unit)}` : `above the maximum ${show(max, unit)}`}; ${unchanged ? 'it is the stored value and stays as it is' : range}.`,
       cellKey === undefined ? [] : [cellKey],
       'VR04',
     );
   }
+}
+
+/** Float noise of a value that went through a workbook (a percent written and read back). */
+const SAME_VALUE_TOLERANCE = 1e-9;
+
+/** Does the cell hold the value the tenant has stored for it (the default, or the scenario's own value)? */
+function isStoredValue(
+  sc: SheetContext,
+  pc: ParsedColumn,
+  varId: string | undefined,
+  cellKey: string | undefined,
+  value: number,
+): boolean {
+  if (varId === undefined || cellKey === undefined || sc.current === undefined) return false;
+  const mk = cellKey.slice(cellKey.indexOf('[') + 1, -1);
+  const layer =
+    pc.scenarioId ?? (pc.scenarioLabel === undefined ? DEFAULT_LAYER : scenarioOfColumn(pc));
+  const rows = layer === DEFAULT_LAYER ? sc.current.defaults : sc.current.scenarios?.[layer];
+  const stored = rows?.find((r) => r.var_key === varId && r.member_key === mk);
+  return (
+    stored !== undefined &&
+    Math.abs(stored.value - value) <= SAME_VALUE_TOLERANCE * Math.max(1, Math.abs(value))
+  );
 }
 
 /** The template's text of a locked fact column of a row (`min` and `max` as numbers). */

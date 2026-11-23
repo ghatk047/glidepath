@@ -195,6 +195,24 @@ describe('XL-08 Excel jobs', () => {
     expect(rep.summary).toMatchObject({ changed_in_excel: 0, changed_in_app: 0, conflict: 0, new_rows: 0, deleted_rows: 0 });
   }, 120_000);
 
+  it('excel.import of an unchanged C+D export: no errors, the seed cells past a registry bound are VR04 warnings, nothing to apply [XL-09]', async () => {
+    const D = await scenarioByKey('D');
+    const result = await runExport(ctx, { tenantId, userId, scenarioIds: [C.id, D.id] }, deps);
+    const book = await loadBook(result.fileUri);
+    const importId = await saveUpload(book, 'unchanged-cd');
+    const r = await runImport(ctx, { tenantId, userId, importJobId: importId }, deps);
+    expect(r.status).toBe('awaiting_review');
+    const stored = await importReport(importId);
+    const violations = stored.violations as unknown as { severity: string; rule?: string; code: string }[];
+    expect(violations.filter((v) => v.severity === 'error')).toEqual([]);
+    const bounds = violations.filter((v) => v.code === 'out_of_range');
+    expect(bounds.length).toBeGreaterThan(0);
+    expect(bounds.every((v) => v.rule === 'VR04' && v.severity === 'warning')).toBe(true);
+    expect(stored.report.summary).toMatchObject({ changed_in_excel: 0, changed_in_app: 0, conflict: 0, invalid: 0 });
+    expect(stored.report.changes.filter((c) => c.status === 'invalid')).toEqual([]);
+    expect(stored.report.impact.scenario).toBe('C');
+  }, 180_000);
+
   let editImportId: string;
   let newTarget: number;
   let newCut: number;

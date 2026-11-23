@@ -109,7 +109,7 @@ report.changes = [
 const exportResult = {
   ...jx.exportCreate.response,
   scenarioIds: [idOf('C'), idOf('D')],
-  file: { ...jx.exportCreate.response.file, filename: 'zz_it_savings_C-D_20261204-0930.xlsx' },
+  file: { ...jx.exportCreate.response.file, filename: `${tenant}_it_savings_C+D_20261204-0930.xlsx` },
   createdAt: '2026-12-04T09:30:00.000Z',
 };
 const job = (over: object = {}) => ({
@@ -283,22 +283,24 @@ describe('AC1: export', () => {
 
     // file name preview follows the scenario choice
     expect(screen.getByTestId('export-filename').textContent).toBe(
-      `${tenant}_it_savings_C-D_{yyyymmdd-hhmm}.xlsx`,
+      `${tenant}_it_savings_C+D_{yyyymmdd-hhmm}.xlsx`,
     );
     fireEvent.click(within(group).getByRole('button', { name: 'D' }));
     expect(screen.getByTestId('export-filename').textContent).toContain('_it_savings_D_');
     fireEvent.click(within(group).getByRole('button', { name: 'All five' }));
     expect(screen.getByTestId('export-filename').textContent).toContain(
-      `_it_savings_${presets.map((p) => p.key).join('-')}_`,
+      `_it_savings_${presets.map((p) => p.key).join('+')}_`,
     );
     fireEvent.click(within(group).getByRole('button', { name: 'C + D' }));
 
+    const preview = screen.getByTestId('export-filename').textContent ?? '';
     fireEvent.click(screen.getByRole('button', { name: 'Export workbook' }));
     await waitFor(() => expect(clicks).toEqual([exportResult.file.filename]));
     expect(t.exportBodies).toEqual([{ scenarioIds: [idOf('C'), idOf('D')] }]);
     expect(t.downloads).toEqual([exportResult.file.id]);
     expect(created).toHaveBeenCalledTimes(1);
-    // tier 2's name and template version replace the preview
+    // tier 2's name and template version replace the preview; the preview already had the same stem
+    expect(preview.replace('{yyyymmdd-hhmm}', '20261204-0930')).toBe(exportResult.file.filename);
     expect(screen.getByTestId('export-filename').textContent).toBe(exportResult.file.filename);
     expect(screen.getByTestId('template-version').textContent).toBe(
       `template v${exportResult.templateVersion}`,

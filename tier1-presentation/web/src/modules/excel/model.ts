@@ -43,9 +43,12 @@ export function scenariosFor(choice: ScenarioChoice, scenarios: readonly Scenari
   return keys.flatMap((k) => all.filter((s) => s.key === k));
 }
 
-/** `excel_template.json` `file.name_pattern`, shown until tier 2 answers with the real name. */
+/**
+ * `excel_template.json` `file.name_pattern`, shown until tier 2 answers with the real name. The scenario keys
+ * are joined by `+` as tier 2 names the file (`exportFileName`: `C+D`), so the stem equals the download's.
+ */
 export function namePattern(tenant: string, keys: readonly string[]): string {
-  return `${tenant}_it_savings_${keys.join('-')}_{yyyymmdd-hhmm}.xlsx`;
+  return `${tenant}_it_savings_${keys.join('+')}_{yyyymmdd-hhmm}.xlsx`;
 }
 
 export type RowKey = string;
