@@ -38,6 +38,8 @@ describe('command line', () => {
     expect(parseArgs(['--tenant', 'aa'])).toEqual({ seed: 'aa' });
     expect(parseArgs(['--seed=aa'])).toEqual({ seed: 'aa' });
     expect(parseArgs([])).toEqual({ seed: undefined });
+    expect(parseArgs(['--seed', 'aa', '--ai-cache', 'dir', '--ai-cache-tenant=aa'])).toEqual({ seed: 'aa', aiCache: 'dir', aiCacheTenant: 'aa' });
+    expect(() => parseArgs(['--ai-cache'])).toThrow(/needs a bundle folder/);
     expect(() => parseArgs(['--seed'])).toThrow(/needs a tenant slug/);
     expect(() => parseArgs(['--seed', '--tenant'])).toThrow(/needs a tenant slug/);
     expect(() => parseArgs(['--wat'])).toThrow(/unknown argument/);

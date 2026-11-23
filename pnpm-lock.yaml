@@ -313,6 +313,9 @@ importers:
 
   tier2-logic/worker:
     dependencies:
+      '@glidepath/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@glidepath/data-access':
         specifier: workspace:*
         version: link:../data-access

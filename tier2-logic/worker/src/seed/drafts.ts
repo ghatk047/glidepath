@@ -2,10 +2,9 @@
  * Pure: a tenant seed (docs/spec/seed/<tenant>) as changeset changes of origin `seed`, restricted to
  * what the tenant does not have yet. Same row mapping as the DOM-03 seed test (domain test-support).
  */
+import { dimensionMemberRow as aiDimensionMemberRow, lineItemRow as aiLineItemRow, tenantDimensions as aiTenantDimensions } from '@glidepath/ai';
 import { LINE_ITEM_DIM, type JsonObject, type StructuralChange, type ValueChange } from '@glidepath/domain';
 import type { InputValue, Member, ModelBundle, TenantSeed } from '@glidepath/spec';
-
-const json = (v: unknown): JsonObject[string] => (v === undefined ? null : (v as JsonObject[string]));
 
 /** A seed value (`number` or `{ memberKey: number }`) as stored cells. */
 export interface Cell {
@@ -30,10 +29,7 @@ export function splitCellKey(cell: string): { key: string; member_key: string } 
 
 export const cellId = (key: string, member_key: string): string => `${key}\u0000${member_key}`;
 
-/** Dimensions whose members are tenant rows (scope `tenant` or `global+tenant`). */
-export function tenantDimensions(bundle: Pick<ModelBundle, 'dimensions'>): string[] {
-  return bundle.dimensions.filter((d) => d.scope.split('+').includes('tenant')).map((d) => d.id);
-}
+export const tenantDimensions = aiTenantDimensions;
 
 /** The seed's members of a tenant dimension, in file order. */
 export function tenantMembersOf(seed: TenantSeed, bundle: Pick<ModelBundle, 'dimensions'>): Map<string, readonly Member[]> {
@@ -52,41 +48,13 @@ export function allSourceCodes(seed: TenantSeed): string[] {
   return [...codes].sort();
 }
 
-/** A seed member of a tenant dim as a dimension_member row. */
-export function dimensionMemberRow(m: Member, sort: number): JsonObject {
-  const attrs: Record<string, unknown> = { ...m };
-  delete attrs.id;
-  delete attrs.label;
-  return { label: json(m.label), attrs: attrs as JsonObject, sort, active: true };
-}
-
-/** A seed line as a line_item row; `sourceId` is the row of its first source code. */
-export function lineItemRow(m: Member, sourceId: string | null): JsonObject {
-  return {
-    legacy_id: json(m.legacy_id),
-    pool_id: json(m.pool),
-    tenant_l1_label: json(m.l1_label),
-    l2: json(m.l2),
-    name: json(m.name),
-    vendor_key: null,
-    vendor_text: json(m.vendor),
-    nature: json(m.nature),
-    accounting: json(m.accounting),
-    driver_text: json(m.driver_text),
-    qty: json(m.qty),
-    unit: json(m.unit),
-    addr_tag: json(m.addr),
-    domain_key: json(m.domain),
-    scale_driver: json(m.drv),
-    in_scope: m.in_scope === 1,
-    memo: m.memo === 1,
-    confidence: json(m.confidence),
-    source_id: sourceId,
-    lever_hook_text: json(m.lever_hook),
-    notes: typeof m.notes === 'string' ? m.notes : '', // absent in most seed lines; the column is NOT NULL
-    active: true,
-  };
-}
+/**
+ * A seed member of a tenant dim as a dimension_member row, and a seed line as a line_item row: one mapping for the
+ * seed loader and for a reconfiguration's apply (AI-05/AI-06), kept in `@glidepath/ai` so an AI tenant is stored as
+ * a seeded one is. `sourceId` is the row of the line's first source code (the AI's lines keep their sources in the review).
+ */
+export const dimensionMemberRow = (m: Member, sort: number): JsonObject => aiDimensionMemberRow(m, sort) as JsonObject;
+export const lineItemRow = (m: Member, sourceId: string | null): JsonObject => ({ ...aiLineItemRow(m), source_id: sourceId }) as JsonObject;
 
 /** line_item_lever pairs of the seed's lines (`lever_ids`). */
 export function leverMappings(seed: TenantSeed): { line_key: string; lever_code: string }[] {

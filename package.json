@@ -14,6 +14,7 @@
     "test": "turbo run test",
     "pg:local": "tsx tools/pg-local/src/cli.ts",
     "seed": "pnpm --filter @glidepath/worker run seed",
+    "ai:rehearse": "pnpm --filter @glidepath/worker run ai:rehearse",
     "scaffold-check": "tsx tools/scaffold-check/src/cli.ts",
     "gen:types": "tsx tools/gen-types/src/cli.ts",
     "parity:golden": "tsx tools/parity/src/cli.ts",

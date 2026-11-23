@@ -182,7 +182,7 @@ title: "ai.reconfig job, cost guard, rehearse CLI and cache import"
 epic: AI
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -202,6 +202,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "Implement AI-05's ReconfigApplyPort.inTenant in the worker with withTenant (insert tenant row on create, ScenarioStore, modelVersionId, writeLeverMappings). Map applyDraft's per-changeset results to the contract's changesetId per kind. Share the worker seed loader row mapping (drafts.ts) with ai instead of the copy."
+merged_at: "2026-11-23"
 ```
 
 Runs the pipeline as a job and makes the demo cache reproducible.

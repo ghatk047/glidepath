@@ -5,5 +5,6 @@
  */
 import './jobs/excel';
 import './jobs/solver';
+import './jobs/ai';
 
 export {};

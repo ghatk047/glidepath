@@ -12,9 +12,11 @@
     "build": "esbuild src/worker.ts src/seed/migrate.ts --bundle --platform=node --target=node22 --format=esm --external:pg-native --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\" --outdir=dist --entry-names=[name]",
     "start": "node dist/worker.js",
     "seed": "tsx src/seed/migrate.ts",
+    "ai:rehearse": "tsx src/jobs/ai/rehearse-cli.ts",
     "seed:sync": "cp ../../docs/spec/variables.json ../../docs/spec/formula_graph.json ../../tier3-data/seed/ && cp ../../docs/spec/seed/aa/*.json ../../tier3-data/seed/aa/"
   },
   "dependencies": {
+    "@glidepath/ai": "workspace:*",
     "@glidepath/data-access": "workspace:*",
     "@glidepath/domain": "workspace:*",
     "@glidepath/engine": "workspace:*",

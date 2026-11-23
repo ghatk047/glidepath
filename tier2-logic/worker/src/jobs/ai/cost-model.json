@@ -1,0 +1,16 @@
+{
+  "note": "Planning figures for the cost estimate shown before a job starts (06 section 2, cost guard). Rates are USD per million tokens; token figures are per model call. The estimate is an expectation, never a limit: the limit is AI_MAX_TOKENS_PER_JOB (ADR-022). Edit this file, not the code, when prices or prompt sizes move.",
+  "charsPerToken": 4,
+  "defaultRate": { "inputUsdPerMTok": 5, "outputUsdPerMTok": 25, "cacheReadUsdPerMTok": 0.5, "cacheWriteUsdPerMTok": 6.25 },
+  "rates": {
+    "claude-opus-5-5": { "inputUsdPerMTok": 5, "outputUsdPerMTok": 25, "cacheReadUsdPerMTok": 0.5, "cacheWriteUsdPerMTok": 6.25 },
+    "claude-sonnet-5-5": { "inputUsdPerMTok": 3, "outputUsdPerMTok": 15, "cacheReadUsdPerMTok": 0.3, "cacheWriteUsdPerMTok": 3.75 }
+  },
+  "steps": {
+    "scope": { "calls": 1, "inputTokens": 8000, "outputTokens": 2000 },
+    "research": { "calls": 1, "inputTokens": 200000, "outputTokens": 16000 },
+    "seedSection": { "callsPerSection": 1, "inputTokens": 25000, "outputTokens": 9000 },
+    "calibrationRepair": { "calls": 1, "inputTokens": 20000, "outputTokens": 4000 },
+    "leverTuning": { "calls": 1, "inputTokens": 30000, "outputTokens": 6000 }
+  }
+}
