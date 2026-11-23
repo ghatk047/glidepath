@@ -48,7 +48,7 @@ export default function Baseline() {
   const onBy = (next: BaselineGroupBy) => nav.select(next, null);
 
   return (
-    <div className="gp-module gp-baseline" data-module="baseline">
+    <main className="gp-module gp-baseline" data-module="baseline" aria-label="Where the money is">
       <style href="glidepath-baseline" precedence="glidepath">
         {baselineCss}
       </style>
@@ -86,6 +86,6 @@ export default function Baseline() {
         <GroupDetail by={by} group={selected} members={members} />
       </div>
       <LineTable by={by} group={selected} members={members} onExcel={nav.toExcel} />
-    </div>
+    </main>
   );
 }

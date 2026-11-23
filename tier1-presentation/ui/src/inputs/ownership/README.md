@@ -42,5 +42,6 @@ Import as `@glidepath/ui/inputs/ownership`.
   `aria-describedby`. The component never judges a row valid or invalid.
 - The shown row returns to `shares` when tier 2 sends new ones, unless a change is uncommitted.
 - Presentational only: no node binding, no maths beyond clamp/snap/partition (`partition.ts`). CSS
-  (`ownershipCss`) is token-derived and hoisted once via React 19 `<style href precedence>`. Segment
-  text and the grip use the CSS keyword `white` (no white token), as on the slider thumb.
+  (`ownershipCss`) is token-derived and hoisted once via React 19 `<style href precedence>`. The grip
+  uses the CSS keyword `white` (no white token), as on the slider thumb; segment text is white or black by the
+  VP colour's lightness (`vpTextColour` from charts/gauge), so 10 px labels keep 4.5:1 in both themes (G12).

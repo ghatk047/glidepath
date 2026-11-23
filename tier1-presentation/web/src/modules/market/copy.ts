@@ -23,7 +23,7 @@ export const COPY = {
   worth: 'The program is worth',
   fuelTail: 'a gallon of jet fuel.',
   moreDrivers: 'More drivers',
-  moreDriversName: (n: number | null) => (n === null ? 'More drivers' : `More drivers, all ${n}`),
+  moreDriversName: (n: number | null) => (n === null ? 'More drivers' : `More drivers · ${n}`),
   laborGroup: 'Labor group',
   sharesNote: 'm shares',
   vsBase: 'vs base',

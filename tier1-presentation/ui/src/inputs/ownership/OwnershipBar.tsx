@@ -7,7 +7,7 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react';
-import { vpColour } from '../../charts/gauge';
+import { vpColour, vpTextColour } from '../../charts/gauge';
 import { fmt } from '../../format';
 import { decimalsOf, latestThrottle, type LatestThrottle } from '../slider';
 import {
@@ -221,6 +221,7 @@ export function OwnershipBar({
             style={{
               width: `${(u / total) * 100}%`,
               background: vpColour(i),
+              color: vpTextColour(i),
             }}
           >
             {unitsToShare(u, total) >= labelMin - EPS ? pct(u) : ''}

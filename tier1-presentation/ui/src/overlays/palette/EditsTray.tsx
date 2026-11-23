@@ -186,7 +186,7 @@ function TrayPanel({
         {empty ? (
           <p className="gp-tray-empty">No edits yet. Change a number and it lands here.</p>
         ) : (
-          <ol className="gp-tray-list" aria-label="Changes">
+          <ol className="gp-tray-list" aria-label="Changes" tabIndex={0}>
             {changes.map((c) => (
               <li key={c.id} className="gp-tray-item">
                 <span className="gp-tray-who">{c.who}</span>

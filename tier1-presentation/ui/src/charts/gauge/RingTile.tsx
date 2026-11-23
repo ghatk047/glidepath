@@ -20,6 +20,21 @@ export function vpColour(slot: number): string {
   return cssVar[seriesPath(i)];
 }
 
+/**
+ * Text drawn on a VP colour is white or black, whichever reads better (G12: 4.5:1 for small text).
+ * A colour with perceptual lightness (OKLCH L) under the cut takes white, any other black. The cut
+ * sits between the palette's slots that need white and those that need black in both themes
+ * (`e2e/a11y` checks every screen with axe).
+ */
+export const ON_SERIES_LIGHTNESS_CUT = 0.55;
+
+/** CSS colour for text on `series` (a CSS colour such as `vpColour(slot)`). */
+export const onSeriesText = (series: string): string =>
+  `oklch(from ${series} calc((${ON_SERIES_LIGHTNESS_CUT} - l) * 1000) 0 0)`;
+
+/** Text colour for text on the VP in `slot` (see `onSeriesText`). */
+export const vpTextColour = (slot: number): string => onSeriesText(vpColour(slot));
+
 export interface RingTileProps {
   /** The VP's net, $M (e.g. `res.vp_net` for that VP). */
   value: Maybe;

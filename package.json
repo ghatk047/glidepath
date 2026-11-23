@@ -28,6 +28,7 @@
     "e2e": "pnpm --filter @glidepath/e2e run smoke",
     "e2e:perf": "pnpm --filter @glidepath/e2e run perf",
     "e2e:visual": "pnpm --filter @glidepath/e2e run visual",
+    "e2e:a11y": "pnpm --filter @glidepath/e2e run a11y",
     "int:m2": "pnpm --filter @glidepath/e2e run m2",
     "int:m3": "pnpm --filter @glidepath/e2e run m3",
     "e2e:storyline": "pnpm --filter @glidepath/e2e run storyline",

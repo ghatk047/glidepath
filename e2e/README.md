@@ -58,6 +58,31 @@ browser set-up as the smoke; the tests are independent, so one metric over budge
 When the host's 1-minute load exceeds its CPU count the table says so: the numbers are then not a device
 measurement. Budgets are never relaxed; re-measure on a quiet machine (`--device` on the demo Mac).
 
+## Accessibility checks (QA-07, G12)
+
+```
+pnpm e2e:a11y -- --trace off          # INT_COMPOSE_PROJECT=<project> when it is not `glidepath`
+GP_A11Y_CHROMIUM=/opt/pw-browsers/chromium pnpm e2e:a11y -- --trace off   # name the Chromium Lighthouse's browser runs
+```
+
+`a11y/a11y.spec.ts` (own config `playwright.a11y.config.ts`, driver `a11y.mjs`; same stack and sign-in as the smoke;
+locked preset C, each screen after its numbers have drawn):
+
+1. `axe_each_module_in_both_themes_has_zero_serious_violations`: axe-core (all rules, real layout and colours, so
+   colour contrast is measured) on each of the eight modules in Cruise and Daylight, plus Cockpit with the edit popover,
+   trace drawer, changeset tray and command palette open. Fails on any `serious` or `critical` violation; lower impacts
+   are printed. Reduced motion is emulated so colours are measured at rest.
+2. `lighthouse_accessibility_at_least_95_on_cockpit_levers_path`: Lighthouse (snapshot mode, accessibility category)
+   of the loaded Cockpit, Levers and Path in both themes, through a persistent Chromium Playwright launched with a
+   DevTools port; the score is read on Lighthouse's 0..100 scale and must be >= 95. Failing audits are printed with
+   their first elements.
+3. `keyboard_paths_slider_dial_ownership_dividers_palette_drawer`: each control is reached with Tab (focus indicator
+   checked) and driven with its keys: the Cockpit target slider (arrows, Home, End), a Market dial, the VPs'
+   ownership dividers (registry step, Tab between dividers), the palette (⌘K / button, arrows, Tab trap, Escape
+   returns focus) and the trace drawer (button, Tab trap, Escape returns focus).
+
+`src/a11y.ts` (unit-tested in `src/a11y.test.ts`) holds what counts as a failure and the Lighthouse threshold.
+
 `tests/cockpit.ts` holds what both specs read on the Cockpit: the element each headline cell is
 drawn in and the text the UI's own `fmt` makes of a number.
 

@@ -14,7 +14,7 @@ const c = (k: ColorKey) => cssVar[`themes.${defaultTheme}.color.${k}` as TokenPa
 const gap = v('space.gap');
 const g = (num: number) => `calc(${gap} * ${num} / 18)`;
 
-/** Segment text and the grip are white on the VP colours (prototype `.ownbar`); no white token. */
+/** The grip is white on the VP colours (prototype `.ownbar`); no white token. Segment text is white or black by the colour's lightness (OwnershipBar), white here as the fallback. */
 const onSeries = 'white';
 const handleShadow = `0 0 ${g(6)} color-mix(in srgb, black 40%, transparent)`;
 const widthMotion = transition('toggle', ['width']);

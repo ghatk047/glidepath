@@ -52,6 +52,7 @@ export const paletteCss = [
   // tray: fixed under the button, right edge aligned to it
   `.gp-panel.gp-tray { position: fixed; z-index: 90; box-sizing: border-box; width: ${TRAY_WIDTH}; max-width: calc(100vw - 2 * ${gap}); max-height: calc(100vh - 2 * ${gap}); overflow: auto; border-radius: ${v('radius.card')}; top: var(--gp-tray-y, ${gap}); right: max(${gap}, calc(100vw - var(--gp-tray-x, 100vw))); animation: gp-popin-pal ${spring}; }`,
   `.gp-tray-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.375rem; max-height: 50vh; overflow: auto; }`,
+  `.gp-tray-list:focus-visible { outline: 0.125rem solid ${c('accent')}; outline-offset: 0.125rem; }`,
   `.gp-tray-item { display: grid; gap: 0.25rem; padding: 0.625rem 0.75rem; border-radius: ${v('radius.control')}; background: ${c('glass')}; border: ${border}; }`,
   `.gp-tray-who { color: ${c('ink3')}; font: ${v('type.scale.xs.weight')} ${v('type.scale.xs.size')}/1.25 ${v('type.families.mono')}; letter-spacing: ${v('type.scale.xs.tracking')}; text-transform: uppercase; }`,
   `.gp-tray-what { color: ${c('ink')}; font: ${v('type.scale.s.weight')} ${v('type.scale.s.size')}/1.3 ${v('type.families.ui')}; overflow-wrap: anywhere; }`,

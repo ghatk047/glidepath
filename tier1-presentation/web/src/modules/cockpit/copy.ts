@@ -165,7 +165,8 @@ export const COPY = {
   oneTimeIt: 'One-time in IT',
   allInputs: (count: number | null) => (count === null ? 'All inputs' : `All ${String(count)}`),
   allInputsName: (count: number | null) =>
-    count === null ? 'Find any input' : `Find any of the ${String(count)} inputs`,
+    // starts with the visible text ("All 194"): WCAG 2.5.3, label in name
+    count === null ? 'All inputs: find any' : `All ${String(count)} inputs: find any`,
   edited: 'edited',
   editTarget: 'Edit the net target',
   // VP rings

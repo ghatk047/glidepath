@@ -12,7 +12,7 @@ import { excelCss } from './styles';
 export default function Excel() {
   const [lastExport, setLastExport] = useState<ExportResult | null>(null);
   return (
-    <div className="gp-module" data-module="excel">
+    <main className="gp-module" data-module="excel" aria-label="Excel">
       <style href="glidepath-web-excel" precedence="glidepath">
         {excelCss}
       </style>
@@ -20,6 +20,6 @@ export default function Excel() {
         <ExportPanel onExported={setLastExport} />
         <ImportPanel lastExport={lastExport} />
       </Grid>
-    </div>
+    </main>
   );
 }

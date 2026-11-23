@@ -37,7 +37,7 @@ export default function Vps() {
       <style href="glidepath-vps" precedence="glidepath">
         {vpsCss}
       </style>
-      <div className="gp-vps" data-module="vps">
+      <main className="gp-vps" data-module="vps" aria-label="VP targets and ownership">
         <Controls />
         <section className="gp-vps-cards" aria-label="VP targets">
           {vps.map((vp, slot) => (
@@ -51,7 +51,7 @@ export default function Vps() {
             <FeasiblePanel tenant={tenant} scenarioId={scenarioId} vps={vps} />
           </GridCell>
         </Grid>
-      </div>
+      </main>
     </JobsProvider>
   );
 }

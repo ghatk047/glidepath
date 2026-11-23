@@ -50,7 +50,7 @@ export const vpsCss = [
   `.gp-vps-warns { display: flex; flex-direction: column; gap: ${rem(6)}; margin-bottom: ${rem(10)}; }`,
   `.gp-vps-warns:empty { display: none; }`,
   `.gp-vps-usage { display: flex; border-radius: var(--radius-control); overflow: hidden; min-height: ${rem(40)}; margin: ${rem(14)} 0; }`,
-  `.gp-vps-usage > span { display: grid; place-items: center; min-width: 0; background: var(--vp-colour); color: white; font-size: var(--type-s-size); font-weight: 600; box-shadow: inset -${rem(1)} 0 var(--glass-line); }`,
+  `.gp-vps-usage > span { display: grid; place-items: center; min-width: 0; background: var(--vp-colour); color: var(--vp-text, white); font-size: var(--type-s-size); font-weight: 600; box-shadow: inset -${rem(1)} 0 var(--glass-line); }`,
   `.gp-vps-pools { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }`,
   `.gp-vps-pool { display: flex; align-items: center; gap: ${rem(12)}; padding: ${rem(10)} ${rem(14)}; }`,
   `.gp-vps-pool-name { margin-right: auto; color: var(--ink); }`,

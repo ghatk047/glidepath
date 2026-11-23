@@ -214,7 +214,7 @@ title: "Accessibility checks (G12) and Lighthouse"
 epic: QA
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -233,6 +233,7 @@ acceptance:
 gates: [G12]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Usable by keyboard and screen reader.

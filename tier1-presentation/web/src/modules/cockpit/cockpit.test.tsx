@@ -379,7 +379,7 @@ describe('MOD-01 Cockpit hero', () => {
       BRIDGE_CELLS.map((id) => toCellKey(id, '')),
     );
     const payload = bridgePayload(C.cells as Record<string, number>);
-    const names = steps.map((s) => s.getAttribute('aria-label'));
+    const names = steps.map((s) => s.querySelector('[aria-label]')?.getAttribute('aria-label'));
     expect(names[0]).toContain(fmt.money(cell('base.total')));
     expect(names[1]).toContain(fmt.signed(cell('base.headwinds')));
     expect(names[2]).toContain(fmt.signed(-cell('res.tot_iy')));
@@ -428,7 +428,7 @@ describe('MOD-01 Cockpit hero', () => {
     );
 
     const all = within(inputs).getByRole('button', {
-      name: `Find any of the ${String(bundle.variables.length)} inputs`,
+      name: `All ${String(bundle.variables.length)} inputs: find any`,
     });
     expect(all.textContent).toBe(`All ${String(bundle.variables.length)}`);
     fireEvent.click(all);

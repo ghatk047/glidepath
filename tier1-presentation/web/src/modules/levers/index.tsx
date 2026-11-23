@@ -73,7 +73,7 @@ export default function Levers() {
   const hypothesis = typeof hyp === 'string' ? hyp : undefined;
 
   return (
-    <div className="gp-module" data-module="levers">
+    <main className="gp-module" data-module="levers" aria-label="Lever studio">
       <LeversStyles />
       <Grid>
         <GlassPanel
@@ -114,6 +114,6 @@ export default function Levers() {
           <MonthlyPanel monthly={monthly.payload} labels={labels} selected={selected} />
         </GridCell>
       </Grid>
-    </div>
+    </main>
   );
 }

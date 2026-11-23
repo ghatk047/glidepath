@@ -5399,7 +5399,7 @@
     "epic": "QA",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "sonnet",
     "effort": "high",
@@ -5430,7 +5430,8 @@
       "G12"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "QA-08",

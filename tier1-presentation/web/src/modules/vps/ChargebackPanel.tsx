@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { fmt } from '@glidepath/ui/format';
-import { vpColour } from '@glidepath/ui/charts/gauge';
+import { vpColour, vpTextColour } from '@glidepath/ui/charts/gauge';
 import { GlassPanel } from '@glidepath/ui/glass';
 import { BoundEditable, useNode } from '../../bind';
 import { BoundToggle, GlowValue, useCells } from './Bound';
@@ -23,7 +23,13 @@ function UsageKey({ vps }: { vps: readonly VpMember[] }) {
             data-vp={v.key}
             data-value={u}
             data-tip={`${v.label} · ${fmt.pct(u)}`}
-            style={{ flexGrow: u, '--vp-colour': vpColour(i) } as CSSProperties}
+            style={
+              {
+                flexGrow: u,
+                '--vp-colour': vpColour(i),
+                '--vp-text': vpTextColour(i),
+              } as CSSProperties
+            }
           >
             {fmt.pct(u)}
           </span>

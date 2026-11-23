@@ -307,7 +307,9 @@ describe('UI-07 edits tray: focus trap, Escape, axe', () => {
     counter.focus();
     fireEvent.click(counter);
     const dlg = screen.getByRole('dialog');
-    const stops = [...dlg.querySelectorAll<HTMLElement>('button:not([disabled])')];
+    // the scrollable change list is a tab stop too (axe scrollable-region-focusable)
+    const stops = [...dlg.querySelectorAll<HTMLElement>('button:not([disabled]), [tabindex="0"]')];
+    expect(stops[0]).toHaveProperty('className', 'gp-tray-list');
     expect(document.activeElement).toBe(stops[0]);
     stops[stops.length - 1]!.focus();
     key('Tab');

@@ -156,16 +156,19 @@ export function Bridge({
               className="gp-bridge-step"
               data-step={b.step.key}
               data-cell={b.step.cell ?? undefined}
-              role={interactive ? 'button' : 'img'}
-              aria-label={name}
-              tabIndex={interactive ? 0 : undefined}
               onClick={interactive ? () => activate(b.step) : undefined}
-              onKeyDown={interactive ? onKey(b.step) : undefined}
             >
               <title>{hint ? `${name} · ${hint}` : name}</title>
+              {/* The bar is the button / image: it holds no text, so its accessible name need not
+                  repeat the labels drawn beside it (WCAG 2.5.3, axe label-content-name-mismatch);
+                  those are aria-hidden duplicates of the name. */}
               <rect
                 className="gp-bridge-bar"
                 data-step={b.step.key}
+                role={interactive ? 'button' : 'img'}
+                aria-label={name}
+                tabIndex={interactive ? 0 : undefined}
+                onKeyDown={interactive ? onKey(b.step) : undefined}
                 x={b.x}
                 y={b.y}
                 width={b.width}

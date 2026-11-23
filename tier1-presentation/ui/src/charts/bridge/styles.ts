@@ -33,7 +33,8 @@ export const bridgeCss = [
   `.gp-bridge-target { stroke: ${c('ink')}; stroke-width: 1.2; stroke-dasharray: 4 4; opacity: 0.75; }`,
   `.gp-bridge-gap { stroke: ${c('neg')}; fill: none; stroke-width: 1.4; }`,
   `.gp-bridge-break { stroke: ${c('ink3')}; fill: none; }`,
-  `.gp-bridge-step[role="button"] { cursor: pointer; outline: none; }`,
-  `.gp-bridge-step[role="button"]:focus-visible .gp-bridge-bar { stroke: ${c('accent')}; stroke-width: 2; }`,
+  `.gp-bridge-step:has(> [role="button"]) { cursor: pointer; }`,
+  `.gp-bridge-bar[role="button"] { outline: none; }`,
+  `.gp-bridge-bar[role="button"]:focus-visible { stroke: ${c('accent')}; stroke-width: 2; }`,
   `@media (prefers-reduced-motion: reduce) {\n  .gp-bridge-bar { transition: none; }\n}`,
 ].join('\n');

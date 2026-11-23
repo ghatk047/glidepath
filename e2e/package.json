@@ -7,11 +7,12 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src tests perf visual playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts playwright.visual.config.ts playwright.int-m3.config.ts playwright.storyline.config.ts",
+    "lint": "eslint src tests perf visual a11y playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts playwright.visual.config.ts playwright.int-m3.config.ts playwright.storyline.config.ts playwright.a11y.config.ts",
     "visual": "node visual.mjs",
     "test": "vitest run",
     "smoke": "node run.mjs",
     "perf": "node perf.mjs",
+    "a11y": "node a11y.mjs",
     "m2": "node run.mjs --config playwright.m2.config.ts",
     "m3": "node run.mjs --config playwright.int-m3.config.ts",
     "storyline": "node run.mjs --config playwright.storyline.config.ts"
@@ -23,7 +24,11 @@
     "@glidepath/ui": "workspace:*"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.63.0",
-    "exceljs": "4.4.0"
+    "axe-core": "4.14.1",
+    "exceljs": "4.4.0",
+    "lighthouse": "13.6.0",
+    "puppeteer-core": "25.16.0"
   }
 }

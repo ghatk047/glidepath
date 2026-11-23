@@ -408,7 +408,7 @@ describe('AC4: more drivers', () => {
   it('lists every corporate driver, grouped macro, fuel, demand, labor, fleet, airports, financing, tax, valuation', async () => {
     const t = await mount();
     expect(corporate.length).toBe(91);
-    const toggle = screen.getByRole('button', { name: `More drivers, all ${corporate.length}` });
+    const toggle = screen.getByRole('button', { name: `More drivers · ${corporate.length}` });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(document.querySelectorAll('.gp-market-driver')).toHaveLength(0);
     fireEvent.click(toggle);
@@ -484,7 +484,7 @@ describe('WEB-10: percent scale on the shared path', () => {
 
   it('every scalar percent driver of the Corporate group lists as points in More drivers (none reads 100x too large)', async () => {
     const t = await mount();
-    fireEvent.click(screen.getByRole('button', { name: `More drivers, all ${corporate.length}` }));
+    fireEvent.click(screen.getByRole('button', { name: `More drivers · ${corporate.length}` }));
     await t.until(() =>
       expect(document.querySelectorAll('.gp-market-driver').length).toBe(corporate.length),
     );
