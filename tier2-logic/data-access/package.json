@@ -7,8 +7,9 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src scripts",
+    "lint": "eslint src scripts test",
     "test": "vitest run",
+    "test:leak": "vitest run test/leak",
     "gen:drizzle": "tsx scripts/gen-drizzle.ts generate",
     "check:drizzle": "tsx scripts/gen-drizzle.ts check"
   },

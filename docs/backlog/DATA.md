@@ -356,7 +356,7 @@ title: "RLS catalog check and repository-level leak test"
 epic: DATA
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -375,6 +375,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: S
 notes: "Route-level leak test (3 tenants) is QA-03."
+merged_at: "2026-11-23"
 ```
 
 First half of G7.

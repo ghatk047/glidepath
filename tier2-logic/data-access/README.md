@@ -2,6 +2,13 @@
 
 Repositories over tier 3: Drizzle schema, queries, RLS session, object store client. The only tier-2 package that opens database connections.
 
+## DATA-10: G7 leak tests (`pnpm test:leak`)
+
+`test/leak/` (also part of `pnpm test`), on a migrated pg-local database with two tenants (`seed.ts`: the DATA-05 minimal seed plus rows of A and B in every tenant table it leaves empty), as `glidepath_app`:
+
+- `rls-catalog.spec.ts`: tenant tables are discovered (schema.json scope other than `global`, plus any table with a `tenant_id` column, so manual tables such as `stored_object` and later ones count). `catalog.ts` `rlsViolations()` requires ENABLE + FORCE RLS, a permissive `key = app.tenant_id` policy for every command the app role is granted, no permissive policy that widens it, no TRUNCATE/REFERENCES/TRIGGER or ownership for the app role, a restrictive same-tenant policy on every FK between tenant tables that does not carry the tenant, `security_invoker` on views over tenant tables, SELECT-only global tables, and `glidepath_app` without SUPERUSER/BYPASSRLS (nor membership of such a role). A self-test adds a careless table, policy, FK, view and BYPASSRLS in rolled-back transactions and expects each violation. Every tenant table is then probed: as tenant A no B row is visible, updatable or deletable, a row with B's id (or an FK to a B row) is refused by RLS, and without a tenant nothing is visible.
+- `leak.repos.spec.ts`: every function or class data-access exports is a repository with a leak case, an error class, or listed in `NOT_REPOSITORIES` (checked not to call a scope guard); `ChangesetTx` methods and `PostgresObjectStore` methods are read from the objects. Each repository runs as tenant A (works, no B data), aimed at B's ids (nothing found / refused), and with tenant B's id in data-access's scope over a connection whose `app.tenant_id` is A (writes refused, nothing of B read). "B data" is every value found only in B's rows (catalog-wide), and B's stored rows are compared after every call.
+
 ## DATA-06: write repositories (the domain ChangesetStore port)
 
 `src/write` implements `ChangesetStore` / `ChangesetTx` of `@glidepath/domain` (ADR-019) over Postgres, so `applyChangeset` writes through it. Every method runs on the transaction of a live `withTenant` (`tenantScope` check, `TenantScopeError` otherwise), `tenant_id` comes from that scope, and RLS applies.

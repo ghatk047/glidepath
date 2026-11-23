@@ -19,7 +19,7 @@
     "parity:golden": "tsx tools/parity/src/cli.ts",
     "parity:fuzz": "echo 'not implemented yet'",
     "test:excel": "pnpm --filter @glidepath/excel run test:roundtrip",
-    "test:leak": "echo 'not implemented yet'",
+    "test:leak": "pnpm -r --workspace-concurrency=1 run test:leak",
     "tier-check": "tsx tools/tier-check/src/cli.ts",
     "e2e": "echo 'not implemented yet'",
     "e2e:storyline": "echo 'not implemented yet'",

@@ -1597,7 +1597,7 @@
     "epic": "DATA",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "xhigh",
@@ -1623,7 +1623,8 @@
       "G7"
     ],
     "size": "S",
-    "notes": "Route-level leak test (3 tenants) is QA-03."
+    "notes": "Route-level leak test (3 tenants) is QA-03.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DOM-01",
