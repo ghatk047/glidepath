@@ -19,7 +19,7 @@ title: "Worker runtime on pg-boss: queues, progress, cancel"
 epic: JOB
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -40,6 +40,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The worker container's runtime.
