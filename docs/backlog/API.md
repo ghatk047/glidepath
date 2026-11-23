@@ -357,7 +357,7 @@ title: "AI reconfig and market refresh routes"
 epic: API
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high

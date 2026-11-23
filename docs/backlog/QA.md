@@ -88,7 +88,7 @@ title: "Route-level cross-tenant leak test (3 tenants)"
 epic: QA
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: xhigh
