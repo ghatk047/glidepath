@@ -151,6 +151,25 @@ importers:
 
   tools/scaffold-check: {}
 
+  tools/testkit:
+    dependencies:
+      '@glidepath/data-access':
+        specifier: workspace:*
+        version: link:../../tier2-logic/data-access
+      '@glidepath/pg-local':
+        specifier: workspace:*
+        version: link:../pg-local
+      '@glidepath/spec':
+        specifier: workspace:*
+        version: link:../../tier2-logic/spec
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
+
   tools/tier-check: {}
 
 packages:

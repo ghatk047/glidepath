@@ -1,0 +1,30 @@
+{
+  "files": [
+    {
+      "file": "inputs_small.csv",
+      "description": "Seven scalar AA inputs (id, label, value) as CSV; for the one-sheet CSV import path.",
+      "produced_by": "make_fixtures.py"
+    },
+    {
+      "file": "inputs_small.xlsx",
+      "description": "Same seven inputs on an Inputs sheet; the unchanged baseline for re-import with 0 changes.",
+      "produced_by": "make_fixtures.py (openpyxl)"
+    },
+    {
+      "file": "inputs_small_edited.xlsx",
+      "description": "Baseline with hc.us doubled; exactly one changed cell for two-way diff tests.",
+      "produced_by": "make_fixtures.py (openpyxl)"
+    },
+    {
+      "file": "inputs_small_libreoffice.xlsx",
+      "description": "Baseline re-saved by LibreOffice headless; must re-import with 0 changes (G6).",
+      "produced_by": "make_fixtures.py (soffice --headless --convert-to xlsx)"
+    }
+  ],
+  "pending": [
+    {
+      "file": "inputs_small_excel_mac.xlsx",
+      "reason": "Needs the owner to open inputs_small.xlsx in Excel for Mac and save it once; not producible in the build container."
+    }
+  ]
+}
