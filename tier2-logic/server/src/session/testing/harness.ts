@@ -9,7 +9,7 @@ import { bindWithTenant } from '../../app/tenant';
 import { AUTH_SECRET, captureLogger } from '../../app/testing/fixtures';
 import { authFromConfig } from '../../auth/auth';
 import type { Auth } from '../../auth/auth';
-import { CSRF_COOKIE, sessionCookieName } from '../../auth/cookies';
+import { CSRF_COOKIE, CSRF_HEADER, sessionCookieName } from '../../auth/cookies';
 import { allowedOrigin } from '../../auth/guard';
 import type { Mailer } from '../../auth/mailer';
 import { startAaDatabase } from '../../routes/read/testing/aa-db';
@@ -17,6 +17,7 @@ import type { AaDatabase } from '../../routes/read/testing/aa-db';
 import { specBundleFromDir } from '../../routes/read/spec-source';
 import { createSessionHub } from '../hub';
 import type { SessionHub } from '../hub';
+import type { Clock } from '../clock';
 import { dbScenarioLoader } from '../loader';
 import { ModelCache } from '../model-cache';
 import { openSocket } from './ws-client';
@@ -86,10 +87,19 @@ export interface SessionHarness {
   connect(opts: ConnectOptions): Promise<Opened | Refused>;
   /** Like `connect`, failing unless the handshake succeeds. */
   open(opts: ConnectOptions): Promise<Opened['socket']>;
+  /** A state-changing request as the signed-in browser sends it (same origin, CSRF header), through the app. */
+  request(cookie: string, method: string, path: string, body?: unknown): Promise<Response>;
   close(): Promise<void>;
 }
 
-export async function startSessionHarness(): Promise<SessionHarness> {
+export interface SessionHarnessOptions {
+  /** The hub's clock (idle close, rerun cap). */
+  clock?: Clock;
+  /** The hub's idle limit in ms. */
+  idleMs?: number;
+}
+
+export async function startSessionHarness(options: SessionHarnessOptions = {}): Promise<SessionHarness> {
   const aa = await startAaDatabase();
   const queries = spyQueries(aa.app.pool);
   const links: string[] = [];
@@ -112,6 +122,8 @@ export async function startSessionHarness(): Promise<SessionHarness> {
     membership: auth.membership,
     allowedOrigin: (url) => allowedOrigin(auth.settings, url),
     loader: dbScenarioLoader({ withTenant: bindWithTenant(aa.app.db), specBundle, models }),
+    ...(options.clock ? { clock: options.clock } : {}),
+    ...(options.idleMs === undefined ? {} : { idleMs: options.idleMs }),
   });
   const app = createApp({ logger, db: aa.app, auth, specBundle, sessions: hub });
   const server = await new Promise<ServerType>((resolve, reject) => {
@@ -169,6 +181,16 @@ export async function startSessionHarness(): Promise<SessionHarness> {
     base,
     login,
     connect,
+    request(cookie, method, path, body) {
+      const csrf = new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]*)`).exec(cookie)?.[1] ?? '';
+      return Promise.resolve(
+        app.request(path, {
+          method,
+          headers: { cookie, origin: ORIGIN, [CSRF_HEADER]: decodeURIComponent(csrf), 'content-type': 'application/json' },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        }),
+      );
+    },
     async open(opts) {
       const r = await connect(opts);
       if (!r.ok) throw new Error(`handshake refused: ${r.status} ${r.body}`);

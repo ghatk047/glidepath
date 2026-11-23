@@ -36,7 +36,7 @@ export interface AppDeps {
   withTenant?: WithTenant;
   /** Spec bundle of a model version (bundle route); default: `SPEC_DIR`, else the repository's `docs/spec`. */
   specBundle?: SpecBundleSource;
-  /** Told after each committed write (the WS session hub, API-07); default: nobody. */
+  /** Told after each committed write; default: `sessions` (the WS session hub, API-07), else nobody. */
   hub?: CommitNotifier;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
@@ -127,7 +127,9 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
 
   const specBundle = deps.specBundle ?? specBundleFromDir();
   registerReadRoutes(app, { specBundle });
-  registerWriteRoutes(app, { specBundle, ...(deps.hub ? { hub: deps.hub } : {}) });
+  // Committed writes reach the open sessions (API-07): the session hub, unless a test hands its own.
+  const hub = deps.hub ?? deps.sessions;
+  registerWriteRoutes(app, { specBundle, ...(hub ? { hub } : {}) });
   registerExplainRoutes(app, { specBundle });
 
   app.onError(errorHandler());

@@ -6,10 +6,15 @@ import type { UserId } from '@glidepath/api-contract';
 import type { Hono } from 'hono';
 import { WebSocketServer } from 'ws';
 import type { RawData, WebSocket } from 'ws';
+import { DEFAULT_SESSION_IDLE_MIN } from '../app/config';
 import type { Logger } from '../app/logger';
 import { ApiError, problemResponse } from '../app/problem';
 import type { AppEnv, Authenticator, MembershipResolver } from '../app/tenant';
 import { crossSiteRefused, isSameOrigin } from '../auth/guard';
+import type { SessionHub as CommitListener } from '../routes/write/hub';
+import { broadcastChange } from './broadcast';
+import { systemClock } from './clock';
+import type { Clock, Timer } from './clock';
 import type { ScenarioLoader, ScenarioState } from './loader';
 import { Session } from './session';
 import type { SessionMembership } from './session';
@@ -27,7 +32,17 @@ import type { SessionMembership } from './session';
  * A non-upgrade `GET /ws/session` answers 426.
  *
  * Every member may preview (previews write nothing); commits keep their REST role guard.
+ *
+ * Lifecycle (API-07). The hub is also the write routes' `SessionHub`: after a changeset or revert committed,
+ * `changeApplied` broadcasts it to the sessions on the scenario (`broadcastChange`) before the POST is
+ * answered. A session whose client sent no frame for `idleMs` (`SESSION_IDLE_MIN`, ADR-022) is closed with
+ * {@link IDLE_CLOSE_CODE}; the client reconnects and the handshake rebuilds it from tier 3.
  */
+
+/** Close code of an idle session (application range): the client may reconnect at once. */
+export const IDLE_CLOSE_CODE = 4000;
+export const IDLE_CLOSE_REASON = 'session idle';
+const MS_PER_MIN = 60_000;
 
 /** Largest client frame accepted (a subscribe of every cell of a model fits easily). */
 export const MAX_FRAME_BYTES = 1024 * 1024;
@@ -68,9 +83,13 @@ export interface SessionHubDeps {
   allowedOrigin?: (requestUrl: string) => string;
   /** Runs each session's preview queue; default `setImmediate`. */
   schedule?: (run: () => void) => void;
+  /** Idle limit in ms (`SESSION_IDLE_MIN` × 60 000); default `DEFAULT_SESSION_IDLE_MIN` minutes. */
+  idleMs?: number;
+  /** Time for idle close and the rerun cap; default the system clock. */
+  clock?: Clock;
 }
 
-export interface SessionHub {
+export interface SessionHub extends CommitListener {
   /** Mounts the handshake route `GET /ws/session` on the app. */
   route(app: Hono<AppEnv>): void;
   /** Accepts WebSocket upgrades on `server`, running each handshake through `fetch` (the app). */
@@ -111,6 +130,9 @@ export function createSessionHub(deps: SessionHubDeps): SessionHub {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_FRAME_BYTES });
   const sessions = new Set<Session>();
   const sockets = new Set<WebSocket>();
+  const clock = deps.clock ?? systemClock;
+  const idleMs = Math.max(1, deps.idleMs ?? DEFAULT_SESSION_IDLE_MIN * MS_PER_MIN);
+  const idleTimers = new Set<Timer>();
   let closing = false;
   let nextId = 0;
 
@@ -119,6 +141,7 @@ export function createSessionHub(deps: SessionHubDeps): SessionHub {
     const log = logger.child({ ws: nextId });
     sockets.add(ws);
     const session = new Session({
+      clock,
       userId: accepted.userId,
       tenant: accepted.tenant,
       state: accepted.state,
@@ -131,9 +154,30 @@ export function createSessionHub(deps: SessionHubDeps): SessionHub {
     });
     sessions.add(session);
     log.info('session opened', { tenant: accepted.tenant.slug, scenario: accepted.state.scenarioId });
+    // Idle close: one timer per session, re-armed for the rest of the limit while the client is active.
+    let idle: Timer | null = null;
+    const arm = (ms: number) => {
+      const t = clock.after(ms, () => {
+        idleTimers.delete(t);
+        idle = null;
+        if (session.isClosed) return;
+        const quiet = clock.now() - session.lastActivity;
+        if (quiet < idleMs) return arm(idleMs - quiet);
+        log.info('session idle, closing', { scenario: session.scenarioId, idleMs });
+        session.close();
+        ws.close(IDLE_CLOSE_CODE, IDLE_CLOSE_REASON);
+      });
+      idle = t;
+      idleTimers.add(t);
+    };
+    arm(idleMs);
     ws.on('message', (data: RawData) => session.receive(data.toString()));
     ws.on('error', (err) => log.warn('session socket error', { err }));
     ws.on('close', (code) => {
+      if (idle) {
+        idle.cancel();
+        idleTimers.delete(idle);
+      }
       session.close();
       sessions.delete(session);
       sockets.delete(ws);
@@ -170,6 +214,14 @@ export function createSessionHub(deps: SessionHubDeps): SessionHub {
 
   return {
     sessions,
+    async changeApplied(notice) {
+      await broadcastChange(sessions, notice, deps.loader, logger);
+    },
+    scenarioChanged(notice) {
+      // No WS message carries the scenario list (clients refetch it over REST); the open sessions keep their
+      // scenario: a rename, lock or archive changes no value.
+      logger.debug('scenario changed', { scenario: notice.scenario.id, change: notice.change });
+    },
     route(app) {
       app.get(WS_SESSION_PATH, async (c) => {
         const env = c.env as Record<PropertyKey, unknown> | undefined;
@@ -206,6 +258,8 @@ export function createSessionHub(deps: SessionHubDeps): SessionHub {
     },
     async close() {
       closing = true;
+      for (const t of idleTimers) t.cancel();
+      idleTimers.clear();
       const open = [...sockets];
       await Promise.race([
         Promise.all(

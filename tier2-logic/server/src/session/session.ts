@@ -1,12 +1,14 @@
-import { WS_PROTOCOL_VERSION, parseClientMessage } from '@glidepath/api-contract';
+import { PREVIEW_MAX_PER_SECOND, WS_PROTOCOL_VERSION, parseClientMessage } from '@glidepath/api-contract';
 import type {
   CellKey as WireCell,
   ClientMessage,
   MembershipRole,
+  ScenarioId,
   ServerMessage,
   TenantId,
   TenantSlug,
   UserId,
+  Violation,
 } from '@glidepath/api-contract';
 import { EngineError } from '@glidepath/engine';
 import type { CellKey as EngineCell, Change, Evaluation } from '@glidepath/engine';
@@ -15,7 +17,10 @@ import { toProblem } from '../app/problem';
 import type { ProblemInit } from '../app/problem';
 import { diffCells, engineCell, toEngineCell, wireValue } from './cells';
 import type { WireValue } from './cells';
+import { systemClock } from './clock';
+import type { Clock, Timer } from './clock';
 import type { ScenarioLoader, ScenarioState } from './loader';
+import { previewViolations, sameViolations } from './warnings';
 
 /**
  * One what-if session: `Session(user, tenant, scenario)` of 03 §2, behind one `WS /ws/session` connection.
@@ -25,7 +30,7 @@ import type { ScenarioLoader, ScenarioState } from './loader';
  * evaluation. Nothing here reads or writes tier 3 except `open`, which asks the loader for another scenario.
  *
  * Frames are handled one at a time in arrival order; `open` (the only one that waits on IO) holds the frames
- * after it until the new scenario is in place.
+ * after it until the new scenario is in place. Commits from the hub queue with the frames.
  *
  * Previews (CON-02/CON-05 coalescing contract, `PREVIEW_MAX_PER_SECOND` in the contract):
  * - `seq` must increase across `preview` and `cancelPreview` (one counter per connection);
@@ -36,9 +41,19 @@ import type { ScenarioLoader, ScenarioState } from './loader';
  * - a `delta` carries the subscribed cells whose value differs from the one last pushed to this client
  *   (snapshot or delta), so skipped intermediate values never show and unchanged cells are never sent;
  * - `cancelPreview{seq}` voids queued previews and the scratch and answers `delta{seq}` with the cells that
- *   go back to their committed value (empty when none);
- * - other frames first run queued previews, so answers leave in the order of the requests.
+ *   go back to their committed value (empty when none), then `warnings{seq, []}` when warnings showed;
+ * - other frames first run queued previews, so answers leave in the order of the requests;
+ * - reruns are capped at `PREVIEW_MAX_PER_SECOND` per connection (a token bucket of that size): a faster
+ *   client is never refused, its previews wait and coalesce into the next allowed rerun.
  * Rejected frames get `error{problem}` and change nothing.
+ *
+ * Lifecycle (API-07):
+ * - warnings: after a rerun the scratch is checked with DOM `validatePreview` (deferred through `schedule`,
+ *   skipped when a later preview superseded it) and `warnings{seq}` is pushed when the list differs from
+ *   the one last pushed;
+ * - commits (`applyCommit`, from the hub once a write committed): `changeset{…}`, then `delta{null}`, then,
+ *   with a scratch, the rebase answered `delta{S}` and `warnings{S}` (S the scratch's seq);
+ * - `lastActivity`: when the client last sent a frame (the hub closes idle sessions).
  */
 
 /** The cap on cells one session pushes: far above the input and node cells of a model, bounds a bad client. */
@@ -63,6 +78,25 @@ export interface SessionDeps {
   readonly schedule?: (run: () => void) => void;
   readonly logger?: Logger;
   readonly maxSubscribedCells?: number;
+  /** Time for the rerun cap and `lastActivity`; default the system clock. */
+  readonly clock?: Clock;
+  /** Reruns per second (token bucket); default the contract's `PREVIEW_MAX_PER_SECOND`. */
+  readonly maxRerunsPerSecond?: number;
+}
+
+/** The WS `changeset` message. */
+export type ChangesetMessage = Extract<ServerMessage, { type: 'changeset' }>;
+
+/** A committed write, as the hub hands it to each session it concerns. */
+export interface CommitUpdate {
+  /**
+   * The scenario the session must be on for this to apply: the committed one, or the locked preset the
+   * commit forked (the author's sessions follow the fork). A session that moved on meanwhile ignores it.
+   */
+  readonly on: string;
+  /** The committed scenario read from tier 3 after the commit; null when it could not be read. */
+  readonly state: ScenarioState | null;
+  readonly message: ChangesetMessage;
 }
 
 /** What a session did, for tests and benches. */
@@ -73,6 +107,12 @@ export interface SessionCounters {
   reruns: number;
   cancels: number;
   rejected: number;
+  /** Commits adopted (each answered by a `delta{null}`). */
+  commits: number;
+  /** Scratch copies re-applied on a new committed state. */
+  rebases: number;
+  /** `warnings` messages pushed. */
+  warnings: number;
 }
 
 interface QueuedPreview {
@@ -82,12 +122,36 @@ interface QueuedPreview {
 
 type Of<T extends ClientMessage['type']> = Extract<ClientMessage, { type: T }>;
 
+type InboxItem =
+  | { readonly frame: unknown }
+  | { readonly task: () => void | Promise<void>; readonly done: () => void };
+
+/** The scratch copy: committed state + every cell previewed since the last cancel or open. */
+interface Scratch {
+  readonly at: Evaluation;
+  /** Highest `seq` applied to it (what a rebase after a commit answers with). */
+  readonly seq: number;
+  /** The previewed cells, latest value each: what a rebase re-applies. */
+  readonly cells: ReadonlyMap<EngineCell, number>;
+}
+
+const variableChanges = (cells: ReadonlyMap<EngineCell, number>): Change[] =>
+  [...cells].map(([cell, value]) => ({ target: 'variable', cell, value }));
+
 const V = WS_PROTOCOL_VERSION;
 
 export class Session {
   readonly userId: UserId;
   readonly tenant: SessionMembership;
-  readonly counters: SessionCounters = { previews: 0, reruns: 0, cancels: 0, rejected: 0 };
+  readonly counters: SessionCounters = {
+    previews: 0,
+    reruns: 0,
+    cancels: 0,
+    rejected: 0,
+    commits: 0,
+    rebases: 0,
+    warnings: 0,
+  };
 
   private state: ScenarioState;
   private readonly loader: ScenarioLoader;
@@ -95,21 +159,27 @@ export class Session {
   private readonly schedule: (run: () => void) => void;
   private readonly log: Logger | undefined;
   private readonly maxCells: number;
+  private readonly clock: Clock;
+  private readonly rate: number;
 
   /** Subscribed wire cell → its engine key. */
   private readonly subscribed = new Map<WireCell, EngineCell>();
   /** Value last pushed for each subscribed cell. */
   private readonly sent = new Map<WireCell, WireValue>();
-  /**
-   * The scratch copy: committed state + every cell previewed since the last cancel or open, and the highest
-   * `seq` applied to it (what a rebase after a commit answers with, API-07).
-   */
-  private scratch: { readonly at: Evaluation; readonly seq: number } | null = null;
+  private scratch: Scratch | null = null;
   private queue: QueuedPreview[] = [];
   private runQueued = false;
+  private runTimer: Timer | null = null;
   private lastSeq = 0;
+  /** Rerun tokens left and when they were last counted (token bucket of `rate`). */
+  private tokens: number;
+  private tokensAt: number;
+  /** Warnings last pushed (empty: none show). */
+  private warned: readonly Violation[] = [];
+  private warnQueued = false;
+  private active: number;
 
-  private readonly inbox: unknown[] = [];
+  private readonly inbox: InboxItem[] = [];
   private draining = false;
   private closed = false;
 
@@ -122,9 +192,13 @@ export class Session {
     this.schedule = deps.schedule ?? ((run) => void setImmediate(run));
     this.log = deps.logger;
     this.maxCells = deps.maxSubscribedCells ?? MAX_SUBSCRIBED_CELLS;
+    this.clock = deps.clock ?? systemClock;
+    this.rate = Math.max(1, deps.maxRerunsPerSecond ?? PREVIEW_MAX_PER_SECOND);
+    this.tokens = this.rate;
+    this.tokensAt = this.active = this.clock.now();
   }
 
-  get scenarioId(): string {
+  get scenarioId(): ScenarioId {
     return this.state.scenarioId;
   }
 
@@ -138,28 +212,67 @@ export class Session {
     return this.scratch?.at ?? this.state.committed;
   }
 
+  /** When the client last sent a frame (clock time); the hub closes sessions idle for too long. */
+  get lastActivity(): number {
+    return this.active;
+  }
+
+  /** Warnings last pushed to the client (empty when none show). */
+  get warnings(): readonly Violation[] {
+    return this.warned;
+  }
+
+  get isClosed(): boolean {
+    return this.closed;
+  }
+
   /** One client frame (JSON text or decoded object), handled after the frames before it. */
   receive(frame: unknown): void {
     if (this.closed) return;
-    this.inbox.push(frame);
+    this.active = this.clock.now();
+    this.inbox.push({ frame });
     if (!this.draining) void this.drain();
+  }
+
+  /**
+   * A write committed on this session's scenario (or forked the preset it is on): queued behind the frames
+   * already received, then `changeset`, `delta{null}` and the rebase. Resolves once handled (or dropped).
+   */
+  applyCommit(update: CommitUpdate): Promise<void> {
+    if (this.closed) return Promise.resolve();
+    return new Promise<void>((done) => {
+      this.inbox.push({ task: () => this.adopt(update), done });
+      if (!this.draining) void this.drain();
+    });
   }
 
   /** The connection is gone: drop everything queued. */
   close(): void {
     this.closed = true;
-    this.inbox.length = 0;
+    for (const item of this.inbox.splice(0)) if ('task' in item) item.done();
     this.queue = [];
     this.scratch = null;
+    this.runTimer?.cancel();
+    this.runTimer = null;
   }
 
   private async drain(): Promise<void> {
     this.draining = true;
     try {
       while (this.inbox.length > 0 && !this.closed) {
-        const frame = this.inbox.shift();
+        const item = this.inbox.shift()!;
+        if ('task' in item) {
+          try {
+            await item.task();
+          } catch (err) {
+            this.log?.error('session commit update failed', { err });
+          } finally {
+            item.done();
+          }
+          continue;
+        }
         try {
-          const pending = this.handle(frame);
+          const pending = this.handle(item.frame);
           if (pending) await pending;
         } catch (err) {
           this.failed(err);
@@ -260,14 +373,26 @@ export class Session {
     this.queue.push({ seq: m.seq, cells: m.changes.map((c) => [engineCell(c.var, c.member), c.value] as const) });
     if (this.runQueued) return;
     this.runQueued = true;
-    this.schedule(() => {
+    const fire = () => {
+      this.runTimer = null;
       this.runQueued = false;
       try {
         this.runQueue();
       } catch (err) {
         this.failed(err);
       }
-    });
+    };
+    const wait = this.rerunWait();
+    if (wait <= 0) this.schedule(fire);
+    else this.runTimer = this.clock.after(wait, () => this.schedule(fire));
+  }
+
+  /** Refills the rerun bucket; the ms until a rerun token is available (0: now). */
+  private rerunWait(): number {
+    const now = this.clock.now();
+    this.tokens = Math.min(this.rate, this.tokens + ((now - this.tokensAt) * this.rate) / 1000);
+    this.tokensAt = now;
+    return this.tokens >= 1 ? 0 : ((1 - this.tokens) * 1000) / this.rate;
   }
 
   /** Applies every queued preview in one rerun on the scratch copy and answers the highest `seq`. */
@@ -278,12 +403,12 @@ export class Session {
     const cells = new Map<EngineCell, number>();
     for (const p of queued) for (const [cell, value] of p.cells) cells.set(cell, value);
     const seq = queued[queued.length - 1]!.seq;
-    const changes: Change[] = [];
-    for (const [cell, value] of cells) changes.push({ target: 'variable', cell, value });
+    this.rerunWait();
+    this.tokens -= 1;
 
     let at: Evaluation;
     try {
-      at = this.state.model.model.rerun(this.current, changes);
+      at = this.state.model.model.rerun(this.current, variableChanges(cells));
     } catch (err) {
       if (!(err instanceof EngineError)) throw err;
       return this.reject({
@@ -292,9 +417,43 @@ export class Session {
         detail: `The model cannot be evaluated with these values (${err.message}). Try other values.`,
       });
     }
-    this.scratch = { at, seq };
+    const scratchCells = new Map(this.scratch?.cells ?? []);
+    for (const [cell, value] of cells) scratchCells.set(cell, value);
+    this.scratch = { at, seq, cells: scratchCells };
     this.counters.reruns += 1;
     this.send({ v: V, type: 'delta', seq, cells: diffCells(at, this.subscribed, this.sent) });
+    this.queueWarnings();
+  }
+
+  /**
+   * Checks the scratch with DOM `validatePreview` once the frames already received are handled: it costs a
+   * few reruns, so it never delays a `delta`, and a scratch that a queued preview supersedes is not checked.
+   */
+  private queueWarnings(): void {
+    if (this.warnQueued) return;
+    this.warnQueued = true;
+    this.schedule(() => {
+      this.warnQueued = false;
+      try {
+        this.checkWarnings();
+      } catch (err) {
+        this.log?.error('session preview warnings failed', { err });
+      }
+    });
+  }
+
+  private checkWarnings(): void {
+    const scratch = this.scratch;
+    if (this.closed || !scratch || this.queue.length > 0) return; // the queued rerun checks again
+    this.pushWarnings(scratch.seq, previewViolations(this.state.model, scratch.at));
+  }
+
+  /** `warnings{seq}` when `violations` differ from what the client shows. */
+  private pushWarnings(seq: number | null, violations: readonly Violation[]): void {
+    if (sameViolations(violations, this.warned)) return;
+    this.warned = violations;
+    this.counters.warnings += 1;
+    this.send({ v: V, type: 'warnings', seq, violations });
   }
 
   private cancel(m: Of<'cancelPreview'>): void {
@@ -304,6 +463,62 @@ export class Session {
     this.queue = [];
     this.scratch = null;
     this.send({ v: V, type: 'delta', seq: m.seq, cells: diffCells(this.state.committed, this.subscribed, this.sent) });
+    this.pushWarnings(m.seq, []);
+  }
+
+  /**
+   * A commit on the session's scenario (CON-02 `SessionStep` 3 and 4): `changeset`, then `delta{null}` with
+   * the subscribed cells whose committed value changed (without a scratch also any cell the client shows
+   * otherwise), then the rebase of a scratch: its cells re-applied on the new committed state in one rerun,
+   * answered `delta{S}` with the cells where scratch and committed differ or the client shows another value,
+   * and `warnings{S}` as for a preview. A rebase the engine cannot evaluate drops the scratch (the client
+   * then shows the committed values). A state not newer than the session's (racing notices) only sends the
+   * `changeset`.
+   */
+  private adopt(update: CommitUpdate): void {
+    if (this.closed || this.state.scenarioId !== update.on) return; // moved on (open) meanwhile
+    this.runQueue();
+    this.send(update.message);
+    const next = update.state;
+    if (!next || (next.scenarioId === this.state.scenarioId && next.version <= this.state.version)) return;
+
+    const before = this.state.committed;
+    const now = next.committed;
+    this.state = next;
+    this.counters.commits += 1;
+    const scratch = this.scratch;
+    const committed: Record<string, WireValue> = {};
+    for (const [wire, engine] of this.subscribed) {
+      const v = wireValue(now, engine);
+      if (wireValue(before, engine) !== v || (!scratch && this.sent.get(wire) !== v)) {
+        committed[wire] = v;
+        this.sent.set(wire, v);
+      }
+    }
+    this.send({ v: V, type: 'delta', seq: null, cells: committed });
+    if (!scratch) return;
+
+    let at: Evaluation | null = null;
+    try {
+      at = next.model.model.rerun(now, variableChanges(scratch.cells));
+    } catch (err) {
+      if (!(err instanceof EngineError)) throw err;
+      this.log?.warn('session rebase not evaluated, scratch dropped', { err });
+    }
+    this.counters.rebases += 1;
+    this.scratch = at ? { at, seq: scratch.seq, cells: scratch.cells } : null;
+    const shown = at ?? now;
+    const rebased: Record<string, WireValue> = {};
+    for (const [wire, engine] of this.subscribed) {
+      const v = wireValue(shown, engine);
+      if ((at && v !== wireValue(now, engine)) || this.sent.get(wire) !== v) {
+        rebased[wire] = v;
+        this.sent.set(wire, v);
+      }
+    }
+    this.send({ v: V, type: 'delta', seq: scratch.seq, cells: rebased });
+    if (at) this.queueWarnings();
+    else this.pushWarnings(scratch.seq, []);
   }
 
   /**
@@ -331,6 +546,7 @@ export class Session {
     this.state = next;
     this.scratch = null;
     this.queue = [];
+    this.warned = []; // the client drops the old scenario's warnings with this snapshot
     this.sent.clear();
     const values: Record<string, WireValue> = {};
     for (const [wire, engine] of this.subscribed) {

@@ -195,8 +195,9 @@ describe('preview coalescing (100 rapid previews)', () => {
       socket.send({ v, type: 'preview', seq, changes });
     }
     const frames = await socket.until((m) => m.type === 'delta' && m.seq === 100);
-    expect(frames.every((m) => m.type === 'delta')).toBe(true);
-    const deltas = frames as Delta[];
+    // Deltas, and the scratch's rule results (API-07) whenever a check found no newer preview queued.
+    expect(frames.every((m) => m.type === 'delta' || m.type === 'warnings')).toBe(true);
+    const deltas = frames.filter((m): m is Delta => m.type === 'delta');
 
     // Coalesced: fewer answers than previews, each with a higher seq, the last one 100.
     expect(deltas.length).toBeLessThan(100);
@@ -229,7 +230,7 @@ describe('preview coalescing (100 rapid previews)', () => {
 
     // cancelPreview sends back exactly the cells that differ from the committed state.
     socket.send({ v, type: 'cancelPreview', seq: 101 });
-    const back = await socket.expect('delta');
+    const back = (await socket.until((m) => m.type === 'delta' && m.seq === 101)).at(-1) as Delta; // after the warnings of seq 100
     expect(back.seq).toBe(101);
     for (const cell of subscribed) {
       const c = committed.get(toEngineCell(cell));

@@ -25,6 +25,8 @@ export interface RunningServer {
   close(): Promise<void>;
 }
 
+const MS_PER_MIN = 60_000;
+
 export type StartOverrides = Pick<AppDeps, 'authenticate' | 'membership' | 'withTenant'> & {
   write?: (line: string) => void;
   /** Replaces the SMTP_URL transport (tests). */
@@ -58,7 +60,9 @@ export async function startServer(
     membership: deps.membership ?? auth.membership,
     allowedOrigin: (url) => allowedOrigin(auth.settings, url),
     loader: dbScenarioLoader({ withTenant: deps.withTenant ?? bindWithTenant(db.db), specBundle }),
+    idleMs: config.SESSION_IDLE_MIN * MS_PER_MIN,
   });
+  // `sessions` is also the write routes' hub: committed changesets reach every open session (API-07).
   const app = createApp({ logger, db, auth, specBundle, sessions, ...deps });
 
   const server = await new Promise<ServerType>((resolve, reject) => {

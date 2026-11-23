@@ -228,7 +228,7 @@ title: "Session lifecycle: commit broadcast, warnings, idle close, reconnect"
 epic: API
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -248,6 +248,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Sessions as a cache, never the source of truth.
