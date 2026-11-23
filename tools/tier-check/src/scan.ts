@@ -79,6 +79,12 @@ export function scanText(text: string, file: string, deny: Denylist): Finding[] 
   for (const m of text.matchAll(/[A-Za-z_$][\w$]*/g)) {
     const owners = deny.symbols.get(m[0]);
     if (!owners || reported.has(m[0])) continue;
+    // Wire field names (object keys such as `membersHash:` in contract schemas) and
+    // quoted strings are data shapes, not leaked tier 2 code.
+    const end = m.index + m[0].length;
+    const after = text.slice(end, end + 2);
+    const before = m.index > 0 ? text[m.index - 1] : '';
+    if ((after[0] === ':' && after[1] !== ':') || before === '"' || before === "'") continue;
     reported.add(m[0]);
     findings.push({ kind: 'tier2-symbol', file, line: lineOf(text, m.index), match: m[0], owners });
   }

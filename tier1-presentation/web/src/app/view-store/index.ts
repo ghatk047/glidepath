@@ -1,6 +1,6 @@
 import { createStore, useStore } from 'zustand';
-import { initTheme, setTheme as applyThemeToDocument } from '@glidepath/ui/src/tokens/theme';
-import { themeNames, type ThemeName } from '@glidepath/ui/src/tokens/tokens.generated';
+import { initTheme, setTheme as applyThemeToDocument } from '@glidepath/ui/tokens';
+import { themeNames, type ThemeName } from '@glidepath/ui/tokens';
 import { SEARCH_KEYS, type ViewSearch } from '../search';
 
 /**

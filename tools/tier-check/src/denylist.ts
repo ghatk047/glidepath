@@ -10,7 +10,8 @@ export const SHARED_DIRS = ['contract', 'tier1-presentation'] as const;
 /** Names shorter than this are too likely to collide with unrelated identifiers. */
 export const MIN_SYMBOL_LENGTH = 5;
 /** Exported by every package as a skeleton marker; carries no tier 2 meaning. */
-const IGNORED_NAMES = new Set(['packageName', 'default']);
+// Generic words that collide with ordinary identifiers in any bundle (zod, React); 'schema' is data-access's Drizzle namespace.
+const IGNORED_NAMES = new Set(['packageName', 'default', 'schema']);
 
 export interface PackageInfo {
   /** Directory name under its tier directory, e.g. `engine`. */

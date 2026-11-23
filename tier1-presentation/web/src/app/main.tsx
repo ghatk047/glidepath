@@ -1,8 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from '@tanstack/react-router';
-import '@glidepath/ui/src/tokens/tokens.css';
-import { reducedMotionCss } from '@glidepath/ui/src/motion';
+import '@glidepath/ui/tokens.css';
+import { reducedMotionCss } from '@glidepath/ui/motion';
 import './app.css';
 import { schedulePreload } from './modules';
 import { createAppRouter } from './router';
