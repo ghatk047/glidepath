@@ -27,7 +27,7 @@ title: "Server skeleton: Hono app, config, healthz, problem JSON, tenant middlew
 epic: API
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
