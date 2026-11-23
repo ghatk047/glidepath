@@ -2,19 +2,26 @@ import { serve } from '@hono/node-server';
 import type { ServerType } from '@hono/node-server';
 import { createDb, dbOptionsFromEnv } from '@glidepath/data-access';
 import { authFromConfig } from '../auth/auth';
+import { allowedOrigin } from '../auth/guard';
 import type { Mailer } from '../auth/mailer';
+import { specBundleFromDir } from '../routes/read/spec-source';
+import { createSessionHub, dbScenarioLoader } from '../session';
+import type { SessionHub } from '../session';
 import { createApp } from './app';
 import type { AppDeps } from './app';
 import { loadConfig } from './config';
 import type { Config } from './config';
 import { createLogger, secretsFrom } from './logger';
 import type { Logger } from './logger';
+import { bindWithTenant } from './tenant';
 
 export interface RunningServer {
   config: Config;
   logger: Logger;
   /** Port actually bound (differs from `config.PORT` when that is 0). */
   port: number;
+  /** The what-if sessions open on `WS /ws/session`. */
+  sessions: SessionHub;
   close(): Promise<void>;
 }
 
@@ -43,16 +50,27 @@ export async function startServer(
   const { write: _write, mailer, ...deps } = overrides;
   void _write;
   const auth = authFromConfig(config, { db: db.db, ...(mailer !== undefined ? { mailer } : {}) });
-  const app = createApp({ logger, db, auth, ...deps });
+  // One spec source for the bundle route and the sessions' compiled models.
+  const specBundle = specBundleFromDir();
+  const sessions = createSessionHub({
+    logger,
+    authenticate: deps.authenticate ?? auth.authenticate,
+    membership: deps.membership ?? auth.membership,
+    allowedOrigin: (url) => allowedOrigin(auth.settings, url),
+    loader: dbScenarioLoader({ withTenant: deps.withTenant ?? bindWithTenant(db.db), specBundle }),
+  });
+  const app = createApp({ logger, db, auth, specBundle, sessions, ...deps });
 
   const server = await new Promise<ServerType>((resolve, reject) => {
     const s = serve({ fetch: app.fetch, port: config.PORT }, () => resolve(s));
     s.once('error', reject);
   }).catch(async (err: unknown) => {
+    await sessions.close();
     await auth.close();
     await db.close();
     throw err;
   });
+  sessions.listen(server, app.fetch);
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : config.PORT;
   logger.info('listening', { port });
@@ -61,7 +79,9 @@ export async function startServer(
     config,
     logger,
     port,
+    sessions,
     async close() {
+      await sessions.close();
       await new Promise<void>((resolve) => {
         server.close(() => resolve());
         if ('closeAllConnections' in server) (server as { closeAllConnections(): void }).closeAllConnections();

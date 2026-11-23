@@ -2079,7 +2079,7 @@
     "epic": "API",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "xhigh",
@@ -2111,7 +2111,8 @@
       "G8"
     ],
     "size": "M",
-    "notes": "Numbers-dependent: after ENG-06."
+    "notes": "Numbers-dependent: after ENG-06.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "API-07",

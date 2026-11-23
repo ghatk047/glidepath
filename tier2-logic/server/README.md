@@ -2,7 +2,7 @@
 
 `logic` container: Hono REST + WebSocket, auth, tenancy, sessions.
 
-Server app (API-01) and auth (API-02).
+Server app (API-01), auth (API-02), read routes (API-04) and what-if sessions (API-06).
 
 ## API-01: server skeleton (`src/app`)
 
@@ -44,3 +44,6 @@ WebAuthn via `@simplewebauthn/server`; the magic link stays the fallback. RP id 
 
 - Challenge: 32 random bytes in a signed cookie (`__Secure-gp_passkey`, HttpOnly, SameSite=Strict, Path=/api/auth/passkey, `PASSKEY_CHALLENGE_TTL_MIN` = 5) with its purpose, expiry and, for registration, the user; cleared on verify and accepted once (used challenges are remembered in-process until they expire).
 - Tests: `passkey.pg.test.ts` with a software authenticator (`testing/virtual-authenticator.ts`, ES256, "none" attestation).
+## API-06: what-if sessions (`src/session`)
+
+`WS /ws/session?tenant&scenario`: the handshake checks origin, the session cookie, membership and the scenario before upgrading; each connection is a `Session(user, tenant, scenario)` on a `CompiledModel` from the `ModelCache` keyed `(tenant, model_version, members_hash)`. `subscribe` → `snapshot`, `preview` → coalesced `rerun` on a scratch copy → `delta` of the subscribed cells that changed, `cancelPreview`, `open`. Previews run no SQL. `startServer` builds the hub (`createSessionHub` + `dbScenarioLoader`, one spec source shared with the bundle route), mounts it on the app (`AppDeps.sessions`) and on the server's `upgrade` event, and closes it on shutdown. Details: `src/session/README.md`. Bench (G8): `pnpm --filter @glidepath/server bench` (`ws.preview`).

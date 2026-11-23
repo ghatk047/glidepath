@@ -12,6 +12,7 @@ import { afterCommitMiddleware, registerWriteRoutes } from '../routes/write';
 import type { SessionHub } from '../routes/write';
 import { specBundleFromDir } from '../routes/read/spec-source';
 import type { SpecBundleSource } from '../routes/read/spec-source';
+import type { SessionHub } from '../session/hub';
 import { errorHandler, notFoundHandler, problemResponse } from './problem';
 import { bindWithTenant, noAuthentication, tenantMiddleware } from './tenant';
 import type { AppEnv, Authenticator, MembershipResolver, WithTenant } from './tenant';
@@ -39,6 +40,8 @@ export interface AppDeps {
   hub?: SessionHub;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
+  /** What-if sessions (API-06): mounts the `GET /ws/session` handshake; `listen` wires the upgrades. */
+  sessions?: SessionHub;
 }
 
 async function probeDb(db: DbHandle, timeoutMs: number): Promise<void> {
@@ -108,6 +111,9 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
 
   // Outside the tenant transaction: write routes queue hub notices that run once it has committed.
   app.use('/api/t/:tenant/*', afterCommitMiddleware());
+  // WS /ws/session: the upgrade handshake (cookie, origin, membership, scenario) before any socket opens.
+  deps.sessions?.route(app);
+
   app.use(
     '/api/t/:tenant/*',
     tenantMiddleware({

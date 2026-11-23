@@ -21,7 +21,7 @@ beforeAll(async () => {
   h = await startAuthHarness({
     // Stand-ins for the real routes of later items, mounted on their contract paths behind the app's own guards.
     routes: (app) => {
-      app.post('/api/t/:tenant/changesets', (c) => {
+      app.post('/api/t/:tenant/probe-write', (c) => {
         ran.push('changesets');
         return c.json({ ok: true, role: c.get('tenant').role });
       });
@@ -75,14 +75,14 @@ const expectForbidden = async (res: Response) => {
 describe('role guard: viewer cannot POST changesets', () => {
   it('a viewer’s POST /changesets is 403 and never reaches the handler', async () => {
     await expectForbidden(
-      await send('POST', '/api/t/ta/changesets', h.headers(user(VIEWER.email))),
+      await send('POST', '/api/t/ta/probe-write', h.headers(user(VIEWER.email))),
     );
     expect(ran).toEqual([]);
   });
 
   it('an advisor is read-only too', async () => {
     await expectForbidden(
-      await send('POST', '/api/t/ta/changesets', h.headers(user(ADVISOR.email))),
+      await send('POST', '/api/t/ta/probe-write', h.headers(user(ADVISOR.email))),
     );
     expect(ran).toEqual([]);
   });
@@ -92,7 +92,7 @@ describe('role guard: viewer cannot POST changesets', () => {
       [OWNER.email, 'owner'],
       [EDITOR.email, 'editor'],
     ] as const) {
-      const res = await send('POST', '/api/t/ta/changesets', h.headers(user(email)));
+      const res = await send('POST', '/api/t/ta/probe-write', h.headers(user(email)));
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ ok: true, role });
     }
@@ -114,7 +114,7 @@ describe('role guard: viewer cannot POST changesets', () => {
 
   it('the role is per tenant: the editor of A is a viewer of B', async () => {
     await expectForbidden(
-      await send('POST', '/api/t/tb/changesets', h.headers(user(EDITOR.email))),
+      await send('POST', '/api/t/tb/probe-write', h.headers(user(EDITOR.email))),
     );
     expect(ran).toEqual([]);
   });
@@ -143,10 +143,10 @@ describe('state-changing routes require same-origin + CSRF token', () => {
       `${PUBLIC_BASE_URL}:8443`,
     ]) {
       const headers = { ...cookieAndToken(), ...(origin ? { origin } : {}) };
-      await expectForbidden(await send('POST', '/api/t/ta/changesets', headers));
+      await expectForbidden(await send('POST', '/api/t/ta/probe-write', headers));
     }
     await expectForbidden(
-      await send('POST', '/api/t/ta/changesets', {
+      await send('POST', '/api/t/ta/probe-write', {
         ...cookieAndToken(),
         'sec-fetch-site': 'cross-site',
       }),
@@ -157,7 +157,7 @@ describe('state-changing routes require same-origin + CSRF token', () => {
   it('without Origin, Sec-Fetch-Site: same-origin passes', async () => {
     expect(
       (
-        await send('POST', '/api/t/ta/changesets', {
+        await send('POST', '/api/t/ta/probe-write', {
           ...cookieAndToken(),
           'sec-fetch-site': 'same-origin',
         })
@@ -176,7 +176,7 @@ describe('state-changing routes require same-origin + CSRF token', () => {
       user(VIEWER.email).csrf,
     ]) {
       await expectForbidden(
-        await send('POST', '/api/t/ta/changesets', {
+        await send('POST', '/api/t/ta/probe-write', {
           ...base,
           ...(token !== undefined ? { [CSRF_HEADER]: token } : {}),
         }),
@@ -187,13 +187,13 @@ describe('state-changing routes require same-origin + CSRF token', () => {
 
   it('the CSRF cookie alone is not enough: the token must come back in the header', async () => {
     await expectForbidden(
-      await send('POST', '/api/t/ta/changesets', { origin: h.origin, cookie: editor().cookie }),
+      await send('POST', '/api/t/ta/probe-write', { origin: h.origin, cookie: editor().cookie }),
     );
     expect(editor().cookie).toContain(`${CSRF_COOKIE}=`);
   });
 
   it('a same-origin request with the session’s token passes', async () => {
-    expect((await send('POST', '/api/t/ta/changesets', h.headers(editor()))).status).toBe(200);
+    expect((await send('POST', '/api/t/ta/probe-write', h.headers(editor()))).status).toBe(200);
     expect(ran).toEqual(['changesets']);
   });
 

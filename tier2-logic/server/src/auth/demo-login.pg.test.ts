@@ -65,12 +65,13 @@ describe('seeded demo user can log in with no internet (test with local SMTP sin
       await (await h.app.request('/api/tenants', { headers: { cookie: browser.cookie } })).json(),
     );
     expect(tenants.tenants.map((t) => [t.slug, t.role])).toEqual([[TENANT_A.slug, 'owner']]);
-    // An owner may change the tenant: a state-changing request passes the guards (no route there yet: 404).
+    // An owner may change the tenant: a state-changing request passes the guards and reaches the real
+    // write route (API-05), which rejects the empty body as a bad request (not 401/403).
     const write = await h.app.request(`/api/t/${TENANT_A.slug}/changesets`, {
       method: 'POST',
       headers: h.headers(browser),
     });
-    expect(write.status).toBe(404);
+    expect(write.status).toBe(400);
 
     vi.restoreAllMocks();
     expect(connects).toContain(`127.0.0.1:${h.sink.port}`);

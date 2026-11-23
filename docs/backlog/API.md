@@ -193,7 +193,7 @@ title: "What-if session core: ModelCache, subscribe, preview, delta"
 epic: API
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -215,6 +215,7 @@ acceptance:
 gates: [G1, G2, G8]
 size: M
 notes: "Numbers-dependent: after ENG-06."
+merged_at: "2026-11-23"
 ```
 
 The warm engine behind every slider.
