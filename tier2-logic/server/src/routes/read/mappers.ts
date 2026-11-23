@@ -39,18 +39,9 @@ export function toMembersResponse(snapshot: MembersSnapshot): MembersResponse {
 // ----------------------------------------------------------------------------- scenarios
 
 /**
- * The scenario's edits counter: the changes of its applied changesets that were not undone. A changeset
- * that was reverted does not count, nor does the revert itself (undo), nor seed data. Presets have none.
+ * A scenario in contract shape (validated with the whole response by {@link toScenariosResponse}).
+ * `editsCount` is the domain's stored counter (`loadEditsCounts`), never recounted from change rows.
  */
-export function countEdits(changesets: readonly ChangesetRecord[]): number {
-  let n = 0;
-  for (const cs of changesets) {
-    if (cs.status === 'applied' && cs.reverts_id === null && cs.origin !== 'seed') n += cs.changes.length;
-  }
-  return n;
-}
-
-/** A scenario in contract shape (validated with the whole response by {@link toScenariosResponse}). */
 export function toScenario(s: ScenarioRecord, editsCount: number): object {
   return {
     id: s.id,

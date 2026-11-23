@@ -51,9 +51,13 @@ Build args (also variables in `docker-bake.hcl`), relative to the repo root:
 
 The whole directory of each entry is copied, so chunks and source maps travel with it. With `STRICT_ENTRYPOINTS=0` an entry that was not built becomes a stub that prints which file is missing and exits 78, so the image builds while a package is still a skeleton. Flip the default to `STRICT_ENTRYPOINTS=1` (in the Dockerfile and `docker-bake.hcl`) once API-01, JOB-01 and DATA-08 have landed; the build then fails on a missing entry.
 
+## Spec bundle (`SPEC_DIR`)
+
+The read routes (`GET bundle`) load the spec bundle from `SPEC_DIR`. The image has no `docs/` tree, so the build copies the two files `loadModelBundleFromDir` reads (`docs/spec/variables.json`, `docs/spec/formula_graph.json`) read-only (mode 0444) to `/app/spec`, and the runtime stage sets `SPEC_DIR=/app/spec`. Compose may override `SPEC_DIR`; the default needs no setting. `ops/test/dockerfile.spec.ts` checks the copy, the path and the dockerignore exception.
+
 ## Files
 
 - `Dockerfile`, `docker-bake.hcl`: the image and its multi-arch plan.
-- `Dockerfile.dockerignore`: BuildKit reads it before the repo-root `.dockerignore`. Excludes `.env*`, `docs`, tests, `.git`, `node_modules`, `dist`, tier 1.
+- `Dockerfile.dockerignore`: BuildKit reads it before the repo-root `.dockerignore`. Excludes `.env*`, `docs` (except `docs/spec/variables.json` and `formula_graph.json`), tests, `.git`, `node_modules`, `dist`, tier 1.
 - `collect-dist.sh`, `merge-node-modules.sh`: build-stage helpers (tested in `ops/test/dockerfile.spec.ts`).
 - `.hadolint.yaml`: `hadolint --config ops/docker/logic/.hadolint.yaml ops/docker/logic/Dockerfile`.

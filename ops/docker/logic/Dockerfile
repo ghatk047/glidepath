@@ -58,7 +58,10 @@ RUN SERVER_ENTRY="${SERVER_ENTRY}" WORKER_ENTRY="${WORKER_ENTRY}" MIGRATE_ENTRY=
  && sh ops/docker/logic/merge-node-modules.sh /out/node_modules /deploy/server/node_modules /deploy/worker/node_modules \
  && rm -rf /out/node_modules/@glidepath \
  && mkdir -p /out/tier3-data \
- && cp -R tier3-data/. /out/tier3-data/
+ && cp -R tier3-data/. /out/tier3-data/ \
+ && mkdir -p /out/spec \
+ && cp docs/spec/variables.json docs/spec/formula_graph.json /out/spec/ \
+ && chmod 0444 /out/spec/*.json
 
 # ------------------------------------------------------------------------- runtime
 # hadolint ignore=DL3006
@@ -68,6 +71,10 @@ WORKDIR /app
 COPY --from=build /out/node_modules ./node_modules
 COPY --from=build /out/dist ./dist
 COPY --from=build /out/tier3-data ./tier3-data
+# The read routes load the spec bundle (variables.json, formula_graph.json: all loadModelBundleFromDir
+# reads) from SPEC_DIR; the image has no docs/ tree, so a read-only copy lives at this fixed path.
+COPY --from=build /out/spec /app/spec
+ENV SPEC_DIR=/app/spec
 # data-access resolves its default migrations directory three levels above the module,
 # which for /app/dist/migrate.js is /tier3-data. Keep that default working.
 RUN ln -s /app/tier3-data /tier3-data

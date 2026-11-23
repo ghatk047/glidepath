@@ -24,6 +24,7 @@ Tests use `TEST_DATABASE_URL` or a throwaway `tools/pg-local` cluster (ADR-016);
 | `loadModelDefs(tx)` | model_version, dimension_def, variable_def, node_def, lever_template of the pinned model version | `ModelDefs` (lists by key) |
 | `loadMembers(tx)` | v_dimension_members, dims of the pinned model | `{ rows, members: TenantMembers, membersHash }` |
 | `listScenarios(tx)`, `getScenario(tx, id)` | scenario | `ScenarioRecord` (domain `ScenarioRow` + archived) |
+| `loadEditsCounts(tx, scenarioIds)` | scenario, changeset | `Map<scenarioId, editsCount>`: `summary.edits_count` of the applied changeset with `base_scenario_version = version - 1` (the domain's stored counter, DOM-03), 0 if none; one query for all ids |
 | `loadResolvedInputs(tx, scenarioId \| null)` | v_inputs_resolved | `{ scenario_id, values, overrides }` (domain `ResolvedInputs` shape + provenance) |
 | `listChangesetHistory(tx, scenarioId \| null, { limit, cursor })`, `getChangeset(tx, id)` | changeset, change, app_user | domain `Changeset` + `created_by_name`, newest first, keyset cursor |
 | `getLatestCalcRun(tx, scenarioId)` | calc_run | domain `CalcRunRow` |

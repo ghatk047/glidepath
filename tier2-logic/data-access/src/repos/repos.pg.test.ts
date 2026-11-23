@@ -21,7 +21,7 @@ import * as repos from './index';
 import { InvalidCursorError } from './changesets';
 import {
   findMyMembership, getChangeset, getCurrentUser, getLatestCalcRun, getScenario, getTenant, listChangesetHistory,
-  listMyMemberships, listScenarios, listTenantMembers, loadMembers, loadModelDefs, loadResolvedInputs,
+  listMyMemberships, listScenarios, listTenantMembers, loadEditsCounts, loadMembers, loadModelDefs, loadResolvedInputs,
 } from './index';
 
 /**
@@ -145,6 +145,29 @@ describe('read repos: model bundle defs (global tables), members via v_dimension
     expect(await asA((tx) => getScenario(tx, twinB(SCN.grandchild!)))).toBeNull(); // B's scenario
     expect(await asA((tx) => getScenario(tx, 'not-a-uuid'))).toBeNull();
     expect((await asB(listScenarios)).map((s) => s.id)).toEqual([SCN.root, SCN.child, SCN.sibling, SCN.grandchild].map((x) => twinB(x!)));
+  });
+
+  it('loadEditsCounts: summary.edits_count of the applied changeset at version - 1, in one query; 0 without one; tenant-scoped', async () => {
+    const ids = [SCN.root!, SCN.child!, SCN.grandchild!];
+    expect(await asA((tx) => loadEditsCounts(tx, []))).toEqual(new Map());
+    // grandchild is at version 4: its changeset with base 3 is c5 (the minimal seed stores no edits_count: 0)
+    expect(await asA((tx) => loadEditsCounts(tx, ids))).toEqual(new Map(ids.map((i) => [i, 0])));
+    await withTenant(owner.db, TENANT_A, ANA, (tx) => tx.execute(sql`update changeset set summary = '{"edits": 1, "edits_count": 7}'::jsonb where id = ${CS.c5}::uuid`));
+    try {
+      const before = log.length;
+      const got = await asA((tx) => loadEditsCounts(tx, [...ids, ids[0]!, 'not-a-uuid', twinB(SCN.grandchild!)]));
+      const counting = log.slice(before).filter((q) => q.text.includes('edits_count'));
+      expect(counting, 'one statement, ids bound').toHaveLength(1);
+      expect(counting[0]!.text).not.toContain(SCN.grandchild!);
+      expect(got.get(SCN.grandchild!)).toBe(7);
+      expect(got.get(SCN.root!)).toBe(0);
+      expect([...got.keys()].sort()).toEqual([...ids].sort()); // no non-uuid, none of tenant B
+      // a status other than applied does not count
+      await withTenant(owner.db, TENANT_A, ANA, (tx) => tx.execute(sql`update changeset set status = 'rejected' where id = ${CS.c5}::uuid`));
+      expect((await asA((tx) => loadEditsCounts(tx, [SCN.grandchild!]))).get(SCN.grandchild!)).toBe(0);
+    } finally {
+      await withTenant(owner.db, TENANT_A, ANA, (tx) => tx.execute(sql`update changeset set summary = '{"edits": 1}'::jsonb, status = 'applied' where id = ${CS.c5}::uuid`));
+    }
   });
 
   it('loadResolvedInputs: v_inputs_resolved per scenario equals the fixture and the domain resolveInputs', async () => {
@@ -296,6 +319,7 @@ describe('read repos: model bundle defs (global tables), members via v_dimension
 /** Arguments for repositories that need more than the transaction. */
 const ARGS: Record<string, unknown[]> = {
   getScenario: [SCN.root],
+  loadEditsCounts: [[SCN.root]],
   loadResolvedInputs: [SCN.root],
   listChangesetHistory: [SCN.grandchild],
   getChangeset: [CS.c1],
@@ -316,7 +340,8 @@ describe('a repo call outside withTenant throws', () => {
   it('every read repository rejects the plain Db, a bare transaction and an ended withTenant, before any SQL', async () => {
     expect(allRepos.map(([n]) => n).sort()).toEqual([
       'findMyMembership', 'getChangeset', 'getCurrentUser', 'getLatestCalcRun', 'getScenario', 'getTenant',
-      'listChangesetHistory', 'listMyMemberships', 'listScenarios', 'listTenantMembers', 'loadMembers', 'loadModelDefs',
+      'listChangesetHistory', 'listMyMemberships', 'listScenarios', 'listTenantMembers', 'loadEditsCounts', 'loadMembers',
+      'loadModelDefs',
       'loadResolvedInputs',
     ]);
     const kept = await asA(async (tx) => tx); // the transaction outlives its withTenant

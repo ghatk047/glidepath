@@ -45,3 +45,32 @@ export async function getScenario(tx: TenantTx, scenarioId: string): Promise<Sce
     .where(and(eq(scenario.tenant_id, tenantId), eq(scenario.id, scenarioId)));
   return row ? toRecord(row) : null;
 }
+
+/**
+ * The edits counter of each of `scenarioIds` (of the current tenant) in one query, as the domain stored it
+ * (DOM-03): `summary.edits_count` of the scenario's applied changeset with `base_scenario_version = version - 1`
+ * (the newest, if several), or 0 when it has none (a preset, or a scenario with no edit yet) or the summary
+ * holds no number. Every id of the tenant is in the map; ids of other tenants and non-uuids are not.
+ */
+export async function loadEditsCounts(tx: TenantTx, scenarioIds: readonly string[]): Promise<Map<string, number>> {
+  const { tenantId } = tenantScope(tx, 'loadEditsCounts');
+  const ids = [...new Set(scenarioIds.filter(isUuid))];
+  const out = new Map<string, number>();
+  if (ids.length === 0) return out;
+  const res = await tx.execute<{ id: string; edits_count: number }>(sql`
+    select s.id, coalesce(e.n, 0)::int as edits_count
+    from scenario s
+    left join lateral (
+      select case when jsonb_typeof(c.summary) = 'object' and jsonb_typeof(c.summary -> 'edits_count') = 'number'
+                  then (c.summary ->> 'edits_count')::numeric end as n
+      from changeset c
+      where c.tenant_id = s.tenant_id and c.scenario_id = s.id and c.status = 'applied'
+        and c.base_scenario_version = s.version - 1
+      order by c.created_at desc, c.id desc
+      limit 1
+    ) e on true
+    where s.tenant_id = ${tenantId}::uuid
+      and s.id in (${sql.join(ids.map((id) => sql`${id}::uuid`), sql`, `)})`);
+  for (const r of res.rows) out.set(r.id, Number(r.edits_count));
+  return out;
+}

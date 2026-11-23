@@ -222,11 +222,11 @@ async function seedAaTenant(owner: Db): Promise<void> {
 
     // History of MINE, newest last by time: c1 (2 changes), c2 (1, later reverted), c3 (undoes c2), c4 (1), c5 (rejected).
     await tx.insert(schema.changeset).values([
-      cs('c1', { created_at: at('2026-11-01T10:00:00Z'), summary: { edits: 2 } }),
-      cs('c2', { created_at: at('2026-11-02T10:00:00Z'), status: 'reverted', base_scenario_version: 1, origin: 'excel_import' }),
+      cs('c1', { created_at: at('2026-11-01T10:00:00Z'), summary: { changes: 2, edits: 2, edits_count: 2 } }),
+      cs('c2', { created_at: at('2026-11-02T10:00:00Z'), status: 'reverted', base_scenario_version: 1, origin: 'excel_import', summary: { changes: 1, edits: 1, edits_count: 3 } }),
       cs('c3', { created_at: at('2026-11-03T10:00:00Z'), reverts_id: CS.c2, base_scenario_version: 2, created_by: CAROL, summary: 'Undo: import' }),
-      cs('c4', { created_at: at('2026-11-04T10:00:00Z'), base_scenario_version: 3 }),
-      cs('c5', { created_at: at('2026-11-05T10:00:00Z'), status: 'rejected', base_scenario_version: 4 }),
+      cs('c4', { created_at: at('2026-11-04T10:00:00Z'), base_scenario_version: 3, summary: { changes: 1, edits: 1, edits_count: 3 } }),
+      cs('c5', { created_at: at('2026-11-05T10:00:00Z'), status: 'rejected', base_scenario_version: 4, summary: { changes: 1, edits: 1, edits_count: 99 } }),
     ]);
     const ch = (cset: string, seq: number, target: 'scenario_value' | 'node_override' | 'dimension_member', key: string, member: string, oldV: unknown, newV: unknown) => ({
       tenant_id: AA_ID, changeset_id: cset, seq, target, key, member_key: member, op: 'update' as const,
@@ -266,4 +266,64 @@ async function seedZz(owner: Db): Promise<void> {
       version: 7, locked: false, created_by: BOB, created_at: at('2026-09-13T00:00:00Z'), archived: false,
     });
   });
+}
+
+/** One changeset as `applyChangeset` stores it (DOM-03): its change count, what it adds, the counter after it. */
+export interface StoredStep {
+  /** The scenario's version when it was applied (`base_scenario_version`); the version after it is `base + 1`. */
+  base: number;
+  /** Change rows written (and `summary.changes`). */
+  changes: number;
+  /** `summary.edits`: the changes of an edit, minus the undone changeset's `edits` for an undo. */
+  edits: number;
+  /** `summary.edits_count`: the scenario's counter after the changeset (`applyChangeset(...).editsCount`). */
+  editsCount: number;
+  /** Set for an undo or redo: the step number it reverts, which becomes `reverted`. */
+  reverts?: number;
+}
+
+const stepId = (n: number): string => id(0x400 + n);
+
+/** Creates an empty user scenario of aa (version 0) for {@link applyStoredStep}. */
+export async function createUserScenario(database: TestDatabase, scenarioId: string, key: string): Promise<void> {
+  const owner = createDb(database.url);
+  try {
+    await withTenant(owner.db, AA_ID, ANA, async (tx) => {
+      await tx.insert(schema.scenario).values({
+        tenant_id: AA_ID, id: scenarioId, key, label: key, kind: 'user', parent_id: null, model_version_id: MV, version: 0,
+        locked: false, created_by: ANA, created_at: at('2026-11-10T00:00:00Z'), archived: false,
+      });
+    });
+  } finally {
+    await owner.close();
+  }
+}
+
+/**
+ * Writes step `n` of a scenario's history the way the write path does: the changeset with
+ * `summary { changes, edits, edits_count }`, its change rows, the reverted changeset marked, the version bumped.
+ */
+export async function applyStoredStep(database: TestDatabase, scenarioId: string, n: number, step: StoredStep): Promise<void> {
+  const owner = createDb(database.url);
+  try {
+    await withTenant(owner.db, AA_ID, ANA, async (tx) => {
+      await tx.insert(schema.changeset).values({
+        tenant_id: AA_ID, id: stepId(n), origin: 'ui', scenario_id: scenarioId, base_scenario_version: step.base, status: 'applied',
+        summary: { changes: step.changes, edits: step.edits, edits_count: step.editsCount }, created_by: ANA,
+        created_at: at(`2026-11-10T10:00:${String(n).padStart(2, '0')}Z`), reverts_id: step.reverts === undefined ? null : stepId(step.reverts),
+      });
+      await tx.insert(schema.change).values(
+        Array.from({ length: step.changes }, (_, seq) => ({
+          tenant_id: AA_ID, changeset_id: stepId(n), seq, target: 'scenario_value' as const, key: 'g.head_start', member_key: '',
+          op: 'update' as const, old_value: json(seq), new_value: json(seq + 1), export_value: null, status: 'clean' as const, messages: [],
+        })),
+      );
+      if (step.reverts !== undefined) {
+        await tx.execute(sql`update changeset set status = 'reverted' where tenant_id = ${AA_ID}::uuid and id = ${stepId(step.reverts)}::uuid`);
+      }
+      await tx.execute(sql`update scenario set version = ${step.base + 1} where tenant_id = ${AA_ID}::uuid and id = ${scenarioId}::uuid`);
+    });
+  } finally {
+    await owner.close();
+  }
 }

@@ -84,6 +84,47 @@ describe('Dockerfile', () => {
     expect(dockerfile).not.toMatch(/COPY[^\n]*\.env/);
   });
 
+  // FIX-04: the read routes load the spec bundle from SPEC_DIR; the image has no docs/ tree.
+  describe('spec bundle for the read routes (SPEC_DIR)', () => {
+    // The files loadModelBundleFromDir reads, taken from its source so the two cannot drift.
+    const loaderSource = readFileSync(join(REPO_ROOT, 'tier2-logic/spec/src/node/index.ts'), 'utf8');
+    const specFiles = [...loaderSource.matchAll(/read\('([\w.]+\.json)'\)/g)].map((m) => m[1]!);
+    const runtimeInstructions = ins.slice(ins.lastIndexOf(ins.filter((i) => i.startsWith('FROM ')).at(-1)!));
+
+    it('the loader reads exactly variables.json and formula_graph.json', () => {
+      expect(specFiles.sort()).toEqual(['formula_graph.json', 'variables.json']);
+      for (const f of specFiles) expect(existsSync(join(REPO_ROOT, 'docs/spec', f)), f).toBe(true);
+    });
+
+    it('the build stage copies those files, and only those, from docs/spec to /out/spec, read-only', () => {
+      const build = ins.slice(0, ins.lastIndexOf(ins.filter((i) => i.startsWith('FROM ')).at(-1)!)).join('\n');
+      const cp = /cp (docs\/spec\/\S+(?: docs\/spec\/\S+)*) \/out\/spec\//.exec(build);
+      expect(cp, 'cp docs/spec/... /out/spec/').not.toBeNull();
+      expect(cp![1]!.split(' ').sort()).toEqual(specFiles.map((f) => `docs/spec/${f}`).sort());
+      expect(build).toMatch(/chmod 0?444 \/out\/spec\//);
+      expect(build).not.toMatch(/cp -R docs|COPY[^\n]*docs/);
+    });
+
+    it('the runtime stage holds them at /app/spec and sets SPEC_DIR to that fixed path', () => {
+      expect(runtimeInstructions).toContain('COPY --from=build /out/spec /app/spec');
+      expect(runtimeInstructions).toContain('ENV SPEC_DIR=/app/spec');
+      const user = runtimeInstructions.findIndex((i) => i.startsWith('USER '));
+      expect(runtimeInstructions.indexOf('ENV SPEC_DIR=/app/spec')).toBeLessThan(user); // set before the CMD, as an image default
+    });
+
+    it('the Dockerfile ignore file lets exactly those two files of docs/ into the build context', () => {
+      const lines = read('Dockerfile.dockerignore')
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l && !l.startsWith('#'));
+      const at = lines.indexOf('docs');
+      expect(at).toBeGreaterThanOrEqual(0);
+      // exceptions come after the exclusion they punch through (last match wins in a .dockerignore)
+      const exceptions = lines.slice(at + 1).filter((l) => l.startsWith('!'));
+      expect(exceptions.sort()).toEqual(specFiles.map((f) => `!docs/spec/${f}`).sort());
+    });
+  });
+
   it('is what docker-compose.yml builds', () => {
     const compose = readFileSync(join(REPO_ROOT, 'docker-compose.yml'), 'utf8');
     expect(compose).toMatch(/context: \.\n\s+dockerfile: ops\/docker\/logic\/Dockerfile/);

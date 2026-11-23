@@ -5,7 +5,7 @@
  */
 export { loadModelDefs } from './model';
 export { loadMembers } from './members';
-export { listScenarios, getScenario } from './scenarios';
+export { listScenarios, getScenario, loadEditsCounts } from './scenarios';
 export { loadResolvedInputs } from './inputs';
 export { listChangesetHistory, getChangeset } from './changesets';
 export { getLatestCalcRun } from './calc';

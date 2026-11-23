@@ -1,22 +1,20 @@
 import { ChangesetHistoryQuery, ScenarioParams, TenantParams } from '@glidepath/api-contract';
 import {
   InvalidCursorError,
-  MAX_HISTORY_LIMIT,
   getScenario,
   listChangesetHistory,
   listScenarios,
+  loadEditsCounts,
   loadMembers,
   loadModelDefs,
   loadResolvedInputs,
 } from '@glidepath/data-access';
-import type { TenantTx } from '@glidepath/data-access';
 import type { Context, Hono } from 'hono';
 import { ApiError } from '../../app/problem';
 import type { AppEnv } from '../../app/tenant';
 import { BundleError, buildBundle } from './bundle';
 import { etagOf, ifNoneMatch } from './etag';
 import {
-  countEdits,
   toHistoryResponse,
   toInputsResponse,
   toMembersResponse,
@@ -32,21 +30,6 @@ export interface ReadRoutesDeps {
 
 /** A scenario that is not one of the tenant's (or not a valid id) is "not found", same as another tenant's. */
 const noSuchScenario = (): ApiError => ApiError.notFound('No such scenario in this tenant. Check the scenario id.');
-
-/** Page size of the edits-counter scan of `GET scenarios`. */
-const EDITS_SCAN_PAGE = MAX_HISTORY_LIMIT;
-
-/** Edits counter of one scenario: the changes of its applied, not undone changesets, over all pages. */
-async function editsOf(tx: TenantTx, scenarioId: string): Promise<number> {
-  let edits = 0;
-  let cursor: string | null = null;
-  do {
-    const page = await listChangesetHistory(tx, scenarioId, { limit: EDITS_SCAN_PAGE, cursor });
-    edits += countEdits(page.changesets);
-    cursor = page.nextCursor;
-  } while (cursor !== null);
-  return edits;
-}
 
 function json(c: Context<AppEnv>, body: unknown): Response {
   return c.json(body as never, 200, { 'cache-control': 'private, no-cache' });
@@ -83,9 +66,9 @@ export function registerReadRoutes(app: Hono<AppEnv>, deps: ReadRoutesDeps): voi
     TenantParams.parse(c.req.param());
     const { tx } = c.get('tenant');
     const records = await listScenarios(tx);
-    const scenarios = [];
-    for (const s of records) scenarios.push(toScenario(s, await editsOf(tx, s.id)));
-    return json(c, toScenariosResponse(scenarios));
+    // The domain's stored counter (changeset.summary.edits_count), all scenarios in one query.
+    const edits = await loadEditsCounts(tx, records.map((s) => s.id));
+    return json(c, toScenariosResponse(records.map((s) => toScenario(s, edits.get(s.id) ?? 0))));
   });
 
   app.get('/api/t/:tenant/scenarios/:id/inputs', async (c) => {

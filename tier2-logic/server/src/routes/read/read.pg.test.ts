@@ -8,8 +8,8 @@ import { createApp } from '../../app/app';
 import type { AppEnv } from '../../app/tenant';
 import { captureLogger } from '../../app/testing/fixtures';
 import { specBundleFromDir } from './spec-source';
-import { ANA, BOB, CAROL, CS, MINE, MV, ZZ_SCENARIO, asUser, presetId, startAaDatabase } from './testing/aa-db';
-import type { AaDatabase } from './testing/aa-db';
+import { ANA, BOB, CAROL, CS, MINE, MV, ZZ_SCENARIO, applyStoredStep, asUser, createUserScenario, presetId, startAaDatabase } from './testing/aa-db';
+import type { AaDatabase, StoredStep } from './testing/aa-db';
 
 let env: AaDatabase;
 let app: Hono<AppEnv>;
@@ -169,7 +169,7 @@ describe('GET scenarios (kind, parent, version, locked)', () => {
     });
   });
 
-  it('editsCount counts the changes of applied changesets that were not undone (c1: 2, c4: 1; not the reverted c2, its undo c3, the rejected c5)', async () => {
+  it('editsCount is the stored counter of the changeset at version - 1 (c4: 3; not the rejected c5 at the next base), 0 for presets', async () => {
     const { scenarios } = await assertContract('scenarios', await get('/api/t/aa/scenarios'));
     expect(scenarios.find((s) => s.id === MINE)?.editsCount).toBe(3);
     expect(scenarios.filter((s) => s.kind === 'preset').map((s) => s.editsCount)).toEqual([0, 0, 0, 0, 0]);
@@ -338,5 +338,36 @@ describe('SQL stays parameterised through the routes', () => {
     await get('/api/t/aa/scenarios');
     const r = await env.app.pool.query("select current_setting('app.tenant_id', true) as t");
     expect(r.rows[0]?.t === null || r.rows[0]?.t === '').toBe(true);
+  });
+});
+
+describe('editsCount has one source: the domain counter changeset.summary.edits_count (DOM-03)', () => {
+  const SEQ = '00000000-0000-4000-8000-000000000553';
+  const editsOf = async (): Promise<number | undefined> =>
+    (await assertContract('scenarios', await get('/api/t/aa/scenarios'))).scenarios.find((s) => s.id === SEQ)?.editsCount;
+
+  // The sequence of the domain's counter test (apply.test.ts): edit 1, edit 2, undo it, redo it. `returned` is the
+  // `editsCount` applyChangeset gave for each step; the API must report the same number after each of them.
+  const steps: { step: StoredStep; returned: number }[] = [
+    { step: { base: 0, changes: 1, edits: 1, editsCount: 1 }, returned: 1 },
+    { step: { base: 1, changes: 2, edits: 2, editsCount: 3 }, returned: 3 },
+    { step: { base: 2, changes: 2, edits: -2, editsCount: 1, reverts: 2 }, returned: 1 }, // undo of step 2
+    { step: { base: 3, changes: 2, edits: 2, editsCount: 3, reverts: 3 }, returned: 3 }, // redo: undo of the undo
+  ];
+
+  it('equals what applyChangeset returned after edits, an undo and a redo; the history keeps its own per-changeset change-row count', async () => {
+    await createUserScenario(env.database, SEQ, 'seq');
+    expect(await editsOf()).toBe(0);
+    for (const [i, { step, returned }] of steps.entries()) {
+      await applyStoredStep(env.database, SEQ, i + 1, step);
+      expect(await editsOf(), `after step ${i + 1}`).toBe(returned);
+    }
+    const history = await assertContract('changesetHistory', await get(`/api/t/aa/scenarios/${SEQ}/changesets`));
+    expect(history.changesets.map((c) => c.editsCount)).toEqual([2, 2, 2, 1]);
+  });
+
+  it('is not recounted from change rows: the stored counter is what the API reports', async () => {
+    await applyStoredStep(env.database, SEQ, 5, { base: 4, changes: 1, edits: 0, editsCount: 3 }); // e.g. a write that counts none
+    expect(await editsOf()).toBe(3);
   });
 });
