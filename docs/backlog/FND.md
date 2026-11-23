@@ -91,7 +91,7 @@ title: "tools/tier-check: web bundle inspector"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: high

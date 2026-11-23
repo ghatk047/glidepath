@@ -90,7 +90,7 @@ title: "web image (Caddy + SPA) and Caddyfile"
 epic: OPS
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
