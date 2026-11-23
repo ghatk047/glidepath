@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 
 import { createPortal } from 'react-dom';
 import { GlassPanel } from '../../glass';
 import { useDialog } from './dialog';
-import { DEFAULT_SUGGESTIONS, searchItems, type PaletteItem } from './search';
+import { DEFAULT_SUGGESTIONS, MAX_RESULTS, searchItems, type PaletteItem } from './search';
 import { usePaletteStyles } from './styles';
 
 export interface CommandPaletteProps {
@@ -19,6 +19,13 @@ export interface CommandPaletteProps {
   shortcut?: boolean;
   /** Input placeholder. */
   placeholder?: string;
+  /** Every change of the typed query (the owner can ask tier 2's search with it). */
+  onQueryChange?: (query: string) => void;
+  /**
+   * Filter `items` by the typed text (`searchItems`). Default true. `false`: `items` already
+   * answer the query (e.g. tier 2's `/search`) and are shown as given, up to `MAX_RESULTS`.
+   */
+  filter?: boolean;
 }
 
 const LABEL = 'Find any number';
@@ -36,6 +43,8 @@ export function CommandPalette({
   suggestions = DEFAULT_SUGGESTIONS,
   shortcut = true,
   placeholder = 'Find any input, lever, line or output…',
+  onQueryChange,
+  filter = true,
 }: CommandPaletteProps) {
   usePaletteStyles();
   const openRef = useRef(onOpenChange);
@@ -62,6 +71,8 @@ export function CommandPalette({
       suggestions={suggestions}
       placeholder={placeholder}
       onSelect={onSelect}
+      onQueryChange={onQueryChange}
+      filter={filter}
       onClose={() => onOpenChange(false)}
     />,
     document.body,
@@ -73,16 +84,38 @@ interface DialogProps {
   suggestions: readonly string[];
   placeholder: string;
   onSelect: (item: PaletteItem) => void;
+  onQueryChange: ((query: string) => void) | undefined;
+  filter: boolean;
   onClose: () => void;
 }
 
-function PaletteDialog({ items, suggestions, placeholder, onSelect, onClose }: DialogProps) {
+function PaletteDialog({
+  items,
+  suggestions,
+  placeholder,
+  onSelect,
+  onQueryChange,
+  filter,
+  onClose,
+}: DialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
-  const hits = useMemo(() => searchItems(items, query), [items, query]);
+  const hits = useMemo(
+    () => (filter ? searchItems(items, query) : items.slice(0, MAX_RESULTS)),
+    [items, query, filter],
+  );
+  const queryRef = useRef(onQueryChange);
+  useEffect(() => {
+    queryRef.current = onQueryChange;
+  });
+  const changeQuery = (q: string) => {
+    setQuery(q);
+    setActive(0);
+    queryRef.current?.(q);
+  };
   const current = Math.min(active, Math.max(hits.length - 1, 0));
   // a pick lets focus go where onSelect sent it: the trap is off from then on
   const picked = useRef(false);
@@ -150,10 +183,7 @@ function PaletteDialog({ items, suggestions, placeholder, onSelect, onClose }: D
           autoComplete="off"
           spellCheck={false}
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setActive(0);
-          }}
+          onChange={(e) => changeQuery(e.target.value)}
           onKeyDown={onKeyDown}
         />
         {hits.length > 0 ? (
@@ -189,8 +219,7 @@ function PaletteDialog({ items, suggestions, placeholder, onSelect, onClose }: D
                   type="button"
                   className="gp-pal-sug"
                   onClick={() => {
-                    setQuery(s);
-                    setActive(0);
+                    changeQuery(s);
                     (ref.current?.querySelector('[data-autofocus]') as HTMLElement | null)?.focus();
                   }}
                 >

@@ -110,6 +110,41 @@ describe('UI-07 command palette: open, results, keys', () => {
     expect(onSelect).toHaveBeenCalledExactlyOnceWith(index[1]);
   });
 
+  it('onQueryChange reports each typed query; filter={false} shows the items as given (tier 2 search)', () => {
+    const queries: string[] = [];
+    const onSelect = vi.fn();
+    function Server() {
+      const [open, setOpen] = useState(true);
+      const [items, setItems] = useState<PaletteItem[]>([]);
+      return wrap(
+        <CommandPalette
+          open={open}
+          onOpenChange={setOpen}
+          filter={false}
+          items={items}
+          onSelect={onSelect}
+          onQueryChange={(q) => {
+            queries.push(q);
+            // the owner answers with items that need not contain the typed text
+            setItems(q ? many.slice(0, 12) : []);
+          }}
+        />,
+      );
+    }
+    render(<Server />);
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, { target: { value: 'wages' } });
+    expect(queries).toEqual(['wages']);
+    expect(screen.getAllByRole('option')).toHaveLength(9);
+    fireEvent.change(input, { target: { value: '' } });
+    expect(queries).toEqual(['wages', '']);
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    fireEvent.click(screen.getByRole('button', { name: 'cloud' }));
+    expect(queries.at(-1)).toBe('cloud');
+    key('Enter');
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith(many[0]);
+  });
+
   it('searchItems keeps arrival order, caps at 9, requires every word', () => {
     expect(searchItems(many, '')).toHaveLength(9);
     expect(searchItems(many, '', 3).map((i) => i.id)).toEqual(['item.0', 'item.1', 'item.2']);
