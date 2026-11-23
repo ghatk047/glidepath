@@ -407,7 +407,7 @@ title: "Path screen data from tier 2: reference points, tornado categories, warm
 epic: SOL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
