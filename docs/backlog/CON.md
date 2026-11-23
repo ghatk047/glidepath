@@ -19,7 +19,7 @@ title: "REST core schemas and problem JSON"
 epic: CON
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -41,6 +41,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: M
 notes: "Contract first: tier 1 and tier 2 items consume this; changes after merge need a new CON item and an ADR note."
+merged_at: "2026-11-23"
 ```
 
 The REST half of the only code shared by tiers 1 and 2.

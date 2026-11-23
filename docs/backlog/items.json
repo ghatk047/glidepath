@@ -496,7 +496,7 @@
     "epic": "CON",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "high",
@@ -525,7 +525,8 @@
       "G13"
     ],
     "size": "M",
-    "notes": "Contract first: tier 1 and tier 2 items consume this; changes after merge need a new CON item and an ADR note."
+    "notes": "Contract first: tier 1 and tier 2 items consume this; changes after merge need a new CON item and an ADR note.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "CON-02",
