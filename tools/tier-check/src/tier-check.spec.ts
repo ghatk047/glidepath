@@ -130,6 +130,17 @@ describe('tier-check', () => {
     expect(runTierCheck({ root, log }).exitCode).toBe(EXIT_CLEAN);
   });
 
+  it('ignores member access that shares a tier 2 name, but still flags a bare call', () => {
+    const name = [...deriveDenylist(root).symbols.keys()][0]!;
+    bundle(
+      'assets/app.js',
+      `const xs = [1, 2]; xs.${name}(); obj.${name} = 1; class K { a(){}${name}(){ return 1 } }`,
+    );
+    expect(runTierCheck({ root, log }).exitCode).toBe(EXIT_CLEAN);
+    bundle('assets/app.js', `${name}(1);`);
+    expect(runTierCheck({ root, log }).exitCode).not.toBe(EXIT_CLEAN);
+  });
+
   it('exits 0 with a clear message when no bundle exists yet', () => {
     rmSync(join(root, 'tier1-presentation/web/dist'), { recursive: true });
     const r = runTierCheck({ root, log });

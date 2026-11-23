@@ -84,7 +84,22 @@ export function scanText(text: string, file: string, deny: Denylist): Finding[] 
     const end = m.index + m[0].length;
     const after = text.slice(end, end + 2);
     const before = m.index > 0 ? text[m.index - 1] : '';
-    if ((after[0] === ':' && after[1] !== ':') || before === '"' || before === "'") continue;
+    // Member access (`xs.reverse()`, `re.compile`) is a property of some other object, not a tier 2 export.
+    if (
+      (after[0] === ':' && after[1] !== ':') ||
+      before === '"' ||
+      before === "'" ||
+      before === '.'
+    )
+      continue;
+    // Class/object method definitions (`}compile(){` inside a library class) define a member, not a tier 2 export.
+    if (
+      before !== undefined &&
+      before !== '' &&
+      '{},;'.includes(before) &&
+      /^\([^()]*\)\s*\{/.test(text.slice(end, end + 200))
+    )
+      continue;
     reported.add(m[0]);
     findings.push({ kind: 'tier2-symbol', file, line: lineOf(text, m.index), match: m[0], owners });
   }
@@ -92,7 +107,8 @@ export function scanText(text: string, file: string, deny: Denylist): Finding[] 
   // 2. Tier 2 package specifiers and tier 2 / tier 3 source paths.
   for (const name of deny.packageNames) {
     const i = text.indexOf(name);
-    if (i !== -1) findings.push({ kind: 'tier2-package', file, line: lineOf(text, i), match: name });
+    if (i !== -1)
+      findings.push({ kind: 'tier2-package', file, line: lineOf(text, i), match: name });
   }
   for (const marker of deny.pathMarkers) {
     const i = text.indexOf(marker);
