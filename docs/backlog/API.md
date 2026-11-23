@@ -293,7 +293,7 @@ title: "Solver routes: quick (in-session) and jobs"
 epic: API
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
@@ -311,7 +311,7 @@ acceptance:
   - "responses pass assertContract (test)"
 gates: [G1, G2, G7]
 size: M
-notes: ""
+notes: "Also own the server composition (start.ts): a pg-boss client in the server (send + await result, direct URL so Neon/pgbouncer works), wire the JOB-02 relay (createJobRelay ... .start()/stop()), implement API-10's ExcelJobs port on it and pass excel deps with importMaxBytes() (add IMPORT_MAX_BYTES to config.ts). Map problem ids to solver_run kind here (JOB-02 note)."
 ```
 
 Path and Cockpit solver hooks.

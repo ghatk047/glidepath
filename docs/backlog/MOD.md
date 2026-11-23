@@ -93,7 +93,7 @@ title: "Baseline module"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
@@ -126,7 +126,7 @@ title: "Levers module"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
@@ -160,7 +160,7 @@ title: "VPs module"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high

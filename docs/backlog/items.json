@@ -2232,7 +2232,7 @@
     "epic": "API",
     "milestone": "M3",
     "priority": "must",
-    "status": "todo",
+    "status": "in_progress",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -2263,7 +2263,7 @@
       "G7"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "Also own the server composition (start.ts): a pg-boss client in the server (send + await result, direct URL so Neon/pgbouncer works), wire the JOB-02 relay (createJobRelay ... .start()/stop()), implement API-10's ExcelJobs port on it and pass excel deps with importMaxBytes() (add IMPORT_MAX_BYTES to config.ts). Map problem ids to solver_run kind here (JOB-02 note)."
   },
   {
     "id": "API-10",
@@ -3363,7 +3363,7 @@
     "epic": "AI",
     "milestone": "M4",
     "priority": "must",
-    "status": "todo",
+    "status": "in_progress",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -3391,7 +3391,7 @@
       "G2"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "Implement AI-05's ReconfigApplyPort.inTenant in the worker with withTenant (insert tenant row on create, ScenarioStore, modelVersionId, writeLeverMappings). Map applyDraft's per-changeset results to the contract's changesetId per kind. Share the worker seed loader row mapping (drafts.ts) with ai instead of the copy."
   },
   {
     "id": "AI-07",
@@ -4460,7 +4460,7 @@
     "epic": "MOD",
     "milestone": "M3",
     "priority": "must",
-    "status": "todo",
+    "status": "in_progress",
     "stream": "C",
     "model": "sonnet",
     "effort": "high",
@@ -4501,7 +4501,7 @@
     "epic": "MOD",
     "milestone": "M3",
     "priority": "must",
-    "status": "todo",
+    "status": "in_progress",
     "stream": "C",
     "model": "sonnet",
     "effort": "high",
@@ -4543,7 +4543,7 @@
     "epic": "MOD",
     "milestone": "M3",
     "priority": "must",
-    "status": "todo",
+    "status": "in_progress",
     "stream": "C",
     "model": "sonnet",
     "effort": "high",

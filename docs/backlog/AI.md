@@ -182,7 +182,7 @@ title: "ai.reconfig job, cost guard, rehearse CLI and cache import"
 epic: AI
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
@@ -201,7 +201,7 @@ acceptance:
   - "ANTHROPIC_API_KEY read from env and never logged; worker egress via the egress network only (test + compose-config check)"
 gates: [G1, G2]
 size: M
-notes: ""
+notes: "Implement AI-05's ReconfigApplyPort.inTenant in the worker with withTenant (insert tenant row on create, ScenarioStore, modelVersionId, writeLeverMappings). Map applyDraft's per-changeset results to the contract's changesetId per kind. Share the worker seed loader row mapping (drafts.ts) with ai instead of the copy."
 ```
 
 Runs the pipeline as a job and makes the demo cache reproducible.
