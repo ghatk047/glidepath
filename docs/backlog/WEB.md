@@ -122,7 +122,7 @@ title: "Binding hooks and bound components"
 epic: WEB
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: opus
 effort: high
@@ -142,6 +142,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Components bind to ids; values come from tier 2.
