@@ -6,6 +6,7 @@ import { SolverError } from '../errors';
 import type { ProblemSolver, ProblemTable } from '../run';
 import type { ProblemId } from '../types';
 import { breakevenProblem, goalSeekProblem } from './goal-seek';
+import { monteCarlo } from './monte-carlo';
 
 /** Backlog item that implements each problem (docs/backlog/SOL.md). */
 export const PENDING_PROBLEMS: Readonly<Record<ProblemId, string>> = {
@@ -33,7 +34,7 @@ export const PROBLEMS: ProblemTable = {
   min_risk_mix: pending('min_risk_mix'),
   pareto: pending('pareto'),
   vp_feasible: pending('vp_feasible'),
-  monte_carlo: pending('monte_carlo'),
+  monte_carlo: monteCarlo,
   sensitivity: async (run, params) => (await import('./sensitivity')).sensitivity(run, params),
   stress_presets: async (run, params) => (await import('./stress')).stressPresetsProblem(run, params),
 };

@@ -57,3 +57,8 @@ export { breakeven, goalSeek } from './goal-seek';
 export { BREAKEVEN_OUTPUT, BREAKEVEN_TARGET } from './problems/goal-seek';
 export { SCAN_POINTS, isMonotone, scanGrid, seek, seekScalar } from './problems/seek';
 export type { SeekOptions, SeekReason, SeekResult, Seeker } from './problems/seek';
+
+// SOL-06 Monte Carlo: the problem, its seeded draws and the 04 §4 defaults.
+export type { DistBasis, MonteCarloDist } from './types';
+export { MONTE_CARLO_DEFAULTS, drawMonteCarlo, monteCarlo, resolveDists, validateDist } from './problems/monte-carlo';
+export type { MonteCarloDefaults, MonteCarloDraws, ProbabilityDef } from './problems/monte-carlo';

@@ -202,14 +202,23 @@ describe('SOL-01 runSolver: result assembly and move rules', () => {
   });
 
   it('every problem without its item rejects with NOT_IMPLEMENTED naming the item', async () => {
-    // Problems whose item has landed run for real (their own specs cover them); each item adds its own.
-    const landed = new Set<string>(['sensitivity', 'goal_seek', 'breakeven', 'stress_presets']);
-    for (const [problem, item] of Object.entries(PENDING_PROBLEMS).filter(([p]) => !landed.has(p))) {
-      await expect(runSolver(model, { problem, params: {} } as never)).rejects.toMatchObject({
-        code: 'NOT_IMPLEMENTED',
-        message: expect.stringContaining(item),
-      });
+    const implemented: string[] = [];
+    for (const [problem, item] of Object.entries(PENDING_PROBLEMS)) {
+      // An implemented problem is cancelled at its first batch (or rejects its empty params).
+      const ac = new AbortController();
+      const abortAtFirstBatch = () => {
+        ac.abort();
+        return Promise.resolve();
+      };
+      const outcome = await runSolver(model, { problem, params: {} } as never, { signal: ac.signal, yield: abortAtFirstBatch }).then(
+        () => undefined,
+        (e: unknown) => e as SolverError,
+      );
+      if (outcome?.code === 'NOT_IMPLEMENTED') expect(outcome.message).toContain(item);
+      else implemented.push(problem);
     }
+    // Items that have landed: SOL-02 goal seek and breakeven, SOL-06 Monte Carlo, SOL-07 sensitivity, SOL-08 stress.
+    for (const p of ['goal_seek', 'breakeven', 'monte_carlo', 'sensitivity', 'stress_presets']) expect(implemented).toContain(p);
     await expect(runSolver(model, { problem: 'nope' as ProblemId, params: {} } as never)).rejects.toBeInstanceOf(SolverError);
   });
 

@@ -190,7 +190,7 @@ title: "Monte Carlo on the batch engine"
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -211,6 +211,7 @@ acceptance:
 gates: [G1, G2, G5, G8]
 size: M
 notes: "Percentile tolerance ±5% is this backlog's choice (different RNG than numpy); P(clear) tolerance is from 03 §3."
+merged_at: "2026-11-23"
 ```
 
 The 'odds' — target is hard.

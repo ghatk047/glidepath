@@ -124,6 +124,39 @@ export interface ParetoParams extends OptimiserParams {
   readonly sweep?: { readonly from: number; readonly to: number; readonly step: number };
 }
 
+/** Where a distribution's draw lands: the value itself, a multiplier of the start value, or an offset to it. */
+export type DistBasis = 'absolute' | 'relative' | 'shift';
+
+/**
+ * A Monte Carlo input distribution (04 §4: "Triangular, PERT, Normal, Lognormal or discrete on any input";
+ * `variable_def.dist`). `basis` (default `absolute`) says how a draw `d` becomes the input: `d`,
+ * `start × d` or `start + d`. `confidence_beta` is the spec's default realisation:
+ * `scale × Beta(K·c/scale, K·(1 − c/scale))` with `c` the same member's cell of the `confidence` variable.
+ */
+export type MonteCarloDist =
+  | { readonly type: 'triangular'; readonly min: number; readonly mode: number; readonly max: number; readonly basis?: DistBasis }
+  | {
+      readonly type: 'pert';
+      readonly min: number;
+      readonly mode: number;
+      readonly max: number;
+      /** Shape weight of the mode; absent = the classic PERT 4. */
+      readonly lambda?: number;
+      readonly basis?: DistBasis;
+    }
+  | { readonly type: 'normal'; readonly mean: number; readonly sd: number; readonly basis?: DistBasis }
+  /** `exp(mu + sigma·Z)`. */
+  | { readonly type: 'lognormal'; readonly mu: number; readonly sigma: number; readonly basis?: DistBasis }
+  | { readonly type: 'uniform'; readonly min: number; readonly max: number; readonly basis?: DistBasis }
+  | {
+      readonly type: 'discrete';
+      readonly values: readonly number[];
+      /** Relative weights, one per value; absent = equally likely. */
+      readonly weights?: readonly number[];
+      readonly basis?: DistBasis;
+    }
+  | { readonly type: 'confidence_beta'; readonly concentration: number; readonly scale: number; readonly confidence: string };
+
 /** `monte_carlo`: seeded batch run. */
 export interface MonteCarloParams {
   readonly iterations?: number;
@@ -131,6 +164,15 @@ export interface MonteCarloParams {
   readonly outputs?: readonly CellKey[];
   /** Editable correlation groups (Gaussian copula) over `lever` members. */
   readonly correlation?: readonly { readonly levers: readonly string[]; readonly rho: number }[];
+  /**
+   * Distribution overrides by variable id (every cell of it) or cell key; `null` holds that input at its
+   * start value. Precedence: cell, then variable, then `variable_def.dist`, then the 04 §4 defaults.
+   */
+  readonly dist?: Readonly<Record<string, MonteCarloDist | null>>;
+  /** Histogram bins per output. */
+  readonly bins?: number;
+  /** Lanes per engine batch (a cancel lands between batches). */
+  readonly batchSize?: number;
 }
 
 /** `sensitivity`. */
@@ -208,7 +250,11 @@ export interface SolverDetailMap {
       readonly cell: CellKey;
       readonly bins: readonly { readonly lo: number; readonly hi: number; readonly count: number }[];
     }[];
-    readonly contributions: readonly { readonly lever: string; readonly share: number }[];
+    /**
+     * Variance contribution by lever: `rho` = Spearman rank correlation of the lever's realisation with
+     * the net, `share` = rho² / Σ rho² (shares sum to 1, or 0 when nothing correlates).
+     */
+    readonly contributions: readonly { readonly lever: string; readonly share: number; readonly rho: number }[];
   };
   readonly sensitivity: {
     readonly method: SensitivityMethod;
