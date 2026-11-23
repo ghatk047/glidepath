@@ -409,7 +409,8 @@ jobs:
           perl -pi -e 's{^(POSTGRES_PASSWORD|OWNER_DB_PASSWORD|APP_DB_PASSWORD|AUTH_SECRET)=$}{my $r = qx(openssl rand -hex 24); chomp $r; "$1=$r"}e' .env
       - name: Compose up (seeded)
         if: steps.probe.outputs.ready == 'true'
-        run: docker compose up -d --build --wait --wait-timeout 180
+        # The job-level DATABASE_URL* point at the CI Postgres service on localhost; inside the stack the .env values (host db) must win.
+        run: env -u DATABASE_URL -u DATABASE_URL_MIGRATE -u TEST_DATABASE_URL docker compose up -d --build --wait --wait-timeout 180
       - name: Run G9 E2E smoke
         if: steps.probe.outputs.ready == 'true'
         run: pnpm e2e -- --trace off
@@ -455,7 +456,8 @@ jobs:
           perl -pi -e 's{^(POSTGRES_PASSWORD|OWNER_DB_PASSWORD|APP_DB_PASSWORD|AUTH_SECRET)=$}{my $r = qx(openssl rand -hex 24); chomp $r; "$1=$r"}e' .env
       - name: Compose up (seeded)
         if: steps.probe.outputs.ready == 'true'
-        run: docker compose up -d --build --wait --wait-timeout 180
+        # The job-level DATABASE_URL* point at the CI Postgres service on localhost; inside the stack the .env values (host db) must win.
+        run: env -u DATABASE_URL -u DATABASE_URL_MIGRATE -u TEST_DATABASE_URL docker compose up -d --build --wait --wait-timeout 180
       - name: Run G10 Demo storyline
         if: steps.probe.outputs.ready == 'true'
         run: pnpm e2e:storyline -- --trace off
