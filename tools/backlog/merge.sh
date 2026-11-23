@@ -4,7 +4,16 @@ set -e
 cd "$(dirname "$0")/../.."
 ID=$1; BR=$2; WT=$3
 MSG=$(git log -1 --format=%s "$BR")
-git merge --squash -q "$BR"
+if ! git merge --squash -q "$BR"; then
+  CONF=$(git diff --name-only --diff-filter=U)
+  if [ "$CONF" = "pnpm-lock.yaml" ]; then
+    git checkout --ours pnpm-lock.yaml 2>/dev/null || git show HEAD:pnpm-lock.yaml > pnpm-lock.yaml
+    pnpm install --no-frozen-lockfile >/dev/null
+    git add pnpm-lock.yaml
+  else
+    echo "CONFLICT: $CONF"; exit 2
+  fi
+fi
 python3 tools/backlog/orch.py set "$ID" done merged_at=$(date -u +%F) >/dev/null
 git add -A
 git commit -q -m "$MSG" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
