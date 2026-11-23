@@ -2412,6 +2412,42 @@
     "merged_at": "2026-11-23"
   },
   {
+    "id": "API-14",
+    "title": "Airlines module data: AI job list, tenant parity, onboarding states",
+    "epic": "API",
+    "milestone": "M4",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "B",
+    "model": "sonnet",
+    "effort": "high",
+    "depends_on": [
+      "API-11",
+      "MOD-10"
+    ],
+    "tier": 2,
+    "package": "contract/api-contract, tier2-logic/server/src/routes/ai, tier1-presentation/web/src/modules/airlines, tier1-presentation/web/src/modules/vps",
+    "contract": "GET /api/ai/reconfig (list); Tenant parity; ReconfigJob onboarding step states",
+    "inputs": [
+      "tier1-presentation/web/src/modules/airlines/{model.ts,useReconfig.ts,Tiles.tsx} (localStorage job id, tier-1 derived step states, missing parity line)",
+      "docs/spec/07 section 2 (onboarding steps)"
+    ],
+    "acceptance": [
+      "GET /api/ai/reconfig lists the caller's reconfig jobs (incl. the cached UA rehearsal) so the Airlines tile finds it without localStorage (test)",
+      "tenant parity {passed,total} comes from tier 2 (latest parity/replay result recorded for the tenant) and the live tile shows it (test)",
+      "tier 2 sends each onboarding step's state (done / review / todo) on the job; tier 1 stops deriving it and counting 'n of 9' (test)",
+      "VPs module 'Every VP clears?' uses the API-13 solver lookup instead of POSTing to discover a run (test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G7",
+      "G13"
+    ],
+    "size": "S",
+    "notes": "From MOD-10 and API-13 reviews."
+  },
+  {
     "id": "JOB-01",
     "title": "Worker runtime on pg-boss: queues, progress, cancel",
     "epic": "JOB",
