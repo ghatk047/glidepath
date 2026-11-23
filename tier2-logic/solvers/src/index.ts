@@ -79,3 +79,6 @@ export {
   STEP_DIVISIONS,
   riskExposure,
 } from './problems/min-risk';
+// SOL-05: VP-feasible plan (min-risk mix with per-VP bars; maximin VP coverage when infeasible).
+export { vpFeasible } from './vp-feasible';
+export { VP_COVERAGE, leximin, withPerVp } from './problems/vp-feasible';

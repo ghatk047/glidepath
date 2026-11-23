@@ -33,7 +33,7 @@ export const PROBLEMS: ProblemTable = {
   scenario_blend: async (run, params) => (await import('./blend')).scenarioBlendProblem(run, params),
   min_risk_mix: async (run, params) => (await import('./min-risk')).minRiskMixProblem(run, params),
   pareto: pending('pareto'),
-  vp_feasible: pending('vp_feasible'),
+  vp_feasible: async (run, params) => (await import('./vp-feasible')).vpFeasibleProblem(run, params),
   monte_carlo: monteCarlo,
   sensitivity: async (run, params) => (await import('./sensitivity')).sensitivity(run, params),
   stress_presets: async (run, params) => (await import('./stress')).stressPresetsProblem(run, params),
