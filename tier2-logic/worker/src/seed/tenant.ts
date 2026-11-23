@@ -229,6 +229,13 @@ export async function seedTenant(db: Db, o: TenantSeedOptions): Promise<TenantSe
     for (const s of seed.scenarios.scenarios) {
       presets[s.id] = byKey.get(s.id)?.id ?? seedIds.scenario(slug, s.id);
     }
+    // DATA-14: the position in scenarios.json is the list order (new and already seeded rows alike)
+    for (const [pos, s] of seed.scenarios.scenarios.entries()) {
+      await tx
+        .update(schema.scenario)
+        .set({ sort_order: pos })
+        .where(sql`${schema.scenario.tenant_id} = ${tenantId} and ${schema.scenario.key} = ${s.id} and ${schema.scenario.kind} = 'preset'`);
+    }
 
     // ---- 3a. tenant members, lines and defaults: one changeset
     const state = await store.transaction(async (t) => {

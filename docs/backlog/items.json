@@ -1707,7 +1707,7 @@
     "epic": "DATA",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "sonnet",
     "effort": "medium",
@@ -1732,7 +1732,8 @@
       "G4"
     ],
     "size": "S",
-    "notes": "From WEB-11 review. Order comes from seed data, not hard-coded keys."
+    "notes": "From WEB-11 review. Order comes from seed data, not hard-coded keys.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DOM-01",

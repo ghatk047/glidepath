@@ -147,6 +147,15 @@ describe('migrate entry on pg-local', () => {
     });
   });
 
+  it('sets scenario.sort_order to the position in scenarios.json (DATA-14), also on a re-run', async () => {
+    const order = inputs.tenant.scenarios.scenarios.map((s) => s.id);
+    expect(order[0]).toBe('rates');
+    await inTenant(async (tx) => {
+      const rows = await tx.select().from(schema.scenario);
+      expect(Object.fromEntries(rows.map((r) => [r.key, r.sort_order]))).toEqual(Object.fromEntries(order.map((k, i) => [k, i])));
+    });
+  });
+
   it('creates the five presets locked, and the default scenario is C', async () => {
     const { scenarios } = inputs.tenant;
     expect(scenarios.default_scenario).toBe('C');

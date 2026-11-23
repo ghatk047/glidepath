@@ -447,7 +447,7 @@ title: "Scenarios list in seed order (Rates only first, as in the cockpit render
 epic: DATA
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: medium
@@ -465,4 +465,5 @@ acceptance:
 gates: [G1, G2, G4]
 size: S
 notes: "From WEB-11 review. Order comes from seed data, not hard-coded keys."
+merged_at: "2026-11-23"
 ```

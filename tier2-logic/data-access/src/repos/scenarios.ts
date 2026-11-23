@@ -24,14 +24,17 @@ const toRecord = (r: typeof scenario.$inferSelect): ScenarioRecord => ({
   archived: r.archived,
 });
 
-/** Every scenario of the current tenant (archived ones too), oldest first, then by key. */
+/**
+ * Every scenario of the current tenant (archived ones too): presets in seed order (`sort_order`, set by the seeder
+ * from the position in the tenant's scenarios.json; DATA-14), nulls last, then oldest first, then by key.
+ */
 export async function listScenarios(tx: TenantTx): Promise<ScenarioRecord[]> {
   const { tenantId } = tenantScope(tx, 'listScenarios');
   const rows = await tx
     .select()
     .from(scenario)
     .where(eq(scenario.tenant_id, tenantId))
-    .orderBy(asc(scenario.created_at), sql`${scenario.key} collate "C"`);
+    .orderBy(sql`${scenario.sort_order} asc nulls last`, asc(scenario.created_at), sql`${scenario.key} collate "C"`);
   return rows.map(toRecord);
 }
 

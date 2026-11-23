@@ -178,6 +178,14 @@ describe('GET scenarios (kind, parent, version, locked)', () => {
     });
   });
 
+  it('lists the presets in seed order (rates first), then user scenarios (DATA-14); the order comes from sort_order, not created_at', async () => {
+    const { scenarios } = await assertContract('scenarios', await get('/api/t/aa/scenarios'));
+    const seed = await aaSeed();
+    expect(scenarios.slice(0, 5).map((s) => s.key)).toEqual(seed.scenarios.scenarios.map((s) => s.id));
+    expect(scenarios[0]?.key).toBe('rates');
+    expect(scenarios.slice(5).every((s) => s.kind === 'user')).toBe(true);
+  });
+
   it('editsCount is the stored counter of the changeset at version - 1 (c4: 3; not the rejected c5 at the next base), 0 for presets', async () => {
     const { scenarios } = await assertContract('scenarios', await get('/api/t/aa/scenarios'));
     expect(scenarios.find((s) => s.id === MINE)?.editsCount).toBe(3);

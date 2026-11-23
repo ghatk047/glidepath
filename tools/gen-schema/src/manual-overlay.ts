@@ -91,6 +91,7 @@ const M1 = 'manual/0001_solver_run_progress_scenario_archived.sql';
 const M2 = 'manual/0002_auth_tables.sql';
 const M3 = 'manual/0003_stored_object.sql';
 const M4 = 'manual/0004_same_tenant_references.sql';
+const M5 = 'manual/0005_scenario_sort_order.sql';
 
 /** Composite (tenant_id, column) -> target (tenant_id, id): a tenant row can only reference its own tenant's rows. */
 const sameTenant = (table: string, column: string, refTable: string): OverlayFk => ({
@@ -116,6 +117,11 @@ export const MANUAL_OVERLAY: ManualOverlay = {
       table: 'scenario',
       source: M1,
       columns: [{ name: 'archived', type: 'boolean', notNull: true, default: 'false' }],
+    },
+    {
+      table: 'scenario',
+      source: M5,
+      columns: [{ name: 'sort_order', type: 'integer', notNull: false }],
     },
   ],
   tables: [

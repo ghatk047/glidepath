@@ -238,6 +238,7 @@ export const scenario = pgTable(
     created_by: uuid('created_by').notNull(),
     created_at: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull(),
     archived: boolean('archived').notNull().default(false), // manual/0001_solver_run_progress_scenario_archived.sql
+    sort_order: integer('sort_order'), // manual/0005_scenario_sort_order.sql
   },
   (t) => [
     primaryKey({ name: 'scenario_pkey', columns: [t.id] }),
