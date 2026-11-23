@@ -397,3 +397,30 @@ gates: [G1, G2, G5]
 size: S
 notes: "From INT-03."
 ```
+
+## SOL-13 · Path screen data from tier 2: reference points, tornado categories, warm Path runs
+
+```yaml
+id: SOL-13
+title: "Path screen data from tier 2: reference points, tornado categories, warm Path runs"
+epic: SOL
+milestone: M3
+priority: must
+status: todo
+stream: B
+model: sonnet
+effort: high
+depends_on: [SOL-12, MOD-07, API-13]
+tier: 2
+package: "contract/api-contract, tier2-logic/solvers, tier2-logic/server/src/routes/solver, tier2-logic/worker/src/warm, tier1-presentation/web/src/modules/path"
+contract: "SolverDetail sensitivity rows carry category and swing; min_risk_mix results carry reference metrics net[<key>] and risk_exposure[<key>] for C, D and allvps"
+inputs:
+  - "tier1-presentation/web/src/modules/path/{TornadoPanel.tsx,SavingsRiskPanel.tsx,copy.ts} (tier 1 currently classifies tornado categories from registry groups and takes |impact|: business logic that belongs in tier 2, rule 1)"
+acceptance:
+  - "sensitivity/tornado rows carry tier 2's category (lever, policy, timing) and swing; tier 1 drops its own classification and abs (test)"
+  - "min_risk_mix results carry net[C|D|allvps] and risk_exposure[C|D|allvps] so the savings-vs-risk scatter has all four points from one run (test)"
+  - "the demo warmer (JOB-04) also pre-runs the Path tornado and Monte Carlo for D with the exact params the Path screen looks up, so Path shows results without a Run click (test: lookup hits after warm)"
+gates: [G1, G2, G5, G13]
+size: S
+notes: "From MOD-06/MOD-07 reviews. Start after SOL-12 merges (same solver-model code)."
+```
