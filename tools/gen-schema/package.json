@@ -11,5 +11,10 @@
     "test": "vitest run",
     "generate": "tsx src/cli.ts generate",
     "check": "tsx src/cli.ts check"
+  },
+  "devDependencies": {
+    "@glidepath/pg-local": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1"
   }
 }

@@ -1259,7 +1259,7 @@
     "epic": "DATA",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "xhigh",
@@ -1286,7 +1286,8 @@
       "G7"
     ],
     "size": "M",
-    "notes": "Neon: roles are created in the Neon console; migrations never CREATE ROLE."
+    "notes": "Neon: roles are created in the Neon console; migrations never CREATE ROLE.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DATA-03",

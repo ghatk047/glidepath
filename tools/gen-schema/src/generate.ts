@@ -2,18 +2,24 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { renderSchemaSql } from './ddl';
 import { buildModel } from './model';
+import { renderRlsSql } from './rls';
 import { loadSchema, migrationsDir, type SpecSchema } from './spec';
 
 /**
- * Generated migration files. DATA-02 (0002_rls.sql) and DATA-03 (0003_views.sql)
- * extend this list; hand-written SQL lives in tier3-data/migrations/manual/ (ADR-023).
+ * Generated migration files. DATA-03 (0003_views.sql) extends this list;
+ * hand-written SQL lives in tier3-data/migrations/manual/ (ADR-023).
  */
 export const SCHEMA_MIGRATION = '0001_schema.sql';
+/** Row-level security, policies and grants (DATA-02). */
+export const RLS_MIGRATION = '0002_rls.sql';
 
 /** filename -> content, for the given schema. Pure. */
 export function generateMigrations(schema: SpecSchema): Map<string, string> {
   const model = buildModel(schema);
-  return new Map([[SCHEMA_MIGRATION, renderSchemaSql(model)]]);
+  return new Map([
+    [SCHEMA_MIGRATION, renderSchemaSql(model)],
+    [RLS_MIGRATION, renderRlsSql(model)],
+  ]);
 }
 
 export interface CheckResult {

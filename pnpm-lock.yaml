@@ -197,7 +197,17 @@ importers:
 
   tools/eslint-config: {}
 
-  tools/gen-schema: {}
+  tools/gen-schema:
+    devDependencies:
+      '@glidepath/pg-local':
+        specifier: workspace:*
+        version: link:../pg-local
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
 
   tools/gen-types: {}
 

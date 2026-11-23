@@ -61,7 +61,7 @@ title: "RLS policies, roles and grants"
 epic: DATA
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -81,6 +81,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: "Neon: roles are created in the Neon console; migrations never CREATE ROLE."
+merged_at: "2026-11-23"
 ```
 
 Tenant isolation in the database itself.

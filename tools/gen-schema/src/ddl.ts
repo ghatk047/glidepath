@@ -46,7 +46,7 @@ export function ident(name: string): string {
   return `"${name.replace(/"/g, '""')}"`;
 }
 
-function lit(s: string): string {
+export function lit(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
 
@@ -54,7 +54,7 @@ function cols(c: string[]): string {
   return c.map(ident).join(', ');
 }
 
-function checkName(n: string): string {
+export function checkName(n: string): string {
   if (n.length > 63) throw new Error(`identifier "${n}" exceeds 63 characters`);
   return n;
 }
