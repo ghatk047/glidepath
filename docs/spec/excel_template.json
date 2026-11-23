@@ -1,0 +1,322 @@
+{
+ "template_version": "1.0",
+ "principles": [
+  "The app generates the workbook; the app is the only reader. Users edit values, never structure.",
+  "Rows are identified by keys, never by position. Sorting, filtering, hiding columns and adding comments are safe.",
+  "Every export stores a server-side snapshot so an import can be diffed three ways: export snapshot vs workbook vs current database."
+ ],
+ "file": {
+  "name_pattern": "{tenant_slug}_it_savings_{scenario_keys}_{yyyymmdd-hhmm}.xlsx",
+  "units_note": "$M; percentages stored as decimals with % format; booleans 0/1; enums as dropdown labels mapped to codes"
+ },
+ "sheets": [
+  {
+   "name": "README",
+   "editable": false,
+   "content": "What to edit (yellow cells), what not to touch, how import works, export id and time."
+  },
+  {
+   "name": "Targets",
+   "kind": "scalar_inputs",
+   "filter": {
+    "groups": [
+     "Target & governance",
+     "P&L hand-off"
+    ]
+   }
+  },
+  {
+   "name": "Workforce",
+   "kind": "scalar_inputs",
+   "filter": {
+    "groups": [
+     "Workforce & rates"
+    ]
+   },
+   "also": "vend.book rows (one per vendor)"
+  },
+  {
+   "name": "Pools",
+   "kind": "member_inputs",
+   "filter": {
+    "groups": [
+     "Baseline & pools"
+    ],
+    "exclude_dims": [
+     "line"
+    ]
+   }
+  },
+  {
+   "name": "Levers",
+   "kind": "scalar_inputs",
+   "filter": {
+    "prefix": "lev.L"
+   },
+   "layout": "one row per input, grouped by lever, one value column per exported scenario"
+  },
+  {
+   "name": "Lever_Timing",
+   "kind": "matrix",
+   "rows": "lever",
+   "column_blocks": [
+    "lev.start",
+    "lev.ramp",
+    "lev.conf",
+    "lev.on"
+   ],
+   "per_scenario": true
+  },
+  {
+   "name": "Org_Map",
+   "kind": "matrix",
+   "var": "org.dom_share",
+   "rows": "domain",
+   "cols": "vp",
+   "row_check": "sum = 100%",
+   "also": [
+    "org.ss_flag",
+    "org.manual_target",
+    "org.usage_override"
+   ]
+  },
+  {
+   "name": "Line_Items",
+   "kind": "table",
+   "key": "member_key",
+   "editable_columns": [
+    "name",
+    "l2",
+    "pool_id",
+    "domain_key",
+    "addr_tag",
+    "scale_driver",
+    "in_scope",
+    "line.amount",
+    "line.capex_share",
+    "notes"
+   ],
+   "row_actions": {
+    "column": "action",
+    "values": [
+     "",
+     "DELETE"
+    ],
+    "new_rows": "blank member_key = insert; app assigns key"
+   }
+  },
+  {
+   "name": "Corporate",
+   "kind": "year_matrix",
+   "filter": {
+    "prefix": "corp."
+   },
+   "cols": [
+    "fy25",
+    "fy26",
+    "fy27"
+   ],
+   "note": "Blank = not used for that year"
+  },
+  {
+   "name": "Overrides",
+   "kind": "table",
+   "columns": [
+    "node_key",
+    "member_key",
+    "value",
+    "reason"
+   ],
+   "note": "Pin any calculated number; delete the row to unpin"
+  },
+  {
+   "name": "Outputs",
+   "editable": false,
+   "kind": "snapshot",
+   "content": "Key results per scenario at export time. Ignored on import."
+  },
+  {
+   "name": "_lists",
+   "hidden": true,
+   "content": "Validation lists: pools, domains, vps, addr tags, scale drivers, enums"
+  },
+  {
+   "name": "_meta",
+   "hidden": true,
+   "protected": true,
+   "fields": [
+    "tenant_id",
+    "tenant_slug",
+    "model_version",
+    "template_version",
+    "export_job_id",
+    "exported_at",
+    "exported_by",
+    "scenario_keys",
+    "workbook_checksum"
+   ]
+  }
+ ],
+ "scalar_inputs_columns": [
+  {
+   "header": "key",
+   "locked": true,
+   "width": 0,
+   "note": "Stable id (var_key); may be hidden"
+  },
+  {
+   "header": "member",
+   "locked": true,
+   "note": "member_key for dimensioned rows"
+  },
+  {
+   "header": "Group"
+  },
+  {
+   "header": "Input",
+   "from": "label"
+  },
+  {
+   "header": "Unit"
+  },
+  {
+   "header": "Min",
+   "locked": true
+  },
+  {
+   "header": "Max",
+   "locked": true
+  },
+  {
+   "header": "Default",
+   "editable": true,
+   "maps_to": "variable_value"
+  },
+  {
+   "header": "<scenario label>",
+   "editable": true,
+   "repeat": "per exported scenario",
+   "maps_to": "scenario_value",
+   "blank_means": "inherit default"
+  },
+  {
+   "header": "Source",
+   "locked": true
+  },
+  {
+   "header": "Confidence",
+   "locked": true
+  },
+  {
+   "header": "Note",
+   "editable": true,
+   "maps_to": "variable_value.note"
+  },
+  {
+   "header": "_hash",
+   "hidden": true,
+   "note": "sha256 of the exported editable cells in the row; fast unchanged-row check"
+  }
+ ],
+ "cell_rules": {
+  "editable_fill": "light yellow",
+  "locked_cells": "protected (no password by default; tenant setting)",
+  "data_validation": "min/max from variable_def; dropdown for enum/bool/categorical columns",
+  "number_formats": {
+   "%": "0.0%",
+   "$M": "#,##0.0",
+   "FTE": "#,##0",
+   "x": "0.00x"
+  }
+ },
+ "import_pipeline": [
+  {
+   "step": 1,
+   "name": "identify",
+   "do": "Read _meta. Check tenant and template_version (minor versions compatible). Load export snapshot by export_job_id. No _meta: foreign mode (2-way diff vs current DB)."
+  },
+  {
+   "step": 2,
+   "name": "parse",
+   "do": "Locate sheets and columns by header text; ignore unknown sheets/columns (report them). Normalise '35%', '0.35', blanks, TRUE/FALSE, dropdown labels."
+  },
+  {
+   "step": 3,
+   "name": "validate",
+   "do": "Unknown keys, type, min/max, enum membership, VR01-VR10 cross-row rules, structural edits to locked columns (rejected)."
+  },
+  {
+   "step": 4,
+   "name": "diff",
+   "do": "Per cell compare export (E), workbook (W), current DB (D): W=E -> unchanged; W!=E and D=E -> changed_in_excel; W=E and D!=E -> changed_in_app (keep D); W!=E and D!=E and W!=D -> conflict; W!=E and W=D -> already_applied. Rows: new (blank key), deleted (action=DELETE), missing (row removed from sheet -> warn, never delete)."
+  },
+  {
+   "step": 5,
+   "name": "impact preview",
+   "do": "Recalculate the affected scenarios with proposed changes (incremental engine). Show delta on hero outputs: net, gap, risk-adjusted net, VP gaps, EPS, share price."
+  },
+  {
+   "step": 6,
+   "name": "review",
+   "do": "UI lists changes grouped by sheet with old -> new, conflicts first. Accept all, accept per row, or resolve conflicts (keep app / take Excel)."
+  },
+  {
+   "step": 7,
+   "name": "apply",
+   "do": "One changeset (origin=excel_import), atomic, optimistic check on scenario.version, audit_log rows, new calc_run. Undo = revert changeset."
+  }
+ ],
+ "delta_report_schema": {
+  "import_job_id": "uuid",
+  "export_job_id": "uuid|null",
+  "mode": "three_way|foreign",
+  "summary": {
+   "unchanged": "int",
+   "changed_in_excel": "int",
+   "changed_in_app": "int",
+   "conflict": "int",
+   "invalid": "int",
+   "new_rows": "int",
+   "deleted_rows": "int",
+   "ignored": "int"
+  },
+  "changes": [
+   {
+    "sheet": "Levers",
+    "key": "lev.L05.nb",
+    "member": "",
+    "scenario": "C",
+    "export": 0.6,
+    "workbook": 0.75,
+    "current": 0.6,
+    "status": "changed_in_excel",
+    "messages": []
+   }
+  ],
+  "impact": {
+   "scenario": "C",
+   "res.net": [
+    119.3,
+    123.1
+   ],
+   "res.gap": [
+    -23.7,
+    -19.9
+   ],
+   "br.eps27": [
+    0.091,
+    0.094
+   ]
+  }
+ },
+ "round_trip_tests": [
+  "export then import unchanged -> zero changes",
+  "edit 1 cell -> exactly 1 change",
+  "sort and filter rows -> zero changes",
+  "edit in app after export + same cell in Excel -> conflict",
+  "add line item row -> insert with new key",
+  "type '35%' in a decimal cell -> 0.35",
+  "value out of range -> invalid, not applied",
+  "delete a row without DELETE action -> warning, no delete"
+ ]
+}

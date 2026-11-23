@@ -1,0 +1,1760 @@
+{
+ "passed": 245,
+ "failed": 0,
+ "fails": [],
+ "checks": [
+  {
+   "check": "levers v0.3 rates L01 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L02 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L03 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L04 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L05 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L06 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L07 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L08 in-year",
+   "engine": 4.36248,
+   "source_model": 4.36248,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L09 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L10 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L11 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L12 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L13 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L14 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L15 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L16 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates L17 in-year",
+   "engine": 3.887858,
+   "source_model": 3.887858,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.g27",
+   "engine": 8.250338,
+   "source_model": 8.25,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.o27",
+   "engine": 7.81409,
+   "source_model": 7.81,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.c27",
+   "engine": 0.436248,
+   "source_model": 0.44,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.ot27_it",
+   "engine": 0.145416,
+   "source_model": 0.15,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.e27",
+   "engine": 7.523258,
+   "source_model": 7.52,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.d27",
+   "engine": 0.043625,
+   "source_model": 0.04,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.ebit27",
+   "engine": 7.566883,
+   "source_model": 7.57,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.cash27",
+   "engine": 8.104922,
+   "source_model": 8.1,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.cash27_co",
+   "engine": 7.959506,
+   "source_model": 7.96,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.o28",
+   "engine": 9.476276,
+   "source_model": 9.48,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.c28",
+   "engine": 0.581664,
+   "source_model": 0.58,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.d28",
+   "engine": 0.145416,
+   "source_model": 0.15,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.ebit28",
+   "engine": 9.621692,
+   "source_model": 9.62,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates pnl_feed.cash28",
+   "engine": 10.05794,
+   "source_model": 10.06,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates risk-adjusted net",
+   "engine": 5.824214,
+   "source_model": 5.824214,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates bar",
+   "engine": 142.9796,
+   "source_model": 142.9796,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 rates end-state GCC FTE",
+   "engine": 900.0,
+   "source_model": 900,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L01 in-year",
+   "engine": 27.770417,
+   "source_model": 27.770417,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L02 in-year",
+   "engine": 5.885,
+   "source_model": 5.885,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L03 in-year",
+   "engine": 5.280625,
+   "source_model": 5.280625,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L04 in-year",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L05 in-year",
+   "engine": 12.502263,
+   "source_model": 12.502263,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L06 in-year",
+   "engine": 3.613687,
+   "source_model": 3.613688,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L07 in-year",
+   "engine": 1.121118,
+   "source_model": 1.121118,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L08 in-year",
+   "engine": 2.689693,
+   "source_model": 2.689693,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L09 in-year",
+   "engine": 3.51,
+   "source_model": 3.51,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L10 in-year",
+   "engine": 26.770461,
+   "source_model": 26.770461,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L11 in-year",
+   "engine": 9.166075,
+   "source_model": 9.166075,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L12 in-year",
+   "engine": 4.31375,
+   "source_model": 4.31375,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L13 in-year",
+   "engine": 4.33125,
+   "source_model": 4.33125,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L14 in-year",
+   "engine": 3.384375,
+   "source_model": 3.384375,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L15 in-year",
+   "engine": 1.439167,
+   "source_model": 1.439167,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L16 in-year",
+   "engine": 4.576593,
+   "source_model": 4.576593,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A L17 in-year",
+   "engine": 9.79022,
+   "source_model": 9.79022,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.g27",
+   "engine": 126.144694,
+   "source_model": 126.14,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.o27",
+   "engine": 115.28488,
+   "source_model": 115.28,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.c27",
+   "engine": 10.859814,
+   "source_model": 10.86,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.ot27_it",
+   "engine": 13.11886,
+   "source_model": 13.12,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.e27",
+   "engine": 89.04716,
+   "source_model": 89.05,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.d27",
+   "engine": 1.085981,
+   "source_model": 1.09,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.ebit27",
+   "engine": 90.133141,
+   "source_model": 90.13,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.cash27",
+   "engine": 113.025834,
+   "source_model": 113.03,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.cash27_co",
+   "engine": 99.906974,
+   "source_model": 99.91,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.o28",
+   "engine": 152.760203,
+   "source_model": 152.76,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.c28",
+   "engine": 15.073016,
+   "source_model": 15.07,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.d28",
+   "engine": 3.679264,
+   "source_model": 3.68,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.ebit28",
+   "engine": 156.439468,
+   "source_model": 156.44,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A pnl_feed.cash28",
+   "engine": 167.833219,
+   "source_model": 167.83,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A risk-adjusted net",
+   "engine": 81.003676,
+   "source_model": 81.003676,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A bar",
+   "engine": 142.9796,
+   "source_model": 142.9796,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 A end-state GCC FTE",
+   "engine": 1092.6,
+   "source_model": 1092.6,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L01 in-year",
+   "engine": 14.829403,
+   "source_model": 14.829403,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L02 in-year",
+   "engine": 4.41375,
+   "source_model": 4.41375,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L03 in-year",
+   "engine": 14.642117,
+   "source_model": 14.642117,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L04 in-year",
+   "engine": 1.675594,
+   "source_model": 1.675594,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L05 in-year",
+   "engine": 29.479612,
+   "source_model": 29.479613,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L06 in-year",
+   "engine": 6.629914,
+   "source_model": 6.629914,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L07 in-year",
+   "engine": 0.575566,
+   "source_model": 0.575566,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L08 in-year",
+   "engine": 0.857902,
+   "source_model": 0.857902,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L09 in-year",
+   "engine": 5.85,
+   "source_model": 5.85,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L10 in-year",
+   "engine": 14.424647,
+   "source_model": 14.424647,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L11 in-year",
+   "engine": 6.477258,
+   "source_model": 6.477258,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L12 in-year",
+   "engine": 2.521667,
+   "source_model": 2.521667,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L13 in-year",
+   "engine": 2.3625,
+   "source_model": 2.3625,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L14 in-year",
+   "engine": 2.25625,
+   "source_model": 2.25625,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L15 in-year",
+   "engine": 0.719583,
+   "source_model": 0.719583,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L16 in-year",
+   "engine": 2.444385,
+   "source_model": 2.444385,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B L17 in-year",
+   "engine": 6.596196,
+   "source_model": 6.596196,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.g27",
+   "engine": 116.756345,
+   "source_model": 116.76,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.o27",
+   "engine": 105.053344,
+   "source_model": 105.05,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.c27",
+   "engine": 11.703,
+   "source_model": 11.7,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.ot27_it",
+   "engine": 22.729736,
+   "source_model": 22.73,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.e27",
+   "engine": 59.593872,
+   "source_model": 59.59,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.d27",
+   "engine": 1.1703,
+   "source_model": 1.17,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.ebit27",
+   "engine": 60.764172,
+   "source_model": 60.76,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.cash27",
+   "engine": 94.026608,
+   "source_model": 94.03,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.cash27_co",
+   "engine": 71.296872,
+   "source_model": 71.3,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.o28",
+   "engine": 153.567642,
+   "source_model": 153.57,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.c28",
+   "engine": 18.160024,
+   "source_model": 18.16,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.d28",
+   "engine": 4.156603,
+   "source_model": 4.16,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.ebit28",
+   "engine": 157.724245,
+   "source_model": 157.72,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B pnl_feed.cash28",
+   "engine": 171.727667,
+   "source_model": 171.73,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B risk-adjusted net",
+   "engine": 60.303256,
+   "source_model": 60.303256,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B bar",
+   "engine": 142.9796,
+   "source_model": 142.9796,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 B end-state GCC FTE",
+   "engine": 1581.55455,
+   "source_model": 1581.55455,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L01 in-year",
+   "engine": 23.493772,
+   "source_model": 23.493772,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L02 in-year",
+   "engine": 5.885,
+   "source_model": 5.885,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L03 in-year",
+   "engine": 11.103394,
+   "source_model": 11.103394,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L04 in-year",
+   "engine": 0.653469,
+   "source_model": 0.653469,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L05 in-year",
+   "engine": 23.189969,
+   "source_model": 23.189969,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L06 in-year",
+   "engine": 5.088842,
+   "source_model": 5.088842,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L07 in-year",
+   "engine": 0.918258,
+   "source_model": 0.918258,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L08 in-year",
+   "engine": 1.475229,
+   "source_model": 1.475229,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L09 in-year",
+   "engine": 4.9725,
+   "source_model": 4.9725,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L10 in-year",
+   "engine": 26.515716,
+   "source_model": 26.515716,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L11 in-year",
+   "engine": 8.957669,
+   "source_model": 8.957669,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L12 in-year",
+   "engine": 4.31375,
+   "source_model": 4.31375,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L13 in-year",
+   "engine": 4.33125,
+   "source_model": 4.33125,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L14 in-year",
+   "engine": 3.384375,
+   "source_model": 3.384375,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L15 in-year",
+   "engine": 1.439167,
+   "source_model": 1.439167,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L16 in-year",
+   "engine": 4.434922,
+   "source_model": 4.434922,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C L17 in-year",
+   "engine": 8.536834,
+   "source_model": 8.536834,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.g27",
+   "engine": 138.694116,
+   "source_model": 138.69,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.o27",
+   "engine": 125.79165,
+   "source_model": 125.79,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.c27",
+   "engine": 12.902466,
+   "source_model": 12.9,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.ot27_it",
+   "engine": 19.53207,
+   "source_model": 19.53,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.e27",
+   "engine": 86.727511,
+   "source_model": 86.73,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.d27",
+   "engine": 1.290247,
+   "source_model": 1.29,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.ebit27",
+   "engine": 88.017757,
+   "source_model": 88.02,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.cash27",
+   "engine": 119.162046,
+   "source_model": 119.16,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.cash27_co",
+   "engine": 99.629977,
+   "source_model": 99.63,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.o28",
+   "engine": 174.604988,
+   "source_model": 174.6,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.c28",
+   "engine": 18.949011,
+   "source_model": 18.95,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.d28",
+   "engine": 4.475394,
+   "source_model": 4.48,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.ebit28",
+   "engine": 179.080382,
+   "source_model": 179.08,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C pnl_feed.cash28",
+   "engine": 193.553999,
+   "source_model": 193.55,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C risk-adjusted net",
+   "engine": 81.884203,
+   "source_model": 81.884203,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C bar",
+   "engine": 142.9796,
+   "source_model": 142.9796,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 C end-state GCC FTE",
+   "engine": 1345.44615,
+   "source_model": 1345.44615,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L01 in-year",
+   "engine": 35.823837,
+   "source_model": 35.823838,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L02 in-year",
+   "engine": 7.35625,
+   "source_model": 7.35625,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L03 in-year",
+   "engine": 15.264527,
+   "source_model": 15.264527,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L04 in-year",
+   "engine": 1.122956,
+   "source_model": 1.122956,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L05 in-year",
+   "engine": 38.924437,
+   "source_model": 38.924438,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L06 in-year",
+   "engine": 5.179401,
+   "source_model": 5.179401,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L07 in-year",
+   "engine": 0.907066,
+   "source_model": 0.907066,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L08 in-year",
+   "engine": 1.447393,
+   "source_model": 1.447393,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L09 in-year",
+   "engine": 8.775,
+   "source_model": 8.775,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L10 in-year",
+   "engine": 37.996145,
+   "source_model": 37.996145,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L11 in-year",
+   "engine": 9.818448,
+   "source_model": 9.818448,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L12 in-year",
+   "engine": 7.735,
+   "source_model": 7.735,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L13 in-year",
+   "engine": 4.921875,
+   "source_model": 4.921875,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L14 in-year",
+   "engine": 5.640625,
+   "source_model": 5.640625,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L15 in-year",
+   "engine": 2.15875,
+   "source_model": 2.15875,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L16 in-year",
+   "engine": 5.236177,
+   "source_model": 5.236177,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D L17 in-year",
+   "engine": 12.893925,
+   "source_model": 12.893925,
+   "tol": 0.006,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.g27",
+   "engine": 201.201813,
+   "source_model": 201.2,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.o27",
+   "engine": 179.913266,
+   "source_model": 179.91,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.c27",
+   "engine": 21.288547,
+   "source_model": 21.29,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.ot27_it",
+   "engine": 34.405784,
+   "source_model": 34.41,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.e27",
+   "engine": 111.101698,
+   "source_model": 111.1,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.d27",
+   "engine": 2.128855,
+   "source_model": 2.13,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.ebit27",
+   "engine": 113.230553,
+   "source_model": 113.23,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.cash27",
+   "engine": 166.796029,
+   "source_model": 166.8,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.cash27_co",
+   "engine": 132.390246,
+   "source_model": 132.39,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.o28",
+   "engine": 252.288455,
+   "source_model": 252.29,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.c28",
+   "engine": 31.364453,
+   "source_model": 31.36,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.d28",
+   "engine": 7.394155,
+   "source_model": 7.39,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.ebit28",
+   "engine": 259.68261,
+   "source_model": 259.68,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D pnl_feed.cash28",
+   "engine": 283.652908,
+   "source_model": 283.65,
+   "tol": 0.011,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D risk-adjusted net",
+   "engine": 112.027148,
+   "source_model": 112.027148,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D bar",
+   "engine": 142.9796,
+   "source_model": 142.9796,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 D end-state GCC FTE",
+   "engine": 1635.8865,
+   "source_model": 1635.8865,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_commercial target",
+   "engine": 24.576661,
+   "source_model": 24.579264,
+   "tol": 0.1,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_commercial net C",
+   "engine": 31.643605,
+   "source_model": 31.64709,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_commercial gap C",
+   "engine": -4.928209,
+   "source_model": -4.928497,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_operations target",
+   "engine": 22.692254,
+   "source_model": 22.676599,
+   "tol": 0.1,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_operations net C",
+   "engine": 27.250007,
+   "source_model": 27.253661,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_operations gap C",
+   "engine": -6.881274,
+   "source_model": -6.863199,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_corporate target",
+   "engine": 15.164871,
+   "source_model": 15.180517,
+   "tol": 0.1,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_corporate net C",
+   "engine": 19.41002,
+   "source_model": 19.406953,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_corporate gap C",
+   "engine": -2.998979,
+   "source_model": -3.016279,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_infra target",
+   "engine": 37.566214,
+   "source_model": 37.56362,
+   "tol": 0.1,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_infra net C",
+   "engine": 40.858415,
+   "source_model": 40.854343,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "levers v0.3 VP vp_infra gap C",
+   "engine": -9.009154,
+   "source_model": -9.009255,
+   "tol": 0.15,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_commercial CY26 outlay",
+   "engine": 211.839618,
+   "source_model": 211.839618,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_commercial CY27 growth",
+   "engine": 9.0912,
+   "source_model": 9.0912,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_commercial addressable",
+   "engine": 67.389707,
+   "source_model": 67.389707,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_commercial net target",
+   "engine": 17.149625,
+   "source_model": 17.149625,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_operations CY26 outlay",
+   "engine": 203.465431,
+   "source_model": 203.465431,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_operations CY27 growth",
+   "engine": 8.514892,
+   "source_model": 8.514892,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_operations addressable",
+   "engine": 60.937724,
+   "source_model": 60.937724,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_operations net target",
+   "engine": 15.2136,
+   "source_model": 15.2136,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_corporate CY26 outlay",
+   "engine": 125.825035,
+   "source_model": 125.825035,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_corporate CY27 growth",
+   "engine": 5.789407,
+   "source_model": 5.789407,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_corporate addressable",
+   "engine": 44.258384,
+   "source_model": 44.258384,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_corporate net target",
+   "engine": 11.44433,
+   "source_model": 11.44433,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_infra CY26 outlay",
+   "engine": 466.506848,
+   "source_model": 466.506848,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_infra CY27 growth",
+   "engine": 19.584164,
+   "source_model": 19.584164,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_infra addressable",
+   "engine": 194.603771,
+   "source_model": 194.603771,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline VP vp_infra net target",
+   "engine": 56.192444,
+   "source_model": 56.192444,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline total outlay",
+   "engine": 1007.636932,
+   "source_model": 1007.636932,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "baseline headwinds",
+   "engine": 42.979662,
+   "source_model": 42.979662,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 rev FY2025A",
+   "engine": 54633.004899,
+   "source_model": 54633.004899,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 rev FY2026E",
+   "engine": 62907.926538,
+   "source_model": 62907.926538,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 rev FY2027E_base",
+   "engine": 65665.104016,
+   "source_model": 65665.104016,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ebitda FY2025A",
+   "engine": 3845.002131,
+   "source_model": 3845.002131,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ebitda FY2026E",
+   "engine": 2957.792216,
+   "source_model": 2957.792216,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ebitda FY2027E_base",
+   "engine": 4162.694126,
+   "source_model": 4162.694126,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ebitdar FY2025A",
+   "engine": 5065.008531,
+   "source_model": 5065.008531,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ebitdar FY2026E",
+   "engine": 4214.398808,
+   "source_model": 4214.398808,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ebitdar FY2027E_base",
+   "engine": 5456.998915,
+   "source_model": 5456.998915,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ni FY2025A",
+   "engine": 235.028136,
+   "source_model": 235.028136,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ni FY2026E",
+   "engine": -498.929645,
+   "source_model": -498.929645,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 ni FY2027E_base",
+   "engine": 310.518678,
+   "source_model": 310.518678,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 eps FY2025A",
+   "engine": 0.355537,
+   "source_model": 0.355537,
+   "tol": 0.0005,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 eps FY2026E",
+   "engine": -0.75027,
+   "source_model": -0.75027,
+   "tol": 0.0005,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 eps FY2027E_base",
+   "engine": 0.464848,
+   "source_model": 0.464848,
+   "tol": 0.0005,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 fcf FY2025A",
+   "engine": -83.0,
+   "source_model": -83,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 fcf FY2026E",
+   "engine": -1392.401839,
+   "source_model": -1392.401839,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 fcf FY2027E_base",
+   "engine": -480.061042,
+   "source_model": -480.061042,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 net_debt FY2025A",
+   "engine": 30673.0,
+   "source_model": 30673,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 net_debt FY2026E",
+   "engine": 31963.401839,
+   "source_model": 31963.401839,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 net_debt FY2027E_base",
+   "engine": 32393.462881,
+   "source_model": 32393.462881,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 price FY2027 base",
+   "engine": 11.901392,
+   "source_model": 11.901392,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge ebitda FY2027 (C)",
+   "engine": 82.326623,
+   "source_model": 82.329,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge ni FY2027 (C)",
+   "engine": 62.712652,
+   "source_model": 62.71425,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge eps FY2027 (C)",
+   "engine": 0.093881,
+   "source_model": 0.093884,
+   "tol": 0.0002,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge fcf FY2027 (C)",
+   "engine": 91.048245,
+   "source_model": 91.04805,
+   "tol": 0.05,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge price FY2027 (C)",
+   "engine": 1.047439,
+   "source_model": 1.047465,
+   "tol": 0.002,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge ebitda FY2028 run-rate (C)",
+   "engine": 165.246018,
+   "source_model": 165.241304,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge eps FY2028 run-rate (C)",
+   "engine": 0.199649,
+   "source_model": 0.199643,
+   "tol": 0.002,
+   "pass": true
+  },
+  {
+   "check": "corporate v0.1 bridge px FY2028 run-rate (C)",
+   "engine": 2.239693,
+   "source_model": 2.239635,
+   "tol": 0.002,
+   "pass": true
+  },
+  {
+   "check": "invariant rates pool effects sum to run-rate",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant rates VP nets sum to total net",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-06,
+   "pass": true
+  },
+  {
+   "check": "invariant rates only IT lines differ in FY2027 revenue",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant A pool effects sum to run-rate",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant A VP nets sum to total net",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-06,
+   "pass": true
+  },
+  {
+   "check": "invariant A only IT lines differ in FY2027 revenue",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant B pool effects sum to run-rate",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant B VP nets sum to total net",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-06,
+   "pass": true
+  },
+  {
+   "check": "invariant B only IT lines differ in FY2027 revenue",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant C pool effects sum to run-rate",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant C VP nets sum to total net",
+   "engine": -0.0,
+   "source_model": 0,
+   "tol": 1e-06,
+   "pass": true
+  },
+  {
+   "check": "invariant C only IT lines differ in FY2027 revenue",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant D pool effects sum to run-rate",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  },
+  {
+   "check": "invariant D VP nets sum to total net",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-06,
+   "pass": true
+  },
+  {
+   "check": "invariant D only IT lines differ in FY2027 revenue",
+   "engine": 0.0,
+   "source_model": 0,
+   "tol": 1e-09,
+   "pass": true
+  }
+ ],
+ "parity_overrides": {
+  "lv.us_total": 398.1,
+  "lv.gcc_total": 36.0,
+  "lv.on_cost": 0.19,
+  "lv.off_cost": 0.059,
+  "lv.ms0": 37.3,
+  "lv.pref": 85.0,
+  "lv.cons": 16.05,
+  "lv.sw": 157.2,
+  "lv.sw_ms": 35.0,
+  "lv.cloud": 40.7,
+  "lv.dc_capex": 25.0,
+  "lv.dc_maint": 6.0,
+  "lv.dc_colo": 6.0,
+  "lv.net": 31.5,
+  "lv.euc": 28.5,
+  "lv.fees": 133.4,
+  "lv.fees_addr": 31.4,
+  "lv.ext": 121.17999999999999,
+  "lv.tail": 36.17999999999999,
+  "base.headwinds": 42.9796,
+  "lev.cx[L01]": 0.1,
+  "lev.cx[L02]": 0.0,
+  "lev.cx[L03]": 0.1,
+  "lev.cx[L04]": 0.1,
+  "lev.cx[L05]": 0.17,
+  "lev.cx[L06]": 0.1,
+  "lev.cx[L07]": 0.1,
+  "lev.cx[L08]": 0.1,
+  "lev.cx[L09]": 0.0,
+  "lev.cx[L10]": 0.0,
+  "lev.cx[L11]": 0.0,
+  "lev.cx[L13]": 0.0,
+  "lev.cx[L14]": 0.6,
+  "lev.cx[L15]": 0.0,
+  "lev.cx[L16]": 0.0,
+  "lev.cx[L17]": 0.0
+ }
+}

@@ -1,0 +1,126 @@
+{
+ "goal_seek_blend_C_to_D": {
+  "lambda": 0.4936,
+  "net": 142.98,
+  "bar": 142.98,
+  "risk_adj_net": 96.91,
+  "one_time_it": 26.97,
+  "eps27": 0.104,
+  "vp_gaps": {
+   "vp_commercial": 1.51,
+   "vp_operations": -1.34,
+   "vp_corporate": 0.96,
+   "vp_infra": -1.13
+  }
+ },
+ "min_risk_total_bar": {
+  "feasible": true,
+  "evaluations": 1634,
+  "steps": 64,
+  "net": 143.02,
+  "bar": 142.98,
+  "risk_adj_net": 101.01,
+  "risk_exposure": 42.01,
+  "one_time_it": 20.0,
+  "fte_us": 2692.0,
+  "fte_gcc": 1318.0,
+  "eps27": 0.113,
+  "vp_gaps": {
+   "vp_commercial": 1.69,
+   "vp_operations": -1.44,
+   "vp_corporate": 0.5,
+   "vp_infra": -0.72
+  }
+ },
+ "min_risk_total_and_vp_bars": {
+  "feasible": true,
+  "evaluations": 2143,
+  "steps": 95,
+  "net": 148.13,
+  "bar": 142.98,
+  "risk_adj_net": 104.5,
+  "risk_exposure": 43.63,
+  "one_time_it": 20.36,
+  "fte_us": 2692.0,
+  "fte_gcc": 1318.0,
+  "eps27": 0.1166,
+  "vp_gaps": {
+   "vp_commercial": 3.28,
+   "vp_operations": 0.01,
+   "vp_corporate": 1.35,
+   "vp_infra": 0.51
+  }
+ },
+ "min_risk_reference": {
+  "C_risk_exposure": 37.32,
+  "D_risk_exposure": 54.79,
+  "seconds": 21.4
+ },
+ "monte_carlo_C": {
+  "iterations": 2000,
+  "seconds": 29.7,
+  "assumptions": {
+   "realisation": "Beta with mean = lever confidence, scaled to [0,1.2]",
+   "family_correlation": 0.5,
+   "start_slip_months": "uniform 0-2",
+   "pool_growth": "triangular 0.7x / 1x / 1.4x"
+  },
+  "net_p10_p50_p90": [
+   49.5,
+   74.5,
+   97.4
+  ],
+  "bar_p10_p50_p90": [
+   140.9,
+   144.4,
+   148.1
+  ],
+  "prob_clear_bar": 0.0,
+  "prob_clear_target_ignoring_growth": 0.068,
+  "eps27_p10_p50_p90": [
+   0.0248,
+   0.0484,
+   0.0708
+  ],
+  "prob_vp_clears_bar": {
+   "vp_commercial": 0.0,
+   "vp_operations": 0.0,
+   "vp_corporate": 0.0,
+   "vp_infra": 0.0
+  }
+ },
+ "monte_carlo_D": {
+  "iterations": 2000,
+  "seconds": 29.2,
+  "assumptions": {
+   "realisation": "Beta with mean = lever confidence, scaled to [0,1.2]",
+   "family_correlation": 0.5,
+   "start_slip_months": "uniform 0-2",
+   "pool_growth": "triangular 0.7x / 1x / 1.4x"
+  },
+  "net_p10_p50_p90": [
+   62.8,
+   102.0,
+   135.6
+  ],
+  "bar_p10_p50_p90": [
+   140.6,
+   144.4,
+   148.3
+  ],
+  "prob_clear_bar": 0.045,
+  "prob_clear_target_ignoring_growth": 0.53,
+  "eps27_p10_p50_p90": [
+   0.0188,
+   0.0562,
+   0.0881
+  ],
+  "prob_vp_clears_bar": {
+   "vp_commercial": 0.083,
+   "vp_operations": 0.021,
+   "vp_corporate": 0.099,
+   "vp_infra": 0.039
+  }
+ }
+}
+[('g.ot_out_share', 39.1), ('g.ot_in_year', 19.55), ('g.head_start', 16.61), ('lev.L10.ren', 15.61), ('lev.L10.shelf', 14.51), ('portfolio.app_cost', 14.36), ('lev.L10.rcut', 14.05), ('hc.ctr', 13.14), ('lev.L05.nb', 12.71), ('hc.us', 12.02), ('rate.ctr_on_hourly', 11.96), ('lev.L01.rel', 11.77), ('wf.us_attrition', 11.65), ('lev.L01.cut', 11.56), ('lev.L09.dc', 11.05)]

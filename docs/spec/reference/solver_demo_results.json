@@ -1,0 +1,446 @@
+{
+ "goal_seek_blend_C_to_D": {
+  "lambda": 0.4936,
+  "net": 142.98,
+  "bar": 142.98,
+  "risk_adj_net": 96.91,
+  "one_time_it": 26.97,
+  "eps27": 0.104,
+  "vp_gaps": {
+   "vp_commercial": 1.51,
+   "vp_operations": -1.34,
+   "vp_corporate": 0.96,
+   "vp_infra": -1.13
+  }
+ },
+ "min_risk_total_bar": {
+  "feasible": true,
+  "evaluations": 1634,
+  "steps": 64,
+  "net": 143.02,
+  "bar": 142.98,
+  "risk_adj_net": 101.01,
+  "risk_exposure": 42.01,
+  "one_time_it": 20.0,
+  "fte_us": 2692.0,
+  "fte_gcc": 1318.0,
+  "eps27": 0.113,
+  "vp_gaps": {
+   "vp_commercial": 1.69,
+   "vp_operations": -1.44,
+   "vp_corporate": 0.5,
+   "vp_infra": -0.72
+  },
+  "inputs_moved_from_C": {
+   "lev.L01.cut": {
+    "from": 0.25,
+    "to": 0.35,
+    "label": "Cut to change/project portfolio delivered by SIs"
+   },
+   "lev.L01.rel": {
+    "from": 0.18,
+    "to": 0.3,
+    "label": "Release of run-side contingent / managed capacity (no replacement)"
+   },
+   "lev.L02.cut": {
+    "from": 0.4,
+    "to": 0.5,
+    "label": "Reduction in consulting / advisory spend"
+   },
+   "lev.L07.pct": {
+    "from": 0.6,
+    "to": 0.65,
+    "label": "Share of tail SI spend moved to preferred vendors"
+   },
+   "lev.L08.cov": {
+    "from": 0.75,
+    "to": 0.9,
+    "label": "Share of remaining SI spend reopened / renewing in 2027"
+   },
+   "lev.L10.shelf": {
+    "from": 0.1,
+    "to": 0.11,
+    "label": "Shelfware harvested (unused / under-used licences)"
+   },
+   "lev.L10.ms": {
+    "from": 0.18,
+    "to": 0.2,
+    "label": "Microsoft optimisation (E5/E3 mix, Azure commits, EA terms)"
+   },
+   "lev.L10.rcut": {
+    "from": 0.2,
+    "to": 0.24,
+    "label": "Saving on renewing contracts"
+   },
+   "lev.L11.pct": {
+    "from": 0.3,
+    "to": 0.35,
+    "label": "Cloud cost reduction (rightsizing, commitments, waste)"
+   },
+   "lev.L12.tpm": {
+    "from": 0.6,
+    "to": 0.65,
+    "label": "Hardware maintenance moved to third-party (TPM)"
+   },
+   "lev.L14.pct": {
+    "from": 0.15,
+    "to": 0.25,
+    "label": "End-user cost reduction (refresh cycle, device standards, peripherals)"
+   },
+   "lev.L16.pct": {
+    "from": 0.015,
+    "to": 0.02,
+    "label": "Recovery / avoidance as % of third-party spend"
+   },
+   "lev.L17.cola": {
+    "from": 0.7,
+    "to": 1.0,
+    "label": "Share of vendor COLA requests refused"
+   },
+   "lev.L17.sw": {
+    "from": 0.5,
+    "to": 0.8,
+    "label": "Share of software renewal uplifts avoided"
+   },
+   "lev.L17.cl": {
+    "from": 0.5,
+    "to": 0.7,
+    "label": "Share of cloud consumption growth contained"
+   }
+  }
+ },
+ "min_risk_total_and_vp_bars": {
+  "feasible": true,
+  "evaluations": 2143,
+  "steps": 95,
+  "net": 148.13,
+  "bar": 142.98,
+  "risk_adj_net": 104.5,
+  "risk_exposure": 43.63,
+  "one_time_it": 20.36,
+  "fte_us": 2692.0,
+  "fte_gcc": 1318.0,
+  "eps27": 0.1166,
+  "vp_gaps": {
+   "vp_commercial": 3.28,
+   "vp_operations": 0.01,
+   "vp_corporate": 1.35,
+   "vp_infra": 0.51
+  },
+  "inputs_moved_from_C": {
+   "lev.L01.cut": {
+    "from": 0.25,
+    "to": 0.35,
+    "label": "Cut to change/project portfolio delivered by SIs"
+   },
+   "lev.L01.rel": {
+    "from": 0.18,
+    "to": 0.3,
+    "label": "Release of run-side contingent / managed capacity (no replacement)"
+   },
+   "lev.L02.cut": {
+    "from": 0.4,
+    "to": 0.5,
+    "label": "Reduction in consulting / advisory spend"
+   },
+   "lev.L08.cov": {
+    "from": 0.75,
+    "to": 0.9,
+    "label": "Share of remaining SI spend reopened / renewing in 2027"
+   },
+   "lev.L08.cut": {
+    "from": 0.05,
+    "to": 0.07,
+    "label": "Headline rate reduction"
+   },
+   "lev.L10.shelf": {
+    "from": 0.1,
+    "to": 0.11,
+    "label": "Shelfware harvested (unused / under-used licences)"
+   },
+   "lev.L10.ms": {
+    "from": 0.18,
+    "to": 0.2,
+    "label": "Microsoft optimisation (E5/E3 mix, Azure commits, EA terms)"
+   },
+   "lev.L10.rcut": {
+    "from": 0.2,
+    "to": 0.28,
+    "label": "Saving on renewing contracts"
+   },
+   "lev.L11.pct": {
+    "from": 0.3,
+    "to": 0.35,
+    "label": "Cloud cost reduction (rightsizing, commitments, waste)"
+   },
+   "lev.L12.tpm": {
+    "from": 0.6,
+    "to": 0.8,
+    "label": "Hardware maintenance moved to third-party (TPM)"
+   },
+   "lev.L12.life": {
+    "from": 0.15,
+    "to": 0.24,
+    "label": "Capex purchases deferred by extending refresh cycles (4 to 5 yrs) and reusing kit"
+   },
+   "lev.L12.colo": {
+    "from": 0.15,
+    "to": 0.25,
+    "label": "Colo / facilities consolidation"
+   },
+   "lev.L14.pct": {
+    "from": 0.15,
+    "to": 0.25,
+    "label": "End-user cost reduction (refresh cycle, device standards, peripherals)"
+   },
+   "lev.L15.pct": {
+    "from": 0.1,
+    "to": 0.15,
+    "label": "Reduction (volume tiers, message optimisation, contract benchmarking)"
+   },
+   "lev.L16.pct": {
+    "from": 0.015,
+    "to": 0.02,
+    "label": "Recovery / avoidance as % of third-party spend"
+   },
+   "lev.L17.cola": {
+    "from": 0.7,
+    "to": 1.0,
+    "label": "Share of vendor COLA requests refused"
+   },
+   "lev.L17.sw": {
+    "from": 0.5,
+    "to": 0.8,
+    "label": "Share of software renewal uplifts avoided"
+   },
+   "lev.L17.cl": {
+    "from": 0.5,
+    "to": 0.7,
+    "label": "Share of cloud consumption growth contained"
+   }
+  }
+ },
+ "min_risk_reference": {
+  "C_risk_exposure": 37.32,
+  "D_risk_exposure": 54.79,
+  "seconds": 21.4
+ },
+ "tornado_net_top15": [
+  {
+   "id": "g.ot_out_share",
+   "label": "Share of CY27 one-time costs funded outside the IT budget",
+   "min": 0,
+   "max": 1,
+   "net_at_min": -19.55,
+   "net_at_max": 19.55,
+   "swing": 39.1,
+   "eps_swing": 0.0
+  },
+  {
+   "id": "g.ot_in_year",
+   "label": "Share of one-time costs incurred in CY27 (rest pre-funded in CY26)",
+   "min": 0,
+   "max": 1,
+   "net_at_min": 19.55,
+   "net_at_max": 0.0,
+   "swing": 19.55,
+   "eps_swing": 0.0417
+  },
+  {
+   "id": "g.head_start",
+   "label": "Head start: months of lever work done before Jan 2027",
+   "min": 0,
+   "max": 3,
+   "net_at_min": -9.13,
+   "net_at_max": 7.48,
+   "swing": 16.61,
+   "eps_swing": 0.0157
+  },
+  {
+   "id": "lev.L10.ren",
+   "label": "Share of other software renewing / negotiable in 2027",
+   "min": 0,
+   "max": 1,
+   "net_at_min": -9.37,
+   "net_at_max": 6.25,
+   "swing": 15.61,
+   "eps_swing": 0.0156
+  },
+  {
+   "id": "lev.L10.shelf",
+   "label": "Shelfware harvested (unused / under-used licences)",
+   "min": 0,
+   "max": 0.15,
+   "net_at_min": -9.67,
+   "net_at_max": 4.84,
+   "swing": 14.51,
+   "eps_swing": 0.0145
+  },
+  {
+   "id": "portfolio.app_cost",
+   "label": "Average annual run cost of a retirement-candidate app",
+   "min": 0.02,
+   "max": 0.4,
+   "net_at_min": -2.64,
+   "net_at_max": 11.71,
+   "swing": 14.36,
+   "eps_swing": 0.0131
+  },
+  {
+   "id": "lev.L10.rcut",
+   "label": "Saving on renewing contracts",
+   "min": 0,
+   "max": 0.3,
+   "net_at_min": -9.37,
+   "net_at_max": 4.68,
+   "swing": 14.05,
+   "eps_swing": 0.014
+  },
+  {
+   "id": "hc.ctr",
+   "label": "Contingent workers (badged contractors)",
+   "min": 500,
+   "max": 1100,
+   "net_at_min": -6.59,
+   "net_at_max": 6.55,
+   "swing": 13.14,
+   "eps_swing": 0.0075
+  },
+  {
+   "id": "lev.L05.nb",
+   "label": "Share of US leavers NOT backfilled onshore",
+   "min": 0,
+   "max": 1,
+   "net_at_min": -9.53,
+   "net_at_max": 3.18,
+   "swing": 12.71,
+   "eps_swing": 0.0104
+  },
+  {
+   "id": "hc.us",
+   "label": "Internal US IT employees",
+   "min": 2000,
+   "max": 4000,
+   "net_at_min": -6.01,
+   "net_at_max": 6.01,
+   "swing": 12.02,
+   "eps_swing": 0.0071
+  },
+  {
+   "id": "rate.ctr_on_hourly",
+   "label": "Onshore contractor blended rate",
+   "min": 60,
+   "max": 160,
+   "net_at_min": -4.91,
+   "net_at_max": 7.05,
+   "swing": 11.96,
+   "eps_swing": 0.0113
+  },
+  {
+   "id": "lev.L01.rel",
+   "label": "Release of run-side contingent / managed capacity (no replacement)",
+   "min": 0,
+   "max": 0.25,
+   "net_at_min": -8.48,
+   "net_at_max": 3.3,
+   "swing": 11.77,
+   "eps_swing": 0.0112
+  },
+  {
+   "id": "wf.us_attrition",
+   "label": "US IT voluntary attrition",
+   "min": 0.04,
+   "max": 0.15,
+   "net_at_min": -5.29,
+   "net_at_max": 6.35,
+   "swing": 11.65,
+   "eps_swing": 0.0095
+  },
+  {
+   "id": "lev.L01.cut",
+   "label": "Cut to change/project portfolio delivered by SIs",
+   "min": 0,
+   "max": 0.3,
+   "net_at_min": -9.63,
+   "net_at_max": 1.93,
+   "swing": 11.56,
+   "eps_swing": 0.011
+  },
+  {
+   "id": "lev.L09.dc",
+   "label": "Decommission cost per app (archive, migrate, test)",
+   "min": 0.02,
+   "max": 0.15,
+   "net_at_min": 3.4,
+   "net_at_max": -7.65,
+   "swing": 11.05,
+   "eps_swing": 0.0236
+  }
+ ],
+ "monte_carlo_C": {
+  "iterations": 2000,
+  "seconds": 29.7,
+  "assumptions": {
+   "realisation": "Beta with mean = lever confidence, scaled to [0,1.2]",
+   "family_correlation": 0.5,
+   "start_slip_months": "uniform 0-2",
+   "pool_growth": "triangular 0.7x / 1x / 1.4x"
+  },
+  "net_p10_p50_p90": [
+   49.5,
+   74.5,
+   97.4
+  ],
+  "bar_p10_p50_p90": [
+   140.9,
+   144.4,
+   148.1
+  ],
+  "prob_clear_bar": 0.0,
+  "prob_clear_target_ignoring_growth": 0.068,
+  "eps27_p10_p50_p90": [
+   0.0248,
+   0.0484,
+   0.0708
+  ],
+  "prob_vp_clears_bar": {
+   "vp_commercial": 0.0,
+   "vp_operations": 0.0,
+   "vp_corporate": 0.0,
+   "vp_infra": 0.0
+  }
+ },
+ "monte_carlo_D": {
+  "iterations": 2000,
+  "seconds": 29.2,
+  "assumptions": {
+   "realisation": "Beta with mean = lever confidence, scaled to [0,1.2]",
+   "family_correlation": 0.5,
+   "start_slip_months": "uniform 0-2",
+   "pool_growth": "triangular 0.7x / 1x / 1.4x"
+  },
+  "net_p10_p50_p90": [
+   62.8,
+   102.0,
+   135.6
+  ],
+  "bar_p10_p50_p90": [
+   140.6,
+   144.4,
+   148.3
+  ],
+  "prob_clear_bar": 0.045,
+  "prob_clear_target_ignoring_growth": 0.53,
+  "eps27_p10_p50_p90": [
+   0.0188,
+   0.0562,
+   0.0881
+  ],
+  "prob_vp_clears_bar": {
+   "vp_commercial": 0.083,
+   "vp_operations": 0.021,
+   "vp_corporate": 0.099,
+   "vp_infra": 0.039
+  }
+ }
+}

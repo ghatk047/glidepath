@@ -1,0 +1,6180 @@
+{
+ "spec_version": "1.0.0",
+ "count": 194,
+ "variables": [
+  {
+   "id": "g.target_mode",
+   "kind": "fact_or_estimate",
+   "label": "Target expressed as: 1 = $ amount, 2 = % of CY26 base",
+   "unit": "enum",
+   "type": "enum",
+   "dims": [],
+   "min": 1,
+   "max": 2,
+   "step": 1,
+   "group": "Target & governance",
+   "layer": "target",
+   "role": "driver",
+   "ui": {
+    "control": "segmented",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "H",
+   "note": "Lets another airline set '10% of base' instead of a dollar figure.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 1
+  },
+  {
+   "id": "g.target_net",
+   "kind": "fact_or_estimate",
+   "label": "Net cut in CY27 IT outlay vs CY26 (CIO target)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 50,
+   "max": 150,
+   "step": 5,
+   "group": "Target & governance",
+   "layer": "target",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": true
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User 2026-11-22: $100M = 4 VPs x $25M (~10% of ~$1B).",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:target",
+    "baseline:Net savings target 2027",
+    "levers:Org_Map total CIO net cut"
+   ],
+   "aa_default": 100
+  },
+  {
+   "id": "g.target_pct",
+   "kind": "fact_or_estimate",
+   "label": "Net cut as % of CY26 base (used if target mode = 2)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0.02,
+   "max": 0.2,
+   "step": 0.005,
+   "group": "Target & governance",
+   "layer": "target",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Target basis"
+   ],
+   "aa_default": 0.1
+  },
+  {
+   "id": "g.absorb_growth",
+   "kind": "fact_or_estimate",
+   "label": "Absorb CY27 cost growth inside the target (1 = yes)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Target & governance",
+   "layer": "target",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User: CY27 spend must be below CY26 after COLA/merit, so the gross bar = target + growth.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:headw"
+   ],
+   "aa_default": 1
+  },
+  {
+   "id": "g.head_start",
+   "kind": "fact_or_estimate",
+   "label": "Head start: months of lever work done before Jan 2027",
+   "unit": "months",
+   "type": "int",
+   "dims": [],
+   "min": 0,
+   "max": 3,
+   "step": 1,
+   "group": "Target & governance",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Moves every lever's start month earlier (floor = January).",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:head"
+   ],
+   "aa_default": 1,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 1,
+    "B": 1,
+    "C": 1,
+    "D": 1
+   }
+  },
+  {
+   "id": "g.ot_in_year",
+   "kind": "fact_or_estimate",
+   "label": "Share of one-time costs incurred in CY27 (rest pre-funded in CY26)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.1,
+   "group": "Target & governance",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Reinterpreted from v0.3 'share expensed in 2027': the non-CY27 share is treated as incurred in CY26, outside both tests.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:ot_exp"
+   ],
+   "aa_default": 1.0
+  },
+  {
+   "id": "g.ot_out_share",
+   "kind": "fact_or_estimate",
+   "label": "Share of CY27 one-time costs funded outside the IT budget",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Target & governance",
+   "layer": "target",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": true
+   },
+   "source": "user",
+   "confidence": "M",
+   "note": "User: some can be funded outside IT. 50% is an assumption. Still hits AA's P&L.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:ot_out"
+   ],
+   "aa_default": 0.5
+  },
+  {
+   "id": "g.it_dep_life",
+   "kind": "fact_or_estimate",
+   "label": "Useful life of IT capex (D&A relief from capex saved)",
+   "unit": "years",
+   "type": "int",
+   "dims": [],
+   "min": 2,
+   "max": 10,
+   "step": 1,
+   "group": "P&L hand-off",
+   "layer": "pnl",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Merges levers dep_life and corporate it_life (both 5).",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:dep_life",
+    "corporate:it_life"
+   ],
+   "aa_default": 5
+  },
+  {
+   "id": "g.da_first_year_factor",
+   "kind": "fact_or_estimate",
+   "label": "D&A convention in the year capex is saved (0.5 = half-year)",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.5,
+   "group": "P&L hand-off",
+   "layer": "pnl",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 0.5
+  },
+  {
+   "id": "g.vp_target_method",
+   "kind": "fact_or_estimate",
+   "label": "VP target method: 1 = proportional to addressable, 2 = equal, 3 = manual",
+   "unit": "enum",
+   "type": "enum",
+   "dims": [],
+   "min": 1,
+   "max": 3,
+   "step": 1,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "segmented",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User decision 2026-11-22: proportional.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Org_Map target method",
+    "levers:Org_Map target method"
+   ],
+   "aa_default": 1
+  },
+  {
+   "id": "g.chargeback_on",
+   "kind": "fact_or_estimate",
+   "label": "Credit shared-infrastructure savings and growth to consuming VPs (1 = on)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User: shared infra savings credited back to VPs by usage.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:Org_Map chargeback"
+   ],
+   "aa_default": 1
+  },
+  {
+   "id": "g.vp_alloc_method",
+   "kind": "fact_or_estimate",
+   "label": "Lever-to-VP allocation: 1 = one key per lever (v0.3), 2 = by pool effects",
+   "unit": "enum",
+   "type": "enum",
+   "dims": [],
+   "min": 1,
+   "max": 2,
+   "step": 1,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "segmented",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "M",
+   "note": "Method 2 allocates each pool a lever touches (e.g. GCC cost added by relocation) by that pool's ownership.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 1
+  },
+  {
+   "id": "hc.us",
+   "kind": "fact_or_estimate",
+   "label": "Internal US IT employees",
+   "unit": "FTE",
+   "type": "int",
+   "dims": [],
+   "min": 2000,
+   "max": 4000,
+   "step": 50,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": true
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User confirmed 2026-11-22.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:HC_Internal",
+    "levers:us_fte"
+   ],
+   "aa_default": 3000
+  },
+  {
+   "id": "hc.us_seed",
+   "kind": "fact_or_estimate",
+   "label": "US headcount at which the baseline lines were sized",
+   "unit": "FTE",
+   "type": "int",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "calibration",
+   "ui": {
+    "control": "hidden",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "H",
+   "note": "Calibration constant: US labour lines scale by hc.us / hc.us_seed.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 3000
+  },
+  {
+   "id": "hc.gcc",
+   "kind": "fact_or_estimate",
+   "label": "Offshore captive (India GCC) employees",
+   "unit": "FTE",
+   "type": "int",
+   "dims": [],
+   "min": 300,
+   "max": 2500,
+   "step": 25,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": true
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User confirmed ~900 (press May 2026 said ~400).",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:HC_GCC",
+    "levers:gcc_fte"
+   ],
+   "aa_default": 900
+  },
+  {
+   "id": "hc.gcc_seed",
+   "kind": "fact_or_estimate",
+   "label": "GCC headcount at which the baseline lines were sized",
+   "unit": "FTE",
+   "type": "int",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "calibration",
+   "ui": {
+    "control": "hidden",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 900
+  },
+  {
+   "id": "hc.ctr",
+   "kind": "fact_or_estimate",
+   "label": "Contingent workers (badged contractors)",
+   "unit": "FTE",
+   "type": "int",
+   "dims": [],
+   "min": 500,
+   "max": 1100,
+   "step": 25,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": true
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "User ~800. Scales long-tail SI and staff-aug lines; preferred SIs held at book.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:HC_Contingent"
+   ],
+   "aa_default": 800
+  },
+  {
+   "id": "hc.ctr_seed",
+   "kind": "fact_or_estimate",
+   "label": "Contractor headcount at which tail/staff-aug lines were sized",
+   "unit": "FTE",
+   "type": "int",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "calibration",
+   "ui": {
+    "control": "hidden",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 800
+  },
+  {
+   "id": "hc.ctr_on_share",
+   "kind": "fact_or_estimate",
+   "label": "Share of contractors onshore / onsite",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0.1,
+   "max": 0.7,
+   "step": 0.05,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "M",
+   "note": "User OK'd 35% onshore.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:ctr_on_fte (280)",
+    "levers:ctr_off_fte (520)"
+   ],
+   "aa_default": 0.35
+  },
+  {
+   "id": "rate.ctr_on_hourly",
+   "kind": "fact_or_estimate",
+   "label": "Onshore contractor blended rate",
+   "unit": "$/hr",
+   "type": "number",
+   "dims": [],
+   "min": 60,
+   "max": 160,
+   "step": 1,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "= v0.3 $0.19M/FTE at 1,880 hrs.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:ctr_on_cost"
+   ],
+   "aa_default": 101.06
+  },
+  {
+   "id": "rate.ctr_off_hourly",
+   "kind": "fact_or_estimate",
+   "label": "Offshore SI blended rate",
+   "unit": "$/hr",
+   "type": "number",
+   "dims": [],
+   "min": 18,
+   "max": 50,
+   "step": 0.5,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "= v0.3 $0.059M/FTE at 1,880 hrs.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:ctr_off_cost"
+   ],
+   "aa_default": 31.38
+  },
+  {
+   "id": "rate.billable_hours",
+   "kind": "fact_or_estimate",
+   "label": "Billable hours per contractor FTE-year",
+   "unit": "hours",
+   "type": "int",
+   "dims": [],
+   "min": 1700,
+   "max": 2000,
+   "step": 10,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "H",
+   "note": "Reconciled: baseline 1,880 (H) vs levers 1,900.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Billable hours per FTE-year"
+   ],
+   "aa_default": 1880
+  },
+  {
+   "id": "wf.prod_factor",
+   "kind": "fact_or_estimate",
+   "label": "Offshore/GCC heads needed per onshore head",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 1.0,
+   "max": 1.5,
+   "step": 0.05,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Range 1.1-1.3.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:prod_factor"
+   ],
+   "aa_default": 1.2
+  },
+  {
+   "id": "wf.us_attrition",
+   "kind": "fact_or_estimate",
+   "label": "US IT voluntary attrition",
+   "unit": "%/yr",
+   "type": "number",
+   "dims": [],
+   "min": 0.04,
+   "max": 0.15,
+   "step": 0.005,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Reconciled: levers 9% kept (drives lever 5); baseline said 8% but did not use it in any formula.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:attrition",
+    "baseline:Annual voluntary attrition"
+   ],
+   "aa_default": 0.09
+  },
+  {
+   "id": "wf.change_share",
+   "kind": "fact_or_estimate",
+   "label": "Share of SI spend that is change/project work",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0.2,
+   "max": 0.7,
+   "step": 0.05,
+   "group": "Workforce & rates",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:change_share"
+   ],
+   "aa_default": 0.45
+  },
+  {
+   "id": "vendor.book",
+   "kind": "fact_or_estimate",
+   "label": "Preferred SI book of business",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "vendor"
+   ],
+   "min": 0,
+   "max": 60,
+   "step": 0.5,
+   "group": "Workforce & rates",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "M",
+   "note": "Reconciled to baseline Vendors tab (system of record). v0.3 levers had IBM 18 / Cognizant 15 / #6 14. DXC and Infosys are user figures.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Vendors",
+    "levers:si_*"
+   ],
+   "aa_default": {
+    "dxc": 25,
+    "cognizant": 18,
+    "ibm": 15,
+    "si6": 12,
+    "coforge": 8,
+    "infosys": 5
+   }
+  },
+  {
+   "id": "line.amount",
+   "kind": "fact_or_estimate",
+   "label": "CY26 normalized outlay per line (opex + cash capex)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "line"
+   ],
+   "min": 0,
+   "max": null,
+   "step": null,
+   "group": "Baseline & pools",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "table",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "M",
+   "note": "415 lines from AA_IT_Cost_Baseline_v0.1 'Counted 2026 outlay'. Converted $ -> $M.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": "seeded (see seed/aa/variable_values.json)"
+  },
+  {
+   "id": "line.capex_share",
+   "kind": "fact_or_estimate",
+   "label": "Capex share of the line's outlay",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "line"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "group": "Baseline & pools",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "table",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": "seeded (see seed/aa/variable_values.json)"
+  },
+  {
+   "id": "addr.share",
+   "kind": "fact_or_estimate",
+   "label": "Share of spend movable within 12 months, by addressability tag",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "addr_tag"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Baseline & pools",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Addressable share - *"
+   ],
+   "aa_default": {
+    "locked": 0,
+    "partly": 0.35,
+    "addressable": 0.75
+   }
+  },
+  {
+   "id": "pool.growth",
+   "kind": "fact_or_estimate",
+   "label": "CY27 status-quo cost growth by pool",
+   "unit": "%/yr",
+   "type": "number",
+   "dims": [
+    "pool"
+   ],
+   "min": -0.05,
+   "max": 0.2,
+   "step": 0.005,
+   "group": "Baseline & pools",
+   "layer": "baseline",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "baseline",
+   "confidence": "L",
+   "note": "Advisor estimates (merit, COLA, renewal uplifts, consumption). Weighted ~4.3%.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Growth",
+    "levers:g_*"
+   ],
+   "aa_default": {
+    "internal_labour": 0.038,
+    "captive_labour": 0.09,
+    "si_contingent": 0.035,
+    "consulting": 0.03,
+    "software": 0.06,
+    "airline_platforms": 0.04,
+    "cloud": 0.08,
+    "dc_hardware": 0.02,
+    "network": 0.01,
+    "end_user": 0.02,
+    "other": 0.03
+   }
+  },
+  {
+   "id": "pool.shared",
+   "kind": "fact_or_estimate",
+   "label": "Pool is a shared service (chargeback applies)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [
+    "pool"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:Org_Map shared pools"
+   ],
+   "aa_default": {
+    "internal_labour": 0,
+    "captive_labour": 0,
+    "si_contingent": 0,
+    "consulting": 0,
+    "software": 1,
+    "airline_platforms": 0,
+    "cloud": 1,
+    "dc_hardware": 1,
+    "network": 1,
+    "end_user": 1,
+    "other": 0
+   }
+  },
+  {
+   "id": "pool.swb_flag",
+   "kind": "fact_or_estimate",
+   "label": "Pool is employee cost (lands in salaries, wages & benefits)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [
+    "pool"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "P&L hand-off",
+   "layer": "pnl",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "H",
+   "note": "Replaces the corporate model's flat 30% it_swb assumption.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": {
+    "internal_labour": 1,
+    "captive_labour": 1,
+    "si_contingent": 0,
+    "consulting": 0,
+    "software": 0,
+    "airline_platforms": 0,
+    "cloud": 0,
+    "dc_hardware": 0,
+    "network": 0,
+    "end_user": 0,
+    "other": 0
+   }
+  },
+  {
+   "id": "sub.sw_ms_share",
+   "kind": "fact_or_estimate",
+   "label": "Microsoft share of software spend",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.01,
+   "group": "Baseline & pools",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "v0.3: $35M of $157.2M.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:sw_ms"
+   ],
+   "aa_default": 0.22265
+  },
+  {
+   "id": "sub.dc_maint_share",
+   "kind": "fact_or_estimate",
+   "label": "Hardware maintenance share of DC & hardware opex (rest = colo/facilities)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Baseline & pools",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "v0.3: $6M maint + $6M colo.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:dc_maint",
+    "levers:dc_colo"
+   ],
+   "aa_default": 0.5
+  },
+  {
+   "id": "portfolio.apps",
+   "kind": "fact_or_estimate",
+   "label": "Applications in portfolio",
+   "unit": "#",
+   "type": "int",
+   "dims": [],
+   "min": 500,
+   "max": 3000,
+   "step": 50,
+   "group": "Baseline & pools",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "M",
+   "note": "Upper bound for lever 9.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Applications in portfolio",
+    "levers:apps"
+   ],
+   "aa_default": 1800
+  },
+  {
+   "id": "portfolio.app_cost",
+   "kind": "fact_or_estimate",
+   "label": "Average annual run cost of a retirement-candidate app",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0.02,
+   "max": 0.4,
+   "step": 0.01,
+   "group": "Baseline & pools",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:app_cost"
+   ],
+   "aa_default": 0.09
+  },
+  {
+   "id": "portfolio.app_lab",
+   "kind": "fact_or_estimate",
+   "label": "Labour share of app run cost (excluded from lever 9)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.7,
+   "step": 0.05,
+   "group": "Baseline & pools",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:app_lab"
+   ],
+   "aa_default": 0.35
+  },
+  {
+   "id": "org.dom_share",
+   "kind": "fact_or_estimate",
+   "label": "Share of each IT domain owned by each VP",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "domain",
+    "vp"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "matrix",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "Each domain row must sum to 1 (memo domain to 0). User confirmed Infra owns shared platforms, EUC, telco, cyber; Corporate owns HR/Finance systems; CIO office assumed Infra.",
+   "scenario_varies": false,
+   "legacy": [
+    "baseline:Org_Map"
+   ],
+   "aa_default": {
+    "commercial_applications,vp_commercial": 1,
+    "commercial_applications,vp_operations": 0,
+    "commercial_applications,vp_corporate": 0,
+    "commercial_applications,vp_infra": 0,
+    "operations_applications,vp_commercial": 0,
+    "operations_applications,vp_operations": 1,
+    "operations_applications,vp_corporate": 0,
+    "operations_applications,vp_infra": 0,
+    "airport_field_technology,vp_commercial": 0,
+    "airport_field_technology,vp_operations": 1,
+    "airport_field_technology,vp_corporate": 0,
+    "airport_field_technology,vp_infra": 0,
+    "corporate_applications,vp_commercial": 0,
+    "corporate_applications,vp_operations": 0,
+    "corporate_applications,vp_corporate": 1,
+    "corporate_applications,vp_infra": 0,
+    "application_delivery_shared,vp_commercial": 0.4,
+    "application_delivery_shared,vp_operations": 0.35,
+    "application_delivery_shared,vp_corporate": 0.25,
+    "application_delivery_shared,vp_infra": 0,
+    "data_analytics,vp_commercial": 0.35,
+    "data_analytics,vp_operations": 0.35,
+    "data_analytics,vp_corporate": 0.3,
+    "data_analytics,vp_infra": 0,
+    "enterprise_platforms_tools,vp_commercial": 0,
+    "enterprise_platforms_tools,vp_operations": 0,
+    "enterprise_platforms_tools,vp_corporate": 0,
+    "enterprise_platforms_tools,vp_infra": 1,
+    "infrastructure_cloud,vp_commercial": 0,
+    "infrastructure_cloud,vp_operations": 0,
+    "infrastructure_cloud,vp_corporate": 0,
+    "infrastructure_cloud,vp_infra": 1,
+    "network_telecom,vp_commercial": 0,
+    "network_telecom,vp_operations": 0,
+    "network_telecom,vp_corporate": 0,
+    "network_telecom,vp_infra": 1,
+    "end_user_services,vp_commercial": 0,
+    "end_user_services,vp_operations": 0,
+    "end_user_services,vp_corporate": 0,
+    "end_user_services,vp_infra": 1,
+    "cybersecurity,vp_commercial": 0,
+    "cybersecurity,vp_operations": 0,
+    "cybersecurity,vp_corporate": 0,
+    "cybersecurity,vp_infra": 1,
+    "cio_office_governance,vp_commercial": 0,
+    "cio_office_governance,vp_operations": 0,
+    "cio_office_governance,vp_corporate": 0,
+    "cio_office_governance,vp_infra": 1,
+    "workforce_overhead_pro_rata,vp_commercial": 0.3,
+    "workforce_overhead_pro_rata,vp_operations": 0.3,
+    "workforce_overhead_pro_rata,vp_corporate": 0.2,
+    "workforce_overhead_pro_rata,vp_infra": 0.2,
+    "gcc_overhead_shared,vp_commercial": 0.35,
+    "gcc_overhead_shared,vp_operations": 0.35,
+    "gcc_overhead_shared,vp_corporate": 0.2,
+    "gcc_overhead_shared,vp_infra": 0.1,
+    "out_of_scope_memo,vp_commercial": 0,
+    "out_of_scope_memo,vp_operations": 0,
+    "out_of_scope_memo,vp_corporate": 0,
+    "out_of_scope_memo,vp_infra": 0
+   }
+  },
+  {
+   "id": "org.ss_flag",
+   "kind": "fact_or_estimate",
+   "label": "VP is the shared-services owner whose shared slice is re-credited",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [
+    "vp"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Exactly one VP should be 1.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:shared_services_slot"
+   ],
+   "aa_default": {
+    "vp_commercial": 0,
+    "vp_operations": 0,
+    "vp_corporate": 0,
+    "vp_infra": 1
+   }
+  },
+  {
+   "id": "org.usage_override_on",
+   "kind": "fact_or_estimate",
+   "label": "Use metered usage keys instead of the default proxy (1 = yes)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 0
+  },
+  {
+   "id": "org.usage_override",
+   "kind": "fact_or_estimate",
+   "label": "Metered usage key by VP (used if override on)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "vp"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Should sum to 1.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": {
+    "vp_commercial": 0.25,
+    "vp_operations": 0.25,
+    "vp_corporate": 0.25,
+    "vp_infra": 0.25
+   }
+  },
+  {
+   "id": "org.manual_target",
+   "kind": "fact_or_estimate",
+   "label": "Manual VP net target (method 3)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "vp"
+   ],
+   "min": 0,
+   "max": 100,
+   "step": 0.5,
+   "group": "Org map & chargeback",
+   "layer": "vp",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "user",
+   "confidence": "H",
+   "note": "Original CIO split: $25M each.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": {
+    "vp_commercial": 25,
+    "vp_operations": 25,
+    "vp_corporate": 25,
+    "vp_infra": 25
+   }
+  },
+  {
+   "id": "lev.L01.cut",
+   "kind": "decision",
+   "label": "Cut to change/project portfolio delivered by SIs",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "Benchmark 10-20% of discretionary change spend is low-value or duplicative. Internal capacity freed is redeployed, not cut.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l1_cut"
+   ],
+   "aa_default": 0.25,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.25,
+    "B": 0.15,
+    "C": 0.25,
+    "D": 0.35
+   }
+  },
+  {
+   "id": "lev.L01.rel",
+   "kind": "decision",
+   "label": "Release of run-side contingent / managed capacity (no replacement)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.25,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "Contractor freeze, end of over-staffed T&M teams, ticket-volume-based AMS sizing. Fastest, near-zero one-time cost.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l1_rel"
+   ],
+   "aa_default": 0.18,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.25,
+    "B": 0.12,
+    "C": 0.18,
+    "D": 0.3
+   }
+  },
+  {
+   "id": "lev.L02.cut",
+   "kind": "decision",
+   "label": "Reduction in consulting / advisory spend",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "CFO sign-off above threshold, re-scope, use GCC for analysis. Benchmark 15-30%.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l2_cut"
+   ],
+   "aa_default": 0.4,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.4,
+    "B": 0.3,
+    "C": 0.4,
+    "D": 0.5
+   }
+  },
+  {
+   "id": "lev.L03.pct",
+   "kind": "decision",
+   "label": "Share of remaining onshore contractor roles relocated",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.7,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Keep onshore only roles needing physical presence (airport, ops centre, exec-facing). Benchmark: mature captives run 70-80% offshore.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l3_pct"
+   ],
+   "aa_default": 0.5,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.25,
+    "B": 0.6,
+    "C": 0.5,
+    "D": 0.8
+   }
+  },
+  {
+   "id": "lev.L03.tc",
+   "kind": "estimate",
+   "label": "Transition cost per relocated role (KT overlap + hiring)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0.02,
+   "max": 0.1,
+   "step": 0.005,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "~3 months double-running of an onshore contractor + GCC recruiting.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l3_tc"
+   ],
+   "aa_default": 0.055,
+   "aa_scenario_values": {
+    "rates": 0.055,
+    "A": 0.055,
+    "B": 0.055,
+    "C": 0.055,
+    "D": 0.055
+   }
+  },
+  {
+   "id": "lev.L04.pct",
+   "kind": "decision",
+   "label": "Share of SI offshore staff converted to GCC",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.6,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Arbitrage is thin (~15-20%): the prize is control and knowledge, not cost. Watch non-solicit clauses.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l4_pct"
+   ],
+   "aa_default": 0.15,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0,
+    "B": 0.35,
+    "C": 0.15,
+    "D": 0.3
+   }
+  },
+  {
+   "id": "lev.L04.tc",
+   "kind": "estimate",
+   "label": "Conversion cost per head (hiring, buy-out fee)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.03,
+   "step": 0.002,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l4_tc"
+   ],
+   "aa_default": 0.012,
+   "aa_scenario_values": {
+    "rates": 0.012,
+    "A": 0.012,
+    "B": 0.012,
+    "C": 0.012,
+    "D": 0.012
+   }
+  },
+  {
+   "id": "lev.L04.pf",
+   "kind": "estimate",
+   "label": "GCC productivity factor vs SI offshore",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 0.9,
+   "max": 1.3,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l4_pf"
+   ],
+   "aa_default": 1.05,
+   "aa_scenario_values": {
+    "rates": 1.05,
+    "A": 1.05,
+    "B": 1.05,
+    "C": 1.05,
+    "D": 1.05
+   }
+  },
+  {
+   "id": "lev.L05.nb",
+   "kind": "decision",
+   "label": "Share of US leavers NOT backfilled onshore",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "The core GCC hypothesis: GCC grew additively, US base never shrank. Fix: default backfill location = Hyderabad.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l5_nb"
+   ],
+   "aa_default": 0.75,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.4,
+    "B": 0.9,
+    "C": 0.75,
+    "D": 1
+   }
+  },
+  {
+   "id": "lev.L05.bf",
+   "kind": "decision",
+   "label": "Of those, share backfilled in GCC (rest absorbed by productivity)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l5_bf"
+   ],
+   "aa_default": 0.8,
+   "aa_scenario_values": {
+    "rates": 1,
+    "A": 1,
+    "B": 0.8,
+    "C": 0.8,
+    "D": 0.7
+   }
+  },
+  {
+   "id": "lev.L05.sl",
+   "kind": "decision",
+   "label": "Spans & layers: reduction in US labour cost",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.06,
+   "step": 0.005,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Move to 1:8+ spans. Involves severance; HR/legal sensitive.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l5_sl"
+   ],
+   "aa_default": 0.02,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.01,
+    "B": 0.03,
+    "C": 0.02,
+    "D": 0.04
+   }
+  },
+  {
+   "id": "lev.L05.rel",
+   "kind": "decision",
+   "label": "Targeted US role relocation to GCC beyond attrition",
+   "unit": "% of US FTE",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.08,
+   "step": 0.005,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Planned role moves with severance; reputational and retention risk in DFW/PHX.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l5_rel"
+   ],
+   "aa_default": 0.015,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0,
+    "B": 0.03,
+    "C": 0.015,
+    "D": 0.06
+   }
+  },
+  {
+   "id": "lev.L05.vac",
+   "kind": "decision",
+   "label": "Vacancy harvest: budgeted-but-unfilled US roles removed from budget",
+   "unit": "% of US cost",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.04,
+   "step": 0.005,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Large IT budgets typically carry 3-6% vacancy. Immediate, no one-time cost, but only real if the budget line is actually cut.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l5_vac"
+   ],
+   "aa_default": 0.03,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.025,
+    "B": 0.03,
+    "C": 0.03,
+    "D": 0.035
+   }
+  },
+  {
+   "id": "lev.L05.sev",
+   "kind": "estimate",
+   "label": "Severance + hiring cost as multiple of spans & layers saving",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 0.3,
+   "max": 1,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l5_sev"
+   ],
+   "aa_default": 0.6,
+   "aa_scenario_values": {
+    "rates": 0.6,
+    "A": 0.6,
+    "B": 0.6,
+    "C": 0.6,
+    "D": 0.6
+   }
+  },
+  {
+   "id": "lev.L06.gain",
+   "kind": "decision",
+   "label": "Productivity gain on SI / managed work (code, test, AMS tickets)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.35,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Published GenAI gains: 20-45% on coding tasks, 10-25% at team level.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l6_gain"
+   ],
+   "aa_default": 0.2,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.15,
+    "B": 0.25,
+    "C": 0.2,
+    "D": 0.3
+   }
+  },
+  {
+   "id": "lev.L06.cap",
+   "kind": "decision",
+   "label": "Share of gain captured in price (contract pass-through)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Without an 'AI dividend' clause vendors keep the gain as margin.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l6_cap"
+   ],
+   "aa_default": 0.75,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.6,
+    "B": 0.8,
+    "C": 0.75,
+    "D": 0.8
+   }
+  },
+  {
+   "id": "lev.L06.tool",
+   "kind": "estimate",
+   "label": "AI tooling run cost (recurring, netted off)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 5,
+   "step": 0.5,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "~$20-40/user/month for coding assistants.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l6_tool"
+   ],
+   "aa_default": 2.5,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 1.5,
+    "B": 3,
+    "C": 2.5,
+    "D": 3
+   }
+  },
+  {
+   "id": "lev.L07.pct",
+   "kind": "decision",
+   "label": "Share of tail SI spend moved to preferred vendors",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.8,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Tail typically 30-45% of SI spend; consolidate to 6-8 strategic + niche specialists.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l7_pct"
+   ],
+   "aa_default": 0.6,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.6,
+    "B": 0.5,
+    "C": 0.6,
+    "D": 0.8
+   }
+  },
+  {
+   "id": "lev.L07.diff",
+   "kind": "decision",
+   "label": "Rate advantage of preferred panel vs tail",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.2,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Volume tiers, rebates, fewer markups. Benchmark 8-15%.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l7_diff"
+   ],
+   "aa_default": 0.12,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.12,
+    "B": 0.1,
+    "C": 0.12,
+    "D": 0.15
+   }
+  },
+  {
+   "id": "lev.L08.cov",
+   "kind": "decision",
+   "label": "Share of remaining SI spend reopened / renewing in 2027",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Contracts that can be reopened before renewal; leverage = volume consolidation.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l8_cov"
+   ],
+   "aa_default": 0.75,
+   "aa_scenario_values": {
+    "rates": 0.8,
+    "A": 0.8,
+    "B": 0.6,
+    "C": 0.75,
+    "D": 0.9
+   }
+  },
+  {
+   "id": "lev.L08.cut",
+   "kind": "decision",
+   "label": "Headline rate reduction",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.15,
+   "step": 0.005,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Benchmark 3-8% achievable; >10% triggers quality/attrition issues.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l8_cut"
+   ],
+   "aa_default": 0.05,
+   "aa_scenario_values": {
+    "rates": 0.08,
+    "A": 0.07,
+    "B": 0.04,
+    "C": 0.05,
+    "D": 0.07
+   }
+  },
+  {
+   "id": "lev.L08.leak",
+   "kind": "estimate",
+   "label": "Leakage (vendor recovers via pyramid/mix, scope creep)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Vendors protect margin by shifting seniority mix and change orders.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l8_leak"
+   ],
+   "aa_default": 0.2,
+   "aa_scenario_values": {
+    "rates": 0.25,
+    "A": 0.2,
+    "B": 0.2,
+    "C": 0.2,
+    "D": 0.2
+   }
+  },
+  {
+   "id": "lev.L09.n",
+   "kind": "decision",
+   "label": "Applications retired / consolidated in 2027",
+   "unit": "#",
+   "type": "int",
+   "dims": [],
+   "min": 0,
+   "max": 300,
+   "step": 10,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Typical first-wave: 5-10% of portfolio. Duplicates from US Airways merger heritage are likely candidates.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l9_n"
+   ],
+   "aa_default": 170,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 120,
+    "B": 200,
+    "C": 170,
+    "D": 300
+   }
+  },
+  {
+   "id": "lev.L09.dc",
+   "kind": "estimate",
+   "label": "Decommission cost per app (archive, migrate, test)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0.02,
+   "max": 0.15,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l9_dc"
+   ],
+   "aa_default": 0.06,
+   "aa_scenario_values": {
+    "rates": 0.06,
+    "A": 0.06,
+    "B": 0.06,
+    "C": 0.06,
+    "D": 0.06
+   }
+  },
+  {
+   "id": "lev.L10.shelf",
+   "kind": "decision",
+   "label": "Shelfware harvested (unused / under-used licences)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.15,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Typical 10-30% of licences unused; harvest 3-8% of spend.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l10_shelf"
+   ],
+   "aa_default": 0.1,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.1,
+    "B": 0.06,
+    "C": 0.1,
+    "D": 0.12
+   }
+  },
+  {
+   "id": "lev.L10.ms",
+   "kind": "decision",
+   "label": "Microsoft optimisation (E5/E3 mix, Azure commits, EA terms)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.2,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l10_ms"
+   ],
+   "aa_default": 0.18,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.18,
+    "B": 0.1,
+    "C": 0.18,
+    "D": 0.2
+   }
+  },
+  {
+   "id": "lev.L10.ren",
+   "kind": "estimate",
+   "label": "Share of other software renewing / negotiable in 2027",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l10_ren"
+   ],
+   "aa_default": 0.6,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.6,
+    "B": 0.45,
+    "C": 0.6,
+    "D": 0.8
+   }
+  },
+  {
+   "id": "lev.L10.rcut",
+   "kind": "decision",
+   "label": "Saving on renewing contracts",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Benchmark 10-20% with competitive tension; airline ops software is stickier.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l10_rcut"
+   ],
+   "aa_default": 0.2,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.2,
+    "B": 0.12,
+    "C": 0.2,
+    "D": 0.3
+   }
+  },
+  {
+   "id": "lev.L11.pct",
+   "kind": "decision",
+   "label": "Cloud cost reduction (rightsizing, commitments, waste)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.35,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "FinOps Foundation / vendor benchmarks: 20-30% waste is common in first 2 years.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l11_pct"
+   ],
+   "aa_default": 0.3,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.3,
+    "B": 0.22,
+    "C": 0.3,
+    "D": 0.35
+   }
+  },
+  {
+   "id": "lev.L12.tpm",
+   "kind": "decision",
+   "label": "Hardware maintenance moved to third-party (TPM)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.8,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "TPM saves 30-50% vs OEM on out-of-warranty kit.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l12_tpm"
+   ],
+   "aa_default": 0.6,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.6,
+    "B": 0.4,
+    "C": 0.6,
+    "D": 0.8
+   }
+  },
+  {
+   "id": "lev.L12.life",
+   "kind": "decision",
+   "label": "Capex purchases deferred by extending refresh cycles (4 to 5 yrs) and reusing kit",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Cuts cash outlay in the year it is decided; a 4-to-5-year cycle cuts annual purchases ~20%.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l12_life"
+   ],
+   "aa_default": 0.15,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.15,
+    "B": 0.08,
+    "C": 0.15,
+    "D": 0.3
+   }
+  },
+  {
+   "id": "lev.L12.colo",
+   "kind": "decision",
+   "label": "Colo / facilities consolidation",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l12_colo"
+   ],
+   "aa_default": 0.15,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.15,
+    "B": 0.1,
+    "C": 0.15,
+    "D": 0.25
+   }
+  },
+  {
+   "id": "lev.L13.pct",
+   "kind": "decision",
+   "label": "Network cost reduction (SD-WAN, carrier re-bid, mobile audit)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.25,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Benchmark 10-20%; airport circuits constrained by SITA/airport authority.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l13_pct"
+   ],
+   "aa_default": 0.22,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.22,
+    "B": 0.12,
+    "C": 0.22,
+    "D": 0.25
+   }
+  },
+  {
+   "id": "lev.L14.pct",
+   "kind": "decision",
+   "label": "End-user cost reduction (refresh cycle, device standards, peripherals)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.25,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l14_pct"
+   ],
+   "aa_default": 0.15,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.15,
+    "B": 0.1,
+    "C": 0.15,
+    "D": 0.25
+   }
+  },
+  {
+   "id": "lev.L15.pct",
+   "kind": "decision",
+   "label": "Reduction (volume tiers, message optimisation, contract benchmarking)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.08,
+   "step": 0.005,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "PSS per-pax hosting, SITA/ARINC, nav data: few alternatives, multi-year contracts. Show as mostly locked.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l15_pct"
+   ],
+   "aa_default": 0.1,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.1,
+    "B": 0.05,
+    "C": 0.1,
+    "D": 0.15
+   }
+  },
+  {
+   "id": "lev.L16.pct",
+   "kind": "decision",
+   "label": "Recovery / avoidance as % of third-party spend",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.02,
+   "step": 0.001,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "Recovery audits typically find 0.5-1.5% of spend; contingency-fee based.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l16_pct"
+   ],
+   "aa_default": 0.015,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.015,
+    "B": 0.008,
+    "C": 0.015,
+    "D": 0.02
+   }
+  },
+  {
+   "id": "lev.L17.cola",
+   "kind": "decision",
+   "label": "Share of vendor COLA requests refused",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Under AA's definition (2027 outlay vs 2026), an avoided increase counts as much as a cut.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l17_cola"
+   ],
+   "aa_default": 0.7,
+   "aa_scenario_values": {
+    "rates": 1,
+    "A": 0.8,
+    "B": 0.5,
+    "C": 0.7,
+    "D": 1
+   }
+  },
+  {
+   "id": "lev.L17.sw",
+   "kind": "decision",
+   "label": "Share of software renewal uplifts avoided",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Multi-year price holds, competitive tension, walk-away options.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l17_sw"
+   ],
+   "aa_default": 0.5,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.6,
+    "B": 0.4,
+    "C": 0.5,
+    "D": 0.8
+   }
+  },
+  {
+   "id": "lev.L17.cl",
+   "kind": "decision",
+   "label": "Share of cloud consumption growth contained",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Demand gates and unit-cost targets for new workloads.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:l17_cl"
+   ],
+   "aa_default": 0.5,
+   "aa_scenario_values": {
+    "rates": 0,
+    "A": 0.5,
+    "B": 0.4,
+    "C": 0.5,
+    "D": 0.7
+   }
+  },
+  {
+   "id": "lev.L01.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate (PMO, governance)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.05
+  },
+  {
+   "id": "lev.L02.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.0
+  },
+  {
+   "id": "lev.L05.reloc_sev",
+   "kind": "estimate",
+   "label": "Severance per relocated US role, as multiple of loaded cost",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1.5,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.5
+  },
+  {
+   "id": "lev.L05.hire_cost",
+   "kind": "estimate",
+   "label": "Hiring cost per GCC backfill / relocated role",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.05,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.01
+  },
+  {
+   "id": "lev.L06.setup",
+   "kind": "estimate",
+   "label": "AI enablement one-time cost (if lever active)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 5,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 1.0
+  },
+  {
+   "id": "lev.L07.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate (transition, KT)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.6,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.25
+  },
+  {
+   "id": "lev.L08.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate (advisors)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.05
+  },
+  {
+   "id": "lev.L09.split_sw",
+   "kind": "estimate",
+   "label": "Share of app-retirement saving landing in software",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.5
+  },
+  {
+   "id": "lev.L09.split_cloud",
+   "kind": "estimate",
+   "label": "Share of app-retirement saving landing in cloud (rest DC & hardware)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.3
+  },
+  {
+   "id": "lev.L10.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate (SAM tool, advisors)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.3,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.1
+  },
+  {
+   "id": "lev.L11.setup",
+   "kind": "estimate",
+   "label": "FinOps one-time cost (if lever active)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 3,
+   "step": 0.1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.5
+  },
+  {
+   "id": "lev.L12.tpm_saving",
+   "kind": "estimate",
+   "label": "Saving on maintenance moved to third-party (TPM)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0.2,
+   "max": 0.6,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.4
+  },
+  {
+   "id": "lev.L12.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.15
+  },
+  {
+   "id": "lev.L13.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate (SD-WAN migration)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.4
+  },
+  {
+   "id": "lev.L14.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.1
+  },
+  {
+   "id": "lev.L15.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.0
+  },
+  {
+   "id": "lev.L16.ot_pct",
+   "kind": "estimate",
+   "label": "One-time cost as % of run-rate (contingency fee)",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.01,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "L",
+   "note": "Was a constant inside the v0.3 formula; promoted to an input.",
+   "scenario_varies": false,
+   "legacy": [
+    "levers:formula constant"
+   ],
+   "aa_default": 0.25
+  },
+  {
+   "id": "lev.start",
+   "kind": "decision",
+   "label": "Start month in 2027 (1 = Jan)",
+   "unit": "month",
+   "type": "int",
+   "dims": [
+    "lever"
+   ],
+   "min": 1,
+   "max": 12,
+   "step": 1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Per lever.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:s1..s17"
+   ],
+   "aa_default": {
+    "L01": 1,
+    "L02": 1,
+    "L03": 3,
+    "L04": 4,
+    "L05": 1,
+    "L06": 4,
+    "L07": 3,
+    "L08": 3,
+    "L09": 4,
+    "L10": 2,
+    "L11": 2,
+    "L12": 3,
+    "L13": 4,
+    "L14": 2,
+    "L15": 6,
+    "L16": 3,
+    "L17": 1
+   },
+   "aa_scenario_values": {
+    "rates": {
+     "L01": 1,
+     "L02": 1,
+     "L03": 3,
+     "L04": 4,
+     "L05": 1,
+     "L06": 4,
+     "L07": 3,
+     "L08": 3,
+     "L09": 4,
+     "L10": 2,
+     "L11": 2,
+     "L12": 3,
+     "L13": 4,
+     "L14": 2,
+     "L15": 6,
+     "L16": 3,
+     "L17": 1
+    },
+    "A": {
+     "L01": 1,
+     "L02": 1,
+     "L03": 3,
+     "L04": 4,
+     "L05": 1,
+     "L06": 4,
+     "L07": 3,
+     "L08": 3,
+     "L09": 4,
+     "L10": 2,
+     "L11": 2,
+     "L12": 3,
+     "L13": 4,
+     "L14": 2,
+     "L15": 6,
+     "L16": 3,
+     "L17": 1
+    },
+    "B": {
+     "L01": 1,
+     "L02": 1,
+     "L03": 3,
+     "L04": 4,
+     "L05": 1,
+     "L06": 4,
+     "L07": 3,
+     "L08": 3,
+     "L09": 4,
+     "L10": 2,
+     "L11": 2,
+     "L12": 3,
+     "L13": 4,
+     "L14": 2,
+     "L15": 6,
+     "L16": 3,
+     "L17": 1
+    },
+    "C": {
+     "L01": 1,
+     "L02": 1,
+     "L03": 3,
+     "L04": 4,
+     "L05": 1,
+     "L06": 4,
+     "L07": 3,
+     "L08": 3,
+     "L09": 4,
+     "L10": 2,
+     "L11": 2,
+     "L12": 3,
+     "L13": 4,
+     "L14": 2,
+     "L15": 6,
+     "L16": 3,
+     "L17": 1
+    },
+    "D": {
+     "L01": 1,
+     "L02": 1,
+     "L03": 3,
+     "L04": 4,
+     "L05": 1,
+     "L06": 4,
+     "L07": 3,
+     "L08": 3,
+     "L09": 4,
+     "L10": 2,
+     "L11": 2,
+     "L12": 3,
+     "L13": 4,
+     "L14": 2,
+     "L15": 6,
+     "L16": 3,
+     "L17": 1
+    }
+   }
+  },
+  {
+   "id": "lev.ramp",
+   "kind": "decision",
+   "label": "Ramp to full run-rate",
+   "unit": "months",
+   "type": "int",
+   "dims": [
+    "lever"
+   ],
+   "min": 1,
+   "max": 12,
+   "step": 1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Per lever.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:r1..r17"
+   ],
+   "aa_default": {
+    "L01": 3,
+    "L02": 3,
+    "L03": 6,
+    "L04": 6,
+    "L05": 12,
+    "L06": 6,
+    "L07": 6,
+    "L08": 3,
+    "L09": 9,
+    "L10": 6,
+    "L11": 6,
+    "L12": 6,
+    "L13": 6,
+    "L14": 6,
+    "L15": 6,
+    "L16": 6,
+    "L17": 3
+   },
+   "aa_scenario_values": {
+    "rates": {
+     "L01": 3,
+     "L02": 3,
+     "L03": 6,
+     "L04": 6,
+     "L05": 12,
+     "L06": 6,
+     "L07": 6,
+     "L08": 3,
+     "L09": 9,
+     "L10": 6,
+     "L11": 6,
+     "L12": 6,
+     "L13": 6,
+     "L14": 6,
+     "L15": 6,
+     "L16": 6,
+     "L17": 3
+    },
+    "A": {
+     "L01": 3,
+     "L02": 3,
+     "L03": 6,
+     "L04": 6,
+     "L05": 12,
+     "L06": 6,
+     "L07": 6,
+     "L08": 3,
+     "L09": 9,
+     "L10": 6,
+     "L11": 6,
+     "L12": 6,
+     "L13": 6,
+     "L14": 6,
+     "L15": 6,
+     "L16": 6,
+     "L17": 3
+    },
+    "B": {
+     "L01": 3,
+     "L02": 3,
+     "L03": 6,
+     "L04": 6,
+     "L05": 12,
+     "L06": 6,
+     "L07": 6,
+     "L08": 3,
+     "L09": 9,
+     "L10": 6,
+     "L11": 6,
+     "L12": 6,
+     "L13": 6,
+     "L14": 6,
+     "L15": 6,
+     "L16": 6,
+     "L17": 3
+    },
+    "C": {
+     "L01": 3,
+     "L02": 3,
+     "L03": 6,
+     "L04": 6,
+     "L05": 12,
+     "L06": 6,
+     "L07": 6,
+     "L08": 3,
+     "L09": 9,
+     "L10": 6,
+     "L11": 6,
+     "L12": 6,
+     "L13": 6,
+     "L14": 6,
+     "L15": 6,
+     "L16": 6,
+     "L17": 3
+    },
+    "D": {
+     "L01": 3,
+     "L02": 3,
+     "L03": 6,
+     "L04": 6,
+     "L05": 12,
+     "L06": 6,
+     "L07": 6,
+     "L08": 3,
+     "L09": 9,
+     "L10": 6,
+     "L11": 6,
+     "L12": 6,
+     "L13": 6,
+     "L14": 6,
+     "L15": 6,
+     "L16": 6,
+     "L17": 3
+    }
+   }
+  },
+  {
+   "id": "lev.conf",
+   "kind": "estimate",
+   "label": "Confidence of realisation",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "lever"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Per lever.",
+   "scenario_varies": true,
+   "legacy": [
+    "levers:c1..c17"
+   ],
+   "aa_default": {
+    "L01": 0.8,
+    "L02": 0.85,
+    "L03": 0.7,
+    "L04": 0.75,
+    "L05": 0.65,
+    "L06": 0.55,
+    "L07": 0.7,
+    "L08": 0.7,
+    "L09": 0.55,
+    "L10": 0.75,
+    "L11": 0.85,
+    "L12": 0.7,
+    "L13": 0.7,
+    "L14": 0.8,
+    "L15": 0.6,
+    "L16": 0.8,
+    "L17": 0.75
+   },
+   "aa_scenario_values": {
+    "rates": {
+     "L01": 0.8,
+     "L02": 0.85,
+     "L03": 0.7,
+     "L04": 0.75,
+     "L05": 0.65,
+     "L06": 0.55,
+     "L07": 0.7,
+     "L08": 0.7,
+     "L09": 0.55,
+     "L10": 0.75,
+     "L11": 0.85,
+     "L12": 0.7,
+     "L13": 0.7,
+     "L14": 0.8,
+     "L15": 0.6,
+     "L16": 0.8,
+     "L17": 0.75
+    },
+    "A": {
+     "L01": 0.8,
+     "L02": 0.85,
+     "L03": 0.7,
+     "L04": 0.75,
+     "L05": 0.65,
+     "L06": 0.55,
+     "L07": 0.7,
+     "L08": 0.7,
+     "L09": 0.55,
+     "L10": 0.75,
+     "L11": 0.85,
+     "L12": 0.7,
+     "L13": 0.7,
+     "L14": 0.8,
+     "L15": 0.6,
+     "L16": 0.8,
+     "L17": 0.75
+    },
+    "B": {
+     "L01": 0.8,
+     "L02": 0.85,
+     "L03": 0.7,
+     "L04": 0.75,
+     "L05": 0.65,
+     "L06": 0.55,
+     "L07": 0.7,
+     "L08": 0.7,
+     "L09": 0.55,
+     "L10": 0.75,
+     "L11": 0.85,
+     "L12": 0.7,
+     "L13": 0.7,
+     "L14": 0.8,
+     "L15": 0.6,
+     "L16": 0.8,
+     "L17": 0.75
+    },
+    "C": {
+     "L01": 0.8,
+     "L02": 0.85,
+     "L03": 0.7,
+     "L04": 0.75,
+     "L05": 0.65,
+     "L06": 0.55,
+     "L07": 0.7,
+     "L08": 0.7,
+     "L09": 0.55,
+     "L10": 0.75,
+     "L11": 0.85,
+     "L12": 0.7,
+     "L13": 0.7,
+     "L14": 0.8,
+     "L15": 0.6,
+     "L16": 0.8,
+     "L17": 0.75
+    },
+    "D": {
+     "L01": 0.8,
+     "L02": 0.85,
+     "L03": 0.7,
+     "L04": 0.75,
+     "L05": 0.65,
+     "L06": 0.55,
+     "L07": 0.7,
+     "L08": 0.7,
+     "L09": 0.55,
+     "L10": 0.75,
+     "L11": 0.85,
+     "L12": 0.7,
+     "L13": 0.7,
+     "L14": 0.8,
+     "L15": 0.6,
+     "L16": 0.8,
+     "L17": 0.75
+    }
+   }
+  },
+  {
+   "id": "lev.realize",
+   "kind": "simulation",
+   "label": "Realisation multiplier on in-year saving (simulation only; 1 = as planned)",
+   "unit": "x",
+   "type": "number",
+   "dims": [
+    "lever"
+   ],
+   "min": 0,
+   "max": 1.5,
+   "step": 0.05,
+   "group": "Levers",
+   "layer": "simulation",
+   "role": "simulation",
+   "ui": {
+    "control": "hidden",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "H",
+   "note": "Set by Monte Carlo draws; users normally leave at 1.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": {
+    "L01": 1,
+    "L02": 1,
+    "L03": 1,
+    "L04": 1,
+    "L05": 1,
+    "L06": 1,
+    "L07": 1,
+    "L08": 1,
+    "L09": 1,
+    "L10": 1,
+    "L11": 1,
+    "L12": 1,
+    "L13": 1,
+    "L14": 1,
+    "L15": 1,
+    "L16": 1,
+    "L17": 1
+   }
+  },
+  {
+   "id": "lev.on",
+   "kind": "decision",
+   "label": "Lever switched on (1) or off (0)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [
+    "lever"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Levers",
+   "layer": "levers",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "H",
+   "note": "New: lets solvers and users drop a lever without zeroing its inputs.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": {
+    "L01": 1,
+    "L02": 1,
+    "L03": 1,
+    "L04": 1,
+    "L05": 1,
+    "L06": 1,
+    "L07": 1,
+    "L08": 1,
+    "L09": 1,
+    "L10": 1,
+    "L11": 1,
+    "L12": 1,
+    "L13": 1,
+    "L14": 1,
+    "L15": 1,
+    "L16": 1,
+    "L17": 1
+   }
+  },
+  {
+   "id": "corp.gdp",
+   "kind": "fact_or_estimate",
+   "label": "US real GDP growth",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -4,
+   "max": 5,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Drives yield and load factor through the elasticities below.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:gdp"
+   ],
+   "aa_default": {
+    "fy25": 2.0,
+    "fy26": 2.0,
+    "fy27": 2.0
+   }
+  },
+  {
+   "id": "corp.gdp_ref",
+   "kind": "fact_or_estimate",
+   "label": "Reference GDP growth embedded in yield and load-factor defaults",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 4,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "GDP above this lifts yield and load factor; below it cuts them.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:gdp_ref"
+   ],
+   "aa_default": {
+    "fy25": 2.0,
+    "fy26": 2.0,
+    "fy27": 2.0
+   }
+  },
+  {
+   "id": "corp.yield_gdp",
+   "kind": "fact_or_estimate",
+   "label": "Yield elasticity: % change in yield per 1 pt of GDP gap",
+   "unit": "x",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 4,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Airline yields are pro-cyclical; 1-2x is a common rule of thumb.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:yield_gdp"
+   ],
+   "aa_default": {
+    "fy25": 1.5,
+    "fy26": 1.5,
+    "fy27": 1.5
+   }
+  },
+  {
+   "id": "corp.lf_gdp",
+   "kind": "fact_or_estimate",
+   "label": "Load factor change (pts) per 1 pt of GDP gap",
+   "unit": "pts",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 2,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:lf_gdp"
+   ],
+   "aa_default": {
+    "fy25": 0.5,
+    "fy26": 0.5,
+    "fy27": 0.5
+   }
+  },
+  {
+   "id": "corp.cpi",
+   "kind": "fact_or_estimate",
+   "label": "US CPI inflation",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 8,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Feeds 'Other' opex inflation.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cpi"
+   ],
+   "aa_default": {
+    "fy25": 2.7,
+    "fy26": 2.7,
+    "fy27": 2.4
+   }
+  },
+  {
+   "id": "corp.fx_share",
+   "kind": "fact_or_estimate",
+   "label": "Share of passenger revenue in foreign currency",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 40,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "International is ~1/3 of ASMs (S1 p.3); part is sold in USD.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:fx_share"
+   ],
+   "aa_default": {
+    "fy25": 12,
+    "fy26": 12,
+    "fy27": 12
+   }
+  },
+  {
+   "id": "corp.usd",
+   "kind": "fact_or_estimate",
+   "label": "USD strengthening vs basket (cuts foreign revenue in USD)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -20,
+   "max": 20,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:usd"
+   ],
+   "aa_default": {
+    "fy25": 0,
+    "fy26": 0,
+    "fy27": 0
+   }
+  },
+  {
+   "id": "corp.brent",
+   "kind": "fact_or_estimate",
+   "label": "Brent crude",
+   "unit": "$/bbl",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 40,
+   "max": 160,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "market",
+   "confidence": "M",
+   "note": "2025 $69.04 actual; 2026 $97.44 and 2027 $85.78 = EIA STEO Nov 2026 (as of 10 Nov 2026). Spot ~ $92 on 11 Nov.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:brent"
+   ],
+   "aa_default": {
+    "fy25": 69,
+    "fy26": 97.44,
+    "fy27": 85.78
+   }
+  },
+  {
+   "id": "corp.crack",
+   "kind": "fact_or_estimate",
+   "label": "Jet fuel crack spread over Brent",
+   "unit": "$/bbl",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 10,
+   "max": 80,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "M",
+   "note": "2025 solved to the $2.39/gal reported (S1 p.2). 2026-27 implied by EIA wholesale jet ($3.60, $3.45/gal) less Brent (S6); EIA expects cracks to stay elevated.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:crack"
+   ],
+   "aa_default": {
+    "fy25": 23.742,
+    "fy26": 53.76,
+    "fy27": 59.12
+   }
+  },
+  {
+   "id": "corp.fuel_tax",
+   "kind": "fact_or_estimate",
+   "label": "Fuel taxes, into-plane and delivery",
+   "unit": "$/gal",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 0.5,
+   "step": 0.01,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:fuel_tax"
+   ],
+   "aa_default": {
+    "fy25": 0.18,
+    "fy26": 0.18,
+    "fy27": 0.19
+   }
+  },
+  {
+   "id": "corp.fuel_mode",
+   "kind": "fact_or_estimate",
+   "label": "Fuel price mode: 1 = build from Brent + crack, 0 = use direct jet price below",
+   "unit": "0/1",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:fuel_mode"
+   ],
+   "aa_default": {
+    "fy25": 1,
+    "fy26": 1,
+    "fy27": 1
+   }
+  },
+  {
+   "id": "corp.jet_direct",
+   "kind": "fact_or_estimate",
+   "label": "Direct all-in jet fuel price (used only if mode = 0)",
+   "unit": "$/gal",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 1.5,
+   "max": 4.5,
+   "step": 0.05,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "FY2025 actual $2.39/gal incl. taxes (S1 p.2). AA does not hedge fuel.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:jet_direct"
+   ],
+   "aa_default": {
+    "fy25": 2.39,
+    "fy26": 3.78,
+    "fy27": 3.64
+   }
+  },
+  {
+   "id": "corp.sofr",
+   "kind": "fact_or_estimate",
+   "label": "SOFR (average)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 7,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Floating-rate debt and cash yield move with this.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:sofr"
+   ],
+   "aa_default": {
+    "fy25": 4.2,
+    "fy26": 3.6,
+    "fy27": 3.4
+   }
+  },
+  {
+   "id": "corp.asm25",
+   "kind": "fact_or_estimate",
+   "label": "ASMs, FY2025",
+   "unit": "m",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.2: 299,411m.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:asm25"
+   ],
+   "aa_default": 299411
+  },
+  {
+   "id": "corp.asm_g",
+   "kind": "fact_or_estimate",
+   "label": "ASM (capacity) growth",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -15,
+   "max": 10,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Q1 2026 guide was +3-5% (S2) before the fuel shock. AA says growth slows considerably in 2027 (S8).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:asm_g"
+   ],
+   "aa_default": {
+    "fy26": 3.0,
+    "fy27": 1.0
+   }
+  },
+  {
+   "id": "corp.lf",
+   "kind": "fact_or_estimate",
+   "label": "Base passenger load factor",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 75,
+   "max": 90,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "FY2025 83.6% (S1 p.2).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:lf"
+   ],
+   "aa_default": {
+    "fy25": 83.6,
+    "fy26": 84.0,
+    "fy27": 84.2
+   }
+  },
+  {
+   "id": "corp.yield25",
+   "kind": "fact_or_estimate",
+   "label": "Passenger yield, FY2025",
+   "unit": "cents/RPM",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "H",
+   "note": "Reported 19.83 cents (S1 p.2); fine-tuned so passenger revenue = $49,643M.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:yield25"
+   ],
+   "aa_default": 19.8328
+  },
+  {
+   "id": "corp.yield_g",
+   "kind": "fact_or_estimate",
+   "label": "Yield growth before macro effect",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -15,
+   "max": 25,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "M",
+   "note": "2026 solved so FY2026E adj. EPS ~ -$0.75 (estimate from TTM EPS -$0.73 and Q4 loss guide, S7/S8): fares rose to pass on fuel. 2027: fares broadly hold while fuel eases ~4% (assumption).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:yield_g"
+   ],
+   "aa_default": {
+    "fy26": 12.036,
+    "fy27": 3.0
+   }
+  },
+  {
+   "id": "corp.cargo25",
+   "kind": "fact_or_estimate",
+   "label": "Cargo revenue, FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cargo25"
+   ],
+   "aa_default": 839
+  },
+  {
+   "id": "corp.cargo_g",
+   "kind": "fact_or_estimate",
+   "label": "Cargo revenue growth",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -20,
+   "max": 20,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cargo_g"
+   ],
+   "aa_default": {
+    "fy26": 3.0,
+    "fy27": 3.0
+   }
+  },
+  {
+   "id": "corp.other25",
+   "kind": "fact_or_estimate",
+   "label": "Other revenue (mostly AAdvantage), FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:other25"
+   ],
+   "aa_default": 4151
+  },
+  {
+   "id": "corp.other_g",
+   "kind": "fact_or_estimate",
+   "label": "Other revenue growth",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -10,
+   "max": 20,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Loyalty/co-brand growth; new Citi co-brand deal from 2026.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:other_g"
+   ],
+   "aa_default": {
+    "fy26": 8.0,
+    "fy27": 6.0
+   }
+  },
+  {
+   "id": "corp.gpa25",
+   "kind": "fact_or_estimate",
+   "label": "Fuel burn, FY2025 (gallons per 1,000 ASM)",
+   "unit": "gal/k ASM",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "4,488m gallons / 299,411m ASMs (S1 p.2).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:gpa25"
+   ],
+   "aa_default": 14.9894
+  },
+  {
+   "id": "corp.fuel_eff",
+   "kind": "fact_or_estimate",
+   "label": "Fuel efficiency gain (fleet renewal, gauge)",
+   "unit": "%/yr",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -2,
+   "max": 4,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:fuel_eff"
+   ],
+   "aa_default": {
+    "fy26": 1.0,
+    "fy27": 1.0
+   }
+  },
+  {
+   "id": "corp.ben_load",
+   "kind": "fact_or_estimate",
+   "label": "Benefits, pensions and payroll taxes, as % of pay",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 30,
+   "step": 0.1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "M",
+   "note": "2025 solved so salaries, wages and benefits = $17,566M reported (S1 p.1).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:ben_load"
+   ],
+   "aa_default": {
+    "fy25": 12.268,
+    "fy26": 12.5,
+    "fy27": 12.7
+   }
+  },
+  {
+   "id": "corp.ps_rate",
+   "kind": "fact_or_estimate",
+   "label": "Employee profit sharing, % of pre-tax income (ex special items)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 20,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Simplified version of AA's plan. Any profit gain, including IT savings, leaks partly to employees through this.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:ps_rate"
+   ],
+   "aa_default": {
+    "fy25": 5.0,
+    "fy26": 5.0,
+    "fy27": 5.0
+   }
+  },
+  {
+   "id": "corp.ac25",
+   "kind": "fact_or_estimate",
+   "label": "Mainline aircraft, year-end 2025",
+   "unit": "#",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.2: 1,013 mainline.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:ac25"
+   ],
+   "aa_default": 1013
+  },
+  {
+   "id": "corp.ac_add",
+   "kind": "fact_or_estimate",
+   "label": "Net mainline aircraft added",
+   "unit": "#",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -50,
+   "max": 80,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Deliveries less retirements; placeholder.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:ac_add"
+   ],
+   "aa_default": {
+    "fy26": 25,
+    "fy27": 25
+   }
+  },
+  {
+   "id": "corp.lease_n",
+   "kind": "fact_or_estimate",
+   "label": "Operating-leased mainline aircraft",
+   "unit": "#",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 150,
+   "max": 500,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Estimate. Aircraft rent $1,220M (S1 p.1) / leased count gives the implied rate.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:lease_n"
+   ],
+   "aa_default": {
+    "fy25": 320,
+    "fy26": 320,
+    "fy27": 320
+   }
+  },
+  {
+   "id": "corp.lease_rate25",
+   "kind": "fact_or_estimate",
+   "label": "Average monthly lease rate per aircraft, FY2025",
+   "unit": "$k/month",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "M",
+   "note": "Solved: $1,220M / leased aircraft / 12.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:lease_rate25"
+   ],
+   "aa_default": 317.71
+  },
+  {
+   "id": "corp.lease_g",
+   "kind": "fact_or_estimate",
+   "label": "Change in average lease rate (renewals, new leases)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -10,
+   "max": 25,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Tight aircraft market keeps lease rates rising.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:lease_g"
+   ],
+   "aa_default": {
+    "fy26": 3.0,
+    "fy27": 3.0
+   }
+  },
+  {
+   "id": "corp.dpa25",
+   "kind": "fact_or_estimate",
+   "label": "Depreciation per owned mainline aircraft, FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "L",
+   "note": "Solved: ($1,890M mainline D&A less non-aircraft D&A) / owned aircraft.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:dpa25"
+   ],
+   "aa_default": 2.0058
+  },
+  {
+   "id": "corp.dpa_g",
+   "kind": "fact_or_estimate",
+   "label": "Change in depreciation per owned aircraft (newer, costlier fleet)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -5,
+   "max": 10,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:dpa_g"
+   ],
+   "aa_default": {
+    "fy26": 2.0,
+    "fy27": 2.0
+   }
+  },
+  {
+   "id": "corp.oda25",
+   "kind": "fact_or_estimate",
+   "label": "Non-aircraft D&A (ground, facilities, IT, software), FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Estimate. IT capex savings reduce this line over time.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oda25"
+   ],
+   "aa_default": 500
+  },
+  {
+   "id": "corp.oda_g",
+   "kind": "fact_or_estimate",
+   "label": "Growth in non-aircraft D&A",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -10,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oda_g"
+   ],
+   "aa_default": {
+    "fy26": 3.0,
+    "fy27": 3.0
+   }
+  },
+  {
+   "id": "corp.mxr25",
+   "kind": "fact_or_estimate",
+   "label": "Maintenance cost per mainline aircraft, FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "H",
+   "note": "$3,844M (S1 p.1) / 1,013 aircraft.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:mxr25"
+   ],
+   "aa_default": 3.7947
+  },
+  {
+   "id": "corp.mx_infl",
+   "kind": "fact_or_estimate",
+   "label": "Maintenance cost inflation per aircraft (engine shop visits, parts)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -5,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:mx_infl"
+   ],
+   "aa_default": {
+    "fy26": 4.0,
+    "fy27": 4.0
+   }
+  },
+  {
+   "id": "corp.dep25",
+   "kind": "fact_or_estimate",
+   "label": "Mainline departures, FY2025",
+   "unit": "k",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.2: 1,175k.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:dep25"
+   ],
+   "aa_default": 1175
+  },
+  {
+   "id": "corp.gauge_g",
+   "kind": "fact_or_estimate",
+   "label": "Gauge growth (seats per departure)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -5,
+   "max": 5,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Departures grow with ASMs less gauge.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:gauge_g"
+   ],
+   "aa_default": {
+    "fy26": 1.0,
+    "fy27": 1.0
+   }
+  },
+  {
+   "id": "corp.aptr25",
+   "kind": "fact_or_estimate",
+   "label": "Airport rents and landing fees per departure, FY2025",
+   "unit": "$",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "H",
+   "note": "$3,476M (S1 p.1) / departures.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:aptr25"
+   ],
+   "aa_default": 2958.3
+  },
+  {
+   "id": "corp.apt_infl",
+   "kind": "fact_or_estimate",
+   "label": "Airport rate inflation (terminal rebuilds at DFW, ORD, LAX, JFK)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -5,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:apt_infl"
+   ],
+   "aa_default": {
+    "fy26": 5.0,
+    "fy27": 5.0
+   }
+  },
+  {
+   "id": "corp.sell_pct",
+   "kind": "fact_or_estimate",
+   "label": "Selling expenses (distribution, cards, commissions), % of passenger revenue",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 2,
+   "max": 7,
+   "step": 0.05,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "H",
+   "note": "$1,997M / $49,643M (S1 p.1).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:sell_pct"
+   ],
+   "aa_default": {
+    "fy25": 4.023,
+    "fy26": 4.0,
+    "fy27": 4.0
+   }
+  },
+  {
+   "id": "corp.reg25",
+   "kind": "fact_or_estimate",
+   "label": "Regional operating expenses (ex D&A), FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.1.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:reg25"
+   ],
+   "aa_default": 5119
+  },
+  {
+   "id": "corp.reg_da25",
+   "kind": "fact_or_estimate",
+   "label": "Regional D&A, FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.1.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:reg_da25"
+   ],
+   "aa_default": 329
+  },
+  {
+   "id": "corp.reg_cap_g",
+   "kind": "fact_or_estimate",
+   "label": "Regional capacity growth",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -15,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:reg_cap_g"
+   ],
+   "aa_default": {
+    "fy26": 3.0,
+    "fy27": 2.0
+   }
+  },
+  {
+   "id": "corp.reg_infl",
+   "kind": "fact_or_estimate",
+   "label": "Regional unit cost inflation (CPA rates, regional pilot pay)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -5,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:reg_infl"
+   ],
+   "aa_default": {
+    "fy26": 3.0,
+    "fy27": 3.0
+   }
+  },
+  {
+   "id": "corp.oth25",
+   "kind": "fact_or_estimate",
+   "label": "Other operating expenses (incl. most CIO IT non-labor spend), FY2025",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.1. Catering, ground handling, crew hotels, IT, insurance, etc.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oth25"
+   ],
+   "aa_default": 6848
+  },
+  {
+   "id": "corp.oth_vol",
+   "kind": "fact_or_estimate",
+   "label": "Volume elasticity of other opex to ASMs",
+   "unit": "x",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 1.5,
+   "step": 0.05,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oth_vol"
+   ],
+   "aa_default": {
+    "fy26": 0.6,
+    "fy27": 0.6
+   }
+  },
+  {
+   "id": "corp.oth_prem",
+   "kind": "fact_or_estimate",
+   "label": "Other opex inflation premium over CPI",
+   "unit": "pts",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -3,
+   "max": 5,
+   "step": 0.25,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oth_prem"
+   ],
+   "aa_default": {
+    "fy26": 1.0,
+    "fy27": 1.0
+   }
+  },
+  {
+   "id": "corp.si",
+   "kind": "fact_or_estimate",
+   "label": "Special items (operating), pre-tax",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -500,
+   "max": 2000,
+   "step": 10,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "FY2025: mainline $159M + regional $3M (S1 p.1). Projections assume none.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:si"
+   ],
+   "aa_default": {
+    "fy25": 162,
+    "fy26": 0,
+    "fy27": 0
+   }
+  },
+  {
+   "id": "corp.debt_open",
+   "kind": "fact_or_estimate",
+   "label": "Debt and finance leases, year-end 2024",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "Current $5,322M + noncurrent $25,154M (S1 p.9).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:debt_open"
+   ],
+   "aa_default": 30476
+  },
+  {
+   "id": "corp.debt_chg",
+   "kind": "fact_or_estimate",
+   "label": "Net debt issuance / (repayment)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -5000,
+   "max": 3000,
+   "step": 100,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "M",
+   "note": "2025 actual gives $29,007M at YE (S1 p.10). 2026-27: deleveraging assumed paused (refinance maturities) given negative FCF in the fuel shock.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:debt_chg"
+   ],
+   "aa_default": {
+    "fy25": -1469,
+    "fy26": 0,
+    "fy27": -500
+   }
+  },
+  {
+   "id": "corp.fix_share",
+   "kind": "fact_or_estimate",
+   "label": "Fixed-rate share of debt",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 100,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:fix_share"
+   ],
+   "aa_default": {
+    "fy25": 75.0,
+    "fy26": 75.0,
+    "fy27": 75.0
+   }
+  },
+  {
+   "id": "corp.fix_rate",
+   "kind": "fact_or_estimate",
+   "label": "Average coupon on fixed-rate debt",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 2,
+   "max": 10,
+   "step": 0.05,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "M",
+   "note": "2025 solved so interest expense = $1,716M (S1 p.1).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:fix_rate"
+   ],
+   "aa_default": {
+    "fy25": 5.376,
+    "fy26": 5.3,
+    "fy27": 5.2
+   }
+  },
+  {
+   "id": "corp.flt_spread",
+   "kind": "fact_or_estimate",
+   "label": "Floating-rate debt spread over SOFR",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 6,
+   "step": 0.25,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:flt_spread"
+   ],
+   "aa_default": {
+    "fy25": 2.75,
+    "fy26": 2.75,
+    "fy27": 2.75
+   }
+  },
+  {
+   "id": "corp.cash_open",
+   "kind": "fact_or_estimate",
+   "label": "Cash and short-term investments, year-end 2024",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "$804M + $6,180M (S1 p.9).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cash_open"
+   ],
+   "aa_default": 6984
+  },
+  {
+   "id": "corp.cash_spread",
+   "kind": "fact_or_estimate",
+   "label": "Yield on cash vs SOFR (earned on opening balance)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -3,
+   "max": 3,
+   "step": 0.05,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "L",
+   "note": "2025 solved so interest income = $357M (S1 p.1).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cash_spread"
+   ],
+   "aa_default": {
+    "fy25": 0.912,
+    "fy26": 0.912,
+    "fy27": 0.912
+   }
+  },
+  {
+   "id": "corp.oth_inc",
+   "kind": "fact_or_estimate",
+   "label": "Other nonoperating income, net (incl. pension)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -500,
+   "max": 500,
+   "step": 10,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "M",
+   "note": "2026 guide: total adj. nonoperating expense ~ $1.25B (S2).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oth_inc"
+   ],
+   "aa_default": {
+    "fy25": 82,
+    "fy26": 50,
+    "fy27": 50
+   }
+  },
+  {
+   "id": "corp.tax",
+   "kind": "fact_or_estimate",
+   "label": "Book tax rate (applied to adjusted pre-tax income)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 40,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "FY2025 adj. effective rate 32.7% ($115M/$352M); 2026 guide 25% (S2).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:tax"
+   ],
+   "aa_default": {
+    "fy25": 32.67,
+    "fy26": 25,
+    "fy27": 25
+   }
+  },
+  {
+   "id": "corp.cash_tax",
+   "kind": "fact_or_estimate",
+   "label": "Cash tax rate (NOLs shield most cash tax)",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 30,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cash_tax"
+   ],
+   "aa_default": {
+    "fy25": 0,
+    "fy26": 5,
+    "fy27": 5
+   }
+  },
+  {
+   "id": "corp.shares",
+   "kind": "fact_or_estimate",
+   "label": "Diluted shares (weighted average)",
+   "unit": "m",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 600,
+   "max": 750,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "FY2025 661.1m diluted (S1 p.1). Small creep from stock comp.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:shares"
+   ],
+   "aa_default": {
+    "fy25": 661.052,
+    "fy26": 665,
+    "fy27": 668
+   }
+  },
+  {
+   "id": "corp.buyback",
+   "kind": "fact_or_estimate",
+   "label": "Share buybacks",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 2000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Shares retired = buyback / current share price.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:buyback"
+   ],
+   "aa_default": {
+    "fy25": 0,
+    "fy26": 0,
+    "fy27": 0
+   }
+  },
+  {
+   "id": "corp.capex",
+   "kind": "fact_or_estimate",
+   "label": "Total capital expenditure (incl. ~$124M CIO IT capex)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 2000,
+   "max": 7000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "FY2025 $3,779M (S1 p.6). Jan 2026 guide: 2026 ~$4.0-4.5B, 2027+ ~$4.5B (S3); not updated for the fuel shock.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:capex"
+   ],
+   "aa_default": {
+    "fy25": 3779,
+    "fy26": 4250,
+    "fy27": 4500
+   }
+  },
+  {
+   "id": "corp.slb",
+   "kind": "fact_or_estimate",
+   "label": "Sale-leaseback and asset sale proceeds",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 1500,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:slb"
+   ],
+   "aa_default": {
+    "fy25": 344,
+    "fy26": 300,
+    "fy27": 300
+   }
+  },
+  {
+   "id": "corp.wc",
+   "kind": "fact_or_estimate",
+   "label": "Working capital and other operating cash items (air traffic liability growth, non-cash charges)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -2000,
+   "max": 3000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "L",
+   "note": "2025 solved so operating cash flow = $3,099M (S1 p.6). 2026-27 assumption near the 2025 level.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:wc"
+   ],
+   "aa_default": {
+    "fy26": 900,
+    "fy27": 900
+   }
+  },
+  {
+   "id": "corp.oth_inv",
+   "kind": "fact_or_estimate",
+   "label": "Other investing flows, net",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -1000,
+   "max": 1000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "L",
+   "note": "2025 solved so FCF = -$83M (S1 p.7).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oth_inv"
+   ],
+   "aa_default": {
+    "fy26": 0,
+    "fy27": 0
+   }
+  },
+  {
+   "id": "corp.oth_fin",
+   "kind": "fact_or_estimate",
+   "label": "Other financing flows (fuel financing, other)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": -2000,
+   "max": 2000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "L",
+   "note": "2025 solved so cash and ST investments = $5,836M (S1 p.9).",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oth_fin"
+   ],
+   "aa_default": {
+    "fy26": 0,
+    "fy27": 0
+   }
+  },
+  {
+   "id": "corp.oplease",
+   "kind": "fact_or_estimate",
+   "label": "Operating lease liabilities, year-end",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 3000,
+   "max": 10000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.10.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:oplease"
+   ],
+   "aa_default": {
+    "fy25": 6963,
+    "fy26": 6900,
+    "fy27": 6900
+   }
+  },
+  {
+   "id": "corp.pension",
+   "kind": "fact_or_estimate",
+   "label": "Pension obligations, year-end",
+   "unit": "$M",
+   "type": "number",
+   "dims": [
+    "iyear"
+   ],
+   "min": 0,
+   "max": 3000,
+   "step": 50,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "S1 p.10.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:pension"
+   ],
+   "aa_default": {
+    "fy25": 539,
+    "fy26": 500,
+    "fy27": 450
+   }
+  },
+  {
+   "id": "corp.price_now",
+   "kind": "fact_or_estimate",
+   "label": "Current AAL share price (reference)",
+   "unit": "$",
+   "type": "number",
+   "dims": [],
+   "min": 3,
+   "max": 40,
+   "step": 0.25,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Close on 20 Nov 2026 (S7). Refresh before the demo.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:price_now"
+   ],
+   "aa_default": 11.9
+  },
+  {
+   "id": "corp.pe",
+   "kind": "fact_or_estimate",
+   "label": "P/E multiple on adjusted EPS",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 2,
+   "max": 30,
+   "step": 0.25,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Sector-normal ~7x (US network carriers ~5-10x). Off by default (weight 0) because FY2026-27 EPS is depressed by the fuel shock.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:pe"
+   ],
+   "aa_default": 7.0
+  },
+  {
+   "id": "corp.ev_mult",
+   "kind": "fact_or_estimate",
+   "label": "EV / EBITDAR multiple (EV includes leases and pension)",
+   "unit": "x",
+   "type": "number",
+   "dims": [],
+   "min": 3,
+   "max": 10,
+   "step": 0.25,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "calibrated",
+   "confidence": "M",
+   "note": "Default is market-implied: (current price x shares + FY2027E net debt) / FY2027E base EBITDAR, so the default case reproduces $11.90. Elevated vs a normal ~5-6x because the market looks through trough 2026-27 earnings.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:ev_mult"
+   ],
+   "aa_default": 7.393
+  },
+  {
+   "id": "corp.w_pe",
+   "kind": "fact_or_estimate",
+   "label": "Weight on P/E method in blended price",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 100,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "0 = EV/EBITDAR only (default while earnings are near zero). P/E is ignored automatically when EPS is negative.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:w_pe"
+   ],
+   "aa_default": 0
+  },
+  {
+   "id": "corp.it_on",
+   "kind": "fact_or_estimate",
+   "label": "Include IT program in the 'with IT' case (1 = yes)",
+   "unit": "0/1",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "H",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:it_on"
+   ],
+   "aa_default": 1
+  },
+  {
+   "id": "corp.it_risk",
+   "kind": "fact_or_estimate",
+   "label": "Risk-adjust savings with the lever model's confidence weights (1 = yes)",
+   "unit": "0/1",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "H",
+   "note": "1 scales gross savings so 2027 net matches the lever model's risk-adjusted net.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:it_risk"
+   ],
+   "aa_default": 0
+  },
+  {
+   "id": "corp.it_ot_si",
+   "kind": "fact_or_estimate",
+   "label": "Report IT one-time costs as special items (1 = excluded from adjusted EPS)",
+   "unit": "0/1",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "0 is conservative: transition costs reduce adjusted EPS in 2027.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:it_ot_si"
+   ],
+   "aa_default": 0
+  },
+  {
+   "id": "corp.it_swb",
+   "kind": "fact_or_estimate",
+   "label": "Share of IT opex savings landing in salaries, wages and benefits",
+   "unit": "%",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 100,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "levers",
+   "confidence": "M",
+   "note": "Rest lands in 'Other' opex. Moves nothing at EBITDA level; changes the P&L line.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:it_swb"
+   ],
+   "aa_default": 30
+  },
+  {
+   "id": "corp.cust_opex",
+   "kind": "fact_or_estimate",
+   "label": "Custom: 2027 IT opex savings (scenario 6)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 400,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cust_opex"
+   ],
+   "aa_default": 100
+  },
+  {
+   "id": "corp.cust_capex",
+   "kind": "fact_or_estimate",
+   "label": "Custom: 2027 IT capex savings (scenario 6)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 100,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cust_capex"
+   ],
+   "aa_default": 10
+  },
+  {
+   "id": "corp.cust_ot",
+   "kind": "fact_or_estimate",
+   "label": "Custom: 2027 one-time costs (scenario 6)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 200,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cust_ot"
+   ],
+   "aa_default": 25
+  },
+  {
+   "id": "corp.cust_opex28",
+   "kind": "fact_or_estimate",
+   "label": "Custom: 2028 run-rate IT opex savings (scenario 6)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 500,
+   "step": 5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cust_opex28"
+   ],
+   "aa_default": 150
+  },
+  {
+   "id": "corp.cust_capex28",
+   "kind": "fact_or_estimate",
+   "label": "Custom: 2028 run-rate IT capex savings (scenario 6)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": 0,
+   "max": 100,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:cust_capex28"
+   ],
+   "aa_default": 15
+  },
+  {
+   "id": "corp.lab_hc25",
+   "kind": "fact_or_estimate",
+   "label": "Headcount FY2025 by labor group",
+   "unit": "FTE",
+   "type": "number",
+   "dims": [
+    "lgroup"
+   ],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Labor split by group is an analyst estimate.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:*_hc25"
+   ],
+   "aa_default": {
+    "pilots": 16000,
+    "flight_attendants": 27000,
+    "mechanics": 30000,
+    "airport_frontline": 18000,
+    "management": 15000
+   }
+  },
+  {
+   "id": "corp.lab_rate25",
+   "kind": "fact_or_estimate",
+   "label": "Average pay per FTE FY2025 (before benefits load)",
+   "unit": "$k",
+   "type": "number",
+   "dims": [
+    "lgroup"
+   ],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "L",
+   "note": "Labor split by group is an analyst estimate.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:*_rate25"
+   ],
+   "aa_default": {
+    "pilots": 330,
+    "flight_attendants": 105,
+    "mechanics": 112,
+    "airport_frontline": 85,
+    "management": 175
+   }
+  },
+  {
+   "id": "corp.lab_hc_g",
+   "kind": "fact_or_estimate",
+   "label": "Headcount growth by labor group",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "lgroup",
+    "iyear"
+   ],
+   "min": -15,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Labor split by group is an analyst estimate.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:*_hc_g"
+   ],
+   "aa_default": {
+    "pilots,fy26": 3.0,
+    "pilots,fy27": 2.0,
+    "flight_attendants,fy26": 3.0,
+    "flight_attendants,fy27": 2.0,
+    "mechanics,fy26": 2.0,
+    "mechanics,fy27": 2.0,
+    "airport_frontline,fy26": 1.0,
+    "airport_frontline,fy27": 1.0,
+    "management,fy26": 0.0,
+    "management,fy27": 0.0
+   }
+  },
+  {
+   "id": "corp.lab_wage_g",
+   "kind": "fact_or_estimate",
+   "label": "Pay-rate increase by labor group",
+   "unit": "%",
+   "type": "number",
+   "dims": [
+    "lgroup",
+    "iyear"
+   ],
+   "min": -5,
+   "max": 15,
+   "step": 0.5,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "slider",
+    "hero": false
+   },
+   "source": "assumption",
+   "confidence": "M",
+   "note": "Labor split by group is an analyst estimate.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:*_wage_g"
+   ],
+   "aa_default": {
+    "pilots,fy26": 4.0,
+    "pilots,fy27": 4.0,
+    "flight_attendants,fy26": 3.5,
+    "flight_attendants,fy27": 3.5,
+    "mechanics,fy26": 4.0,
+    "mechanics,fy27": 4.0,
+    "airport_frontline,fy26": 3.5,
+    "airport_frontline,fy27": 3.0,
+    "management,fy26": 3.0,
+    "management,fy27": 3.0
+   }
+  },
+  {
+   "id": "corp.it_override",
+   "kind": "fact_or_estimate",
+   "label": "Use custom IT program values instead of the live lever model (1 = yes)",
+   "unit": "0/1",
+   "type": "bool",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "toggle",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "H",
+   "note": "Replaces corporate it_scen = 6 'Custom'. Scenario choice now comes from the active scenario.",
+   "scenario_varies": false,
+   "legacy": [
+    "corporate:it_scen"
+   ],
+   "aa_default": 0
+  },
+  {
+   "id": "corp.it_swb_mode",
+   "kind": "fact_or_estimate",
+   "label": "IT labor share of opex savings: 1 = derived from lever pool effects, 0 = manual %",
+   "unit": "enum",
+   "type": "enum",
+   "dims": [],
+   "min": 0,
+   "max": 1,
+   "step": 1,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "driver",
+   "ui": {
+    "control": "segmented",
+    "hero": false
+   },
+   "source": "spec",
+   "confidence": "M",
+   "note": "Only moves savings between P&L lines; EBITDA and EPS unaffected.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 1
+  },
+  {
+   "id": "corp.cal_ocf25",
+   "kind": "fact_or_estimate",
+   "label": "FY2025 reported operating cash flow (calibration)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "Solves the FY2025 working-capital / other investing / other financing plugs.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 3099
+  },
+  {
+   "id": "corp.cal_fcf25",
+   "kind": "fact_or_estimate",
+   "label": "FY2025 reported free cash flow (calibration)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "Solves the FY2025 working-capital / other investing / other financing plugs.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": -83
+  },
+  {
+   "id": "corp.cal_cash25",
+   "kind": "fact_or_estimate",
+   "label": "FY2025 reported year-end cash & ST investments (calibration)",
+   "unit": "$M",
+   "type": "number",
+   "dims": [],
+   "min": null,
+   "max": null,
+   "step": null,
+   "group": "Corporate drivers",
+   "layer": "corporate",
+   "role": "calibration",
+   "ui": {
+    "control": "number",
+    "hero": false
+   },
+   "source": "filing",
+   "confidence": "H",
+   "note": "Solves the FY2025 working-capital / other investing / other financing plugs.",
+   "scenario_varies": false,
+   "legacy": null,
+   "aa_default": 5836
+  }
+ ]
+}

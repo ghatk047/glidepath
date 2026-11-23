@@ -1,0 +1,229 @@
+{
+ "note": "Inconsistencies found between baseline v0.1, levers v0.3 and corporate v0.1, and how the unified model resolves each. Impact = unified default minus v0.3 for scenario C Balanced unless stated. Parity mode (reference/run_tests.py) reproduces the v0.3 numbers exactly by pinning the old values.",
+ "items": [
+  {
+   "id": "R01",
+   "area": "Units",
+   "severity": "medium",
+   "finding": "Baseline stores money in $; levers and corporate in $M.",
+   "resolution": "Engine works in $M everywhere. Seed converts baseline lines on load.",
+   "impact": "none"
+  },
+  {
+   "id": "R02",
+   "area": "Pools",
+   "severity": "high",
+   "finding": "Levers v0.3 hard-codes pool sizes on its Baseline tab ('aligned to cost-baseline v0.1') instead of reading the 415 lines. Small drifts: US labour 398.10 vs 398.01, SI 121.18 vs 121.24, DC 37.00 vs 36.99, network 31.50 vs 31.54, other 8.00 vs 8.02. Any edit to a baseline line would not reach the levers.",
+   "resolution": "Pools are SUMs of line items (base.pool_outlay). Sub-pool splits the levers need (Microsoft share, maintenance vs colo) are inputs expressed as shares of the pool.",
+   "impact": "net +$0.1M"
+  },
+  {
+   "id": "R03",
+   "area": "Vendors",
+   "severity": "medium",
+   "finding": "Preferred SI book differs: baseline Vendors tab DXC 25 / Cognizant 18 / IBM 15 / #6 12 / Coforge 8 / Infosys 5 = $83M; levers DXC 25 / IBM 18 / Cognizant 15 / #6 14 / Coforge 8 / Infosys 5 = $85M. Long tail $38.2M vs $36.2M.",
+   "resolution": "Baseline is the system of record for spend: vendor.book uses the baseline figures. DXC and Infosys are user figures in both.",
+   "impact": "lever 7 +$0.05M"
+  },
+  {
+   "id": "R04",
+   "area": "Opex vs capex",
+   "severity": "high",
+   "finding": "Levers use flat capex shares per lever (US labour 17%, SI 10%, end-user 60%, GCC 0%) while the baseline has line-level capex (US 14.9%, GCC 14.3%, SI 14.1%, end-user 67.5%, DC 62.4%; total $123.9M).",
+   "resolution": "Each lever's saving is split by the pools it touches (lev.eff) and each pool's capex share from the lines. Lever 12 keeps its explicit rule (refresh deferral is capex, TPM and colo are opex).",
+   "impact": "CY27 opex savings -$2.8M, capex +$2.9M; EBITDA -$2.7M; EPS -$0.003; share price -$0.03. Net outlay unchanged."
+  },
+  {
+   "id": "R05",
+   "area": "DC & hardware",
+   "severity": "low",
+   "finding": "Hardware capex outlay: levers $25.0M vs baseline capex lines $23.1M.",
+   "resolution": "Taken from baseline lines (lv.dc_capex).",
+   "impact": "lever 12 -$0.15M run-rate"
+  },
+  {
+   "id": "R06",
+   "area": "Contractor rates",
+   "severity": "low",
+   "finding": "Billable hours: baseline 1,880 (H) vs levers 1,900.",
+   "resolution": "1,880 hours with hourly rates restated ($101.06 onshore, $31.38 offshore) so cost per FTE is unchanged ($0.19M, $0.059M).",
+   "impact": "none"
+  },
+  {
+   "id": "R07",
+   "area": "Workforce",
+   "severity": "low",
+   "finding": "US IT attrition: levers 9% vs baseline 8%.",
+   "resolution": "9% kept: only the levers use it (lever 5). Baseline value was not used in any formula.",
+   "impact": "none"
+  },
+  {
+   "id": "R08",
+   "area": "Duplicate inputs",
+   "severity": "medium",
+   "finding": "IT capex life appears twice (levers dep_life, corporate it_life); the CIO target appears three times (levers target, levers Org_Map total, baseline Assumptions).",
+   "resolution": "One variable each: g.it_dep_life, g.target_net (VP split reads res.target).",
+   "impact": "none"
+  },
+  {
+   "id": "R09",
+   "area": "VP targets",
+   "severity": "high",
+   "finding": "Two different VP target sets circulate: baseline 17.1 / 15.2 / 11.4 / 56.2 (chargeback off) and levers 24.6 / 22.7 / 15.2 / 37.6 (chargeback on). Same proportional rule, different allocation basis.",
+   "resolution": "One formula with g.chargeback_on. Default on (user: shared infrastructure credited back by usage). Both sets are reproduced in the parity tests.",
+   "impact": "none (documented)"
+  },
+  {
+   "id": "R10",
+   "area": "Org map hand-off",
+   "severity": "medium",
+   "finding": "org_map_used.json labels proportional targets as 'equal_target_musd', and the levers read VP shares from a 4-decimal rounded JSON copy of the baseline Org_Map, so org edits in one model did not reach the other.",
+   "resolution": "VP shares computed live from line items x org.dom_share.",
+   "impact": "VP figures move by < $0.05M"
+  },
+  {
+   "id": "R11",
+   "area": "VP allocation",
+   "severity": "medium",
+   "finding": "Each lever is allocated to VPs by one key, even when it moves cost between pools (relocation adds GCC cost but is allocated on the SI split). The 'Apps' key is an SI-split proxy.",
+   "resolution": "Kept as default for continuity (g.vp_alloc_method = 1). Method 2 allocates each pool effect by that pool's ownership.",
+   "impact": "none by default"
+  },
+  {
+   "id": "R12",
+   "area": "Corporate link",
+   "severity": "high",
+   "finding": "Corporate IT inputs are static copies of pnl_feed. risk27 is a stale hard-code computed with all one-time costs on IT (ot_out = 0). In the spec JSON net27 holds company cash (99.63) while the workbook label says IT outlay and its feed mapping uses cash27 (119.16).",
+   "resolution": "Live link: it.* nodes read pnl.* for the active scenario. Risk factor = confidence-weighted gross / gross, computed live. Scenario picker it_scen replaced by the active scenario plus corp.it_override for custom values.",
+   "impact": "none at defaults"
+  },
+  {
+   "id": "R13",
+   "area": "P&L line split",
+   "severity": "low",
+   "finding": "Corporate assumes 30% of IT opex savings land in salaries, wages and benefits. From the lever pool effects the share is 12% in C: SI and contractor savings are not AA employee cost, and GCC backfill adds employee cost.",
+   "resolution": "Derived by default (corp.it_swb_mode = 1); manual 30% still available.",
+   "impact": "moves ~$22M from SWB to other opex in the P&L; EBITDA and EPS unchanged"
+  },
+  {
+   "id": "R14",
+   "area": "Sign convention",
+   "severity": "low",
+   "finding": "pnl_feed one-time costs are negative; corporate ot27 is positive.",
+   "resolution": "All savings and costs are positive magnitudes; P&L nodes apply the sign.",
+   "impact": "none"
+  },
+  {
+   "id": "R15",
+   "area": "One-time timing",
+   "severity": "low",
+   "finding": "ot_exp below 100% made the non-expensed share disappear from both P&L and cash.",
+   "resolution": "Renamed g.ot_in_year: the share not incurred in CY27 is treated as pre-funded in CY26, outside both tests. Default 100%.",
+   "impact": "none"
+  },
+  {
+   "id": "R16",
+   "area": "Hidden constants",
+   "severity": "medium",
+   "finding": "17 numbers were hard-coded inside lever formulas (one-time cost % for levers 1, 2, 7, 8, 10, 12-16; relocation severance 0.5x; hiring cost $10K; AI setup $1M; FinOps setup $0.5M; TPM saving 40%; app-retirement split 50% software / 30% cloud).",
+   "resolution": "All promoted to inputs (kind = estimate).",
+   "impact": "none"
+  },
+  {
+   "id": "R17",
+   "area": "Lever overlap",
+   "severity": "low",
+   "finding": "Lever 16 (invoice audit) runs on pre-lever DC, network and end-user pools and includes locked platform fees. Lever 17 (cost-increase containment) applies avoided growth to the full pre-lever pools.",
+   "resolution": "Kept for parity, documented. Invoice audit legitimately covers locked contracts. Lever 17's overstatement on already-removed spend roughly offsets the understatement from measuring cuts in CY26 dollars (a cut also avoids that spend's CY27 growth). A residual-basis option is a candidate for v1.1.",
+   "impact": "< $1M either way"
+  },
+  {
+   "id": "R18",
+   "area": "Contractor headcount",
+   "severity": "high",
+   "finding": "Baseline scales only long-tail and staff-aug lines with contractor headcount; levers cost all 800 contractors at T&M rates and treat managed services as the residual. Large headcount changes can push managed services negative. The baseline Vendors tab also models ~901 preferred-SI FTEs (incl. offshore delivery) against '800 contractors'.",
+   "resolution": "Range narrowed to 500-1,100 and validation rule VR05 (managed services >= 0). Interpretation: 800 = badged contractors; SI delivery-centre staff are not counted. Flag for AA validation.",
+   "impact": "none at defaults"
+  },
+  {
+   "id": "R19",
+   "area": "Lever hooks",
+   "severity": "medium",
+   "finding": "Baseline 'Lever hook' column is free text (150+ variants) not linked to the 17 levers.",
+   "resolution": "Rule-based mapping to lever ids stored on each line (line.lever_ids, reviewable; table line_item_lever). Informational: drives the 'which lines does this lever touch' view, not the math.",
+   "impact": "none"
+  },
+  {
+   "id": "R20",
+   "area": "Company facts",
+   "severity": "low",
+   "finding": "Flight attendants 28,000 (baseline Assumptions) vs 27,000 (corporate).",
+   "resolution": "Corporate 27,000 drives the P&L; baseline figure is reference only.",
+   "impact": "none"
+  },
+  {
+   "id": "R21",
+   "area": "Benefits",
+   "severity": "info",
+   "finding": "US IT burden 22% of base (baseline labor model) vs corporate benefits load 12.3% of pay (company-wide, calibrated to the 10-K).",
+   "resolution": "Different scopes; both kept.",
+   "impact": "none"
+  },
+  {
+   "id": "R22",
+   "area": "CY28 view",
+   "severity": "info",
+   "finding": "Corporate FY2028 is a run-rate bridge on a constant FY2027 base, not a modelled year.",
+   "resolution": "Kept and labelled illustrative (br.*28).",
+   "impact": "none"
+  },
+  {
+   "id": "R23",
+   "area": "Defaults",
+   "severity": "low",
+   "finding": "Head start: build.py code says 3 months, final.json and the slider spec say 1.",
+   "resolution": "Slider spec (1) is authoritative.",
+   "impact": "none"
+  },
+  {
+   "id": "R24",
+   "area": "GCC size",
+   "severity": "info",
+   "finding": "Fact base cites ~400 GCC staff (Reuters, May 2026); user says ~900.",
+   "resolution": "User figure (already in baseline).",
+   "impact": "none"
+  },
+  {
+   "id": "R25",
+   "area": "Lever library text",
+   "severity": "low",
+   "finding": "Lever 12 text mentions a 'depreciation toggle' that no longer exists; lever 5 cites a $405M US pool (now $398M).",
+   "resolution": "Flag for copy cleanup when the library text is shown in the app.",
+   "impact": "none"
+  },
+  {
+   "id": "R26",
+   "area": "Line scaling",
+   "severity": "medium",
+   "finding": "Baseline lines were sized at 3,000 / 900 / 800 heads but the lever model drives cost per head from the same pools; changing headcount in one model did not change the other.",
+   "resolution": "Lines carry a scale driver (us / gcc / ctr / none); hc.* changes scale those lines, and pools, unit costs and levers follow.",
+   "impact": "none at defaults"
+  },
+  {
+   "id": "R27",
+   "area": "Addressability",
+   "severity": "info",
+   "finding": "Lever 15 uses $31.4M 'partly addressable' platform spend (gross) while the baseline's addressable view weights it at 35% ($11.0M).",
+   "resolution": "Both are right for their use: lever 15 applies its % to the non-locked gross; VP targets use weighted addressable. Derived from the same lines.",
+   "impact": "none"
+  },
+  {
+   "id": "R28",
+   "area": "Labels",
+   "severity": "info",
+   "finding": "Rate_Cut_Reality takeaway text cites a ~$138M bar; the current bar is $143.0M.",
+   "resolution": "Text-only; bar is computed.",
+   "impact": "none"
+  }
+ ]
+}

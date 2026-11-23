@@ -1,0 +1,161 @@
+{
+ "spec_version": "1.0.0",
+ "engine_contract": {
+  "evaluate": "f(inputs, overrides) -> all node values; deterministic; pure",
+  "incremental": "re-evaluate only nodes downstream of changed cells (slider target < 10 ms)",
+  "vectorised": "every expression is elementwise arithmetic; evaluate a batch of N input vectors at once (IF -> where, MAX -> maximum). Monte Carlo and finite differences use this.",
+  "derivatives": "finite differences on the vectorised engine, or forward-mode AD over the AST. IF/MAX/MIN make kinks: use subgradients and multi-start."
+ },
+ "decision_variable_sets": {
+  "lever_intensity": "scalar lever inputs that vary by scenario (lev.Lxx.*), bounds = [registry min, min(registry max, stretch cap)]; stretch cap default = max(C, D) preset value",
+  "lever_timing": "lev.start[lever] integer 1-12 (lower bound = earliest feasible), lev.ramp[lever]",
+  "lever_switch": "lev.on[lever] binary",
+  "funding": "g.ot_out_share (policy, usually fixed)"
+ },
+ "problems": [
+  {
+   "id": "goal_seek",
+   "label": "Solve one input for a target",
+   "inputs": {
+    "var": "var_key[member]",
+    "output": "node key",
+    "target": "number",
+    "bounds": "[lo, hi]"
+   },
+   "method": "Brent / bisection after a monotonicity scan (11 points); report 'not reachable within range' with the closest value",
+   "ui": "right-click any input: 'what value closes the gap?'"
+  },
+  {
+   "id": "breakeven",
+   "label": "What it takes, lever by lever",
+   "do": "goal_seek each lever-intensity input alone until res.gap = 0; list value needed vs range",
+   "output": "table: input, current, needed, feasible?"
+  },
+  {
+   "id": "scenario_blend",
+   "label": "Blend two scenarios",
+   "do": "x = A + lambda (B - A) over all scenario-varying inputs; solve lambda for res.gap = 0",
+   "aa_result_ref": "reference/solver_demo_results.json#goal_seek_blend_C_to_D"
+  },
+  {
+   "id": "min_risk_mix",
+   "label": "Minimum-risk lever mix that clears the bar",
+   "objective_options": {
+    "min_risk_exposure": "sum_l iy_l * (1 - conf_l)  (expected non-delivery, default)",
+    "max_risk_adjusted_net": "res.risk",
+    "min_one_time": "res.tot_ot_all",
+    "min_people_impact": "(hc.us - res.fte_us) + w * onshore exits",
+    "min_change": "sum_i ((x_i - x0_i) / range_i)^2  (closest to the current plan)"
+   },
+   "constraints": {
+    "total": "res.net >= res.bar  (or >= res.target when g.absorb_growth = 0)",
+    "per_vp (optional)": "vp.net[v] >= vp.bar[v] for each v",
+    "one_time_cap (optional)": "res.tot_ot_it <= cap",
+    "rate_share (optional)": "res.rate_share <= 0.10",
+    "us_floor (optional)": "res.fte_us >= floor",
+    "gcc_hiring (optional)": "res.fte_gcc - hc.gcc <= hiring capacity (default 500 in CY27)",
+    "eps (optional)": "br.eps27 >= x",
+    "bounds": "decision variable bounds"
+   },
+   "methods": {
+    "explainable (default in UI)": "greedy marginal analysis: repeatedly take the step with the best constraint gain per unit of added risk; output is an ordered list of moves",
+    "production": "SLSQP or IPOPT with finite-difference gradients from the vectorised engine, 8 multi-starts; CMA-ES fallback when non-smooth",
+    "with lever_switch": "MINLP via branch on lev.on (17 binaries) or penalty relaxation"
+   },
+   "output": "new scenario (kind=solver) + ranked move list + binding constraints + shadow prices",
+   "aa_result_ref": "reference/solver_demo_results.json#min_risk_total_bar"
+  },
+  {
+   "id": "pareto",
+   "label": "Frontier: savings vs risk (or vs one-time cost)",
+   "do": "epsilon-constraint sweep of min_risk_mix over bar levels 100..200 step 5",
+   "output": "curve points + the scenario at each point"
+  },
+  {
+   "id": "vp_feasible",
+   "label": "Plan where every VP clears its own bar",
+   "do": "min_risk_mix with per_vp constraints; if infeasible, maximise min_v vp.coverage[v]"
+  },
+  {
+   "id": "monte_carlo",
+   "label": "Probability of hitting the target",
+   "default_distributions": {
+    "lev.realize[l]": "1.2 x Beta(a = K conf_l / 1.2, b = K (1 - conf_l / 1.2)), K = 4 (mean = confidence)",
+    "lev.start[l]": "start + U{0,1,2} months slip",
+    "pool.growth[p]": "Triangular(0.7 g, g, 1.4 g)",
+    "user_defined": "variable_def.dist overrides: triangular, PERT, normal, lognormal, discrete"
+   },
+   "correlation": "Gaussian copula; lever families (labour L01-L08, tech L09-L16) rho = 0.5; editable correlation groups",
+   "iterations": "2,000 default (seeded, reproducible)",
+   "outputs": [
+    "P10/P50/P90 of res.net, res.bar, res.gap, br.eps27, val.px",
+    "P(res.net >= res.bar)",
+    "P(vp.net >= vp.bar) per VP",
+    "variance contribution by lever (Spearman / regression)",
+    "histogram bins"
+   ],
+   "aa_result_ref": "reference/solver_demo_results.json#monte_carlo_C"
+  },
+  {
+   "id": "sensitivity",
+   "label": "Which numbers matter",
+   "methods": {
+    "tornado": "one-at-a-time to registry min/max (or +/- x%), sorted by swing on res.net / res.gap / br.eps27",
+    "elasticity": "d output / d input x input / output at current point",
+    "sobol": "Saltelli sampling, N = 1024, top 20 inputs from tornado; first-order and total indices",
+    "spider": "output vs input from -50% to +50%"
+   },
+   "aa_result_ref": "reference/solver_demo_results.json#tornado_net_top15"
+  },
+  {
+   "id": "stress_presets",
+   "label": "Named shocks",
+   "examples": [
+    {
+     "name": "GCC hiring freeze",
+     "set": {
+      "lev.L03.pct": 0,
+      "lev.L04.pct": 0,
+      "lev.L05.bf": 0
+     }
+    },
+    {
+     "name": "Vendors win COLA",
+     "set": {
+      "lev.L17.cola": 0
+     }
+    },
+    {
+     "name": "Programme starts in Q2",
+     "set": {
+      "g.head_start": 0
+     },
+     "shift": {
+      "lev.start": 3
+     }
+    },
+    {
+     "name": "All one-time costs on IT",
+     "set": {
+      "g.ot_out_share": 0
+     }
+    },
+    {
+     "name": "Fuel +30c",
+     "set": {
+      "corp.jet_direct": "+0.30",
+      "corp.fuel_mode": 0
+     }
+    }
+   ]
+  }
+ ],
+ "performance_targets": {
+  "single_full_eval_ms": 50,
+  "incremental_slider_ms": 10,
+  "goal_seek_s": 1,
+  "min_risk_mix_s": 10,
+  "monte_carlo_2000_s": 10,
+  "sobol_s": 60
+ }
+}

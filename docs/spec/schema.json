@@ -1,0 +1,1517 @@
+{
+ "spec_version": "1.0.0",
+ "principles": [
+  "Numbers live in variable_value / scenario_value, keyed by (var_key, member_key). Entity tables hold only structure and categories.",
+  "Formulas live in node_def as data (expression strings). No airline-specific logic in code.",
+  "Every tenant table has tenant_id with row-level security. Global tables (model_version, *_def, canonical_pool, lever_template) are shared and read-only to tenants.",
+  "Every write goes through a changeset (UI edit, Excel import, solver, AI reconfiguration), giving audit, diff and undo.",
+  "member_key is the comma-joined member ids in the variable's dims order ('' for scalars), e.g. 'pilots,fy27'."
+ ],
+ "tables": {
+  "model_version": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "semver",
+     "type": "text",
+     "constraints": "unique",
+     "description": "e.g. 1.0.0"
+    },
+    {
+     "name": "status",
+     "type": "enum(draft,published,retired)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "notes",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ],
+   "description": "A frozen set of dimension_def, variable_def, node_def. Tenants pin one; upgrades are explicit."
+  },
+  "dimension_def": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "dim_key",
+     "type": "text",
+     "constraints": "pk with model_version_id",
+     "description": "pool, line, vp, lever, year..."
+    },
+    {
+     "name": "scope",
+     "type": "enum(global,tenant,system,global+tenant)",
+     "constraints": "",
+     "description": "Who owns the members"
+    },
+    {
+     "name": "attributes",
+     "type": "text[]",
+     "constraints": "",
+     "description": "Attribute names usable in expressions"
+    }
+   ]
+  },
+  "variable_def": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "var_key",
+     "type": "text",
+     "constraints": "pk with model_version_id",
+     "description": "e.g. lev.L05.nb"
+    },
+    {
+     "name": "dims",
+     "type": "text[]",
+     "constraints": "",
+     "description": "Ordered dims"
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "type",
+     "type": "enum(number,int,bool,enum)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "min",
+     "type": "numeric",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "max",
+     "type": "numeric",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "step",
+     "type": "numeric",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "group",
+     "type": "text",
+     "constraints": "",
+     "description": "UI group"
+    },
+    {
+     "name": "layer",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "role",
+     "type": "enum(driver,calibration,simulation)",
+     "constraints": "",
+     "description": "calibration = hidden by default"
+    },
+    {
+     "name": "ui",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "{control: slider|toggle|segmented|matrix|table|number|hidden, hero: bool}"
+    },
+    {
+     "name": "dist",
+     "type": "jsonb",
+     "constraints": "nullable",
+     "description": "Default Monte Carlo distribution"
+    },
+    {
+     "name": "validation",
+     "type": "jsonb",
+     "constraints": "nullable",
+     "description": "e.g. {sum_to_1_over: 'vp'}"
+    },
+    {
+     "name": "legacy",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Traceability to v0.x workbooks"
+    }
+   ]
+  },
+  "node_def": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "node_key",
+     "type": "text",
+     "constraints": "pk with model_version_id",
+     "description": ""
+    },
+    {
+     "name": "dims",
+     "type": "text[]",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "expr",
+     "type": "text",
+     "constraints": "nullable",
+     "description": "Default expression"
+    },
+    {
+     "name": "cases",
+     "type": "jsonb",
+     "constraints": "nullable",
+     "description": "[{when:{dim:[members]}, expr}] first match wins"
+    },
+    {
+     "name": "members",
+     "type": "jsonb",
+     "constraints": "nullable",
+     "description": "Restrict expansion to member subset"
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "layer",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "output",
+     "type": "bool",
+     "constraints": "",
+     "description": "Shown/stored as a result"
+    },
+    {
+     "name": "overridable",
+     "type": "bool",
+     "constraints": "default true",
+     "description": "Can be pinned per scenario"
+    }
+   ]
+  },
+  "canonical_pool": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "id",
+     "type": "text",
+     "constraints": "pk",
+     "description": "internal_labour, captive_labour, si_contingent, ..."
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "third_party",
+     "type": "bool",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "sort",
+     "type": "int",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "addr_tag": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "id",
+     "type": "text",
+     "constraints": "pk",
+     "description": "locked, partly, addressable"
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "lever_template": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "code",
+     "type": "text",
+     "constraints": "pk with model_version_id",
+     "description": "L01..L17"
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "category",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "default_alloc_key",
+     "type": "text",
+     "constraints": "",
+     "description": "pool id | apps | blend"
+    },
+    {
+     "name": "node_keys",
+     "type": "text[]",
+     "constraints": "",
+     "description": "Nodes implementing the lever"
+    },
+    {
+     "name": "var_keys",
+     "type": "text[]",
+     "constraints": "",
+     "description": "Its inputs"
+    },
+    {
+     "name": "library",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "hypothesis, mechanism, benchmark, risks, overlap, timing text"
+    }
+   ]
+  },
+  "tenant": {
+   "scope": "tenant-root",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "slug",
+     "type": "text",
+     "constraints": "unique",
+     "description": "aa, ua, as"
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "currency",
+     "type": "char(3)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "base_year",
+     "type": "int",
+     "constraints": "",
+     "description": "2026"
+    },
+    {
+     "name": "target_year",
+     "type": "int",
+     "constraints": "",
+     "description": "2027"
+    },
+    {
+     "name": "fiscal_calendar",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "ticker",
+     "type": "text",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": "Pinned spec version"
+    },
+    {
+     "name": "status",
+     "type": "enum(setup,active,archived)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "tenant_membership": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "user_id",
+     "type": "uuid",
+     "constraints": "fk app_user.id",
+     "description": ""
+    },
+    {
+     "name": "role",
+     "type": "enum(owner,editor,viewer,advisor)",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "app_user": {
+   "scope": "global",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "email",
+     "type": "citext",
+     "constraints": "unique",
+     "description": ""
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "dimension_member": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "dim_key",
+     "type": "text",
+     "constraints": "",
+     "description": "vp, domain, lgroup, vendor, lever (tenant overrides)"
+    },
+    {
+     "name": "member_key",
+     "type": "text",
+     "constraints": "pk with tenant_id, dim_key",
+     "description": ""
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "attrs",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Attribute values (e.g. vp: {}, lever: {alloc_key})"
+    },
+    {
+     "name": "sort",
+     "type": "int",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "active",
+     "type": "bool",
+     "constraints": "",
+     "description": ""
+    }
+   ],
+   "description": "Generic members for small tenant dims. Large dims (line) have their own table; the engine sees one union view."
+  },
+  "line_item": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "member_key",
+     "type": "text",
+     "constraints": "pk with tenant_id",
+     "description": "e.g. it_001"
+    },
+    {
+     "name": "legacy_id",
+     "type": "text",
+     "constraints": "",
+     "description": "IT-001"
+    },
+    {
+     "name": "pool_id",
+     "type": "text",
+     "constraints": "fk canonical_pool.id",
+     "description": ""
+    },
+    {
+     "name": "tenant_l1_label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "l2",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "name",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "vendor_key",
+     "type": "text",
+     "constraints": "nullable fk dimension_member(vendor)",
+     "description": ""
+    },
+    {
+     "name": "vendor_text",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "nature",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "accounting",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "driver_text",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "qty",
+     "type": "numeric",
+     "constraints": "",
+     "description": "informational"
+    },
+    {
+     "name": "unit",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "addr_tag",
+     "type": "text",
+     "constraints": "fk addr_tag.id",
+     "description": ""
+    },
+    {
+     "name": "domain_key",
+     "type": "text",
+     "constraints": "fk dimension_member(domain)",
+     "description": "Drives VP ownership"
+    },
+    {
+     "name": "scale_driver",
+     "type": "enum(us,gcc,ctr,none)",
+     "constraints": "",
+     "description": "Headcount scaling"
+    },
+    {
+     "name": "in_scope",
+     "type": "bool",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "memo",
+     "type": "bool",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "confidence",
+     "type": "char(1)",
+     "constraints": "",
+     "description": "H/M/L"
+    },
+    {
+     "name": "source_id",
+     "type": "uuid",
+     "constraints": "nullable fk source",
+     "description": ""
+    },
+    {
+     "name": "lever_hook_text",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "notes",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "active",
+     "type": "bool",
+     "constraints": "",
+     "description": "Soft delete"
+    }
+   ],
+   "description": "Structure of each baseline line. Its numbers (amount, capex share) are variable_value rows for line.amount / line.capex_share."
+  },
+  "line_item_lever": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "line_key",
+     "type": "text",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "lever_code",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "mapping_source",
+     "type": "enum(rule,user)",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "scenario": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "key",
+     "type": "text",
+     "constraints": "unique per tenant",
+     "description": "rates, A, B, C, D, or user"
+    },
+    {
+     "name": "label",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "kind",
+     "type": "enum(preset,user,solver,blend)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "parent_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": "Inherits values not set here"
+    },
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "version",
+     "type": "int",
+     "constraints": "",
+     "description": "Bumps on every applied changeset"
+    },
+    {
+     "name": "locked",
+     "type": "bool",
+     "constraints": "",
+     "description": "Presets locked; copy to edit"
+    },
+    {
+     "name": "created_by",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "variable_value": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "var_key",
+     "type": "text",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "member_key",
+     "type": "text",
+     "constraints": "pk part",
+     "description": "'' for scalars"
+    },
+    {
+     "name": "value",
+     "type": "numeric",
+     "constraints": "not null",
+     "description": ""
+    },
+    {
+     "name": "source_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "confidence",
+     "type": "char(1)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "note",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "changeset_id",
+     "type": "uuid",
+     "constraints": "",
+     "description": "Last change"
+    },
+    {
+     "name": "updated_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ],
+   "description": "Tenant defaults for every input (the registry's aa_default for AA)."
+  },
+  "scenario_value": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "scenario_id",
+     "type": "uuid",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "var_key",
+     "type": "text",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "member_key",
+     "type": "text",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "value",
+     "type": "numeric",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "changeset_id",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    }
+   ],
+   "description": "Scenario overrides on top of tenant defaults (and parent scenario)."
+  },
+  "node_override": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "scenario_id",
+     "type": "uuid",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "node_key",
+     "type": "text",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "member_key",
+     "type": "text",
+     "constraints": "pk part",
+     "description": ""
+    },
+    {
+     "name": "value",
+     "type": "numeric",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "reason",
+     "type": "text",
+     "constraints": "",
+     "description": "e.g. 'AA finance says SI pool is 118'"
+    }
+   ],
+   "description": "Pins a calculated node. Makes every number editable, including derived ones."
+  },
+  "source": {
+   "scope": "tenant or global",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": "null = global"
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "code",
+     "type": "text",
+     "constraints": "",
+     "description": "S1, user, ..."
+    },
+    {
+     "name": "kind",
+     "type": "enum(filing,user,benchmark,assumption,calibrated,market,spec)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "title",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "url",
+     "type": "text",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "as_of",
+     "type": "date",
+     "constraints": "nullable",
+     "description": ""
+    }
+   ]
+  },
+  "market_snapshot": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "as_of",
+     "type": "date",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "payload",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "{price_now, brent, crack, jet...} -> variable_value"
+    },
+    {
+     "name": "source_id",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "applied_changeset_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": ""
+    }
+   ]
+  },
+  "changeset": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "origin",
+     "type": "enum(ui,excel_import,api,solver,ai_reconfig,market_refresh,seed)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "scenario_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": "null = tenant defaults"
+    },
+    {
+     "name": "base_scenario_version",
+     "type": "int",
+     "constraints": "",
+     "description": "Optimistic concurrency"
+    },
+    {
+     "name": "status",
+     "type": "enum(pending,applied,rejected,reverted)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "summary",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "counts, impact preview"
+    },
+    {
+     "name": "created_by",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "reverts_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": ""
+    }
+   ]
+  },
+  "change": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "changeset_id",
+     "type": "uuid",
+     "constraints": "fk",
+     "description": ""
+    },
+    {
+     "name": "seq",
+     "type": "int",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "target",
+     "type": "enum(variable_value,scenario_value,node_override,line_item,dimension_member)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "key",
+     "type": "text",
+     "constraints": "",
+     "description": "var_key / node_key / member_key"
+    },
+    {
+     "name": "member_key",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "op",
+     "type": "enum(insert,update,delete)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "old_value",
+     "type": "jsonb",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "new_value",
+     "type": "jsonb",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "export_value",
+     "type": "jsonb",
+     "constraints": "nullable",
+     "description": "Value at export time (3-way diff)"
+    },
+    {
+     "name": "status",
+     "type": "enum(clean,conflict,invalid,accepted,rejected)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "messages",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Validation messages"
+    }
+   ]
+  },
+  "export_job": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "template_version",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "scenario_ids",
+     "type": "uuid[]",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "snapshot",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Every exported cell value, for 3-way diff"
+    },
+    {
+     "name": "file_uri",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "checksum",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "created_by",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "import_job": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "export_job_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": "From _meta; null = foreign workbook"
+    },
+    {
+     "name": "file_uri",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "status",
+     "type": "enum(parsed,validated,awaiting_review,applied,failed)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "changeset_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": ""
+    },
+    {
+     "name": "report",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Delta report"
+    }
+   ]
+  },
+  "calc_run": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "scenario_id",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "scenario_version",
+     "type": "int",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "model_version_id",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "input_hash",
+     "type": "text",
+     "constraints": "",
+     "description": "Cache key"
+    },
+    {
+     "name": "ms",
+     "type": "int",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "outputs",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Output nodes only"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "solver_run": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "kind",
+     "type": "enum(goal_seek,blend,optimize,pareto,monte_carlo,sensitivity,breakeven)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "scenario_id",
+     "type": "uuid",
+     "constraints": "",
+     "description": "Start point"
+    },
+    {
+     "name": "spec",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Problem per solvers.json"
+    },
+    {
+     "name": "status",
+     "type": "enum(queued,running,done,failed,cancelled)",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "result",
+     "type": "jsonb",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "result_scenario_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": "Solver output saved as a scenario"
+    },
+    {
+     "name": "created_at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  },
+  "ai_reconfig_job": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "uuid",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "prompt",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "plan",
+     "type": "jsonb",
+     "constraints": "",
+     "description": "Proposed members, values, sources"
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "changeset_id",
+     "type": "uuid",
+     "constraints": "nullable",
+     "description": "Applied as one reviewable changeset"
+    }
+   ]
+  },
+  "audit_log": {
+   "scope": "tenant",
+   "columns": [
+    {
+     "name": "tenant_id",
+     "type": "uuid",
+     "constraints": "fk tenant.id, not null, RLS key",
+     "description": "Tenant (airline). Every tenant table carries it; row-level security filters on it."
+    },
+    {
+     "name": "id",
+     "type": "bigserial",
+     "constraints": "pk",
+     "description": ""
+    },
+    {
+     "name": "actor",
+     "type": "uuid",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "action",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "entity",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "entity_key",
+     "type": "text",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "before",
+     "type": "jsonb",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "after",
+     "type": "jsonb",
+     "constraints": "",
+     "description": ""
+    },
+    {
+     "name": "at",
+     "type": "timestamptz",
+     "constraints": "",
+     "description": ""
+    }
+   ]
+  }
+ },
+ "views": {
+  "v_inputs_resolved": "For (tenant, scenario): variable_def LEFT JOIN variable_value LEFT JOIN scenario_value chain (scenario -> parent -> tenant default). What the engine loads.",
+  "v_dimension_members": "UNION of global members (canonical_pool, addr_tag, system dims), dimension_member, and line_item, with attrs as jsonb."
+ },
+ "validation_rules": [
+  {
+   "id": "VR01",
+   "rule": "org.dom_share sums to 1 over vp for every domain except out_of_scope_memo (which sums to 0)",
+   "severity": "error"
+  },
+  {
+   "id": "VR02",
+   "rule": "exactly one vp has org.ss_flag = 1 when g.chargeback_on = 1",
+   "severity": "error"
+  },
+  {
+   "id": "VR03",
+   "rule": "org.usage_override sums to 1 when org.usage_override_on = 1",
+   "severity": "error"
+  },
+  {
+   "id": "VR04",
+   "rule": "value within variable_def min/max",
+   "severity": "warning (UI clamps sliders; import flags)"
+  },
+  {
+   "id": "VR05",
+   "rule": "lv.ms0 >= 0 (contractor T&M cost cannot exceed the SI pool)",
+   "severity": "error"
+  },
+  {
+   "id": "VR06",
+   "rule": "lev.L09.split_sw + lev.L09.split_cloud <= 1",
+   "severity": "error"
+  },
+  {
+   "id": "VR07",
+   "rule": "lev.L09.n <= portfolio.apps",
+   "severity": "error"
+  },
+  {
+   "id": "VR08",
+   "rule": "lev.rr_check = 0 and vp.check = 0 (engine self-test)",
+   "severity": "error"
+  },
+  {
+   "id": "VR09",
+   "rule": "every line_item.pool_id in canonical_pool; domain_key and vendor_key exist",
+   "severity": "error"
+  },
+  {
+   "id": "VR10",
+   "rule": "corp inputs present for every year an expression uses",
+   "severity": "error"
+  }
+ ]
+}
