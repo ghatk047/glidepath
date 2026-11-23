@@ -1,9 +1,9 @@
 /* GENERATED from docs/ux/tokens.json by src/tokens/build.ts. Do not edit. */
 
 :root {
-  --font-ui: Geist;
-  --font-num: Geist;
-  --font-mono: Geist Mono;
+  --font-ui: Geist, system-ui, sans-serif;
+  --font-num: Geist, system-ui, sans-serif;
+  --font-mono: Geist Mono, ui-monospace, monospace;
   --font-source: Google Fonts (OFL);
   --type-hero-size: clamp(48px,5.4vw,76px);
   --type-hero-weight: 300;

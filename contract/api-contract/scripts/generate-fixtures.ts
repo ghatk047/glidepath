@@ -229,6 +229,8 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
   const membersHash = `sha256:${createHash('sha256').update(JSON.stringify(dimensions)).digest('hex')}`;
   const members = check(MembersResponse, { membersHash, dimensions }, 'members');
 
+  // Mirrors tier 2's preset short names (routes/read/mappers.ts) so mocked sessions draw the same chips.
+  const SHORT_LABELS: Record<string, string> = { rates: 'Rates only', A: 'Commercial', B: 'Op-model reset', C: 'Balanced', D: 'Full stretch' };
   // --- scenarios: the seeded presets (read-only; tier 2 forks on edit) ----------------------
   const scenarios = check(
     ScenariosResponse,
@@ -237,6 +239,7 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
         id: scenarioIdOf(s.id),
         key: s.id,
         label: s.label,
+        shortLabel: SHORT_LABELS[s.id] ?? s.label,
         kind: 'preset' as const,
         parentId: null,
         modelVersionId: modelVersion.id,

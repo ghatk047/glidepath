@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from '@tanstack/react-router';
 import '@glidepath/ui/tokens.css';
 import { reducedMotionCss } from '@glidepath/ui/motion';
+import './fonts.css';
 import './app.css';
 import { schedulePreload } from './modules';
 import { createAppRouter } from './router';

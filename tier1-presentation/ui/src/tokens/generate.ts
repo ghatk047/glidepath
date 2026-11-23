@@ -77,9 +77,28 @@ const defaultThemeOf = (t: TokensJson): string => {
   return names.find((n) => t.themes[n]?.default) ?? names[0] ?? '';
 };
 
+/**
+ * Generic fallbacks appended to the font tokens in the CSS only, so a face that has not loaded (or a
+ * control that falls back) draws sans or mono and never the browser's default serif (WEB-11).
+ */
+const FONT_FALLBACK: Record<string, string> = {
+  '--font-ui': 'system-ui, sans-serif',
+  '--font-num': 'system-ui, sans-serif',
+  '--font-mono': 'ui-monospace, monospace',
+};
+
 export function generateCss(t: TokensJson): string {
   const parts = ['/* GENERATED from docs/ux/tokens.json by src/tokens/build.ts. Do not edit. */\n'];
-  parts.push(block(':root', null, sharedDecls(t)));
+  parts.push(
+    block(
+      ':root',
+      null,
+      sharedDecls(t).map(([path, name, value]): Decl => {
+        const fallback = FONT_FALLBACK[name];
+        return [path, name, fallback ? `${value}, ${fallback}` : value];
+      }),
+    ),
+  );
   const def = defaultThemeOf(t);
   for (const [n, th] of Object.entries(t.themes)) {
     const sel = n === def ? `:root,\n:root[data-theme="${n}"]` : `:root[data-theme="${n}"]`;

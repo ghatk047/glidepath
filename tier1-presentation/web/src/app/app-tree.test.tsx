@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router';
 import { http, HttpResponse } from 'msw';
@@ -142,5 +143,60 @@ describe('the app tree mounts the global overlays and the shared tooltip', () =>
       expect(screen.getByRole('button', { name: /find any number/i })).toBeTruthy(),
     );
     expect(screen.getAllByRole('tooltip', { hidden: true })).toHaveLength(1);
+  });
+});
+
+describe('fonts of the app tree (WEB-11)', () => {
+  it('app_tree_every_control_resolves_to_the_token_font', async () => {
+    const t = await mount();
+    await t.until(() =>
+      expect(screen.getByRole('button', { name: /find any number/i })).toBeTruthy(),
+    );
+    const css = (rel: string) => readFileSync(new URL(rel, import.meta.url), 'utf8');
+    const tokensCss = css('../../../ui/src/tokens/tokens.css');
+    const fontsCss = css('./fonts.css');
+    const appCss = css('./app.css');
+    // the stylesheets the bundle ships: tokens, the self-hosted faces, the app base
+    const style = document.createElement('style');
+    style.textContent = [tokensCss, fontsCss, appCss].join('\n');
+    document.head.append(style);
+    const tokens = new Map(
+      [...tokensCss.matchAll(/(--font-[a-z]+):\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]),
+    );
+    // jsdom does not resolve `inherit` or `var()`, so the cascade is read here: the last matching
+    // rule that sets `font-family` or the `font` shorthand wins (document order; the rules of
+    // the shell are single-class, so specificity does not reorder them); no rule or `inherit`
+    // = the parent's.
+    const rules = [...document.styleSheets].flatMap((sheet) =>
+      [...sheet.cssRules].filter((r): r is CSSStyleRule => 'selectorText' in r),
+    );
+    const familyOf = (el: Element | null): string => {
+      if (!el) return '';
+      let value: string | undefined;
+      for (const r of rules) {
+        if (!el.matches(r.selectorText)) continue;
+        const text = r.cssText;
+        const fam = /(?:^|[;{\s])font-family:\s*([^;}]+)/.exec(text);
+        // shorthand: `weight size/line-height family`
+        const short = /(?:^|[;{\s])font:\s*([^;}]+)/.exec(text);
+        if (fam) value = fam[1]!.trim();
+        else if (short) value = short[1]!.trim().replace(/^.*?\/[\d.]+\s+/, '');
+      }
+      // a control the page sets nothing on keeps the browser's own face (the serif fallback of WEB-11)
+      if (value === undefined && el.matches('button, input, select, textarea')) return '(browser default)';
+      if (value === undefined || /^inherit$/.test(value)) return familyOf(el.parentElement);
+      return value.replace(/var\((--font-[a-z]+)\)/g, (_, k: string) => tokens.get(k) ?? '');
+    };
+    // one of each control kind with no class of its own: only the app base can give it the font
+    for (const tag of ['button', 'input', 'select', 'textarea'])
+      document.body.append(document.createElement(tag));
+    const controls = [...document.querySelectorAll('button, input, select, textarea')];
+    expect(controls.length).toBeGreaterThan(5);
+    const bad = controls
+      .map((el) => ({ el, family: familyOf(el) }))
+      .filter(({ family }) => !/^Geist/.test(family))
+      .map(({ el, family }) => `${el.tagName}.${el.className}: ${family || '(none)'}`);
+    expect(bad).toEqual([]);
+    style.remove();
   });
 });

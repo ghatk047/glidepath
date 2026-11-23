@@ -63,4 +63,20 @@ describe('build manifest', () => {
     expect(statSync(join(outDir, 'index.html')).isFile()).toBe(true);
     expect(readdirSync(join(outDir, 'assets')).some((f) => f.endsWith('.css'))).toBe(true);
   });
+
+  it('build_self_hosts_geist_and_requests_no_font_cdn', () => {
+    const files = readdirSync(join(outDir, 'assets'));
+    expect(files.filter((f) => /^geist-sans-latin-\d+-normal.*\.woff2$/.test(f)).length).toBeGreaterThanOrEqual(4);
+    expect(files.filter((f) => /^geist-mono-latin-\d+-normal.*\.woff2$/.test(f)).length).toBeGreaterThanOrEqual(3);
+    const css = files.filter((f) => f.endsWith('.css')).map((f) => readFileSync(join(outDir, 'assets', f), 'utf8')).join('\n');
+    expect(css).toMatch(/font-family:\s*"?Geist"?/);
+    expect(css).toMatch(/font-family:\s*"?Geist Mono"?/);
+    // no request for a font leaves the origin: not in the page, the css or any script
+    const text = [readFileSync(join(outDir, 'index.html'), 'utf8'), css].concat(
+      files.filter((f) => f.endsWith('.js')).map((f) => readFileSync(join(outDir, 'assets', f), 'utf8')),
+    );
+    for (const t of text) {
+      expect(t).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
+    }
+  });
 });

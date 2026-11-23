@@ -2,7 +2,6 @@ import { useMemo, type ReactNode } from 'react';
 import { Grid, GridCell } from '@glidepath/ui/glass';
 import { useBindContext } from '../../bind';
 import { useApiClient, useScenarios, useTenants } from '../../data';
-import { presetName } from '../../global/shell';
 import { JobsProvider, solverRunCanceller } from '../../jobs';
 import { COPY, cy } from './copy';
 import { FastestPathPanel } from './FastestPathPanel';
@@ -21,7 +20,7 @@ function ScenarioChip() {
   const scenarios = useScenarios(tenant);
   const s = scenarios.data?.scenarios.find((x) => x.id === scenarioId);
   if (!s) return null;
-  const name = s.kind === 'preset' ? presetName(s.key, s.label) : s.label;
+  const name = s.shortLabel;
   return (
     <span className="gp-chip gp-cockpit-scenario" data-scenario={s.key}>
       {s.editsCount > 0 ? `${name} · ${COPY.edited}` : name}

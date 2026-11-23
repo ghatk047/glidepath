@@ -342,7 +342,7 @@ title: "Screens match the UX renders: self-hosted Geist, inherited fonts, scenar
 epic: WEB
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -362,4 +362,5 @@ acceptance:
 gates: [G1, G2, G3, G11, G13]
 size: S
 notes: "From QA-06 review. If short scenario labels need a tier 2 bundle field, add it in the bundle builder and contract (the only allowed out-of-tier change) and say so."
+merged_at: "2026-11-23"
 ```

@@ -1,0 +1,57 @@
+/* Geist and Geist Mono (SIL OFL 1.1, see fonts/LICENSE-geist.txt), self-hosted from @fontsource: the web bundle serves the woff2 files, nothing loads from a font CDN (WEB-11). Family names are the token values (`--font-ui`, `--font-mono`). */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300;
+  src: url('@fontsource/geist-sans/files/geist-sans-latin-300-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/geist-sans/files/geist-sans-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('@fontsource/geist-sans/files/geist-sans-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/geist-sans/files/geist-sans-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('@fontsource/geist-sans/files/geist-sans-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/geist-mono/files/geist-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('@fontsource/geist-mono/files/geist-mono-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/geist-mono/files/geist-mono-latin-600-normal.woff2') format('woff2');
+}

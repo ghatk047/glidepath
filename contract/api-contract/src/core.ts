@@ -213,6 +213,8 @@ export const Scenario = z.object({
   id: ScenarioId,
   key: z.string().min(1),
   label: z.string(),
+  /** Short name for the scenario bar chips (`Rates only`, `Balanced`); tier 2 builds it, tier 1 never derives it. */
+  shortLabel: z.string().min(1),
   kind: ScenarioKind,
   parentId: ScenarioId.nullable(),
   modelVersionId: ModelVersionId,

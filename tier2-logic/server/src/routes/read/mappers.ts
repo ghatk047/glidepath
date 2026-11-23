@@ -39,6 +39,30 @@ export function toMembersResponse(snapshot: MembersSnapshot): MembersResponse {
 // ----------------------------------------------------------------------------- scenarios
 
 /**
+ * Short names of the spec's presets for the scenario bar (docs/spec 01_data_model: Rates only, A, B, C, D),
+ * by preset key. A preset the map does not know, and every user / blend / solver scenario, uses its label
+ * without a leading `X. ` key prefix.
+ */
+const PRESET_SHORT_LABEL: Readonly<Record<string, string>> = {
+  rates: 'Rates only',
+  A: 'Commercial',
+  B: 'Op-model reset',
+  C: 'Balanced',
+  D: 'Full stretch',
+};
+
+/** The chip name of a scenario (tier 2 owns it; the SPA only displays it). */
+export function shortLabelOf(s: Pick<ScenarioRecord, 'key' | 'label' | 'kind'>): string {
+  if (s.kind === 'preset') {
+    const known = PRESET_SHORT_LABEL[s.key];
+    if (known) return known;
+    const prefix = `${s.key}.`;
+    if (s.label.startsWith(prefix)) return s.label.slice(prefix.length).trim() || s.label;
+  }
+  return s.label;
+}
+
+/**
  * A scenario in contract shape (validated with the whole response by {@link toScenariosResponse}).
  * `editsCount` is the domain's stored counter (`loadEditsCounts`), never recounted from change rows.
  */
@@ -47,6 +71,7 @@ export function toScenario(s: ScenarioRecord, editsCount: number): object {
     id: s.id,
     key: s.key,
     label: s.label,
+    shortLabel: shortLabelOf(s),
     kind: s.kind,
     parentId: s.parent_id,
     modelVersionId: s.model_version_id,

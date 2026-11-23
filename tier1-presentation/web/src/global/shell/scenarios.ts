@@ -17,12 +17,6 @@ export interface ScenarioBarModel {
 export const presetLetter = (key: string): string =>
   [...key].length === 1 ? key : key.charAt(0).toUpperCase();
 
-/** A preset's name without the key prefix tier 2 may carry (`A. Commercial` → `Commercial`). */
-export function presetName(key: string, label: string): string {
-  const prefix = `${key}.`;
-  return label.startsWith(prefix) ? label.slice(prefix.length).trim() || label : label;
-}
-
 export function scenarioBarModel(list: readonly Scenario[], current: string): ScenarioBarModel {
   const model: ScenarioBarModel = { scenarios: [], customs: [], paths: [] };
   for (const s of list) {
@@ -31,10 +25,10 @@ export function scenarioBarModel(list: readonly Scenario[], current: string): Sc
       model.scenarios.push({
         id: s.id,
         letter: presetLetter(s.key),
-        name: presetName(s.key, s.label),
+        name: s.shortLabel,
       });
-    else if (s.kind === 'solver') model.paths.push({ id: s.id, name: s.label });
-    else model.customs.push({ id: s.id, name: s.label });
+    else if (s.kind === 'solver') model.paths.push({ id: s.id, name: s.shortLabel });
+    else model.customs.push({ id: s.id, name: s.shortLabel });
   }
   return model;
 }

@@ -5,6 +5,14 @@ body,
   margin: 0;
 }
 
+/* Form controls do not inherit the page font by default (the browser draws them in its own face). */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 body {
   background: var(--ground);
   color: var(--ink);

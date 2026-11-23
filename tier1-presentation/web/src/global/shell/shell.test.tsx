@@ -62,6 +62,7 @@ const custom = {
   id: CUSTOM,
   key: 'user-1',
   label: 'Custom (from C)',
+  shortLabel: 'Custom (from C)',
   kind: 'user' as const,
   parentId: PRESET_C,
   locked: false,
@@ -72,10 +73,11 @@ const pathScenario = {
   id: PATH,
   key: 'path-1',
   label: 'Min-risk mix',
+  shortLabel: 'Min-risk mix',
   kind: 'solver' as const,
   parentId: null,
 };
-const saved = { ...custom, id: SAVED, key: 'user-2', label: 'Custom 2' };
+const saved = { ...custom, id: SAVED, key: 'user-2', label: 'Custom 2', shortLabel: 'Custom 2' };
 const scenarioList = [...presets, custom, pathScenario];
 
 const tenantRow = { ...fx.tenants.response.tenants[0]!, slug: tenant };
@@ -348,6 +350,17 @@ describe('AC1: rail, tenant monogram, scenario bar from /scenarios, switching', 
       'D',
     ]);
     expect(pressable.map((b) => b.dataset['scenario'])).toEqual(presets.map((p) => p.id));
+    // chips carry tier 2's short names, as the Cockpit render shows them (WEB-11)
+    expect(pressable.map((b) => b.querySelector('.gp-seg-t')!.textContent)).toEqual([
+      'Rates only',
+      'Commercial',
+      'Op-model reset',
+      'Balanced',
+      'Full stretch',
+    ]);
+    expect(pressable.map((b) => b.querySelector('.gp-seg-t')!.textContent)).toEqual(
+      presets.map((p) => p.shortLabel),
+    );
     expect(within(group).getByRole('button', { pressed: true }).dataset['scenario']).toBe(PRESET_C);
     expect(expected.customs).toEqual([{ id: CUSTOM, name: custom.label }]);
     expect(expected.paths).toEqual([{ id: PATH, name: pathScenario.label }]);
