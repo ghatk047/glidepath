@@ -1329,7 +1329,7 @@
     "epic": "DATA",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "medium",
@@ -1354,7 +1354,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": "Spec gap: schema.json has no progress/cancel or auth storage. Also add scenario.archived boolean default false (CON-01 scenario schema has archived; schema.json lacks it)."
+    "notes": "Spec gap: schema.json has no progress/cancel or auth storage. Also add scenario.archived boolean default false (CON-01 scenario schema has archived; schema.json lacks it).",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DATA-04",

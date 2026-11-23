@@ -125,7 +125,7 @@ title: "Manual migrations: solver_run progress/cancel and auth tables"
 epic: DATA
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: medium
@@ -144,6 +144,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: "Spec gap: schema.json has no progress/cancel or auth storage. Also add scenario.archived boolean default false (CON-01 scenario schema has archived; schema.json lacks it)."
+merged_at: "2026-11-23"
 ```
 
 Small, explicit additions to the generated schema.

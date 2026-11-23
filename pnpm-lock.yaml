@@ -211,6 +211,18 @@ importers:
 
   tier2-logic/worker: {}
 
+  tier3-data/migrations/manual:
+    devDependencies:
+      '@glidepath/testkit':
+        specifier: workspace:*
+        version: link:../../../tools/testkit
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
+
   tools/eslint-config: {}
 
   tools/gen-schema:
