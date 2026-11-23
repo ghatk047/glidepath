@@ -26,7 +26,7 @@ title: "Engine port map (PORTING.md) and package skeleton"
 epic: ENG
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -48,6 +48,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: "Engine work order: ENG-02 → 03 → 04 → 05 → 06 (gate)."
+merged_at: "2026-11-23"
 ```
 
 The engine port plan from prompt 00, as the first engine item.
