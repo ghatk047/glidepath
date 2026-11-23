@@ -102,7 +102,7 @@ title: "Format module: money, percent, FTE, multiples, EPS"
 epic: UI
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: medium
@@ -120,6 +120,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The only place numbers become strings.

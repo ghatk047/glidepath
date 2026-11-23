@@ -3294,7 +3294,7 @@
     "epic": "UI",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "C",
     "model": "sonnet",
     "effort": "medium",
@@ -3318,7 +3318,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "UI-04",
