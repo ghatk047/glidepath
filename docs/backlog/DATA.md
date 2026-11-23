@@ -324,7 +324,7 @@ title: "Neon readiness: migrations, seed and runtime over sslmode=require"
 epic: DATA
 milestone: M4
 priority: should
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -344,6 +344,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: "POST-safe: nothing depends on it; if M4 is tight the orchestrator moves it to POST."
+merged_at: "2026-11-23"
 ```
 
 Proves the owner can switch DATABASE_URL to Neon later without code changes.
