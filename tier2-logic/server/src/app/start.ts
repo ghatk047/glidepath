@@ -1,6 +1,8 @@
 import { serve } from '@hono/node-server';
 import type { ServerType } from '@hono/node-server';
 import { createDb, dbOptionsFromEnv } from '@glidepath/data-access';
+import { authFromConfig } from '../auth/auth';
+import type { Mailer } from '../auth/mailer';
 import { createApp } from './app';
 import type { AppDeps } from './app';
 import { loadConfig } from './config';
@@ -18,6 +20,8 @@ export interface RunningServer {
 
 export type StartOverrides = Pick<AppDeps, 'authenticate' | 'membership' | 'withTenant'> & {
   write?: (line: string) => void;
+  /** Replaces the SMTP_URL transport (tests). */
+  mailer?: Mailer | null;
 };
 
 /**
@@ -36,14 +40,16 @@ export async function startServer(
     ...(overrides.write ? { write: overrides.write } : {}),
   });
   const db = createDb(config.DATABASE_URL, dbOptionsFromEnv(env));
-  const { write: _write, ...deps } = overrides;
+  const { write: _write, mailer, ...deps } = overrides;
   void _write;
-  const app = createApp({ logger, db, ...deps });
+  const auth = authFromConfig(config, { db: db.db, ...(mailer !== undefined ? { mailer } : {}) });
+  const app = createApp({ logger, db, auth, ...deps });
 
   const server = await new Promise<ServerType>((resolve, reject) => {
     const s = serve({ fetch: app.fetch, port: config.PORT }, () => resolve(s));
     s.once('error', reject);
   }).catch(async (err: unknown) => {
+    await auth.close();
     await db.close();
     throw err;
   });
@@ -60,6 +66,7 @@ export async function startServer(
         server.close(() => resolve());
         if ('closeAllConnections' in server) (server as { closeAllConnections(): void }).closeAllConnections();
       });
+      await auth.close();
       await db.close();
     },
   };

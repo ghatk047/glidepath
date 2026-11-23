@@ -62,7 +62,7 @@ title: "Auth: magic link, session cookies, /api/me, /api/tenants, roles"
 epic: API
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -83,6 +83,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: "Security item: opus/xhigh per rubric."
+merged_at: "2026-11-23"
 ```
 
 Who is calling, and for which airline.

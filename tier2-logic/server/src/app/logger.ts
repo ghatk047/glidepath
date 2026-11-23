@@ -38,11 +38,11 @@ export interface LoggerOptions {
 }
 
 /** The exact secret strings to scrub, derived from the secret-bearing config values. */
-export function secretsFrom(values: { AUTH_SECRET?: string; DATABASE_URL?: string }): string[] {
+export function secretsFrom(values: { AUTH_SECRET?: string; DATABASE_URL?: string; SMTP_URL?: string | undefined }): string[] {
   const out: string[] = [];
   if (values.AUTH_SECRET) out.push(values.AUTH_SECRET);
-  const url = values.DATABASE_URL;
-  if (url) {
+  for (const url of [values.DATABASE_URL, values.SMTP_URL]) {
+    if (!url) continue;
     out.push(url);
     try {
       const u = new URL(url);

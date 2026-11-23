@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import type { DbHandle } from '@glidepath/data-access';
 import { Hono } from 'hono';
+import type { Auth } from '../auth/auth';
+import { tenantWriteGuard } from '../auth/guard';
+import { dbMemberships } from '../auth/memberships';
 import { requestSecrets } from './logger';
 import type { Logger } from './logger';
 import { registerReadRoutes } from '../routes/read';
 import { specBundleFromDir } from '../routes/read/spec-source';
 import type { SpecBundleSource } from '../routes/read/spec-source';
 import { errorHandler, notFoundHandler, problemResponse } from './problem';
-import { bindWithTenant, noAuthentication, noMemberships, tenantMiddleware } from './tenant';
+import { bindWithTenant, noAuthentication, tenantMiddleware } from './tenant';
 import type { AppEnv, Authenticator, MembershipResolver, WithTenant } from './tenant';
 
 export const HEALTH_TIMEOUT_MS = 2_000;
@@ -16,9 +19,14 @@ export interface AppDeps {
   logger: Logger;
   /** Database handle from `createDb(DATABASE_URL)`. */
   db: DbHandle;
-  /** Caller identity; default: nobody (API-02 supplies cookie sessions). */
+  /**
+   * Sign-in, cookie sessions, same-origin + CSRF guard, `/api/me`, `/api/tenants` (API-02, `authFromConfig`).
+   * Absent (some tests): no auth routes, and nobody is authenticated unless `authenticate` says so.
+   */
+  auth?: Auth;
+  /** Caller identity; default: the cookie session of `auth`, else nobody. Tests may substitute their own. */
   authenticate?: Authenticator;
-  /** Membership lookup; default: stub with no memberships (DATA-05 supplies the repository). */
+  /** Membership lookup; default: tenant_membership through DATA-05 `withUser` + `findMyMembership`. */
   membership?: MembershipResolver;
   /** Tenant-scoped transaction; default: local stand-in with the same signature as DATA-05's. */
   withTenant?: WithTenant;
@@ -44,7 +52,10 @@ async function probeDb(db: DbHandle, timeoutMs: number): Promise<void> {
   }
 }
 
-/** The Hono app: request logging, `/healthz`, problem-JSON errors and the tenant-scoped `/api/t/:tenant/*` mount. */
+/**
+ * The Hono app: request logging, `/healthz`, problem-JSON errors, auth (guard on `/api/*`, auth routes),
+ * the tenant-scoped `/api/t/:tenant/*` mount and its role guard (state-changing requests need owner or editor).
+ */
 export function createApp(deps: AppDeps): Hono<AppEnv> {
   const { logger, db } = deps;
   const app = new Hono<AppEnv>();
@@ -84,14 +95,22 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
     }
   });
 
+  if (deps.auth) {
+    // Before every /api route: state-changing requests must be same-origin and carry the session's CSRF token.
+    app.use('/api/*', deps.auth.guard);
+    app.route('/', deps.auth.routes);
+  }
+
   app.use(
     '/api/t/:tenant/*',
     tenantMiddleware({
-      authenticate: deps.authenticate ?? noAuthentication,
-      membership: deps.membership ?? noMemberships,
+      authenticate: deps.authenticate ?? deps.auth?.authenticate ?? noAuthentication,
+      membership: deps.membership ?? deps.auth?.membership ?? dbMemberships(db.db),
       withTenant: deps.withTenant ?? bindWithTenant(db.db),
     }),
   );
+  // Viewers (and advisors) are read-only: every state-changing tenant route needs owner or editor.
+  app.use('/api/t/:tenant/*', tenantWriteGuard());
 
   registerReadRoutes(app, { specBundle: deps.specBundle ?? specBundleFromDir() });
 

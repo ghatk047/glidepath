@@ -4,6 +4,9 @@ import { z } from 'zod';
  * Configuration comes from environment variables only (CLAUDE.md rule 10, 12-factor, doc 11 §4).
  * The database is configured by DATABASE_URL alone (ADR-015): host, role, database and TLS are in the URL.
  * SESSION_IDLE_MIN and AI_MAX_TOKENS_PER_JOB are operational limits with defaults here (ADR-022).
+ * SMTP_URL and AUTH_LINK_TTL_MIN configure magic-link sign-in (ADR-014, API-02); PUBLIC_BASE_URL is the
+ * origin users open the app on: magic links point there, state-changing requests must come from it, and
+ * an `http:` value turns the cookies' Secure attribute off for local plain-http runs.
  */
 
 const intFromEnv = (name: string, def: number, min = 1) =>
@@ -19,6 +22,9 @@ export const MIN_AUTH_SECRET_LENGTH = 16;
 export const DEFAULT_PORT = 8080;
 export const DEFAULT_SESSION_IDLE_MIN = 30;
 export const DEFAULT_AI_MAX_TOKENS_PER_JOB = 200_000;
+export const DEFAULT_AUTH_LINK_TTL_MIN = 15;
+/** A sign-in link is a bearer credential in a mailbox: never valid for more than a day. */
+export const MAX_AUTH_LINK_TTL_MIN = 24 * 60;
 
 export const LOG_LEVELS = ['debug', 'info', 'warn', 'error', 'silent'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
@@ -46,6 +52,24 @@ export const ConfigSchema = z.object({
   PUBLIC_BASE_URL: z.preprocess((v) => (v === '' ? undefined : v), z.url('PUBLIC_BASE_URL must be a URL').optional()),
   SESSION_IDLE_MIN: intFromEnv('SESSION_IDLE_MIN', DEFAULT_SESSION_IDLE_MIN),
   AI_MAX_TOKENS_PER_JOB: intFromEnv('AI_MAX_TOKENS_PER_JOB', DEFAULT_AI_MAX_TOKENS_PER_JOB),
+  /** Outgoing mail for magic links (`smtp://mail:1025` is mailpit). Unset: sign-in links cannot be sent (503). */
+  SMTP_URL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .refine((v) => {
+        try {
+          const p = new URL(v).protocol;
+          return p === 'smtp:' || p === 'smtps:';
+        } catch {
+          return false;
+        }
+      }, 'SMTP_URL must be an smtp:// or smtps:// URL')
+      .optional(),
+  ),
+  AUTH_LINK_TTL_MIN: intFromEnv('AUTH_LINK_TTL_MIN', DEFAULT_AUTH_LINK_TTL_MIN).pipe(
+    z.number().max(MAX_AUTH_LINK_TTL_MIN, `AUTH_LINK_TTL_MIN must be at most ${MAX_AUTH_LINK_TTL_MIN}`),
+  ),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

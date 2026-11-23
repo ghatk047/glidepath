@@ -2,7 +2,7 @@
 
 `logic` container: Hono REST + WebSocket, auth, tenancy, sessions.
 
-Skeleton only: no feature code yet.
+Server app (API-01) and auth (API-02).
 
 ## API-01: server skeleton (`src/app`)
 
@@ -10,5 +10,23 @@ Skeleton only: no feature code yet.
 - Config is env only, validated with zod (`config.ts`): `DATABASE_URL` and `AUTH_SECRET` (min 16 chars) are required, `PORT`, `LOG_LEVEL`, `PUBLIC_BASE_URL`, `SESSION_IDLE_MIN`, `AI_MAX_TOKENS_PER_JOB` have defaults (ADR-022); `DB_POOL_MAX` / `DB_PREPARED_STATEMENTS` are optional DB tuning. Startup exits 1 listing every missing or invalid variable (never the values).
 - `GET /healthz`: 200 when `select 1` answers within 2 s on the `DATABASE_URL` pool, otherwise a 503 problem.
 - Errors are RFC 9457 problem JSON built with `@glidepath/api-contract` `Problem` (`problem.ts`): `ApiError`, zod errors (422), malformed JSON (400), unknown routes (404), anything else a generic 500.
-- `/api/t/:tenant/*` (`tenant.ts`): authenticate (401), resolve membership (no membership: 404 problem), then run the handler inside `withTenant(tenantId, userId, fn)`; handlers use `c.get('tenant').tx`. Authentication, membership and `withTenant` are injected (`AppDeps`); defaults are stubs (nobody authenticated, no memberships, a local `set_config(..., true)` transaction) until API-02 and DATA-05.
+- `/api/t/:tenant/*` (`tenant.ts`): authenticate (401), resolve membership (no membership: 404 problem), then run the handler inside `withTenant(tenantId, userId, fn)`; handlers use `c.get('tenant').tx`. Authentication, membership and `withTenant` are injected (`AppDeps`); the defaults are the cookie session of `AppDeps.auth` (else nobody), tenant_membership via DATA-05 `withUser` + `findMyMembership`, and data-access `withTenant`.
 - JSON logs (`logger.ts`) redact sensitive keys and scrub AUTH_SECRET, the DATABASE_URL and its password, URL userinfo and each request's cookie / authorization values.
+
+## API-02: auth (`src/auth`)
+
+Magic-link sign-in (ADR-014), cookie sessions, roles from `tenant_membership`. `start.ts` builds it with `authFromConfig(config, { db })` and passes it to `createApp` as `auth`.
+
+| Route | Answer |
+|---|---|
+| `POST /api/auth/magic-link` `{ email }` | `202 { status: 'accepted' }` for every address (no account oracle); 422 bad address; 503 when `SMTP_URL` or `PUBLIC_BASE_URL` is unset. For an existing `app_user` the mail is queued after the answer. |
+| `GET /api/auth/callback?token=` | Consumes the token, rotates the session, sets the cookies, `303 /`; unknown, used or expired: `303 /?auth=invalid-link`, no cookie. `HEAD` does not consume. |
+| `POST /api/auth/logout` | Deletes the session, clears both cookies, 204. |
+| `GET /api/me`, `GET /api/tenants` | Contract `MeResponse` / `TenantsResponse` (`withUser`: only the caller's memberships), `private, no-store`; 401 without a session. |
+
+- Env: `AUTH_SECRET` (HKDF-derived keys for the cookie signature, CSRF tokens and stored hashes), `PUBLIC_BASE_URL` (link target and the one allowed `Origin`; an `http:` value turns Secure off for local plain-http runs), `SMTP_URL` (`smtp://mail:1025` = mailpit), `AUTH_LINK_TTL_MIN` (default 15, max 1440). Sessions last `SESSION_TTL_HOURS` (12) from sign-in.
+- Stored: `auth_token.token_hash` = HMAC of the 256-bit token; `auth_session.id` = uuid from the HMAC of the 256-bit session secret. The secret only lives in the cookie. Single use is one `UPDATE ... WHERE consumed_at IS NULL AND expires_at > now RETURNING`; sign-in voids the address's other links; at most 5 live links per address (advisory lock per address).
+- Cookies: `__Host-gp_session` (`gp_session` on plain http): HttpOnly, Secure, SameSite=Lax, Path=/, value signed (Hono signed cookie). `gp_csrf`: the session's CSRF token, readable by the SPA, which sends it back as `x-csrf-token`.
+- Guards: on `/api/*`, every state-changing method needs `Origin` = PUBLIC_BASE_URL's origin (or, without `Origin`, `Sec-Fetch-Site: same-origin`), and, with a session, the CSRF header (403 problem otherwise). On `/api/t/:tenant/*`, state-changing methods need role owner or editor (`tenantWriteGuard`, deny by default); `requireRole(...)` narrows a route further (e.g. owner only).
+- For API-06 (WS): `auth.session(c)` / `auth.authenticate(c)` read the cookie; `isSameOrigin(headers, allowedOrigin(settings, url))` checks the handshake.
+- Tests (`src/auth/*.pg.test.ts`) run on a testkit database as `glidepath_app`, with an in-process SMTP sink (`testing/smtp-sink.ts`) as `SMTP_URL`.

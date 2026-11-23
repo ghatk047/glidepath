@@ -239,6 +239,9 @@ importers:
       hono:
         specifier: ^4.13.20
         version: 4.13.20
+      nodemailer:
+        specifier: 10.3.1
+        version: 10.3.1
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -2526,6 +2529,10 @@ packages:
   node-releases@2.0.65:
     resolution: {integrity: sha512-PfvofsGQ+MiOQIPkX9fU8ELUWmy5zL74CdQaph/ismKszfFkfwXaw0cGiwbwym2hT9k5+mdyl8O5WQ1MD8EHmA==}
     engines: {node: '>=18'}
+
+  nodemailer@10.3.1:
+    resolution: {integrity: sha512-uF0AFsJC07Y1vdW7p580DKAnh7rAO+4UPSSB3mDCPNDufoiaOebV6JmrzpxB14OjEEEiBsNdYoM2Y+fN8M7BBA==}
+    engines: {node: '>=20.0.0'}
 
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
@@ -5524,6 +5531,8 @@ snapshots:
   neo-async@2.6.2: {}
 
   node-releases@2.0.65: {}
+
+  nodemailer@10.3.1: {}
 
   normalize-path@3.0.0: {}
 
