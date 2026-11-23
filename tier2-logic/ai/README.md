@@ -22,6 +22,27 @@ The port every pipeline step uses: `run(step, input) → StepRun<O>` (`output` i
 - every response and the step's source list go to the `AuditSink` port as `ai/<job-id>/<seq>-<step>-*.json`.
   `AuditSink.put` matches `ObjectStore.put` (ADR-025), so the worker passes its object store in.
 
+## Schemas, prompts and the onboarding checklist (AI-02)
+
+- **Checklist as data:** `src/onboarding/checklist.json` holds the nine steps of spec 07 §2 (title, what to
+  produce, research topics, and which seed files, dimensions, registry groups and variables each step fills).
+  `ONBOARDING_CHECKLIST`, `ChecklistStepId` (enum from the data), `checklistStepForDim/ForVariable` and
+  `renderChecklist()` read it; no step is spelled out in code (test).
+- **zod schemas** (`src/schemas/`): `ReconfigPlan` (step 1), `FactBase` (step 2: value, unit, source URL, date,
+  confidence H/M/L as in the registry), `TenantSeedDraft` (step 3, assembled: the five `seed/<tenant>/` files in the
+  seed's own shape, validated with `parseTenantSeed` from `@glidepath/spec`, plus `provenance` per value),
+  `LeverTuningDraft` (step 6, a separate changeset with reasons).
+- **Wire format of step 3:** structured outputs accept no maps and no recursion (the SDK silently sends a zod
+  record as an empty object), so the model writes one `SeedSectionDraft` per checklist step with lists of
+  entries; `assembleSeedDraft(sections, presets)` rebuilds the seed and `splitSeedDraft(seed, registry)` is its
+  inverse (worked example, coverage test). Every model-facing schema is checked for closed objects, no maps and
+  no recursion.
+- **Prompts** (`src/prompts/`): `systemBlocks(step, { workedExample? })` gives the stable, cached prefix (shared
+  system prompt with the trust rules, step instructions, rendered checklist, optional worked example).
+  `render*Prompt()` builds the per-job prompt: prompt-bar text is quoted as user input in `<prompt_bar>` with
+  `& < >` escaped, web-derived JSON is emitted with `<` escaped. Snapshots are plain text in `fixtures/prompts/`.
+  Prompts and fixtures use neutral examples only ("Example Air", `ZZ`).
+
 ## Configuration
 
 `loadAiConfig(env)`: `ANTHROPIC_API_KEY` (required, secret: never logged or persisted), optional

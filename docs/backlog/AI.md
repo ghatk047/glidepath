@@ -56,7 +56,7 @@ title: "Pipeline schemas and prompts"
 epic: AI
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -75,6 +75,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Typed outputs for every model call.

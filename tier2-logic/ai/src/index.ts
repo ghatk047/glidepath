@@ -34,3 +34,58 @@ export {
 } from './errors';
 export { isRetryable } from './retry';
 export type { Source } from './sources';
+
+// AI-02: pipeline schemas, prompts and the onboarding checklist as data.
+export {
+  ChecklistStepId,
+  checklistStep,
+  checklistStepForDim,
+  checklistStepForVariable,
+  ONBOARDING_CHECKLIST,
+  parseChecklist,
+  renderChecklist,
+  type Checklist,
+  type ChecklistStep,
+  type SeedFile,
+} from './onboarding/checklist';
+export { Confidence, Deliverable, ReconfigPlan } from './schemas/plan';
+export { Fact, FactBase } from './schemas/facts';
+export {
+  assembleSeedDraft,
+  DimensionDraft,
+  MemberDraft,
+  SeedAssemblyError,
+  SeedSectionDraft,
+  splitSeedDraft,
+  TENANT_TARGET,
+  TenantRecordDraft,
+  TenantSeedDraft,
+  ValueDraft,
+  ValueProvenance,
+  type RegistryEntry,
+  type SeedPresets,
+  type TenantSeedDraftInput,
+} from './schemas/seed';
+export { LeverTuningChange, LeverTuningDraft } from './schemas/lever-tuning';
+export {
+  BASE_SYSTEM_PROMPT,
+  LEVER_TUNING_INSTRUCTIONS,
+  RESEARCH_INSTRUCTIONS,
+  SCOPE_INSTRUCTIONS,
+  SEED_DRAFT_INSTRUCTIONS,
+  systemBlocks,
+  type PromptStep,
+} from './prompts/system';
+export {
+  jsonBlock,
+  quotePromptBar,
+  renderLeverTuningPrompt,
+  renderResearchPrompt,
+  renderScopePrompt,
+  renderSeedSectionPrompt,
+  type LeverTuningPromptInput,
+  type PromptVariable,
+  type ResearchPromptInput,
+  type ScopePromptInput,
+  type SeedSectionPromptInput,
+} from './prompts/render';

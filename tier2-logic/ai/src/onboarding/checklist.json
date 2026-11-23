@@ -1,0 +1,126 @@
+{
+  "source": "docs/spec/07_multitenancy_reconfiguration.md#2. Tenant onboarding checklist (what the AI must produce)",
+  "steps": [
+    {
+      "n": 1,
+      "id": "tenant_record",
+      "title": "Tenant record",
+      "produce": "Name, currency, base and target year, ticker, fiscal calendar.",
+      "research": [
+        "Legal name, stock ticker and reporting currency",
+        "Fiscal calendar and the last reported fiscal year"
+      ],
+      "seed": { "files": ["tenant.json"], "dims": ["year", "iyear"], "groups": [], "variables": [] }
+    },
+    {
+      "n": 2,
+      "id": "baseline_lines",
+      "title": "Baseline lines",
+      "produce": "Each line mapped to a canonical pool, a domain, an addressability tag and a scale driver, with amount and capex share. Where no bottom-up data exists, build an outside-in baseline from benchmarks x headcount x footprint, every line with source and confidence.",
+      "research": [
+        "IT footprint: data centres, cloud use, application portfolio, key platforms",
+        "IT spend benchmarks for carriers of a similar size",
+        "Global capability centre (GCC) presence"
+      ],
+      "seed": {
+        "files": ["dimension_members.json", "variable_values.json"],
+        "dims": ["pool", "line", "domain", "akey", "addr_tag"],
+        "groups": ["Baseline & pools"],
+        "variables": []
+      }
+    },
+    {
+      "n": 3,
+      "id": "org",
+      "title": "Org",
+      "produce": "Technology VPs and domain ownership (each domain's shares sum to 100%), and the shared-services owner.",
+      "research": ["Technology leadership structure and who owns which domains"],
+      "seed": {
+        "files": ["dimension_members.json", "variable_values.json"],
+        "dims": ["vp"],
+        "groups": ["Org map & chargeback"],
+        "variables": []
+      }
+    },
+    {
+      "n": 4,
+      "id": "workforce",
+      "title": "Workforce",
+      "produce": "Internal, captive and contractor headcount, and the headcounts the baseline lines were sized at.",
+      "research": [
+        "Total employees and technology headcount",
+        "Captive centre and contractor use"
+      ],
+      "seed": {
+        "files": ["variable_values.json"],
+        "dims": [],
+        "groups": ["Workforce & rates"],
+        "variables": []
+      }
+    },
+    {
+      "n": 5,
+      "id": "vendors",
+      "title": "Vendors",
+      "produce": "Preferred vendor panel and book of business.",
+      "research": ["IT outsourcing, managed-service and consulting vendors"],
+      "seed": {
+        "files": ["dimension_members.json", "variable_values.json"],
+        "dims": ["vendor"],
+        "groups": [],
+        "variables": ["vendor.book"]
+      }
+    },
+    {
+      "n": 6,
+      "id": "corporate_drivers",
+      "title": "Corporate drivers",
+      "produce": "Last reported year as calibration targets from the annual report (revenue, fuel, SWB, opex, EBIT, interest, net income, OCF, FCF, cash, net debt), plus forecasts for the next two years. Labor groups follow the airline's own unions.",
+      "research": [
+        "Annual report figures: revenue, fuel, SWB, opex, EBIT, interest, net income, OCF, FCF, cash, net debt",
+        "Capacity, yield, load factor and fleet",
+        "Unions and labor groups"
+      ],
+      "seed": {
+        "files": ["dimension_members.json", "variable_values.json"],
+        "dims": ["lgroup"],
+        "groups": ["Corporate drivers", "P&L hand-off"],
+        "variables": []
+      }
+    },
+    {
+      "n": 7,
+      "id": "target",
+      "title": "Target",
+      "produce": "Dollar amount or % of base, growth absorption, one-time funding share.",
+      "research": ["Public cost-reduction or technology-spend commitments"],
+      "seed": {
+        "files": ["variable_values.json"],
+        "dims": [],
+        "groups": ["Target & governance"],
+        "variables": []
+      }
+    },
+    {
+      "n": 8,
+      "id": "scenarios",
+      "title": "Scenarios",
+      "produce": "Copy the five global presets; lever inputs stay the library defaults until tuned.",
+      "research": [],
+      "seed": {
+        "files": ["scenarios.json", "lever_library.json", "dimension_members.json", "variable_values.json"],
+        "dims": ["lever"],
+        "groups": ["Levers"],
+        "variables": []
+      }
+    },
+    {
+      "n": 9,
+      "id": "sources",
+      "title": "Sources",
+      "produce": "Every value carries source and confidence.",
+      "research": [],
+      "seed": { "files": [], "dims": [], "groups": [], "variables": [] }
+    }
+  ]
+}
