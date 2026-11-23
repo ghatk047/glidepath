@@ -51,3 +51,9 @@ export { PENDING_PROBLEMS, PROBLEMS } from './problems';
 // SOL-07 tornado sensitivity.
 export { TORNADO_CATEGORIES, defaultTornadoCategory, tornado } from './tornado';
 export type { Tornado, TornadoCategory, TornadoItem, TornadoModel, TornadoOptions, TornadoPoint } from './tornado';
+
+// SOL-02: goal seek and breakeven.
+export { breakeven, goalSeek } from './goal-seek';
+export { BREAKEVEN_OUTPUT, BREAKEVEN_TARGET } from './problems/goal-seek';
+export { SCAN_POINTS, isMonotone, scanGrid, seek, seekScalar } from './problems/seek';
+export type { SeekOptions, SeekReason, SeekResult, Seeker } from './problems/seek';

@@ -2513,7 +2513,7 @@
     "epic": "SOL",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -2541,7 +2541,8 @@
       "G8"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "SOL-03",

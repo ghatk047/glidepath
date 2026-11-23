@@ -5,6 +5,7 @@
 import { SolverError } from '../errors';
 import type { ProblemSolver, ProblemTable } from '../run';
 import type { ProblemId } from '../types';
+import { breakevenProblem, goalSeekProblem } from './goal-seek';
 
 /** Backlog item that implements each problem (docs/backlog/SOL.md). */
 export const PENDING_PROBLEMS: Readonly<Record<ProblemId, string>> = {
@@ -26,8 +27,8 @@ const pending =
   };
 
 export const PROBLEMS: ProblemTable = {
-  goal_seek: pending('goal_seek'),
-  breakeven: pending('breakeven'),
+  goal_seek: goalSeekProblem,
+  breakeven: breakevenProblem,
   scenario_blend: pending('scenario_blend'),
   min_risk_mix: pending('min_risk_mix'),
   pareto: pending('pareto'),

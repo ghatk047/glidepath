@@ -12,6 +12,13 @@ SOL-01 framework (this package's skeleton for every problem):
 - `src/ranked.ts`: `rankMoves(model, changes, output, { mode: 'alone' | 'path', order })`, one batch evaluation pricing every move (also `run.rank`).
 - `src/problems/index.ts`: one entry per problem; each rejects with `NOT_IMPLEMENTED` naming its item (SOL-02 … SOL-09) until that item replaces it.
 
+SOL-02 goal seek and breakeven (`goalSeek()`, `breakeven()` in `src/goal-seek.ts`; problems in `src/problems/goal-seek.ts`):
+
+- `src/problems/seek.ts`: the 1-D search as a generator (yields points, receives outputs): an 11-point scan in one request, then Brent on the bracketing scan interval. A non-monotone scan (or a point that does not evaluate) or a target outside the scanned outputs ends `unreachable` with the closest scan value. `seekScalar(f, lo, hi, target)` runs it on a plain function.
+- `goal_seek`: bounds default to the variable's registry min/max; status `optimal` (solved) or `unreachable`; `changes` sets the input to the solution (or the closest value); `detail` `{ value, output, reachable }`.
+- `breakeven`: one row per `lever_intensity` input (or per given input) on `res.gap = 0` by default. All searches run in lockstep, one engine batch per round. A row searches the decision bounds (`feasible`), then the registry range (`needed`, not feasible); `needed` is null when neither holds it. `min`/`max` are the feasibility range. `changes` is empty (the rows are alternatives, not one plan); status `optimal` when any row is feasible, else `unreachable`.
+- `pnpm --filter ./tier2-logic/solvers bench` reports goal seek and breakeven timings; the budgets (< 1 s, < 2 s) are asserted in `goal-seek.spec.ts`.
+
 ```ts
 import { runSolver, type SolverModel } from '@glidepath/solvers';
 
