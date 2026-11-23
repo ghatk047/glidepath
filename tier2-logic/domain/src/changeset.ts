@@ -281,6 +281,7 @@ function newValueProblem(c: Change): string | null {
  * The problems that make a draft invalid whatever the stored state, in change order; empty when
  * there are none:
  * - `base_scenario_version` is not a non-negative integer;
+ * - no changes: a changeset writes at least one row;
  * - `unset` of a tenant default (`scenario_id` null): the tenant default is the last level a cell
  *   resolves from, so removing it leaves the cell without a value; set a value instead;
  * - an override without a scenario (node_override.scenario_id is part of its key);
@@ -292,6 +293,9 @@ export function draftIssues(draft: ChangesetDraft): DraftIssue[] {
   const version = draft.base_scenario_version;
   if (!Number.isInteger(version) || version < 0) {
     issues.push({ index: null, message: `base_scenario_version ${version} is not a version` });
+  }
+  if (draft.changes.length === 0) {
+    issues.push({ index: null, message: 'a changeset needs at least one change' });
   }
   draft.changes.forEach((c, index) => {
     const cell = `${c.target} ${c.key}[${c.member_key}]`;

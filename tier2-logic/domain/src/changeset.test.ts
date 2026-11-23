@@ -214,7 +214,7 @@ describe('checkDraft rejects drafts that are invalid whatever the state', () => 
     expect(() => checkDraft(d)).toThrow(/change 0: .*tenant defaults cannot be unset/);
   });
 
-  it('lists every problem: overrides without a scenario, new_value not fitting the op, a bad version', () => {
+  it('lists every problem: overrides without a scenario, new_value not fitting the op, a bad version, no changes', () => {
     const d: ChangesetDraft = {
       ...draft(
         null,
@@ -257,5 +257,8 @@ describe('checkDraft rejects drafts that are invalid whatever the state', () => 
         }),
       ),
     ).toEqual([{ index: 0, message: 'variable g.target_net[]: unset needs new_value null' }]);
+    expect(draftIssues(draft(SCENARIO))).toEqual([
+      { index: null, message: 'a changeset needs at least one change' },
+    ]);
   });
 });

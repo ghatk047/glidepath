@@ -2,7 +2,7 @@
 
 Changesets, VR01-VR10, scenario resolution/fork/undo, hashing. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients, `fetch`, `process` and dynamic `import()` in `src`). State is read and written through the ports in `src/ports.ts` (ADR-019).
 
-DOM-01 provides the vocabulary of every write. DOM-02 adds the input validation rules. `applyChangeset` follows in DOM-03.
+DOM-01 provides the vocabulary of every write. DOM-02 adds the input validation rules. DOM-03 adds `applyChangeset`, the single write path; the engine step (Recompute) follows in DOM-05.
 
 ## Changesets (`src/changeset.ts`)
 
@@ -23,14 +23,72 @@ There are two layers:
   `changeRowTarget(change, scenarioId)` and `CHANGE_ROW_TARGET_KIND` map between the two layers.
 - `set` writes the row and `unset` removes it, so the cell inherits again. On a stored row, `op` records whether the row was inserted, updated or deleted.
 - For values, `old_value` is the cell's value before this change, as resolved at the changeset's base version: the level's own row, else what the cell inherits (ancestor scenarios, then the tenant default), with the changeset's earlier changes applied. That gives the tray its "from → to". `new_value` is the row's new value, or null when the row is removed. For structural rows, both are row contents.
-- A change may carry a `note`. It is persisted to `variable_value.note` (a tenant default) or `node_override.reason` (an override). `scenario_value`, `dimension_member` and `line_item` have no note column, so they do not store it.
+- A change may carry a `note`. `applyChangeset` keeps it on the change row, in `change.messages.note` (change has no note column). It is also persisted to `variable_value.note` (a tenant default) or `node_override.reason` (an override). `scenario_value`, `dimension_member` and `line_item` have no note column.
 - `checkDraft(draft)` throws a `ChangesetDraftError` listing every problem that makes a draft invalid whatever the state (`draftIssues` returns the list):
   - `unset` on tenant defaults (`scenario_id` null). The tenant default is the last level, so the cell would have no value. Set a value instead.
   - An override without a scenario.
   - A `new_value` that does not fit the op.
   - A negative or fractional `base_scenario_version`.
+  - No changes.
 - Versions: a scenario draft starts from `scenario.version`. Tenant defaults have no scenario row, so their version is the number of tenant-default changesets ever applied (status `applied` or `reverted`). A tenant-default draft is current when `changesSince(null, base_scenario_version)` is empty, and nothing is bumped.
 - A draft names no author. `applyChangeset` takes the actor (a user id) as an explicit argument and writes it to `changeset.created_by` and `audit_log.actor`. It never reads the actor from ambient context, because the store's context carries only the tenant.
+
+## applyChangeset (`src/apply.ts`)
+
+`applyChangeset(store, draft, options)` is the write path of docs/architecture/04_data_and_api.md section 2. It runs in one `store.transaction` and writes nothing before steps 1 to 4 pass:
+
+```ts
+const result = await applyChangeset(store, draft, {
+  actor: userId,              // changeset.created_by, audit_log.actor, a fork's created_by
+  bundle,                     // the tenant's pinned model: variables, nodes, dimensions
+  clientRequestId: 'rq-7f3a', // optional, the contract's idempotency key
+  recompute,                  // optional; noRecompute until DOM-05
+});
+// { changesetId, scenarioId, version, editsCount, forkedFrom?, changeset, warnings, clamped, replayed, recomputed }
+```
+
+| Step | What happens | Failure (nothing written) |
+|---|---|---|
+| 1 | Lock the scenario row (`loadScenarioForUpdate`) or the tenant-default lock (`lockTenantDefaults`). A `clientRequestId` the actor already applied returns that changeset's result (`replayed: true`). Then `base_scenario_version` must be the stored version. | `ScenarioNotFoundError`; `ChangesetConflictError { serverVersion, changesSince }` |
+| 2 | A locked scenario forks: `createScenario` of kind `user`, key `custom-<key>`, label `Custom (from <key>)` (then `... 2`, `... 3`), parent the preset, version 0. The draft is retargeted to the fork, and `forkedFrom` is the preset. Only origin `seed` writes a locked preset in place. The preset's node overrides are not inherited, so the fork copies them in a changeset of their own first. | |
+| 3 | A value a draft sets outside its variable's registry min/max follows `BOUNDS_POLICY`: `ui` clamps it to the nearest bound (`clamped`); `excel_import`, `api` and `ai_reconfig` reject it with the cell's VR04 entry as an error; `seed`, `solver` and `market_refresh` write it and VR04 stays a warning. The seed keeps the spec's values, some of which pass a registry max. | `ChangesetRejectedError { violations }` |
+| 4 | `validateInputs` on the post-change state: the target's resolved inputs with every change applied, and the members with every structural change applied (`memberOfRow`). | `ChangesetRejectedError` with the error entries |
+| 5 | `insertChangeset` (the changeset row and its change rows), then one `writeValue` / `writeMember` per change in draft order, then `setChangesetStatus(reverted, 'reverted')` for an undo. | |
+| 6 | `bumpVersion`, then `appendAudit`, then the Recompute hook, all before the commit. A throw from the hook rolls everything back. | whatever the hook throws |
+
+- **Draft against state.** These problems throw a `ChangesetDraftError` with one issue per change:
+  - an unknown variable or node, or a structural change to a dimension that is not a tenant dimension;
+  - a member key of the wrong arity, or a `set` naming a member that does not exist;
+  - an `insert` of an existing member, or a `set` / `delete` of a missing one;
+  - an `unset` of a row the level does not have;
+  - a bad `reverts_id`: unknown, on another scenario, not `applied`, or on a locked scenario.
+
+  A draft `old_value` that differs from the stored value is a `ChangesetConflictError` with `stale` cells.
+- **Change rows.**
+  - `seq` is the change's index in the draft.
+  - `old_value` is the cell's resolved value before the change (inherited if the level has no row; a pin's own value for an override), or the structural row before it.
+  - `op` is `insert`, `update` or `delete`.
+  - `messages` is `ChangeMessages`: `{ note?, warnings? }`, where the warnings are the post-change warnings on that cell.
+- **Summary and the edits counter.** `changeset.summary` is `ChangesetSummaryData`:
+  - `changes`: the number of change rows.
+  - `edits`: what this changeset adds to the counter. That is the change count for an edit, 0 for the seed or a fork's pin copy, and minus the undone changeset's `edits` for an undo, so a redo adds them back.
+  - `edits_count`: the scenario's counter after this changeset. It is the contract's `editsCount`. A scenario's current count is the `edits_count` of its changeset with `base_scenario_version = version - 1`, or 0 if it has none. A preset seeded with origin `seed` stays at 0.
+  - `client_request_id`: the idempotency key, when given.
+  - `forked_from`: the preset, when this changeset forked one.
+
+  `summaryOf` and `messagesOf` read the stored JSON back.
+- **Undo.** A draft with `reverts_id` (`reverse()`) marks that changeset `reverted` and appends a `changeset.revert` audit entry. DOM-04 builds `revert()` on this.
+- **Tenant defaults** (`scenario_id` null) have no scenario row. Their version is the count of their changesets, so no version is bumped. The rules run on the tenant-default state only, not on every scenario that inherits it.
+- **Audit.** Each changeset appends `changeset.apply`, and each fork appends `scenario.fork`.
+
+### Members of structural rows (`src/member-rows.ts`)
+
+`memberOfRow(dim, member_key, row, previous?)` maps a stored row to the member it becomes, as `v_dimension_members` maps it (tier3-data/migrations/0003_views.sql). A test checks the mapping against that SQL and the `line` dimension's attributes.
+
+- A dimension_member row `{ label, attrs, sort, active }` becomes `{ id, label, ...attrs }`.
+- A line_item row becomes `{ id, label: name, ... }`, with its columns renamed by `LINE_ITEM_ATTRIBUTES` (`pool_id` to `pool`, `domain_key` to `domain`, and so on). Flags become 0/1.
+- `lever_ids` and `source` come from other tables, so a changed line keeps the values its member had.
+- An inactive row is no member.
 
 ## Member keys (`src/member-key.ts`)
 
@@ -120,8 +178,11 @@ const entries = validateInputs({ bundle, members, values: resolveInputs(...).val
 
   | Group | Methods |
   |---|---|
-  | Reads | `loadScenarioForUpdate`, `loadScenarios`, `loadInputs` (the arguments of `resolveInputs`), `loadMembers`, `loadChangeset`, `changesSince` |
+  | Locks | `loadScenarioForUpdate`, `lockTenantDefaults` |
+  | Reads | `loadScenarios`, `loadInputs` (the arguments of `resolveInputs`), `loadMembers` (active members), `loadMemberRows` (raw structural rows), `loadChangeset`, `findChangesetByClientRequest`, `changesSince` (status `applied` or `reverted`) |
   | Writes | `createScenario`, `insertChangeset`, `setChangesetStatus`, `writeValue`, `writeMember`, `bumpVersion`, `findCalcRun`, `upsertCalcRun`, `appendAudit` |
+
+  `loadInputs(scenario).chain` ends with a level for the scenario itself, which may have no rows. `src/test-support/memory-store.ts` is the in-memory implementation the tests use.
 - `ModelCache<TModel>.getOrCompile(key, compile)` is keyed by `ModelCacheKey` `(tenant_id, model_version_id, members_hash)`. `modelCacheKey()` builds the key with `membersHash` from `@glidepath/spec`.
 
 ## Tests

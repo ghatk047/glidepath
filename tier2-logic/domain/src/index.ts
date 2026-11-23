@@ -81,6 +81,35 @@ export type {
   ValidationEntry,
   ValidationState,
 } from './validation';
+export {
+  BOUNDS_POLICY,
+  FORK_KIND,
+  LOCKED_WRITE_ORIGINS,
+  UNCOUNTED_ORIGINS,
+  applyChangeset,
+  forkName,
+  messagesOf,
+  noRecompute,
+  summaryOf,
+} from './apply';
+export type {
+  ApplyBundle,
+  ApplyOptions,
+  ApplyResult,
+  BoundsPolicy,
+  ChangeMessages,
+  ChangesetSummaryData,
+  ClampedValue,
+  Recompute,
+  RecomputeInput,
+} from './apply';
+export {
+  ChangesetConflictError,
+  ChangesetRejectedError,
+  ScenarioNotFoundError,
+} from './apply-errors';
+export type { StaleChange } from './apply-errors';
+export { LINE_ITEM_ATTRIBUTES, LINE_ITEM_JOINED_ATTRIBUTES, memberOfRow } from './member-rows';
 export { SCENARIO_KINDS, modelCacheKey } from './ports';
 export type {
   AuditEntry,

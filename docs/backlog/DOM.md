@@ -89,7 +89,7 @@ title: "applyChangeset core (version check, fork, clamp, rules, write)"
 epic: DOM
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -112,6 +112,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The single write path, minus the engine step.

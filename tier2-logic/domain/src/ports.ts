@@ -52,7 +52,10 @@ export interface ScenarioRow {
 export interface InputState {
   /** variable_value rows (tenant defaults). */
   readonly defaults: readonly InputValueRow[];
-  /** scenario_value rows per scenario, from the root ancestor to the scenario; empty for tenant defaults. */
+  /**
+   * scenario_value rows per scenario, from the root ancestor to the scenario: one level per scenario,
+   * also when it has no rows, so the last level is the scenario itself. Empty for tenant defaults.
+   */
   readonly chain: readonly ScenarioLevel[];
   /** The scenario's own node_override rows; empty for tenant defaults. */
   readonly overrides: readonly NodeOverrideRow[];
@@ -85,7 +88,10 @@ export type ValueWrite =
       readonly key: NodeId;
       readonly member_key: MemberKey;
       readonly value: number | null;
-      /** Why the node is pinned (node_override.reason); required when `value` is not null. */
+      /**
+       * Why the node is pinned (node_override.reason): the change's note, else the pin's reason so far,
+       * else ''. Set whenever `value` is not null.
+       */
       readonly reason?: string;
     };
 
@@ -136,15 +142,42 @@ export interface ChangesetTx {
   loadScenarios(): Promise<readonly ScenarioRow[]>;
   /** The stored rows `resolveInputs` takes for a scenario, or for the tenant defaults when null. */
   loadInputs(scenarioId: ScenarioId | null): Promise<InputState>;
-  /** Tenant dimension members with attributes (v_dimension_members): rules and the ModelCache key. */
+  /**
+   * The tenant's dimension members with attributes (v_dimension_members, active rows only): rules and
+   * the ModelCache key. A line_item or dimension_member row becomes a member as `memberOfRow` shows.
+   */
   loadMembers(): Promise<TenantMembers>;
+  /**
+   * The stored structural rows of `memberKeys` in dimension `dim`: line_item rows for dim `line`, else
+   * dimension_member rows, as their columns other than tenant_id, dim_key and member_key (the content
+   * of `MemberWrite.row`). Members without a row are absent from the map.
+   */
+  loadMemberRows(
+    dim: DimId,
+    memberKeys: readonly MemberId[],
+  ): Promise<ReadonlyMap<MemberId, JsonObject>>;
   /** A changeset with its change rows, or null. */
   loadChangeset(id: ChangesetId): Promise<Changeset | null>;
   /**
-   * Applied changesets on a scenario (null = tenant defaults) whose base_scenario_version is
-   * >= `fromVersion`, oldest first: the "changes since" of a version conflict, and rebase input.
+   * The changeset `createdBy` applied under `clientRequestId` (the contract's ChangesetRequest
+   * idempotency key, kept in `changeset.summary.client_request_id`), or null.
+   */
+  findChangesetByClientRequest(
+    createdBy: UserId,
+    clientRequestId: string,
+  ): Promise<Changeset | null>;
+  /**
+   * Changesets that were applied (status `applied` or `reverted`) on a scenario (null = tenant
+   * defaults) whose base_scenario_version is >= `fromVersion`, with their change rows, oldest first:
+   * the "changes since" of a version conflict, and rebase input.
    */
   changesSince(scenarioId: ScenarioId | null, fromVersion: number): Promise<readonly Changeset[]>;
+  /**
+   * Step 1 for tenant defaults, which have no scenario row to lock: hold the tenant's tenant-default
+   * write lock until the transaction ends (e.g. a transaction-scoped advisory lock), so two
+   * tenant-default changesets never start from the same version.
+   */
+  lockTenantDefaults(): Promise<void>;
 
   /** Step 2: a new scenario (e.g. the fork 'Custom (from X)' of a locked preset). */
   createScenario(row: ScenarioRow): Promise<void>;

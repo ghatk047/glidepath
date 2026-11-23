@@ -33,4 +33,26 @@ describe('domain', () => {
     expect(Object.keys(domain.INPUT_RULES)).toEqual([...domain.INPUT_RULE_IDS]);
     expect(domain.INPUT_RULES.VR10).toBe(domain.vr10CorpInputYears);
   });
+
+  it('exports the DOM-03 contract: applyChangeset(store, draft, options), its errors and the Recompute hook', () => {
+    for (const fn of [
+      'applyChangeset',
+      'noRecompute',
+      'forkName',
+      'summaryOf',
+      'messagesOf',
+      'memberOfRow',
+    ] as const) {
+      expect(typeof domain[fn]).toBe('function');
+    }
+    for (const E of [
+      domain.ChangesetConflictError,
+      domain.ChangesetRejectedError,
+      domain.ScenarioNotFoundError,
+    ]) {
+      expect(E.prototype).toBeInstanceOf(Error);
+    }
+    expect(domain.BOUNDS_POLICY.ui).toBe('clamp');
+    expect(domain.LOCKED_WRITE_ORIGINS).toEqual(['seed']);
+  });
 });
