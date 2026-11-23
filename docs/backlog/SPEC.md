@@ -87,7 +87,7 @@ title: "Tenant seed reader and seed-to-inputs resolution"
 epic: SPEC
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: high
