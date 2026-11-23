@@ -92,6 +92,7 @@ const M2 = 'manual/0002_auth_tables.sql';
 const M3 = 'manual/0003_stored_object.sql';
 const M4 = 'manual/0004_same_tenant_references.sql';
 const M5 = 'manual/0005_scenario_sort_order.sql';
+const M7 = 'manual/0007_scenario_is_default.sql';
 
 /** Composite (tenant_id, column) -> target (tenant_id, id): a tenant row can only reference its own tenant's rows. */
 const sameTenant = (table: string, column: string, refTable: string): OverlayFk => ({
@@ -122,6 +123,11 @@ export const MANUAL_OVERLAY: ManualOverlay = {
       table: 'scenario',
       source: M5,
       columns: [{ name: 'sort_order', type: 'integer', notNull: false }],
+    },
+    {
+      table: 'scenario',
+      source: M7,
+      columns: [{ name: 'is_default', type: 'boolean', notNull: true, default: 'false' }],
     },
   ],
   tables: [

@@ -5,9 +5,13 @@ import { tenantScope } from '../scope';
 import type { TenantTx } from '../tenant';
 import { isUuid, iso } from './rows';
 
-/** A scenario row (domain ScenarioRow) plus `archived` (manual migration 0001, ADR-023). */
+/**
+ * A scenario row (domain ScenarioRow) plus `archived` (manual migration 0001, ADR-023) and `is_default` (the seed's
+ * `default_scenario`, manual migration 0007; absent reads as false).
+ */
 export interface ScenarioRecord extends ScenarioRow {
   readonly archived: boolean;
+  readonly is_default?: boolean;
 }
 
 const toRecord = (r: typeof scenario.$inferSelect): ScenarioRecord => ({
@@ -22,6 +26,7 @@ const toRecord = (r: typeof scenario.$inferSelect): ScenarioRecord => ({
   created_by: r.created_by,
   created_at: iso(r.created_at),
   archived: r.archived,
+  is_default: r.is_default,
 });
 
 /**

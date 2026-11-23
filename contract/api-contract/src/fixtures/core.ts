@@ -147,7 +147,7 @@ export const coreRouteFixtures = {
   },
   scenarios: {
     params: { tenant },
-    response: { scenarios: [scenarioC, customC] },
+    response: { scenarios: [scenarioC, customC], defaultScenarioId: scenarioC.id },
   },
   scenarioCreate: {
     params: { tenant },

@@ -139,7 +139,7 @@ describe('read repos: model bundle defs (global tables), members via v_dimension
     expect(list.map((s) => s.key)).toEqual(['root', 'child', 'sibling', 'grandchild']);
     expect(list[0]).toEqual({
       id: SCN.root, key: 'root', label: 'root', kind: 'preset', parent_id: null, model_version_id: MV1, version: 3,
-      locked: true, created_by: ANA, created_at: '2026-10-01T00:00:00.000Z', archived: false,
+      locked: true, created_by: ANA, created_at: '2026-10-01T00:00:00.000Z', archived: false, is_default: false,
     });
     expect(list.find((s) => s.key === 'sibling')).toMatchObject({ parent_id: SCN.root, archived: true, kind: 'user', locked: false });
     expect(await asA((tx) => getScenario(tx, SCN.grandchild!))).toMatchObject({ key: 'grandchild', parent_id: SCN.child, version: 4 });

@@ -68,7 +68,9 @@ export function registerReadRoutes(app: Hono<AppEnv>, deps: ReadRoutesDeps): voi
     const records = await listScenarios(tx);
     // The domain's stored counter (changeset.summary.edits_count), all scenarios in one query.
     const edits = await loadEditsCounts(tx, records.map((s) => s.id));
-    return json(c, toScenariosResponse(records.map((s) => toScenario(s, edits.get(s.id) ?? 0))));
+    // WEB-12: the seed's default preset (is_default), unless it was archived.
+    const defaultId = records.find((s) => s.is_default && !s.archived)?.id ?? null;
+    return json(c, toScenariosResponse(records.map((s) => toScenario(s, edits.get(s.id) ?? 0)), defaultId));
   });
 
   app.get('/api/t/:tenant/scenarios/:id/inputs', async (c) => {

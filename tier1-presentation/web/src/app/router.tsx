@@ -119,8 +119,53 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   validateSearch: parseViewSearch,
 });
 
-/** `/` has no tenant yet: tier 2 names the viewer's tenants (`/api/me`), a later item redirects. */
-const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/' });
+/**
+ * `/` has no tenant in the URL (WEB-12): tier 2 names the viewer's tenants (`/api/me`, first membership) and the
+ * tenant's default scenario (`defaultScenarioId`, else the first listed that is not archived), and `/` redirects to
+ * its Cockpit. With no tenant or scenario, or when tier 2 cannot be reached, it says so.
+ */
+type HomeState = 'no-tenant' | 'no-scenario' | 'unreachable';
+
+const HOME_TEXT: Record<HomeState, string> = {
+  'no-tenant': 'Your account has no airline yet. Ask an owner to add you.',
+  'no-scenario': 'This airline has no scenario yet.',
+  unreachable: 'Glidepath cannot reach its server. Reload to try again.',
+};
+
+function Home() {
+  const state = indexRoute.useLoaderData();
+  return (
+    <p role="alert" className="gp-home-note">
+      {HOME_TEXT[state]}
+    </p>
+  );
+}
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  loader: async ({ context }): Promise<HomeState> => {
+    const { client } = context.services;
+    let target: { tenant: string; scenario: string } | HomeState;
+    try {
+      const me = await client.me();
+      const tenant = me.memberships[0]?.tenantSlug;
+      if (!tenant) return 'no-tenant';
+      const list = await client.scenarios({ params: { tenant } });
+      const scenario = list.defaultScenarioId ?? list.scenarios.find((s) => !s.archived)?.id;
+      target = scenario ? { tenant, scenario } : 'no-scenario';
+    } catch {
+      target = 'unreachable';
+    }
+    if (typeof target === 'string') return target;
+    throw redirect({
+      to: '/$tenant/$scenario/$module',
+      params: { ...target, module: 'cockpit' },
+      replace: true,
+    });
+  },
+  component: Home,
+});
 
 const scenarioRoute = createRoute({
   getParentRoute: () => rootRoute,

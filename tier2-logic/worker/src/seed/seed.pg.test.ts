@@ -147,6 +147,13 @@ describe('migrate entry on pg-local', () => {
     });
   });
 
+  it('marks only the seed default_scenario as is_default (WEB-12)', async () => {
+    await inTenant(async (tx) => {
+      const rows = await tx.select().from(schema.scenario);
+      expect(rows.filter((r) => r.is_default).map((r) => r.key)).toEqual([inputs.tenant.scenarios.default_scenario]);
+    });
+  });
+
   it('sets scenario.sort_order to the position in scenarios.json (DATA-14), also on a re-run', async () => {
     const order = inputs.tenant.scenarios.scenarios.map((s) => s.id);
     expect(order[0]).toBe('rates');

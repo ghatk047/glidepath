@@ -4752,6 +4752,44 @@
     "merged_at": "2026-11-23"
   },
   {
+    "id": "WEB-12",
+    "title": "The bare URL opens the viewer's airline on its default scenario",
+    "epic": "WEB",
+    "milestone": "M4",
+    "priority": "must",
+    "status": "done",
+    "stream": "C",
+    "model": "opus",
+    "effort": "medium",
+    "depends_on": [
+      "OPS-09",
+      "DATA-14"
+    ],
+    "tier": 1,
+    "package": "tier1-presentation/web (router), contract/api-contract (ScenariosResponse), tier2-logic/server (scenarios route), tier2-logic/data-access, tier2-logic/worker (seed), tier3-data/migrations/manual/0007",
+    "contract": "ScenariosResponse gains defaultScenarioId (nullable, defaults to null): the preset the tenant seed names as default_scenario",
+    "inputs": [
+      "Owner report 2026-11-23: https://glidepath.wafflebot.us shows a blank dark page after sign-in (the `/` route had no screen)",
+      "tier3-data/seed/aa/scenarios.json default_scenario"
+    ],
+    "acceptance": [
+      "`/` redirects to /<first membership tenant>/<defaultScenarioId, else first non-archived scenario>/cockpit (test)",
+      "with no membership, no scenario, or tier 2 unreachable, `/` shows one line saying so instead of a blank page (test)",
+      "scenario.is_default (manual migration 0007, overlay entry) is set by the seeder for the seed's default_scenario only, also on a re-run (test)",
+      "GET /api/t/:tenant/scenarios returns defaultScenarioId = the seed default preset (test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G3",
+      "G7",
+      "G13"
+    ],
+    "size": "S",
+    "notes": "Choosing which tenant/scenario to open is navigation; the default itself comes from tier 2 (seed), not tier 1.",
+    "merged_at": "2026-11-23"
+  },
+  {
     "id": "MOD-01",
     "title": "Cockpit hero: Net savings gauge, Bridge, Your inputs",
     "epic": "MOD",

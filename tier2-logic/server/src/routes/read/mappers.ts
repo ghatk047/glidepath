@@ -84,8 +84,11 @@ export function toScenario(s: ScenarioRecord, editsCount: number): object {
   };
 }
 
-export function toScenariosResponse(scenarios: readonly object[]): ScenariosResponse {
-  return checked('scenarios', ScenariosResponse, { scenarios });
+export function toScenariosResponse(
+  scenarios: readonly object[],
+  defaultScenarioId: string | null = null,
+): ScenariosResponse {
+  return checked('scenarios', ScenariosResponse, { scenarios, defaultScenarioId });
 }
 
 // ----------------------------------------------------------------------------- inputs

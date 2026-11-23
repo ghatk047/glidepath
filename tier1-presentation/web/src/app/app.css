@@ -32,3 +32,10 @@ body {
   background: var(--glass);
   opacity: 0.4;
 }
+
+/* `/` when it cannot open a tenant (WEB-12): one quiet line, centred. */
+.gp-home-note {
+  margin: 30vh var(--space-gap) 0;
+  text-align: center;
+  color: var(--ink-2);
+}

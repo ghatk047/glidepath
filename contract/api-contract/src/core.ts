@@ -238,6 +238,11 @@ export type Scenario = z.infer<typeof Scenario>;
 
 export const ScenariosResponse = z.object({
   scenarios: z.array(Scenario),
+  /**
+   * The preset the tenant seed names as its default (`default_scenario`); where `/` opens.
+   * Null when there is none (or the server predates WEB-12).
+   */
+  defaultScenarioId: ScenarioId.nullable().default(null),
 });
 export type ScenariosResponse = z.infer<typeof ScenariosResponse>;
 

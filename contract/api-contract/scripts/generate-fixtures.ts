@@ -273,6 +273,7 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
         createdBy: null,
         createdAt: FIXTURE_CREATED_AT,
       })),
+      defaultScenarioId: scenarioIdOf(seedScenarios.default_scenario),
     },
     'scenarios',
   );

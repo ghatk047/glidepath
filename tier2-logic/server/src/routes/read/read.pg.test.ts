@@ -178,6 +178,14 @@ describe('GET scenarios (kind, parent, version, locked)', () => {
     });
   });
 
+  it('names the seed default_scenario as defaultScenarioId (WEB-12)', async () => {
+    const list = await assertContract('scenarios', await get('/api/t/aa/scenarios'));
+    const seed = await aaSeed();
+    const def = list.scenarios.find((s) => s.id === list.defaultScenarioId);
+    expect(def?.key).toBe(seed.scenarios.default_scenario);
+    expect(def?.kind).toBe('preset');
+  });
+
   it('lists the presets in seed order (rates first), then user scenarios (DATA-14); the order comes from sort_order, not created_at', async () => {
     const { scenarios } = await assertContract('scenarios', await get('/api/t/aa/scenarios'));
     const seed = await aaSeed();

@@ -193,6 +193,7 @@ async function seedAaTenant(owner: Db): Promise<void> {
         tenant_id: AA_ID, id: presetId(s.id), key: s.id, label: s.label, kind: 'preset' as const, parent_id: null,
         model_version_id: MV, version: 0, locked: true, created_by: ANA, created_at: at('2026-09-11T00:00:00Z'), archived: false,
         sort_order: i, // as the seeder sets it (DATA-14); one created_at, as a real seed run has, so only sort_order orders
+        is_default: s.id === seed.scenarios.default_scenario, // as the seeder sets it (WEB-12)
       })),
       {
         tenant_id: AA_ID, id: MINE, key: 'custom-c', label: 'Custom (from C)', kind: 'user' as const, parent_id: presetId('C'),

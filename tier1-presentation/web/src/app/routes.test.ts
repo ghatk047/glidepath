@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { createMemoryHistory, isNotFound } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';
-import { AppModule } from '@glidepath/api-contract';
+import { AppModule, type ApiClient } from '@glidepath/api-contract';
 import { MODULE_IDS } from './modules';
-import { createAppRouter } from './router';
+import { createAppRouter, defaultAppServices } from './router';
 import { parseViewSearch } from './search';
 
 async function open(url: string) {
@@ -85,5 +85,53 @@ describe('route parsing', () => {
       node: 'true',
     });
     expect(parseViewSearch({})).toEqual({});
+  });
+});
+
+describe('/ opens the viewer\'s tenant (WEB-12)', () => {
+  const membership = { tenantId: 't1', tenantSlug: 'zz', tenantName: 'ZZ Air', role: 'editor' as const };
+  const scenario = (id: string, archived = false) => ({ id, archived });
+
+  async function home(client: Partial<ApiClient>) {
+    const services = { ...defaultAppServices(), client: client as ApiClient };
+    const router = createAppRouter(createMemoryHistory({ initialEntries: ['/'] }), services);
+    for (let i = 0; i < 5; i++) {
+      await router.load();
+      if (router.state.status === 'idle' && router.state.matches.length) break;
+    }
+    return router;
+  }
+
+  it('redirects to the first membership, on the default scenario, Cockpit', async () => {
+    const router = await home({
+      me: async () => ({ user: {}, memberships: [membership, { ...membership, tenantSlug: 'yy' }] }) as never,
+      scenarios: async () => ({ scenarios: [scenario('s-a'), scenario('s-c')], defaultScenarioId: 's-c' }) as never,
+    });
+    expect(router.state.location.pathname).toBe('/zz/s-c/cockpit');
+  });
+
+  it('without a default, takes the first scenario that is not archived', async () => {
+    const router = await home({
+      me: async () => ({ user: {}, memberships: [membership] }) as never,
+      scenarios: async () =>
+        ({ scenarios: [scenario('s-old', true), scenario('s-b')], defaultScenarioId: null }) as never,
+    });
+    expect(router.state.location.pathname).toBe('/zz/s-b/cockpit');
+  });
+
+  it.each([
+    ['no-tenant', { me: async () => ({ user: {}, memberships: [] }) as never }],
+    [
+      'no-scenario',
+      {
+        me: async () => ({ user: {}, memberships: [membership] }) as never,
+        scenarios: async () => ({ scenarios: [], defaultScenarioId: null }) as never,
+      },
+    ],
+    ['unreachable', { me: async () => Promise.reject(new Error('offline')) }],
+  ] as const)('stays on / and reports %s', async (state, client) => {
+    const router = await home(client as Partial<ApiClient>);
+    expect(router.state.location.pathname).toBe('/');
+    expect(leaf(router).loaderData).toBe(state);
   });
 });

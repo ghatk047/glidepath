@@ -229,11 +229,12 @@ export async function seedTenant(db: Db, o: TenantSeedOptions): Promise<TenantSe
     for (const s of seed.scenarios.scenarios) {
       presets[s.id] = byKey.get(s.id)?.id ?? seedIds.scenario(slug, s.id);
     }
-    // DATA-14: the position in scenarios.json is the list order (new and already seeded rows alike)
+    // DATA-14: the position in scenarios.json is the list order (new and already seeded rows alike);
+    // WEB-12: `default_scenario` marks the preset `/` opens
     for (const [pos, s] of seed.scenarios.scenarios.entries()) {
       await tx
         .update(schema.scenario)
-        .set({ sort_order: pos })
+        .set({ sort_order: pos, is_default: s.id === seed.scenarios.default_scenario })
         .where(sql`${schema.scenario.tenant_id} = ${tenantId} and ${schema.scenario.key} = ${s.id} and ${schema.scenario.kind} = 'preset'`);
     }
 
