@@ -1,3 +1,4 @@
+export { readTenantSeed } from './seed';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadModelBundle } from '../core/load';

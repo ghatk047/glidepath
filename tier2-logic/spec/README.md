@@ -65,6 +65,21 @@ Note: the hash ignores member order, but evaluation sums run in member order. Ca
 
 Synchronous pure-TS SHA-256 of a UTF-8 string, so the engine's `inputHash` can reuse it without `node:crypto`.
 
+## Tenant seed
+
+```ts
+import { seedToTenantData } from '@glidepath/spec';
+import { readTenantSeed, loadModelBundleFromDir } from '@glidepath/spec/node';
+
+const seed = await readTenantSeed('docs/spec/seed/aa');          // the five seed files, zod-validated
+const bundle = await loadModelBundleFromDir('docs/spec');
+const data = seedToTenantData(seed, 'C', bundle);                  // { members, values, overrides }
+```
+
+- `readTenantSeed(dir)` (node adapter) reads `tenant.json`, `dimension_members.json`, `variable_values.json`, `scenarios.json`, `lever_library.json`; the pure `parseTenantSeed({ tenant, dimensionMembers, variableValues, scenarios, leverLibrary })` validates already-parsed JSON (e.g. rows from the database). Errors are `SpecValidationError` with JSON paths. The schemas are generic (any tenant), not the AA-pinned generated ones.
+- `seedToTenantData(seed, scenarioId?, bundle?)` reproduces `Model.input_cells` of `docs/spec/reference/engine.py`: tenant defaults, then the scenario's `values` (last wins; a per-member dict overlays only its keys), plus the scenario's node `overrides`. Cell keys are `vid` or `vid[m1,m2]` (the comma-joined member key from the JSON, verbatim). No `scenarioId`: defaults only (`default_scenario` is not applied). `members` keeps every attribute of every member for where-filters.
+- With `bundle`, each variable's `dims` decide the shape: a scalar for a dimensioned variable throws `needs per-member values` (as Python), and so do an unknown variable, a dict for a scalar variable (Python silently keeps the last entry) and a member key with the wrong arity. Without it the value's shape decides.
+
 ## Tests
 
 `pnpm turbo run typecheck lint test --filter=@glidepath/spec...`. Acceptance tests load the real `docs/spec` (194 variables, 307 nodes), check JSON-path errors on invalid fixtures, the hash properties, and that `src/core` and `src/index.ts` import no node builtin.

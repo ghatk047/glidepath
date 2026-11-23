@@ -4,6 +4,18 @@ export const packageName = '@glidepath/spec';
 export { loadModelBundle } from './core/load';
 export { membersHash } from './core/members-hash';
 export { sha256Hex } from './core/sha256';
+export { parseTenantSeed, seedToTenantData } from './core/seed';
+export type {
+  CellKey,
+  InputValue,
+  LeverLibraryEntry,
+  SeedScenario,
+  SeedScenarios,
+  TenantData,
+  TenantInfo,
+  TenantSeed,
+  TenantSeedJson,
+} from './core/seed';
 export { SpecValidationError, jsonPath } from './core/errors';
 export type { SpecIssue } from './core/errors';
 export type {

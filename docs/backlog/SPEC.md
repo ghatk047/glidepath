@@ -87,7 +87,7 @@ title: "Tenant seed reader and seed-to-inputs resolution"
 epic: SPEC
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -107,6 +107,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Gives the engine and parity harness AA inputs straight from JSON, before the database exists.

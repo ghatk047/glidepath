@@ -716,7 +716,7 @@
     "epic": "SPEC",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "sonnet",
     "effort": "high",
@@ -742,7 +742,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-01",
