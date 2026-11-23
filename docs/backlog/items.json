@@ -5174,7 +5174,7 @@
     "epic": "QA",
     "milestone": "M4",
     "priority": "must",
-    "status": "done",
+    "status": "review",
     "stream": "D",
     "model": "sonnet",
     "effort": "high",
@@ -5199,7 +5199,7 @@
       "G8"
     ],
     "size": "S",
-    "notes": "",
+    "notes": "Merged. Drag p95 fails on the cloud host (load > CPUs; an idle page is worse than the drag). Re-measure with pnpm e2e:perf -- --device on the product owner's Mac by Wed 2 Dec; preview p95 8.5 ms and glass layers pass.",
     "merged_at": "2026-11-23"
   },
   {
