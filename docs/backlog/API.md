@@ -96,7 +96,7 @@ title: "Passkey login (WebAuthn)"
 epic: API
 milestone: M4
 priority: should
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -113,6 +113,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "Not in the 09 §3 must column; magic link covers the demo."
+merged_at: "2026-11-23"
 ```
 
 Nicer demo login if time allows.

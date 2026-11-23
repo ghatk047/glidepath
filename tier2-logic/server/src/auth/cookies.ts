@@ -57,3 +57,64 @@ export async function readSessionSecret(
   const value = await getSignedCookie(c, keys.cookie, SESSION_COOKIE, prefix(s));
   return typeof value === 'string' && value !== '' ? value : null;
 }
+
+/**
+ * The pending passkey ceremony (API-03), signed with its own key: HttpOnly, SameSite=Strict, sent only
+ * to `/api/auth/passkey`, `__Secure-` prefixed unless PUBLIC_BASE_URL is plain http. It binds the
+ * challenge to the browser that asked for it; the server keeps no row per ceremony (passkey.ts).
+ */
+export const PASSKEY_CHALLENGE_COOKIE = 'gp_passkey';
+export const PASSKEY_PATH = '/api/auth/passkey';
+
+const passkeyPrefix = (s: AuthSettings): CookieOptions['prefix'] =>
+  s.cookieSecure ? 'secure' : undefined;
+
+function passkeyCookie(s: AuthSettings, maxAgeSec: number): CookieOptions {
+  return {
+    path: PASSKEY_PATH,
+    sameSite: 'Strict',
+    secure: s.cookieSecure,
+    httpOnly: true,
+    maxAge: maxAgeSec,
+    prefix: passkeyPrefix(s),
+  };
+}
+
+/** The passkey challenge cookie's name on the wire (`__Secure-gp_passkey`, or `gp_passkey` on plain http). */
+export const passkeyCookieName = (s: AuthSettings): string =>
+  s.cookieSecure ? `__Secure-${PASSKEY_CHALLENGE_COOKIE}` : PASSKEY_CHALLENGE_COOKIE;
+
+export async function setPasskeyChallengeCookie(
+  c: Context,
+  s: AuthSettings,
+  keys: AuthKeys,
+  value: string,
+  maxAgeSec: number,
+): Promise<void> {
+  await setSignedCookie(
+    c,
+    PASSKEY_CHALLENGE_COOKIE,
+    value,
+    keys.passkeyChallenge,
+    passkeyCookie(s, maxAgeSec),
+  );
+}
+
+/** The value of a correctly signed passkey challenge cookie, or null. */
+export async function readPasskeyChallengeCookie(
+  c: Context,
+  s: AuthSettings,
+  keys: AuthKeys,
+): Promise<string | null> {
+  const value = await getSignedCookie(
+    c,
+    keys.passkeyChallenge,
+    PASSKEY_CHALLENGE_COOKIE,
+    passkeyPrefix(s),
+  );
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+export function clearPasskeyChallengeCookie(c: Context, s: AuthSettings): void {
+  deleteCookie(c, PASSKEY_CHALLENGE_COOKIE, passkeyCookie(s, 0));
+}

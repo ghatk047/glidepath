@@ -19,6 +19,12 @@ export {
   MagicLinkAccepted,
   SIGNED_IN_REDIRECT,
   INVALID_LINK_REDIRECT,
+  PasskeyRegisterRequest,
+  PasskeyRegistered,
+  PasskeyLoginRequest,
+  PasskeySignedIn,
 } from './routes';
+export { PASSKEY_CHALLENGE_TTL_MIN, RP_NAME, MAX_PASSKEY_LABEL } from './passkey';
+export { PASSKEY_CHALLENGE_COOKIE, passkeyCookieName } from './cookies';
 export { MAX_LIVE_LINKS_PER_ADDRESS } from './service';
 export type { ActiveSession } from './service';

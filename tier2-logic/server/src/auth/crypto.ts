@@ -25,6 +25,8 @@ export interface AuthKeys {
   readonly csrf: Buffer;
   readonly linkToken: Buffer;
   readonly sessionId: Buffer;
+  /** HMAC-SHA256 key of the passkey challenge cookie signature (API-03). */
+  readonly passkeyChallenge: Uint8Array;
 }
 
 export function deriveKeys(authSecret: string): AuthKeys {
@@ -35,6 +37,7 @@ export function deriveKeys(authSecret: string): AuthKeys {
     csrf: key('csrf-token'),
     linkToken: key('magic-link-token'),
     sessionId: key('session-id'),
+    passkeyChallenge: new Uint8Array(key('passkey-challenge')),
   };
 }
 

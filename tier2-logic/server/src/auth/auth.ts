@@ -14,7 +14,10 @@ import type { AuthSettings } from './settings';
 /** Everything the app mounts for sign-in, sessions, CSRF and memberships (API-02). */
 export interface Auth {
   readonly settings: AuthSettings;
-  /** `POST /api/auth/magic-link`, `GET /api/auth/callback`, `POST /api/auth/logout`, `GET /api/me`, `GET /api/tenants`. */
+  /**
+   * `POST /api/auth/magic-link`, `GET /api/auth/callback`, `POST /api/auth/logout`, `GET /api/me`,
+   * `GET /api/tenants`, and `POST /api/auth/passkey/{register,login}/{options,verify}` (API-03).
+   */
   readonly routes: Hono<AppEnv>;
   /** Mount on `/api/*` before every route: same origin + CSRF on state-changing requests. */
   readonly guard: MiddlewareHandler<AppEnv>;

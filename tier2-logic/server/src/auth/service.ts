@@ -4,6 +4,7 @@ import type { Context, MiddlewareHandler } from 'hono';
 import type { Logger } from '../app/logger';
 import type { AppEnv } from '../app/tenant';
 import { CSRF_HEADER, clearSessionCookies, readSessionSecret, setSessionCookies } from './cookies';
+import type { AuthKeys } from './crypto';
 import {
   csrfTokenFor,
   deriveKeys,
@@ -31,6 +32,7 @@ import {
   pruneSessions,
   pruneTokens,
 } from './store';
+import type { Executor } from './store';
 
 /**
  * Magic-link sign-in and cookie sessions (ADR-014, API-02).
@@ -80,6 +82,16 @@ export interface AuthCore {
   requestLink(email: string, log: Logger): void;
   /** Consumes a link token and signs the browser in; false when the token is unknown, used or expired. */
   signIn(c: Context, token: string): Promise<boolean>;
+  /**
+   * Signs the browser in as the user `resolve` returns, inside one transaction with it: the browser's
+   * previous session is deleted, a new one stored and the cookies set (rotation at sign-in). `resolve`
+   * returning null rolls nothing forward and answers false. Shared by magic link and passkey (API-03).
+   */
+  startSession(c: Context, resolve: (tx: Executor) => Promise<string | null>): Promise<boolean>;
+  /** Keys derived from AUTH_SECRET (cookie signatures). */
+  readonly keys: AuthKeys;
+  /** The auth clock. */
+  now(): Date;
   /** Deletes the request's session and clears the cookies. */
   signOut(c: Context): Promise<void>;
   /** Resolves when every queued sign-in mail has been handled. */
@@ -161,6 +173,35 @@ export function createAuthCore(deps: AuthDeps): AuthCore {
     log.info('sign-in link sent');
   }
 
+  async function startSession(
+    c: Context,
+    resolve: (tx: Executor) => Promise<string | null>,
+  ): Promise<boolean> {
+    const now = clock();
+    const previous = await session(c);
+    const secret = newSecret();
+    const id = sessionIdFor(keys, secret);
+    const userId = await db.transaction(async (tx) => {
+      const user = await resolve(tx);
+      if (user === null) return null;
+      if (previous) await deleteSession(tx, previous.id);
+      await pruneSessions(tx, user, now);
+      await insertSession(tx, {
+        id,
+        userId: user,
+        expiresAt: new Date(now.getTime() + settings.sessionTtlMs),
+      });
+      return user;
+    });
+    if (userId === null) return false;
+    await setSessionCookies(c, settings, keys, {
+      secret,
+      csrf: csrfTokenFor(keys, secret),
+      maxAgeSec: Math.floor(settings.sessionTtlMs / MS_PER_SECOND),
+    });
+    return true;
+  }
+
   return {
     settings,
     canSendLinks: mailer !== null && publicOrigin !== null,
@@ -176,30 +217,16 @@ export function createAuthCore(deps: AuthDeps): AuthCore {
     async signIn(c, token) {
       if (!isSecretShape(token)) return false;
       const now = clock();
-      const previous = await session(c);
-      const secret = newSecret();
-      const id = sessionIdFor(keys, secret);
-      const userId = await db.transaction(async (tx) => {
+      return startSession(c, async (tx) => {
         const consumed = await consumeToken(tx, hashLinkToken(keys, token), now);
         if (!consumed?.userId) return null;
         await deleteOtherTokens(tx, consumed.email, consumed.id);
-        if (previous) await deleteSession(tx, previous.id);
-        await pruneSessions(tx, consumed.userId, now);
-        await insertSession(tx, {
-          id,
-          userId: consumed.userId,
-          expiresAt: new Date(now.getTime() + settings.sessionTtlMs),
-        });
         return consumed.userId;
       });
-      if (userId === null) return false;
-      await setSessionCookies(c, settings, keys, {
-        secret,
-        csrf: csrfTokenFor(keys, secret),
-        maxAgeSec: Math.floor(settings.sessionTtlMs / MS_PER_SECOND),
-      });
-      return true;
     },
+    startSession,
+    keys,
+    now: clock,
     async signOut(c) {
       const s = await session(c);
       if (s) await deleteSession(db, s.id);

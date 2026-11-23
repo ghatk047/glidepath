@@ -30,3 +30,17 @@ Magic-link sign-in (ADR-014), cookie sessions, roles from `tenant_membership`. `
 - Guards: on `/api/*`, every state-changing method needs `Origin` = PUBLIC_BASE_URL's origin (or, without `Origin`, `Sec-Fetch-Site: same-origin`), and, with a session, the CSRF header (403 problem otherwise). On `/api/t/:tenant/*`, state-changing methods need role owner or editor (`tenantWriteGuard`, deny by default); `requireRole(...)` narrows a route further (e.g. owner only).
 - For API-06 (WS): `auth.session(c)` / `auth.authenticate(c)` read the cookie; `isSameOrigin(headers, allowedOrigin(settings, url))` checks the handshake.
 - Tests (`src/auth/*.pg.test.ts`) run on a testkit database as `glidepath_app`, with an in-process SMTP sink (`testing/smtp-sink.ts`) as `SMTP_URL`.
+
+## API-03: passkeys (`src/auth/passkey.ts`)
+
+WebAuthn via `@simplewebauthn/server`; the magic link stays the fallback. RP id = host name of `PUBLIC_BASE_URL`, accepted origin = its origin; without it every passkey route answers 503.
+
+| Route | Answer |
+|---|---|
+| `POST /api/auth/passkey/register/options` | Session required (401; CSRF as usual). `PublicKeyCredentialCreationOptionsJSON`: resident key and user verification required, the user's passkeys excluded, user handle = the user's uuid bytes. |
+| `POST /api/auth/passkey/register/verify` `{ response, label? }` | `201 { status: 'registered', credentialId }`; row in `passkey` (COSE key, counter, transports, label). 400 unverifiable, 409 already registered. |
+| `POST /api/auth/passkey/login/options` | `PublicKeyCredentialRequestOptionsJSON`, discoverable (no `allowCredentials`). |
+| `POST /api/auth/passkey/login/verify` `{ response }` | `200 { status: 'signed-in' }` with the same session rotation and cookies as the magic-link callback; counter and `last_used_at` move in the same transaction. 401 problem pointing at the sign-in link otherwise. |
+
+- Challenge: 32 random bytes in a signed cookie (`__Secure-gp_passkey`, HttpOnly, SameSite=Strict, Path=/api/auth/passkey, `PASSKEY_CHALLENGE_TTL_MIN` = 5) with its purpose, expiry and, for registration, the user; cleared on verify and accepted once (used challenges are remembered in-process until they expire).
+- Tests: `passkey.pg.test.ts` with a software authenticator (`testing/virtual-authenticator.ts`, ES256, "none" attestation).

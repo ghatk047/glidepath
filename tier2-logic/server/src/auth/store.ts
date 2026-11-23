@@ -3,7 +3,7 @@ import type { Db } from '@glidepath/data-access';
 
 /**
  * SQL for the global auth tables (tier3-data/migrations/manual/0002_auth_tables.sql: auth_token,
- * auth_session; DATA-11) and the app_user lookup by e-mail. These tables have no tenant_id and no RLS
+ * auth_session, passkey; DATA-11) and the app_user lookups. These tables have no tenant_id and no RLS
  * (a user signs in before choosing a tenant); the app role's grants are the whole access rule, so
  * these statements run on the app's `Db` outside withTenant / withUser.
  *
@@ -129,4 +129,100 @@ export async function pruneSessions(ex: Executor, userId: string, now: Date): Pr
   await ex.execute(
     sql`delete from auth_session where user_id = ${userId} and expires_at <= ${now}`,
   );
+}
+
+// ---- passkey (API-03) -------------------------------------------------------------------------
+
+export interface UserProfile extends UserRef {
+  readonly name: string;
+}
+
+export interface PasskeyRow {
+  /** base64url credential id, as the browser reports it. */
+  readonly credentialId: string;
+  readonly userId: string;
+  /** COSE public key. */
+  readonly publicKey: Uint8Array<ArrayBuffer>;
+  readonly signCount: number;
+  readonly transports: string[] | null;
+}
+
+/** app_user by id. */
+export async function findUserById(ex: Executor, id: string): Promise<UserProfile | null> {
+  const r = await ex.execute<{ id: string; email: string; name: string }>(
+    sql`select id, email::text as email, name from app_user where id = ${id}`,
+  );
+  return r.rows[0] ?? null;
+}
+
+/** Credential ids of the user's passkeys (excluded when registering another). */
+export async function listPasskeys(
+  ex: Executor,
+  userId: string,
+): Promise<{ credentialId: string; transports: string[] | null }[]> {
+  const r = await ex.execute<{ credential_id: string; transports: string[] | null }>(
+    sql`select credential_id, transports from passkey where user_id = ${userId} order by created_at`,
+  );
+  return r.rows.map((x) => ({ credentialId: x.credential_id, transports: x.transports }));
+}
+
+export async function findPasskey(ex: Executor, credentialId: string): Promise<PasskeyRow | null> {
+  const r = await ex.execute<{
+    credential_id: string;
+    user_id: string;
+    public_key: Buffer;
+    sign_count: string | number;
+    transports: string[] | null;
+  }>(
+    sql`select credential_id, user_id, public_key, sign_count, transports from passkey where credential_id = ${credentialId}`,
+  );
+  const row = r.rows[0];
+  return row
+    ? {
+        credentialId: row.credential_id,
+        userId: row.user_id,
+        publicKey: new Uint8Array(row.public_key),
+        signCount: Number(row.sign_count),
+        transports: row.transports,
+      }
+    : null;
+}
+
+/** Stores a verified credential; false when the credential id is already registered. */
+export async function insertPasskey(
+  ex: Executor,
+  p: {
+    credentialId: string;
+    userId: string;
+    publicKey: Uint8Array;
+    signCount: number;
+    transports: string[] | null;
+    label: string | null;
+    createdAt: Date;
+  },
+): Promise<boolean> {
+  const r = await ex.execute<{ credential_id: string }>(
+    sql`insert into passkey (credential_id, user_id, public_key, sign_count, transports, label, created_at)
+        values (${p.credentialId}, ${p.userId}, ${Buffer.from(p.publicKey)}, ${p.signCount},
+                ${sql.param(p.transports)}::text[], ${p.label}, ${p.createdAt})
+        on conflict (credential_id) do nothing
+        returning credential_id`,
+  );
+  return r.rows.length === 1;
+}
+
+/**
+ * Records a verified use: the new signature counter and the time, only if the stored counter is still
+ * the one the assertion was checked against (two concurrent uses cannot both pass). Returns the owner.
+ */
+export async function usePasskey(
+  ex: Executor,
+  u: { credentialId: string; expectedCount: number; newCount: number; at: Date },
+): Promise<string | null> {
+  const r = await ex.execute<{ user_id: string }>(
+    sql`update passkey set sign_count = ${u.newCount}, last_used_at = ${u.at}
+        where credential_id = ${u.credentialId} and sign_count = ${u.expectedCount}
+        returning user_id`,
+  );
+  return r.rows[0]?.user_id ?? null;
 }
