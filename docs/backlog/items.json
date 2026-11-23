@@ -1295,7 +1295,7 @@
     "epic": "DATA",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -1321,7 +1321,8 @@
       "G7"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DATA-11",

@@ -3,7 +3,7 @@ export const packageName = '@glidepath/gen-schema';
 export { buildModel } from './model';
 export type { Model, ModelTable, ModelColumn } from './model';
 export { renderSchemaSql, INDEXES } from './ddl';
-export { generateMigrations, checkMigrations, writeMigrations, SCHEMA_MIGRATION, RLS_MIGRATION } from './generate';
+export { generateMigrations, checkMigrations, writeMigrations, SCHEMA_MIGRATION, RLS_MIGRATION, VIEWS_MIGRATION } from './generate';
 export {
   renderRlsSql,
   policiesFor,
@@ -21,4 +21,14 @@ export {
   MEMBERSHIP,
 } from './rls';
 export type { Tenancy, PolicySpec } from './rls';
-export { loadSchema, schemaJsonPath, migrationsDir } from './spec';
+export {
+  renderViewsSql,
+  modelDimensions,
+  INPUTS_VIEW,
+  MEMBERS_VIEW,
+  LINE_ATTRIBUTES,
+  GLOBAL_DIM_TABLES,
+  LINE_DIM,
+} from './views';
+export { loadSchema, loadViewInputs, schemaJsonPath, migrationsDir } from './spec';
+export type { ViewInputs, SpecDimension, SpecMember } from './spec';

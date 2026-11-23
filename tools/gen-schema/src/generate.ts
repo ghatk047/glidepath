@@ -3,22 +3,28 @@ import { resolve } from 'node:path';
 import { renderSchemaSql } from './ddl';
 import { buildModel } from './model';
 import { renderRlsSql } from './rls';
-import { loadSchema, migrationsDir, type SpecSchema } from './spec';
+import { loadSchema, loadViewInputs, migrationsDir, type SpecSchema, type ViewInputs } from './spec';
+import { renderViewsSql } from './views';
 
 /**
- * Generated migration files. DATA-03 (0003_views.sql) extends this list;
- * hand-written SQL lives in tier3-data/migrations/manual/ (ADR-023).
+ * Generated migration files; hand-written SQL lives in tier3-data/migrations/manual/ (ADR-023).
  */
 export const SCHEMA_MIGRATION = '0001_schema.sql';
 /** Row-level security, policies and grants (DATA-02). */
 export const RLS_MIGRATION = '0002_rls.sql';
+/** The read views v_inputs_resolved and v_dimension_members (DATA-03). */
+export const VIEWS_MIGRATION = '0003_views.sql';
 
 /** filename -> content, for the given schema. Pure. */
-export function generateMigrations(schema: SpecSchema): Map<string, string> {
+export function generateMigrations(
+  schema: SpecSchema,
+  viewInputs: ViewInputs = loadViewInputs(),
+): Map<string, string> {
   const model = buildModel(schema);
   return new Map([
     [SCHEMA_MIGRATION, renderSchemaSql(model)],
     [RLS_MIGRATION, renderRlsSql(model)],
+    [VIEWS_MIGRATION, renderViewsSql(model, schema, viewInputs)],
   ]);
 }
 

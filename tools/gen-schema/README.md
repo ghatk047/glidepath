@@ -4,7 +4,7 @@ Generates DB schema artifacts from `docs/spec/schema.json` (source of truth).
 
 ## DATA-01: DDL migration
 
-`tier3-data/migrations/0001_schema.sql`: citext extension (allow-listed, trusted in PG 13+), 18 enum types, the 27 tables in dependency order (columns, PKs, FKs, unique constraints), the indexes of `docs/architecture/04_data_and_api.md` section 1, and `COMMENT ON` from the spec descriptions. Plain DDL: runs as a non-superuser owner (Neon). Views are DATA-03.
+`tier3-data/migrations/0001_schema.sql`: citext extension (allow-listed, trusted in PG 13+), 18 enum types, the 27 tables in dependency order (columns, PKs, FKs, unique constraints), the indexes of `docs/architecture/04_data_and_api.md` section 1, and `COMMENT ON` from the spec descriptions. Plain DDL: runs as a non-superuser owner (Neon). Views are DATA-03 (below).
 
 - `pnpm --filter @glidepath/gen-schema generate`: rewrite the migration files.
 - `pnpm --filter @glidepath/gen-schema check`: regenerate in memory and fail on any diff (CI check; also a test).
@@ -22,6 +22,13 @@ Reading rules (see `src/model.ts`): columns are NOT NULL unless the spec says `n
 - Tenant context per transaction only: `SELECT set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)`.
 
 Local role bootstrap: `tier3-data/postgres/init` (docker `/docker-entrypoint-initdb.d`, or `pnpm pg:local start --init tier3-data/postgres/init`): `01_roles.sql` creates `glidepath_owner` and `glidepath_app` (LOGIN, NOSUPERUSER, NOBYPASSRLS, no memberships; cluster-wide, idempotent, so other test harnesses can run it alone), `02_database_owner.sql` gives the current database to `glidepath_owner`, `03_role_passwords.sh` (docker only) sets passwords from `OWNER_DB_PASSWORD` / `APP_DB_PASSWORD`. On Neon create the roles there; create `glidepath_app` with plain SQL so it is not a member of a privileged role.
+
+## DATA-03: views
+
+`tier3-data/migrations/0003_views.sql` (`src/views.ts`): `v_inputs_resolved` and `v_dimension_members`, both `WITH (security_invoker = true)` so the caller's RLS applies (a default view runs as its owner and would bypass it); `SELECT` granted to `glidepath_app`, comments from the `views` of schema.json.
+
+- **`v_inputs_resolved`**: a view cannot take parameters, so "(tenant, scenario)" means filtering on `tenant_id` and `scenario_id` (order in the caller). Per `(scenario, var_key, member_key)` the last level wins: tenant default (`variable_value`), then each scenario of the parent chain from the root down to the scenario itself (`scenario_value`; recursive CTE, a parent cycle ends the chain). Only variables of the tenant's pinned model version (`variable_def`) are returned. `variable_def` carries no default value, so the definition level only decides which variables exist; a variable no level sets has no row. Rows with `scenario_id` NULL are the tenant defaults alone. Columns: `tenant_id, scenario_id, kind` (`input` | `override`)`, key` (var_key or node_key)`, member_key, value, resolved_from` (`tenant` | `parent` | `scenario`, as `ResolvedFrom` in the api-contract)`, from_scenario_id, confidence, note, reason`. `kind = override` rows are the scenario's own `node_override`s (not inherited). Same semantics as `resolveInputs` in `tier2-logic/domain`; both are tested on `tier2-logic/domain/fixtures/scenario-chain-3.json`.
+- **`v_dimension_members`**: `tenant_id` (NULL = global), `dim_key, member_key, label, attrs` (jsonb)`, sort, active, origin` (`global` | `system` | `tenant` | `line_item`). Global: `canonical_pool` as dim `pool` (attrs `third_party` 0/1, `order`), `addr_tag`, and the `system` dimensions of formula_graph.json (`akey`, `year`, `iyear`), whose members no table holds: they are rendered from the spec bundle (`docs/spec/seed/aa/dimension_members.json`) into the SQL, so the seed must not insert them into `dimension_member` (rows of a dimension served here are left out of the tenant branch). Tenant: `dimension_member`, and `line_item` as dim `line` with attrs named as in `formula_graph.json` (`pool, domain, addr, drv, vendor, lever_ids, in_scope, memo, source, ...`; generation fails if the two differ). Flags are 0/1 numbers as in the seed (`third_party == 1` in expressions). `sort` of `line` and `addr_tag` is the row order by key (their tables have no sort column).
 
 ## Tests
 

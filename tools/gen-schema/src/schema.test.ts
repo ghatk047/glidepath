@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EXTENSION_ALLOW_LIST, parseConstraints } from './model';
-import { checkMigrations, generateMigrations, RLS_MIGRATION, SCHEMA_MIGRATION } from './generate';
+import { checkMigrations, generateMigrations, RLS_MIGRATION, SCHEMA_MIGRATION, VIEWS_MIGRATION } from './generate';
 import { loadSchema, migrationsDir } from './spec';
 import { startTestCluster, type TestCluster } from './testing/db';
 
@@ -156,8 +156,10 @@ describe('DATA-01 acceptance', () => {
       expect(checkMigrations(dir).ok).toBe(false);
       expect(checkMigrations(join(dir, 'nonexistent')).problems[0]).toMatch(/missing/);
       writeFileSync(join(dir, SCHEMA_MIGRATION), readFileSync(migrationFile, 'utf8'));
-      expect(checkMigrations(dir).problems).toEqual([`${RLS_MIGRATION}: missing (run generate)`]);
+      expect(checkMigrations(dir).problems).toEqual([`${RLS_MIGRATION}: missing (run generate)`, `${VIEWS_MIGRATION}: missing (run generate)`]);
       writeFileSync(join(dir, RLS_MIGRATION), readFileSync(resolve(migrationsDir, RLS_MIGRATION), 'utf8'));
+      expect(checkMigrations(dir).problems).toEqual([`${VIEWS_MIGRATION}: missing (run generate)`]);
+      writeFileSync(join(dir, VIEWS_MIGRATION), readFileSync(resolve(migrationsDir, VIEWS_MIGRATION), 'utf8'));
       expect(checkMigrations(dir).ok).toBe(true);
       writeFileSync(join(dir, RLS_MIGRATION), readFileSync(resolve(migrationsDir, RLS_MIGRATION), 'utf8') + '-- hand edit\n');
       expect(checkMigrations(dir).problems).toEqual([`${RLS_MIGRATION}: out of date with schema.json (run generate)`]);

@@ -94,7 +94,7 @@ title: "Views v_inputs_resolved and v_dimension_members"
 epic: DATA
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -113,6 +113,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 What the engine loads, resolved in SQL.
