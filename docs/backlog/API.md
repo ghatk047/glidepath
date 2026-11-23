@@ -159,7 +159,7 @@ title: "Write routes: changesets, revert, scenarios, calc"
 epic: API
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -180,6 +180,7 @@ acceptance:
 gates: [G1, G2, G7, G8]
 size: M
 notes: "Numbers-dependent: after ENG-06 via DOM-05."
+merged_at: "2026-11-23"
 ```
 
 Edits that persist.

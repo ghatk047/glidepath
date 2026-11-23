@@ -8,6 +8,8 @@ import { requestSecrets } from './logger';
 import type { Logger } from './logger';
 import { registerExplainRoutes } from '../routes/explain';
 import { registerReadRoutes } from '../routes/read';
+import { afterCommitMiddleware, registerWriteRoutes } from '../routes/write';
+import type { SessionHub } from '../routes/write';
 import { specBundleFromDir } from '../routes/read/spec-source';
 import type { SpecBundleSource } from '../routes/read/spec-source';
 import { errorHandler, notFoundHandler, problemResponse } from './problem';
@@ -33,6 +35,8 @@ export interface AppDeps {
   withTenant?: WithTenant;
   /** Spec bundle of a model version (bundle route); default: `SPEC_DIR`, else the repository's `docs/spec`. */
   specBundle?: SpecBundleSource;
+  /** Told after each committed write (the WS session hub, API-07); default: nobody. */
+  hub?: SessionHub;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
 }
@@ -102,6 +106,8 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
     app.route('/', deps.auth.routes);
   }
 
+  // Outside the tenant transaction: write routes queue hub notices that run once it has committed.
+  app.use('/api/t/:tenant/*', afterCommitMiddleware());
   app.use(
     '/api/t/:tenant/*',
     tenantMiddleware({
@@ -115,6 +121,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
 
   const specBundle = deps.specBundle ?? specBundleFromDir();
   registerReadRoutes(app, { specBundle });
+  registerWriteRoutes(app, { specBundle, ...(deps.hub ? { hub: deps.hub } : {}) });
   registerExplainRoutes(app, { specBundle });
 
   app.onError(errorHandler());
