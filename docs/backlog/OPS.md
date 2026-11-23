@@ -153,7 +153,7 @@ title: "Compose checks: clean start < 3 min, web cannot reach db"
 epic: OPS
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
