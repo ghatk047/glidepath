@@ -53,7 +53,7 @@ title: "M1 integration: parity, sessions, write path"
 epic: INT
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: high
