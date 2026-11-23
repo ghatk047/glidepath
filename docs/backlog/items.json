@@ -1166,7 +1166,7 @@
     "epic": "ENG",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -1193,7 +1193,8 @@
       "G4"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-11",

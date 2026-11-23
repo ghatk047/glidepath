@@ -19,6 +19,10 @@ export const paths = {
   golden: join(repoRoot, 'docs', 'spec', 'reference', 'golden_results.json'),
   parityReport: join(repoRoot, 'docs', 'spec', 'reference', 'parity_report.json'),
   out: join(repoRoot, 'tools', 'parity', 'out'),
+  /** The synthetic second tenant (QA-02). */
+  zzSeed: join(repoRoot, 'tools', 'testkit', 'seed', 'zz'),
+  /** The fuzz oracle (ENG-10): runs docs/spec/reference/engine.py on the drawn vectors. */
+  fuzzOracle: join(repoRoot, 'tools', 'parity', 'fuzz_ref.py'),
 } as const;
 
 export async function readJson<T>(path: string): Promise<T> {

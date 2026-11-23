@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
     "test": "vitest run",
-    "golden": "tsx src/cli.ts"
+    "golden": "tsx src/cli.ts",
+    "fuzz": "tsx src/fuzz-cli.ts"
   },
   "dependencies": {
     "@glidepath/engine": "workspace:*",

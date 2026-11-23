@@ -17,7 +17,7 @@
     "scaffold-check": "tsx tools/scaffold-check/src/cli.ts",
     "gen:types": "tsx tools/gen-types/src/cli.ts",
     "parity:golden": "tsx tools/parity/src/cli.ts",
-    "parity:fuzz": "echo 'not implemented yet'",
+    "parity:fuzz": "tsx tools/parity/src/fuzz-cli.ts",
     "test:excel": "pnpm --filter @glidepath/excel run test:roundtrip",
     "test:leak": "pnpm -r --workspace-concurrency=1 run test:leak",
     "tier-check": "tsx tools/tier-check/src/cli.ts",

@@ -331,7 +331,7 @@ title: "Fuzz parity against the Python reference"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -351,6 +351,7 @@ acceptance:
 gates: [G1, G2, G4]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Catches porting bugs the five presets do not exercise.

@@ -14,6 +14,12 @@ export const EXIT_MISS = 1;
 export const EXIT_ERROR = 2;
 /** Failing rows printed to the console (all of them are in the reports). */
 const SHOWN_MISSES = 20;
+/**
+ * Values the gate must compare (PORTING.md §6 headings, checked against the reference files by the
+ * engine's porting-harness.spec.ts): a golden or report file that lost entries must fail, not pass with
+ * fewer comparisons.
+ */
+export const EXPECTED_TOTALS = { golden: 760, replay: 245 } as const;
 
 export interface GateOptions {
   /** golden_results.json to compare against (default: docs/spec/reference). */
@@ -65,9 +71,19 @@ export async function runGate(options: GateOptions = {}): Promise<GateResult> {
       `MISS replay ${r.rule} ${r.check} [${r.run}]: ts ${r.ts} rounded ${r.rounded} engine ${r.engine}`,
     );
   }
+  const totals = { golden: golden.total, replay: replay.total };
+  for (const kind of ['golden', 'replay'] as const) {
+    if (totals[kind] !== EXPECTED_TOTALS[kind]) {
+      log(`MISS ${kind} total: ${totals[kind]} values compared, expected ${EXPECTED_TOTALS[kind]}`);
+    }
+  }
   log(`golden ${golden.passed}/${golden.total}, replay ${replay.passed}/${replay.total}`);
   log(`reports: ${join(out, 'golden-report.json')}, ${join(out, 'replay-report.json')}`);
 
-  const ok = golden.total > 0 && golden.failed === 0 && replay.total > 0 && replay.failed === 0;
+  const ok =
+    golden.total === EXPECTED_TOTALS.golden &&
+    golden.failed === 0 &&
+    replay.total === EXPECTED_TOTALS.replay &&
+    replay.failed === 0;
   return { exitCode: ok ? EXIT_OK : EXIT_MISS, golden, replay };
 }
