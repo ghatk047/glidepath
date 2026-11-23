@@ -8,6 +8,8 @@ Parser, compiler, evaluator (full, incremental, batch), explain. Pure: no IO. Ty
 
 ENG-01 skeleton: `src/index.ts` exports the interfaces of `docs/architecture/03_engine_and_solvers.md` §1 (`compile`, `CompiledModel`, `TenantData`, `Evaluation`, `Change`, `BatchInput`, `BatchResult`, `Explanation`, `EngineError`) and re-exports `ModelBundle` and member types from `@glidepath/spec`. `compile` throws `EngineError` `NOT_IMPLEMENTED` until ENG-04. Work order: ENG-02 → 03 → 04 → 05 → 06 (parity gate).
 
+- ENG-02 `src/parse`: `tokenize`, `Parser`, `parse(src, cache?)` → `Ast` (num, str, neg, bin, call, agg, ref); `toPyTuple` gives engine.py's tuple shape. Every spec expression's AST equals Python's (`test/fixtures/dump_ast.py` → `ast.json`). Syntax errors are `EngineError` SYNTAX with `pos` (offset into the expression as written) and `source`.
+
 ```ts
 import { compile, type CompiledModel, type TenantData } from '@glidepath/engine';
 

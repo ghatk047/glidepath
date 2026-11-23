@@ -29,7 +29,11 @@ export type {
   TenantData,
 } from './types';
 export { EngineError } from './errors';
-export type { EngineErrorCode } from './errors';
+export type { EngineErrorCode, SourceLocation } from './errors';
+
+// Parser (ENG-02): `parse(expr): Ast`, a port of engine.py's tokenizer and Pratt parser.
+export { parse, toPyTuple, tokenize } from './parse';
+export type { AggFn, Ast, BinOp, ParseCache, PyTuple, Token } from './parse';
 
 /**
  * Compile a model_version for one tenant's members: parse, expand, toposort, lower (03 §1 pipeline).

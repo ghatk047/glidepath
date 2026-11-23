@@ -198,6 +198,10 @@ importers:
       '@glidepath/spec':
         specifier: workspace:*
         version: link:../spec
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 3.2.7
+        version: 3.2.7(vitest@3.2.7(@types/node@22.20.5)(jsdom@31.0.1)(tsx@4.23.15)(yaml@2.9.1))
 
   tier2-logic/excel:
     dependencies:

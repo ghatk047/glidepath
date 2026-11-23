@@ -29,16 +29,31 @@ export type EngineErrorCode =
   | 'COMPLEX'
   | 'UNKNOWN_CELL';
 
-/** Every error the engine throws. `cell` names the cell being compiled or computed, when there is one. */
+/** Where in an expression an error happened (PORTING.md D2). */
+export interface SourceLocation {
+  /** 0-based offset into `source` (the expression as written in the spec, not stripped). */
+  readonly pos: number;
+  /** The expression text. */
+  readonly source: string;
+}
+
+/**
+ * Every error the engine throws. `cell` names the cell being compiled or computed, when there is one;
+ * `pos` and `source` locate the expression construct, when there is one (PORTING.md D2).
+ */
 export class EngineError extends Error {
   override readonly name = 'EngineError';
   readonly code: EngineErrorCode;
   readonly cell: CellKey | undefined;
+  readonly pos: number | undefined;
+  readonly source: string | undefined;
 
-  constructor(code: EngineErrorCode, message: string, cell?: CellKey) {
+  constructor(code: EngineErrorCode, message: string, cell?: CellKey, at?: SourceLocation) {
     super(message);
     this.code = code;
     this.cell = cell;
+    this.pos = at?.pos;
+    this.source = at?.source;
   }
 }
 
