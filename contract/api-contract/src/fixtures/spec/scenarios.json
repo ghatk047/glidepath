@@ -1,0 +1,69 @@
+{
+  "scenarios": [
+    {
+      "id": "sc-rates",
+      "key": "rates",
+      "label": "Rate cuts only",
+      "kind": "preset",
+      "parentId": null,
+      "modelVersionId": "mv-1.0.0",
+      "version": 0,
+      "locked": true,
+      "archived": false,
+      "createdBy": null,
+      "createdAt": "2026-11-23T00:00:00.000Z"
+    },
+    {
+      "id": "sc-A",
+      "key": "A",
+      "label": "A. Commercial & consumption",
+      "kind": "preset",
+      "parentId": null,
+      "modelVersionId": "mv-1.0.0",
+      "version": 0,
+      "locked": true,
+      "archived": false,
+      "createdBy": null,
+      "createdAt": "2026-11-23T00:00:00.000Z"
+    },
+    {
+      "id": "sc-B",
+      "key": "B",
+      "label": "B. Operating-model reset",
+      "kind": "preset",
+      "parentId": null,
+      "modelVersionId": "mv-1.0.0",
+      "version": 0,
+      "locked": true,
+      "archived": false,
+      "createdBy": null,
+      "createdAt": "2026-11-23T00:00:00.000Z"
+    },
+    {
+      "id": "sc-C",
+      "key": "C",
+      "label": "C. Balanced (recommended)",
+      "kind": "preset",
+      "parentId": null,
+      "modelVersionId": "mv-1.0.0",
+      "version": 0,
+      "locked": true,
+      "archived": false,
+      "createdBy": null,
+      "createdAt": "2026-11-23T00:00:00.000Z"
+    },
+    {
+      "id": "sc-D",
+      "key": "D",
+      "label": "D. Full stretch",
+      "kind": "preset",
+      "parentId": null,
+      "modelVersionId": "mv-1.0.0",
+      "version": 0,
+      "locked": true,
+      "archived": false,
+      "createdBy": null,
+      "createdAt": "2026-11-23T00:00:00.000Z"
+    }
+  ]
+}

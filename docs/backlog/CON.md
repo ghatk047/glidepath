@@ -122,7 +122,7 @@ title: "Typed client, contract fixtures and mock session"
 epic: CON
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -142,6 +142,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: M
 notes: "Extended for CON-03 routes by the items that consume them."
+merged_at: "2026-11-23"
 ```
 
 Lets tier 1 build and test against the contract before tier 2 serves real numbers.

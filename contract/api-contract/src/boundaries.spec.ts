@@ -49,12 +49,23 @@ describe('boundaries (G13): ids are plain branded strings; no tier 2 / tier 3 im
         const ok =
           spec === 'zod' ||
           spec.startsWith('./') ||
-          (spec.startsWith('../') && !/tier[23]/.test(spec)) ||
-          (isTest && (spec === 'vitest' || spec.startsWith('node:')));
+          (spec.startsWith('../') &&
+            !/tier[23]/.test(spec) &&
+            (isTest || !/scripts\//.test(spec))) ||
+          (isTest && (spec === 'vitest' || spec.startsWith('node:') || /^msw(\/|$)/.test(spec)));
         if (!ok || /tier2-logic|tier3-data/.test(spec)) offenders.push(`${file}: ${spec}`);
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('the main entry never pulls in the testing entry or fixture JSON (app bundles stay lean)', () => {
+    const main = readFileSync(join(srcDir, 'index.ts'), 'utf8');
+    expect(importSpecifiers(main).filter((s) => /testing|fixtures/.test(s))).toEqual([]);
+    const pkg = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')) as {
+      exports: Record<string, string>;
+    };
+    expect(pkg.exports).toEqual({ '.': './src/index.ts', './testing': './src/testing/index.ts' });
   });
 
   it('package.json depends on zod only', () => {

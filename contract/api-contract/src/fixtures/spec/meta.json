@@ -1,0 +1,15 @@
+{
+  "generatedBy": "contract/api-contract/scripts/generate-fixtures.ts (do not edit by hand)",
+  "sources": [
+    "docs/spec/variables.json",
+    "docs/spec/formula_graph.json",
+    "docs/spec/seed/aa/*.json",
+    "docs/spec/reference/golden_results.json"
+  ],
+  "tenant": "aa",
+  "defaultScenario": "C",
+  "modelVersion": {
+    "id": "mv-1.0.0",
+    "semver": "1.0.0"
+  }
+}

@@ -150,3 +150,12 @@ export const coreRoutes = {
 
 export type CoreRouteId = keyof typeof coreRoutes;
 export type CoreRoute<Id extends CoreRouteId> = (typeof coreRoutes)[Id];
+
+/**
+ * Every REST route of the contract, by id: what `createClient()` and `assertContract()` cover.
+ * CON-03 spreads its solver, export, import, AI and market routes in here.
+ */
+export const apiRoutes = { ...coreRoutes } as const satisfies Record<string, RouteDef>;
+
+export type ApiRouteId = keyof typeof apiRoutes;
+export type ApiRoute<Id extends ApiRouteId> = (typeof apiRoutes)[Id];

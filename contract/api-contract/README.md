@@ -44,3 +44,40 @@ malformed body with a one-line `detail`.
 
 `src/fixtures/ws.ts` holds one fixture per message type and per view, plus the coalescing
 walk-through; `ws-protocol.spec.ts` checks them.
+
+## Typed client, contract fixtures and mock session (CON-04)
+
+- `createClient(baseUrl, fetch)` (`src/client.ts`): one method per route of `apiRoutes`
+  (CON-01 core routes; CON-03 adds its own there), e.g. `client.bundle({ params: { tenant } })`.
+  Params, query and body are checked with the route schemas before sending; a success body
+  is zod-parsed and returned typed. A body that breaks the schema, or another 2xx status,
+  throws `ContractError`; a non-2xx answer throws `ApiError` with the parsed `problem`
+  (`isChangesetConflict(err)` for the 409 `ChangesetConflict`). A non-problem error body
+  (a proxy page) gets a one-line problem built from the status line (`synthetic: true`).
+  `fetch` is structural (`FetchLike`): browser `fetch`, Node `fetch` or a test double.
+- `assertContract(route, response, status?)` (`src/assert.ts`) for tier-2 route tests:
+  `await assertContract('bundle', await app.request(...))` checks the success status,
+  `application/json` and the response schema; with an error status it checks
+  `application/problem+json`, the route's error schema (or `Problem`) and `body.status`.
+  Returns the parsed, typed body; throws `ContractError` naming the route and the part.
+
+Test-only exports live on **`@glidepath/api-contract/testing`** (kept off the main entry so
+app bundles never carry fixture JSON):
+
+- `specFixtures` / `presetSnapshot(key)`: wire fixtures **generated** by
+  `scripts/generate-fixtures.ts` (`pnpm --filter @glidepath/api-contract gen:fixtures`) from
+  `docs/spec` (registry, formula graph, seed) and `reference/golden_results.json` into
+  `src/fixtures/spec/*.json`: `bundle`, `members`, `scenarios` (the locked presets) and one
+  WS `snapshot` per preset (`rates`, `A`…`D`; default `C`) holding every golden output cell
+  (`levers.L01.iy` → `lev.iy[L01]`, `vp.vp_x.net` → `vp.net[vp_x]`) plus the preset's
+  resolved input cells (preset value, else tenant default). Never edit them by hand:
+  `spec-fixtures.spec.ts` regenerates and diffs. Ids tier 3 assigns are derived
+  (`sc-<key>`, `mv-<semver>`).
+- `createMockSession(options?)`: a WebSocket factory (`session.connect(url)`) standing in for
+  `WS /ws/session`. It replays and never calculates: `subscribe` → `snapshot` of those cells
+  from the preset snapshot (`null` if absent), `subscribeView` → a configured `views`
+  fixture, `cancelPreview` → `delta{seq}` with the committed values of the subscribed cells,
+  a bad frame → `warnings{problem}`; `preview` gets no answer unless a `respond.preview`
+  responder scripts one. Tests push `snapshot` / `delta` / `view` / `job` / `changeset` with
+  `emit()` / `replay()`, simulate drops with `drop()`, and read `sent`, `subscribed`, `views`.
+- The hand-written CON-01 / CON-02 fixtures (`coreRouteFixtures`, `serverMessageFixtures`, …).
