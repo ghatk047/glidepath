@@ -83,7 +83,12 @@ export function Value({ node, member = '', format, onTrace, className }: ValuePr
 
   if (trace) {
     return (
-      <span data-stale={bound.stale || undefined} className="gp-value-wrap">
+      <span
+        data-stale={bound.stale || undefined}
+        // the raw pushed value, as the rolled number carries it, whether or not the cell opens the trace
+        data-value={isNum(bound.value) ? bound.value : undefined}
+        className="gp-value-wrap"
+      >
         <EditableNumber
           mode="output"
           nodeId={node}

@@ -70,7 +70,15 @@ export function Tooltip() {
   return (
     <>
       <OverlayStyles />
-      <div ref={ref} className="gp-tip" role="tooltip" data-on={content !== null || undefined}>
+      <div
+        ref={ref}
+        className="gp-tip"
+        role="tooltip"
+        // idle, the tooltip is empty and a role=tooltip needs a name (axe: aria-tooltip-name);
+        // showing, its content names it
+        aria-label={content === null ? 'Tooltip' : undefined}
+        data-on={content !== null || undefined}
+      >
         {content !== null && (
           <GlassPanel as="div" level={3} padding="none" className="gp-tip-body">
             {content}

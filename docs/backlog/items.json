@@ -4420,7 +4420,7 @@
     "epic": "WEB",
     "milestone": "M2",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "C",
     "model": "sonnet",
     "effort": "high",
@@ -4448,7 +4448,8 @@
       "G13"
     ],
     "size": "S",
-    "notes": "Found by QA-04 on the real stack; msw unit tests hid both."
+    "notes": "Found by QA-04 on the real stack; msw unit tests hid both.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "WEB-10",

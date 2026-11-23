@@ -23,8 +23,11 @@ ignores the certificate error of Caddy's `tls internal` CA; Node's fetch trusts 
 3. `switch_scenario_shows_golden_a`: the scenario bar switches to A; headline equals golden A.
 4. `edit_input_via_popover_then_undo`: "of $X bar" opens the edit popover, one step commits an edit,
    Undo in the changeset tray restores golden A.
-5. `suite_finishes_within_the_g9_budget`.
+5. `edit_lever_via_cmdk_popover_then_undo`: ⌘K finds `lev.L10.shelf` by id, Enter jumps to Levers and
+   opens the lever's popover, one step commits an edit (a fork of locked preset A), Undo restores
+   golden A.
+6. `suite_finishes_within_the_g9_budget`.
 
-Known gaps worked around (see the QA-04 report): the SPA does not send `x-csrf-token` (the fixture
-adds it on writes), and `GlobalOverlays` (⌘K palette, lever popover, trace drawer) is not mounted by
-the app router, so the popover driven here is the Cockpit target popover.
+The SPA sends `x-csrf-token` itself (WEB-09); the browser gets the `gp_csrf` cookie like a real
+sign-in and nothing injects the header. The app mounts `GlobalOverlays` (⌘K, lever popover, trace
+drawer), so the smoke drives the real palette.

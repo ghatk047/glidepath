@@ -9,7 +9,9 @@ import {
   type RouterHistory,
 } from '@tanstack/react-router';
 import { ScenarioId, TenantSlug, type ApiClient } from '@glidepath/api-contract';
+import { Tooltip } from '@glidepath/ui/overlays/drawer';
 import { DataProvider, createDataClient, createServerState, type ServerState } from '../data';
+import { GlobalOverlays, overlayController } from '../global/overlays';
 import { GlobalLayout } from '../global/shell';
 import { createSessionClient, type SessionClient } from '../session';
 import { MODULE_IDS, isModuleId, loadModule, type ModuleId } from './modules';
@@ -70,6 +72,8 @@ function Root() {
   return (
     <DataProvider client={services.client} serverState={services.serverState}>
       <Outlet />
+      {/* The one shared tooltip (charts and `data-tip` elements drive it; modules never mount it). */}
+      <Tooltip />
     </DataProvider>
   );
 }
@@ -86,16 +90,21 @@ function ModuleScreen() {
   const Screen = lazyModules[module];
   const loading = <div className="gp-module-loading" aria-busy="true" />;
   if (!session) return loading;
+  const tenantSlug = TenantSlug.parse(tenant);
+  const scenarioId = ScenarioId.parse(scenario);
   return (
     <GlobalLayout
-      tenant={TenantSlug.parse(tenant)}
-      scenarioId={ScenarioId.parse(scenario)}
+      tenant={tenantSlug}
+      scenarioId={scenarioId}
       module={module}
       session={session}
+      onTrace={overlayController.openTrace}
     >
       <Suspense fallback={loading}>
         <Screen />
       </Suspense>
+      {/* ⌘K palette, edit popover and trace drawer: inside the layout for its providers. */}
+      <GlobalOverlays tenant={tenantSlug} scenarioId={scenarioId} />
     </GlobalLayout>
   );
 }

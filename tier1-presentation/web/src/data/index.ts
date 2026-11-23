@@ -8,6 +8,7 @@ export {
   type ServerState,
 } from './server-state';
 export { withEtagCache } from './etag-fetch';
+export { CSRF_COOKIE, CSRF_HEADER, readCsrfCookie, withCsrfHeader } from './csrf-fetch';
 export { dataKeys } from './keys';
 export { DataProvider, useApiClient, useServerState, type DataProviderProps } from './provider';
 export type { QueryResult } from './use-query';

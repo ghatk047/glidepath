@@ -9,8 +9,6 @@ import type { GoldenFile } from '@glidepath/parity';
  * the browser as cookies, the tenant's presets by letter, and the golden values by preset.
  */
 
-const CSRF_HEADER = 'x-csrf-token';
-
 export const golden = readRepoJson<GoldenFile>('docs', 'spec', 'reference', 'golden_results.json');
 /** Cockpit headline cells (20_orchestrator Loop step 6), spec ids verbatim. */
 export const HEADLINE = ['res.net', 'res.gap', 'res.risk', 'br.eps27'] as const;
@@ -38,7 +36,7 @@ export const test = base.extend<object, { stack: Stack }>({
       const browser = await signIn();
       const { scenarios } = await apiAs(browser).scenarios({ params: { tenant: config.tenant } });
       const presets = new Map(scenarios.filter((s) => s.kind === 'preset').map((s) => [s.key, s]));
-      const csrf = browser.csrf;
+      // The cookies include the readable `gp_csrf`: the SPA itself echoes it as `x-csrf-token` (WEB-09).
       const cookies = browser.cookie.split('; ').map((pair) => {
         const at = pair.indexOf('=');
         return { name: pair.slice(0, at), value: pair.slice(at + 1), url: config.baseUrl };
@@ -47,15 +45,6 @@ export const test = base.extend<object, { stack: Stack }>({
         presets,
         signInPage: async (page) => {
           await page.context().addCookies(cookies);
-          // KNOWN GAP (reported with QA-04): tier 2 requires `x-csrf-token` (the readable `gp_csrf`
-          // cookie echoed) on every state-changing /api call of a session, but the SPA's data
-          // client never sends it, so each commit answers 403. Until web does, the test plays the
-          // header the SPA should send; remove this route once it does.
-          await page.route('**/api/**', (route) => {
-            const req = route.request();
-            if (['GET', 'HEAD', 'OPTIONS'].includes(req.method())) return route.continue();
-            return route.continue({ headers: { ...req.headers(), [CSRF_HEADER]: csrf } });
-          });
         },
       });
     },

@@ -29,3 +29,5 @@ thin `fetch` + zustand layer, not TanStack Query (ADR-026); screens only see the
 - Imports only `@glidepath/api-contract`, `react` and `zustand` (G13).
   Tests: `server-state.test.ts` (the layer) and `data.test.tsx` (hooks with msw, the contract's
   core and generated spec fixtures, and its mock session).
+
+CSRF (WEB-09): `createDataClient` wraps its fetch in `withCsrfHeader` (`csrf-fetch.ts`): POST/PUT/PATCH/DELETE carry `x-csrf-token` read per request from the readable `gp_csrf` cookie, which tier 2 requires on state-changing calls of a session. Every call (changesets, Excel uploads, solver runs) goes through this client, so there is no other place to add it.

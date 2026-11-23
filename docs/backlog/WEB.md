@@ -286,7 +286,7 @@ title: "CSRF header and global overlays mounted (E2E fixes)"
 epic: WEB
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -304,6 +304,7 @@ acceptance:
 gates: [G1, G2, G9, G12, G13]
 size: S
 notes: "Found by QA-04 on the real stack; msw unit tests hid both."
+merged_at: "2026-11-23"
 ```
 
 ## WEB-10 · Percent-point units shown correctly everywhere

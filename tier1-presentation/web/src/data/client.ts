@@ -1,4 +1,5 @@
 import { createClient, type ApiClient, type FetchLike } from '@glidepath/api-contract';
+import { withCsrfHeader } from './csrf-fetch';
 import { withEtagCache } from './etag-fetch';
 
 /** The browser's `fetch`, seen as the contract's structural `FetchLike`. */
@@ -14,7 +15,10 @@ export interface DataClientOptions {
 
 /** The typed client with ETag revalidation for the bundle. One per app (it holds the ETag cache). */
 export function createDataClient(options: DataClientOptions = {}): ApiClient {
-  return createClient(options.baseUrl ?? '', withEtagCache(options.fetch ?? browserFetch));
+  return createClient(
+    options.baseUrl ?? '',
+    withCsrfHeader(withEtagCache(options.fetch ?? browserFetch)),
+  );
 }
 
 const MINUTE = 60_000;

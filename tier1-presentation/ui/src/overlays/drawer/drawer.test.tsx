@@ -261,6 +261,11 @@ describe('Tooltip', () => {
     expect(tip.querySelector('.gp-panel')).toBeNull();
   });
 
+  it('has an accessible name while idle (a nameless role=tooltip fails axe)', () => {
+    render(wrap(<Tooltip />));
+    expect(screen.getByRole('tooltip', { name: 'Tooltip' })).toBeTruthy();
+  });
+
   it('is one shared instance used by every chart', () => {
     render(
       wrap(
