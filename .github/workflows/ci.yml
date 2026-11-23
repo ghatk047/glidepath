@@ -114,8 +114,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Postgres reachable (SELECT 1)
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT 1' && psql "$DATABASE_URL_MIGRATE" -v ON_ERROR_STOP=1 -c 'SELECT 1'
+      - name: PostgreSQL 16 binaries for pg-local tests (initdb/pg_ctl)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-16
+          sudo systemctl stop postgresql || true
+          test -x /usr/lib/postgresql/16/bin/initdb
       - name: Unit tests with coverage (affected packages)
-        run: pnpm turbo run test --filter="...[$TURBO_BASE]"
+        run: pnpm turbo run test --concurrency=2 --filter="...[$TURBO_BASE]"
 
   G13:
     name: G13 Tier separation
