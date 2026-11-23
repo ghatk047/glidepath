@@ -93,7 +93,7 @@ title: "Scenario blend C → D"
 epic: SOL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh

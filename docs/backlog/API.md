@@ -228,7 +228,7 @@ title: "Session lifecycle: commit broadcast, warnings, idle close, reconnect"
 epic: API
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: xhigh
