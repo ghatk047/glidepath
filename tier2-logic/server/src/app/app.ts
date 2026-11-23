@@ -6,6 +6,8 @@ import { tenantWriteGuard } from '../auth/guard';
 import { dbMemberships } from '../auth/memberships';
 import { requestSecrets } from './logger';
 import type { Logger } from './logger';
+import { registerExcelRoutes } from '../routes/excel';
+import type { ExcelRoutesDeps } from '../routes/excel';
 import { registerExplainRoutes } from '../routes/explain';
 import { registerReadRoutes } from '../routes/read';
 import { afterCommitMiddleware, registerWriteRoutes } from '../routes/write';
@@ -38,6 +40,8 @@ export interface AppDeps {
   specBundle?: SpecBundleSource;
   /** Told after each committed write; default: `sessions` (the WS session hub, API-07), else nobody. */
   hub?: CommitNotifier;
+  /** Excel and file routes (API-10): the job runner and object store; absent = the routes are not mounted. */
+  excel?: ExcelRoutesDeps;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
   /** What-if sessions (API-06): mounts the `GET /ws/session` handshake; `listen` wires the upgrades. */
@@ -131,6 +135,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   const hub = deps.hub ?? deps.sessions;
   registerWriteRoutes(app, { specBundle, ...(hub ? { hub } : {}) });
   registerExplainRoutes(app, { specBundle });
+  if (deps.excel) registerExcelRoutes(app, deps.excel);
 
   app.onError(errorHandler());
   app.notFound(notFoundHandler);
