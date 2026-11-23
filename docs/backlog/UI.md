@@ -484,7 +484,7 @@ title: "Histogram and Tornado (#21, #22)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
@@ -573,7 +573,7 @@ title: "Overlays: Trace drawer shell and Tooltip"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
