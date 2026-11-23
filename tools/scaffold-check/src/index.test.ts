@@ -25,9 +25,12 @@ describe('scaffold-check', () => {
     expect(readFileSync(resolve(root, '.nvmrc'), 'utf8').trim()).toBe('22');
   });
 
-  it('has placeholder root scripts for every CLAUDE.md command', () => {
+  it('has a root script for every CLAUDE.md command (placeholder until its item lands)', () => {
     const pj = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
-    for (const s of ROOT_SCRIPTS) expect(pj.scripts[s]).toContain('not implemented yet');
+    for (const s of ROOT_SCRIPTS) {
+      expect(typeof pj.scripts[s], s).toBe('string');
+      expect(pj.scripts[s].trim().length, s).toBeGreaterThan(0);
+    }
   });
 
   it('typecheck-fixture: implicit any fails tsc under tsconfig.base strict', () => {
