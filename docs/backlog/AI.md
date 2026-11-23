@@ -22,7 +22,7 @@ title: "Claude client wrapper per 06 §2 API rules"
 epic: AI
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -43,6 +43,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "Can start any time after FND-01 if a builder is idle; milestone is when it must be done."
+merged_at: "2026-11-23"
 ```
 
 One careful wrapper so pipeline steps stay simple.
