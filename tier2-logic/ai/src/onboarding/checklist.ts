@@ -23,8 +23,13 @@ const ChecklistStepSchema = z.strictObject({
   produce: z.string().min(1),
   /** Public facts to gather for this step in the research step. */
   research: z.array(z.string().min(1)),
-  /** Which parts of the seed the step fills: files, dimensions, registry groups, single variables. */
+  /**
+   * Which parts of the seed the step fills: files, dimensions, registry groups, single variables. `from` says how
+   * the seed draft (pipeline step 3) fills them: drafted by the model from the fact base (`facts`), or copied from
+   * the global presets (`presets`).
+   */
   seed: z.strictObject({
+    from: z.enum(['facts', 'presets']),
     files: z.array(z.enum(SEED_FILES)),
     dims: z.array(z.string().min(1)),
     groups: z.array(z.string().min(1)),

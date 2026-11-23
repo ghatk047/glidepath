@@ -74,6 +74,15 @@ describe('AC3 the nine onboarding steps are data, not prose in code', () => {
     const file = structuredClone(checklistJson);
     file.steps[0]!.seed.files = ['tenant.yaml'];
     expect(() => parseChecklist(file)).toThrow();
+    const from = structuredClone(checklistJson);
+    from.steps[0]!.seed.from = 'guess';
+    expect(() => parseChecklist(from)).toThrow();
+  });
+
+  it('seed.from says which steps the seed draft copies from the global presets (07 §2 step 8) and which it drafts', () => {
+    const presets = ONBOARDING_CHECKLIST.steps.filter((s) => s.seed.from === 'presets');
+    expect(presets.map((s) => s.id)).toEqual(['scenarios']);
+    expect(presets.every((s) => s.research.length === 0)).toBe(true);
   });
 
   it('every registry variable, model dimension and seed file belongs to exactly one checklist step', async () => {

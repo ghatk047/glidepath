@@ -43,6 +43,27 @@ The port every pipeline step uses: `run(step, input) → StepRun<O>` (`output` i
   `& < >` escaped, web-derived JSON is emitted with `<` escaped. Snapshots are plain text in `fixtures/prompts/`.
   Prompts and fixtures use neutral examples only ("Example Air", `ZZ`).
 
+## Pipeline steps 1–3 (AI-03)
+
+`src/steps/`: each step takes the `ModelClient` port and its input, and returns `StepResult<O>` =
+`{ output, review: ReviewFlag[], calls: StepCall[] }` (`calls` keep sources, model, fallback, usage and audit keys).
+No other IO: `eslint.config.js` bans Node builtins, IO packages and globals, dynamic import, value imports of the
+SDK and this package's client/audit/config/retry/testing modules in `src/steps` (lint test).
+
+- `scope(client, ScopePromptInput)` → `ReconfigPlan`, effort `medium`, no tools. Flags an onboarding plan that
+  leaves out checklist steps.
+- `research(client, ResearchPromptInput, { maxSearches?, maxFetches?, maxContentTokens? })` → `FactBase`, effort
+  `high`, `web_search_20260209` + `web_fetch_20260209`. Document citations on web fetch are off (the API rejects them
+  with `output_config.format`); citations come from web search. `checkFactSources` then sets confidence `L` and a
+  review flag on every fact with no source (`unsourced`) or citing a page the model never searched, fetched or cited
+  (`source_not_seen`).
+- `draftSeed(client, { promptBar, plan, facts, bundle, presets, workedExample? })` → `TenantSeedDraft`, effort
+  `high`, one `SeedSectionDraft` call per checklist step with `seed.from = "facts"` (checklist order, sequential so
+  the shared prefix cache is reused). Steps with `seed.from = "presets"` are copied from `presets`
+  (`presetsFromSeed(referenceSeedJson, registry)` builds them; scenarios get the new tenant id). Each section is
+  checked: a wrong section, tenant record or foreign dimension/variable rejects the reply (`ModelOutputError`);
+  unsourced values become `L` + flag, unknown fact ids are dropped + flagged, left-out variables are flagged.
+
 ## Configuration
 
 `loadAiConfig(env)`: `ANTHROPIC_API_KEY` (required, secret: never logged or persisted), optional

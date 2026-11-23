@@ -3156,7 +3156,7 @@
     "epic": "AI",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "high",
@@ -3180,7 +3180,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "AI-04",

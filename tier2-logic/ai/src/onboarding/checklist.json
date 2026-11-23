@@ -10,7 +10,7 @@
         "Legal name, stock ticker and reporting currency",
         "Fiscal calendar and the last reported fiscal year"
       ],
-      "seed": { "files": ["tenant.json"], "dims": ["year", "iyear"], "groups": [], "variables": [] }
+      "seed": { "from": "facts", "files": ["tenant.json"], "dims": ["year", "iyear"], "groups": [], "variables": [] }
     },
     {
       "n": 2,
@@ -23,6 +23,7 @@
         "Global capability centre (GCC) presence"
       ],
       "seed": {
+        "from": "facts",
         "files": ["dimension_members.json", "variable_values.json"],
         "dims": ["pool", "line", "domain", "akey", "addr_tag"],
         "groups": ["Baseline & pools"],
@@ -36,6 +37,7 @@
       "produce": "Technology VPs and domain ownership (each domain's shares sum to 100%), and the shared-services owner.",
       "research": ["Technology leadership structure and who owns which domains"],
       "seed": {
+        "from": "facts",
         "files": ["dimension_members.json", "variable_values.json"],
         "dims": ["vp"],
         "groups": ["Org map & chargeback"],
@@ -52,6 +54,7 @@
         "Captive centre and contractor use"
       ],
       "seed": {
+        "from": "facts",
         "files": ["variable_values.json"],
         "dims": [],
         "groups": ["Workforce & rates"],
@@ -65,6 +68,7 @@
       "produce": "Preferred vendor panel and book of business.",
       "research": ["IT outsourcing, managed-service and consulting vendors"],
       "seed": {
+        "from": "facts",
         "files": ["dimension_members.json", "variable_values.json"],
         "dims": ["vendor"],
         "groups": [],
@@ -82,6 +86,7 @@
         "Unions and labor groups"
       ],
       "seed": {
+        "from": "facts",
         "files": ["dimension_members.json", "variable_values.json"],
         "dims": ["lgroup"],
         "groups": ["Corporate drivers", "P&L hand-off"],
@@ -95,6 +100,7 @@
       "produce": "Dollar amount or % of base, growth absorption, one-time funding share.",
       "research": ["Public cost-reduction or technology-spend commitments"],
       "seed": {
+        "from": "facts",
         "files": ["variable_values.json"],
         "dims": [],
         "groups": ["Target & governance"],
@@ -108,6 +114,7 @@
       "produce": "Copy the five global presets; lever inputs stay the library defaults until tuned.",
       "research": [],
       "seed": {
+        "from": "presets",
         "files": ["scenarios.json", "lever_library.json", "dimension_members.json", "variable_values.json"],
         "dims": ["lever"],
         "groups": ["Levers"],
@@ -120,7 +127,7 @@
       "title": "Sources",
       "produce": "Every value carries source and confidence.",
       "research": [],
-      "seed": { "files": [], "dims": [], "groups": [], "variables": [] }
+      "seed": { "from": "facts", "files": [], "dims": [], "groups": [], "variables": [] }
     }
   ]
 }

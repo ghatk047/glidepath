@@ -1,0 +1,280 @@
+{
+ "description": "Step 2 research (AI-03): web search, pause_turn, then a cited narration, web fetch and the FactBase. One fact has no source and one cites a page never opened.",
+ "exchanges": [
+  {
+   "status": 200,
+   "headers": {
+    "request-id": "req_s2_01"
+   },
+   "events": [
+    {
+     "type": "message_start",
+     "message": {
+      "id": "msg_s2_01",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [],
+      "stop_reason": null,
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+       "input_tokens": 980,
+       "output_tokens": 1,
+       "cache_creation_input_tokens": 0,
+       "cache_read_input_tokens": 3120
+      }
+     }
+    },
+    {
+     "type": "content_block_start",
+     "index": 0,
+     "content_block": {
+      "type": "server_tool_use",
+      "id": "srvtoolu_s2_01",
+      "name": "web_search",
+      "input": {}
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 0,
+     "delta": {
+      "type": "input_json_delta",
+      "partial_json": "{\"query\":\"Example Air 2025 annual report operating revenue employees\"}"
+     }
+    },
+    {
+     "type": "content_block_stop",
+     "index": 0
+    },
+    {
+     "type": "content_block_start",
+     "index": 1,
+     "content_block": {
+      "type": "web_search_tool_result",
+      "tool_use_id": "srvtoolu_s2_01",
+      "content": [
+       {
+        "type": "web_search_result",
+        "url": "https://investors.example.com/annual-report-2025",
+        "title": "Example Air 2025 Annual Report",
+        "page_age": "2026-02-14",
+        "encrypted_content": "Eo8BCioIBxgC"
+       },
+       {
+        "type": "web_search_result",
+        "url": "https://news.example.org/example-air-results",
+        "title": "Example Air posts full-year results",
+        "page_age": "2026-01-30",
+        "encrypted_content": "Eo8BCioIBxgD"
+       }
+      ]
+     }
+    },
+    {
+     "type": "content_block_stop",
+     "index": 1
+    },
+    {
+     "type": "message_delta",
+     "delta": {
+      "stop_reason": "pause_turn",
+      "stop_sequence": null,
+      "stop_details": null
+     },
+     "usage": {
+      "output_tokens": 88,
+      "server_tool_use": {
+       "web_search_requests": 1,
+       "web_fetch_requests": 0
+      }
+     }
+    },
+    {
+     "type": "message_stop"
+    }
+   ]
+  },
+  {
+   "status": 200,
+   "headers": {
+    "request-id": "req_s2_02"
+   },
+   "events": [
+    {
+     "type": "message_start",
+     "message": {
+      "id": "msg_s2_02",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [],
+      "stop_reason": null,
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+       "input_tokens": 2210,
+       "output_tokens": 1,
+       "cache_creation_input_tokens": 0,
+       "cache_read_input_tokens": 3120
+      }
+     }
+    },
+    {
+     "type": "content_block_start",
+     "index": 0,
+     "content_block": {
+      "type": "text",
+      "text": ""
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 0,
+     "delta": {
+      "type": "text_delta",
+      "text": "The results release gives the wo"
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 0,
+     "delta": {
+      "type": "text_delta",
+      "text": "rkforce; the annual report is th"
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 0,
+     "delta": {
+      "type": "text_delta",
+      "text": "e primary source for revenue."
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 0,
+     "delta": {
+      "type": "citations_delta",
+      "citation": {
+       "type": "web_search_result_location",
+       "url": "https://news.example.org/example-air-results",
+       "title": "Example Air posts full-year results",
+       "cited_text": "The carrier ended the year with about 21,500 employees.",
+       "encrypted_index": "EpEBCioIBxgE"
+      }
+     }
+    },
+    {
+     "type": "content_block_stop",
+     "index": 0
+    },
+    {
+     "type": "content_block_start",
+     "index": 1,
+     "content_block": {
+      "type": "server_tool_use",
+      "id": "srvtoolu_s2_02",
+      "name": "web_fetch",
+      "input": {}
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 1,
+     "delta": {
+      "type": "input_json_delta",
+      "partial_json": "{\"url\": \"https://investors.example.com/annual-report-2025\"}"
+     }
+    },
+    {
+     "type": "content_block_stop",
+     "index": 1
+    },
+    {
+     "type": "content_block_start",
+     "index": 2,
+     "content_block": {
+      "type": "web_fetch_tool_result",
+      "tool_use_id": "srvtoolu_s2_02",
+      "content": {
+       "type": "web_fetch_result",
+       "url": "https://investors.example.com/annual-report-2025",
+       "retrieved_at": "2026-11-23T09:12:00Z",
+       "content": {
+        "type": "document",
+        "title": "Example Air 2025 Annual Report",
+        "citations": null,
+        "source": {
+         "type": "text",
+         "media_type": "text/plain",
+         "data": "Total operating revenue 9,104 million."
+        }
+       }
+      }
+     }
+    },
+    {
+     "type": "content_block_stop",
+     "index": 2
+    },
+    {
+     "type": "content_block_start",
+     "index": 3,
+     "content_block": {
+      "type": "text",
+      "text": ""
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 3,
+     "delta": {
+      "type": "text_delta",
+      "text": "{\"facts\":[{\"id\":\"f-revenue\",\"step\":\"corporate_drivers\",\"label\":\"Total operating revenue\",\"value\":9104,\"unit\":\"USD m\",\"period\":\"FY2025\",\"sourceUrl\":\"https://investors.example.com/annual-report-2025\",\"sourceTitle\":\"Example Air 2025 Annual Report\",\"date\":\"2026-02-14\",\"confidence\":\"H\",\"note\":null},{\"id\":\"f-employees\",\"step\":\"workforce\",\"label\":\"Total employees\",\"value\":21500,\"unit\":\"FTE\",\"pe"
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 3,
+     "delta": {
+      "type": "text_delta",
+      "text": "riod\":\"FY2025\",\"sourceUrl\":\"https://news.example.org/example-air-results\",\"sourceTitle\":null,\"date\":\"2026-01-30\",\"confidence\":\"M\",\"note\":null},{\"id\":\"f-tech-headcount\",\"step\":\"workforce\",\"label\":\"Technology headcount\",\"value\":900,\"unit\":\"FTE\",\"period\":null,\"sourceUrl\":null,\"sourceTitle\":null,\"date\":\"2026-11-23\",\"confidence\":\"M\",\"note\":\"Estimated from the share of technology staff at carr"
+     }
+    },
+    {
+     "type": "content_block_delta",
+     "index": 3,
+     "delta": {
+      "type": "text_delta",
+      "text": "iers of similar size.\"},{\"id\":\"f-vendor\",\"step\":\"vendors\",\"label\":\"Main infrastructure managed-service vendor\",\"value\":\"Example Systems Co\",\"unit\":\"text\",\"period\":null,\"sourceUrl\":\"https://blog.example.net/vendor-roundup\",\"sourceTitle\":\"Vendor roundup\",\"date\":\"2026-06-01\",\"confidence\":\"M\",\"note\":null}],\"gaps\":[{\"step\":\"vendors\",\"question\":\"Book of business per vendor is not public.\"}]}"
+     }
+    },
+    {
+     "type": "content_block_stop",
+     "index": 3
+    },
+    {
+     "type": "message_delta",
+     "delta": {
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null
+     },
+     "usage": {
+      "output_tokens": 1460,
+      "server_tool_use": {
+       "web_search_requests": 0,
+       "web_fetch_requests": 1
+      }
+     }
+    },
+    {
+     "type": "message_stop"
+    }
+   ]
+  }
+ ]
+}

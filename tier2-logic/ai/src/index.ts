@@ -89,3 +89,29 @@ export {
   type ScopePromptInput,
   type SeedSectionPromptInput,
 } from './prompts/render';
+
+// AI-03: pipeline steps 1–3 (scope, research with sources, seed draft). Each takes the ModelClient as its only port.
+export { ReviewFlag, ReviewFlagKind } from './review';
+export { stepCall, type StepCall, type StepResult } from './steps/result';
+export { reviewPlan, scope, scopeStep } from './steps/scope';
+export {
+  checkFactSources,
+  research,
+  researchStep,
+  researchTools,
+  type ResearchToolOptions,
+} from './steps/research';
+export {
+  checkSeedSection,
+  checkTenantAgainstPlan,
+  draftSeed,
+  PRESET_SOURCE,
+  presetsFromSeed,
+  seedSectionPlans,
+  seedSectionStep,
+  seedSectionStepId,
+  type DraftSeedInput,
+  type DraftSeedPresets,
+  type SeedBundle,
+  type SeedSectionPlan,
+} from './steps/seed-draft';

@@ -88,7 +88,7 @@ title: "Steps 1–3: scope, research with sources, seed draft"
 epic: AI
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -106,6 +106,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 From a prompt to a sourced seed draft.
