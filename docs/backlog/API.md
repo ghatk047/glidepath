@@ -257,7 +257,7 @@ title: "Explain and search routes"
 epic: API
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -276,6 +276,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Trace drawer and ⌘K, served by tier 2.

@@ -6,6 +6,7 @@ import { tenantWriteGuard } from '../auth/guard';
 import { dbMemberships } from '../auth/memberships';
 import { requestSecrets } from './logger';
 import type { Logger } from './logger';
+import { registerExplainRoutes } from '../routes/explain';
 import { registerReadRoutes } from '../routes/read';
 import { specBundleFromDir } from '../routes/read/spec-source';
 import type { SpecBundleSource } from '../routes/read/spec-source';
@@ -112,7 +113,9 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   // Viewers (and advisors) are read-only: every state-changing tenant route needs owner or editor.
   app.use('/api/t/:tenant/*', tenantWriteGuard());
 
-  registerReadRoutes(app, { specBundle: deps.specBundle ?? specBundleFromDir() });
+  const specBundle = deps.specBundle ?? specBundleFromDir();
+  registerReadRoutes(app, { specBundle });
+  registerExplainRoutes(app, { specBundle });
 
   app.onError(errorHandler());
   app.notFound(notFoundHandler);

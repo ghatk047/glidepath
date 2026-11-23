@@ -230,6 +230,9 @@ importers:
       '@glidepath/domain':
         specifier: workspace:*
         version: link:../domain
+      '@glidepath/engine':
+        specifier: workspace:*
+        version: link:../engine
       '@glidepath/spec':
         specifier: workspace:*
         version: link:../spec
