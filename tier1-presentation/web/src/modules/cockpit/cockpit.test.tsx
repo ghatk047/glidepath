@@ -6,18 +6,23 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
+  SolverRun,
   apiRoutes,
   toCellKey,
   type BridgeView,
   type ChangesetRequest,
+  MembersResponse,
+  type SolverRunRequest,
 } from '@glidepath/api-contract';
 import {
   coreRouteFixtures,
   createMockSession,
   presetSnapshot,
+  solverRunFixtures,
   specFixtures,
   type MockSession,
 } from '@glidepath/api-contract/testing';
+import { vpColour } from '@glidepath/ui/charts/gauge';
 import { fmt } from '@glidepath/ui/format';
 import { formatByUnit } from '@glidepath/ui/inputs/slider';
 import { createAppRouter } from '../../app/router';
@@ -26,8 +31,26 @@ import { COMMIT_DEBOUNCE_MS } from '../../commit';
 import { viewStore } from '../../app/view-store';
 import { createDataClient, createServerState } from '../../data';
 import { createSessionClient } from '../../session';
-import { BRIDGE_CELLS, HERO_LABELS, NET_NODES, TARGET_VARIABLE } from './copy';
+import {
+  BRIDGE_CELLS,
+  COPY,
+  HERO_LABELS,
+  MOVE_LABELS,
+  NET_NODES,
+  PATH_METRICS,
+  PATH_TOP_MOVES,
+  SHAREHOLDER_NODES,
+  SHAREHOLDER_YEARS,
+  TARGET_VARIABLE,
+  VP_LABELS,
+  VP_NODES,
+} from './copy';
+import { resetCockpitRuns } from './runs';
 import { gaugeMax } from './scale';
+// the spec's reference solver runs (test data only; tier 2 produces these at run time)
+import solverReference from '../../../../../docs/spec/reference/solver_demo_results.json';
+
+type SolverRunIn = SolverRun;
 
 // ---------------------------------------------------------------------------------------------
 // Fixtures: spec ids verbatim; every value read from the generated fixtures (never typed in).
@@ -105,12 +128,69 @@ afterEach(() => {
   cleanup();
   server.resetHandlers();
   viewStore.getState().closePanel?.('commandPalette');
+  resetCockpitRuns();
 });
 afterAll(() => server.close());
 
-function serve() {
+interface MountOptions {
+  /** `/members` answer (default: the generated AA members). */
+  members?: MembersResponse;
+  /** Preset C's snapshot (default: the generated golden snapshot). */
+  snapshotC?: typeof C;
+  /** `POST /solver-runs` answers by problem, in order (none left: a 404 problem). */
+  starts?: Partial<Record<string, SolverRunIn[]>>;
+  /** `GET /solver-runs/:id` answers by id. */
+  runs?: Record<string, SolverRunIn>;
+}
+
+function serve(options: MountOptions = {}) {
   const posts: ChangesetRequest[] = [];
+  const solverStarts: SolverRunRequest[] = [];
+  const solverGets: string[] = [];
+  const solverCancels: string[] = [];
+  const starts = Object.fromEntries(
+    Object.entries(options.starts ?? {}).map(([k, v]) => [k, [...(v ?? [])]]),
+  );
   server.use(
+    http.get(`${BASE}${apiRoutes.members.path}`, () =>
+      HttpResponse.json(options.members ?? specFixtures.members),
+    ),
+    http.post(`${BASE}${apiRoutes.solverRunStart.path}`, async ({ request }) => {
+      const body = (await request.json()) as SolverRunRequest;
+      solverStarts.push(body);
+      const next = starts[body.spec.problem]?.shift();
+      return next
+        ? HttpResponse.json(next, { status: apiRoutes.solverRunStart.status })
+        : HttpResponse.json(
+            { type: 'about:blank', title: 'Not found', status: 404, detail: 'No such route' },
+            { status: 404, headers: { 'content-type': 'application/problem+json' } },
+          );
+    }),
+    http.delete(`${BASE}${apiRoutes.solverRunCancel.path}`, ({ params }) => {
+      const id = String(params['id']);
+      solverCancels.push(id);
+      return HttpResponse.json(
+        SolverRun.parse({
+          ...solverRunFixtures.monte_carlo,
+          id,
+          status: 'queued',
+          progress: 0,
+          result: null,
+          cancelRequested: true,
+        }),
+      );
+    }),
+    http.get(`${BASE}${apiRoutes.solverRunGet.path}`, ({ params }) => {
+      const id = String(params['id']);
+      solverGets.push(id);
+      const run = options.runs?.[id];
+      return run
+        ? HttpResponse.json(run)
+        : HttpResponse.json(
+            { type: 'about:blank', title: 'Not found', status: 404, detail: 'No such run' },
+            { status: 404, headers: { 'content-type': 'application/problem+json' } },
+          );
+    }),
     http.get(`${BASE}${apiRoutes.me.path}`, () => HttpResponse.json(fx.me.response)),
     http.get(`${BASE}${apiRoutes.tenants.path}`, () => HttpResponse.json({ tenants: [tenantRow] })),
     http.get(`${BASE}${apiRoutes.bundle.path}`, () => HttpResponse.json(bundle)),
@@ -147,13 +227,15 @@ function serve() {
       });
     }),
   );
-  return { posts };
+  return { posts, solverStarts, solverGets, solverCancels };
 }
 
-async function mount() {
-  const served = serve();
+async function mount(options: MountOptions = {}) {
+  const served = serve(options);
   const mock: MockSession = createMockSession({
-    snapshots: presets.map((p) => presetSnapshot(p.key)),
+    snapshots: presets.map((p) =>
+      p.key === 'C' && options.snapshotC ? options.snapshotC : presetSnapshot(p.key),
+    ),
     views: [bridgeView(C.cells as Record<string, number>)],
   });
   const frames: (() => void)[] = [];
@@ -408,6 +490,472 @@ describe('MOD-01 Cockpit hero', () => {
   it('G12 has no serious or critical axe violations', async () => {
     const t = await mount();
     await loaded(t);
+    const result = await axe.run(t.view.container, {
+      rules: { 'color-contrast': { enabled: false } }, // jsdom has no layout or computed colours
+    });
+    const bad = result.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+    expect(bad.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// MOD-02 tiles. Solver results are the spec's reference runs
+// (docs/spec/reference/solver_demo_results.json), shaped as tier 2 sends a `solver_run`.
+// ---------------------------------------------------------------------------------------------
+
+interface McReference {
+  iterations: number;
+  net_p10_p50_p90: [number, number, number];
+  bar_p10_p50_p90: [number, number, number];
+  prob_clear_bar: number;
+}
+interface PathReference {
+  net: number;
+  risk_exposure: number;
+  evaluations: number;
+  inputs_moved_from_C: Record<string, { from: number; to: number }>;
+}
+const reference = solverReference as unknown as {
+  monte_carlo_C: McReference;
+  min_risk_total_bar: PathReference;
+};
+
+const NET_CELL = toCellKey('res.net', '');
+const MC_SPEC = { problem: 'monte_carlo', params: {} } as const;
+const PATH_SPEC = { problem: 'min_risk_mix', params: {} } as const;
+const BAR_CELL = toCellKey('res.bar', '');
+const vps = specFixtures.members.dimensions['vp']!;
+const cellAt = (id: string, member = '') => C.cells[toCellKey(id, member)] as number;
+type MonteCarloDetail = Extract<
+  NonNullable<SolverRun['result']>['detail'],
+  { problem: 'monte_carlo' }
+>;
+
+/**
+ * Tier 2's Monte Carlo run for preset C (`monte_carlo_C`). The reference keeps percentiles and
+ * P(clear) but no bins, so the test plays tier 2's binning: 20 bins over P10..P90 ± half the
+ * spread, with a tent of counts. The module never bins.
+ */
+function monteCarloRun(id: string, status: 'queued' | 'done' = 'done', cached = false): SolverRun {
+  const mc = reference.monte_carlo_C;
+  const [p10, p50, p90] = mc.net_p10_p50_p90;
+  const [b10, b50, b90] = mc.bar_p10_p50_p90;
+  const bins = 20;
+  const lo = p10 - (p90 - p10) / 2;
+  const width = (2 * (p90 - p10)) / bins;
+  return SolverRun.parse({
+    ...solverRunFixtures.monte_carlo,
+    id,
+    scenarioId: SCENARIO,
+    scenarioVersion: C.version,
+    spec: MC_SPEC,
+    status,
+    cached,
+    progress: status === 'done' ? 1 : 0,
+    result:
+      status === 'done'
+        ? {
+            problem: 'monte_carlo',
+            status: 'feasible',
+            changes: [],
+            ranked: [],
+            metrics: { p_clear_bar: mc.prob_clear_bar },
+            diagnostics: { iterations: mc.iterations, ms: 1 },
+            detail: {
+              problem: 'monte_carlo',
+              iterations: mc.iterations,
+              seed: 1,
+              percentiles: [
+                { cell: NET_CELL, p10, p50, p90 },
+                { cell: BAR_CELL, p10: b10, p50: b50, p90: b90 },
+              ],
+              probabilities: [{ cell: NET_CELL, against: BAR_CELL, p: mc.prob_clear_bar }],
+              histograms: [
+                {
+                  cell: NET_CELL,
+                  bins: Array.from({ length: bins }, (_, i) => ({
+                    lo: lo + i * width,
+                    hi: lo + (i + 1) * width,
+                    count: Math.round(100 - Math.abs(i - (bins - 1) / 2) * 10),
+                  })),
+                },
+              ],
+              contributions: [],
+            },
+          }
+        : null,
+  });
+}
+
+/**
+ * The moves of the reference min-risk run in the order the optimizer valued them (spec
+ * 04_solvers_simulation.md "Moves from C, in the order the optimizer valued them").
+ */
+const RANKED = [
+  'lev.L17.cola',
+  'lev.L17.sw',
+  'lev.L17.cl',
+  'lev.L01.cut',
+  'lev.L01.rel',
+  'lev.L02.cut',
+  'lev.L08.cov',
+  'lev.L14.pct',
+  'lev.L11.pct',
+  'lev.L10.shelf',
+  'lev.L10.ms',
+  'lev.L10.rcut',
+  'lev.L12.tpm',
+  'lev.L07.pct',
+  'lev.L16.pct',
+];
+
+/** Tier 2's min-risk run for preset C (`min_risk_total_bar`), "without touching the people levers". */
+function minRiskRun(id: string, status: 'queued' | 'done' = 'done', cached = false): SolverRun {
+  const ref = reference.min_risk_total_bar;
+  const moved = ref.inputs_moved_from_C;
+  return SolverRun.parse({
+    ...solverRunFixtures.min_risk_mix,
+    id,
+    scenarioId: SCENARIO,
+    scenarioVersion: C.version,
+    spec: PATH_SPEC,
+    status,
+    cached,
+    progress: status === 'done' ? 1 : 0,
+    result:
+      status === 'queued'
+        ? null
+        : {
+            problem: 'min_risk_mix',
+            status: 'optimal',
+            changes: RANKED.map((k) => ({
+              target: 'variable',
+              key: k,
+              member: '',
+              value: moved[k]!.to,
+            })),
+            ranked: RANKED.map((k, i) => ({
+              cell: toCellKey(k, ''),
+              from: moved[k]!.from,
+              to: moved[k]!.to,
+              impact: RANKED.length - i,
+            })),
+            metrics: {
+              [NET_CELL]: ref.net,
+              [PATH_METRICS.risk]: ref.risk_exposure,
+              [PATH_METRICS.people]: 0,
+            },
+            diagnostics: { iterations: ref.evaluations, ms: 1 },
+            detail: { problem: 'min_risk_mix' },
+          },
+  });
+}
+
+/** What the tiles ask for: tier 2's defaults, the key the JOB-04 warmer files C under. */
+const looked = (t: Awaited<ReturnType<typeof mount>>, problem: string) =>
+  t.solverStarts.filter((b) => b.spec.problem === problem);
+
+const valueAt = (root: HTMLElement, node: string, member = '') =>
+  Number(
+    root.querySelector<HTMLElement>(
+      `[data-node="${node}"][data-member="${member}"] [data-value], [data-node="${node}"][data-member="${member}"][data-value]`,
+    )?.dataset['value'],
+  );
+
+const jobDone = (id: string) =>
+  ({ v: 1, type: 'job', id, status: 'done', progress: 1, note: null, kind: 'solver' }) as const;
+
+async function expectVpTiles(
+  t: Awaited<ReturnType<typeof mount>>,
+  members: readonly { key: string; label: string }[],
+  cells: Record<string, number>,
+) {
+  await t.until(() => expect(screen.getAllByTestId('cockpit-vp')).toHaveLength(members.length));
+  const tiles = screen.getAllByTestId('cockpit-vp');
+  expect(tiles.map((e) => e.dataset['member'])).toEqual(members.map((m) => m.key));
+  for (const [i, m] of members.entries()) {
+    const tile = tiles[i]!;
+    for (const id of Object.values(VP_NODES))
+      expect(t.mock.subscribed.has(toCellKey(id, m.key))).toBe(true);
+    await t.until(() => {
+      for (const id of Object.values(VP_NODES))
+        expect(valueAt(tile, id, m.key)).toBe(cells[toCellKey(id, m.key)]);
+    });
+    const net = cells[toCellKey(VP_NODES.net, m.key)]!;
+    const bar = cells[toCellKey(VP_NODES.bar, m.key)]!;
+    const gap = cells[toCellKey(VP_NODES.gap, m.key)]!;
+    const name = VP_LABELS[m.key] ?? m.label;
+    expect(within(tile).getByRole('button', { name: COPY.openVps(name) }).textContent).toBe(name);
+    const ring = tile.querySelector('svg.gp-ring');
+    expect(ring?.getAttribute('aria-label')).toContain(
+      `${name}: ${fmt.money(net)} of ${fmt.money(bar)} bar`,
+    );
+    expect(tile.textContent).toContain(fmt.money(net));
+    expect(tile.textContent).toContain(`of ${fmt.money(bar)} bar`);
+    expect(tile.textContent).toContain(fmt.money(cells[toCellKey(VP_NODES.outlay, m.key)]));
+    expect(tile.textContent).toContain(
+      `${fmt.money(Math.abs(gap))} ${gap < 0 ? 'short' : 'clear'}`,
+    );
+    expect(
+      tile
+        .querySelector<HTMLElement>('.gp-cockpit-swatch')
+        ?.style.getPropertyValue('--gp-vp-colour'),
+    ).toBe(vpColour(i));
+  }
+}
+
+describe('MOD-02 Cockpit tiles', () => {
+  it('AC1 VP rings bind vp.net, vp.bar, vp.gap, vp.outlay for each vp member from /members: 4 rings for the generated tenant fixture', async () => {
+    const t = await mount();
+    await loaded(t);
+    expect(vps).toHaveLength(4);
+    await expectVpTiles(t, vps, C.cells as Record<string, number>);
+    // the name opens the VPs module
+    fireEvent.click(
+      within(screen.getAllByTestId('cockpit-vp')[0]!).getByRole('button', {
+        name: COPY.openVps(VP_LABELS[vps[0]!.key]!),
+      }),
+    );
+    await t.until(() =>
+      expect(t.router.state.location.pathname).toBe(`/${tenant}/${SCENARIO}/vps`),
+    );
+  });
+
+  it('AC1 VP rings: 5 rings for a five-VP fixture (slot colours in member order, label from /members)', async () => {
+    const fifth = { key: 'vp_data', label: 'Data Technology', attrs: {}, sort: null, active: true };
+    const members = MembersResponse.parse({
+      ...specFixtures.members,
+      dimensions: { ...specFixtures.members.dimensions, vp: [...vps, fifth] },
+    });
+    // tier 2's cells for the fifth VP (played here with another VP's values)
+    const cells = { ...(C.cells as Record<string, number>) };
+    for (const id of Object.values(VP_NODES))
+      cells[toCellKey(id, fifth.key)] = cells[toCellKey(id, vps[3]!.key)]!;
+    const t = await mount({ members, snapshotC: { ...C, cells } as typeof C });
+    await loaded(t);
+    await expectVpTiles(t, [...vps, fifth], cells);
+  });
+
+  it('AC2 shareholder binds br.eps27, br.px27, pl.eps, val.px, br.fuel_equiv_cents', async () => {
+    const t = await mount();
+    await loaded(t);
+    const sh = panel('cockpit-shareholder');
+    const N = SHAREHOLDER_NODES;
+    const Y = SHAREHOLDER_YEARS;
+    const bound: [string, string][] = [
+      [N.eps, ''],
+      [N.price, ''],
+      [N.epsLevel, Y.before],
+      [N.epsLevel, Y.after],
+      [N.priceLevel, Y.before],
+      [N.priceLevel, Y.after],
+      [N.fuel, ''],
+    ];
+    await t.until(() => {
+      for (const [id, member] of bound) {
+        expect(t.mock.subscribed.has(toCellKey(id, member))).toBe(true);
+        expect(valueAt(sh, id, member)).toBe(cellAt(id, member));
+      }
+    });
+    const text = sh.textContent;
+    expect(text).toContain(`Shareholder view · ${String(tenantRow.targetYear)}`);
+    expect(text).toContain(fmt.eps(cellAt(N.eps), { signed: true }));
+    expect(text).toContain(fmt.eps(cellAt(N.price), { digits: 2, signed: true }));
+    expect(text).toContain(
+      `${fmt.eps(cellAt(N.epsLevel, Y.before))} → ${fmt.eps(cellAt(N.epsLevel, Y.after))}`,
+    );
+    expect(text).toContain(
+      `${fmt.eps(cellAt(N.priceLevel, Y.before), { digits: 2 })} → ${fmt.eps(cellAt(N.priceLevel, Y.after), { digits: 2 })}`,
+    );
+    expect(text).toContain(`Same as ${fmt.cents(cellAt(N.fuel))} off every gallon of jet fuel`);
+    // the chevron opens the Market module
+    fireEvent.click(within(sh).getByRole('button', { name: COPY.openMarket }));
+    await t.until(() =>
+      expect(t.router.state.location.pathname).toBe(`/${tenant}/${SCENARIO}/market`),
+    );
+  });
+
+  it("AC3 odds: 'Run 2,000 trials' without a Monte Carlo result; then histogram, P10/P50/P90, bar and P(clear) from the solver_run (monte_carlo_C)", async () => {
+    const id = 'job-mc-c';
+    const probe = 'job-mc-probe';
+    const t = await mount({
+      // the cache look-up misses (a fresh run is queued), then the user's run
+      starts: { monte_carlo: [monteCarloRun(probe, 'queued'), monteCarloRun(id, 'queued')] },
+      runs: { [id]: monteCarloRun(id) },
+    });
+    await loaded(t);
+    const odds = panel('cockpit-odds');
+    // the look-up asks with tier 2's defaults; on a miss the queued run is cancelled at once
+    await t.until(() => expect(t.solverCancels).toEqual([probe]));
+    expect(looked(t, 'monte_carlo')).toEqual([{ scenarioId: SCENARIO, spec: MC_SPEC }]);
+    await act(async () => {
+      t.mock.emit({ ...jobDone(probe), status: 'cancelled', progress: 0 });
+      await t.mock.flush();
+    });
+    await t.settle();
+    expect(t.solverGets).not.toContain(probe);
+    expect(odds.textContent).toContain('This scenario has not been simulated.');
+    expect(odds.querySelector('[data-chart="histogram"]')).toBeNull();
+    expect(odds.querySelector('[data-status="cancelled"]')).toBeNull();
+
+    // the action starts tier 2's Monte Carlo on this scenario with tier 2's defaults
+    fireEvent.click(within(odds).getByRole('button', { name: 'Run 2,000 trials' }));
+    await t.until(() =>
+      expect(looked(t, 'monte_carlo')).toEqual([
+        { scenarioId: SCENARIO, spec: MC_SPEC },
+        { scenarioId: SCENARIO, spec: MC_SPEC },
+      ]),
+    );
+    expect(t.solverCancels).not.toContain(id);
+    // progress arrives as `job` messages: the header shows tier 2's note, the action waits
+    await act(async () => {
+      t.mock.emit({
+        v: 1,
+        type: 'job',
+        id,
+        status: 'running',
+        progress: 0.4,
+        note: 'Draw 800 of 2,000',
+        kind: 'solver',
+      });
+      await t.mock.flush();
+    });
+    await t.until(() => {
+      expect(odds.textContent).toContain('Draw 800 of 2,000');
+      const action = within(odds).getByRole('button', { name: 'Run 2,000 trials' });
+      expect((action as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    // done: the run is read back and drawn
+    await act(async () => {
+      t.mock.emit(jobDone(id));
+      await t.mock.flush();
+    });
+    const mc = reference.monte_carlo_C;
+    await t.until(() => expect(odds.querySelector('[data-chart="histogram"]')).not.toBeNull());
+    expect(t.solverGets).toContain(id);
+    expect(odds.textContent).not.toContain('This scenario has not been simulated.');
+    expect(odds.querySelector('.gp-cockpit-big')?.textContent).toBe(
+      fmt.pct(mc.prob_clear_bar).replace(/\.0%$/, '%'),
+    );
+    expect(odds.textContent).toContain('chance of clearing the bar');
+    expect(odds.textContent).toContain(`${fmt.fte(mc.iterations)} runs`);
+    expect(odds.textContent).toContain(`P50 ${fmt.money(mc.net_p10_p50_p90[1])}`);
+    const labels = [...odds.querySelectorAll('[data-part="p-label"]')].map((e) => e.textContent);
+    expect(labels).toEqual(
+      (['P10', 'P50', 'P90'] as const).map(
+        (p, i) => `${p} ${String(Math.round(mc.net_p10_p50_p90[i]!))}`,
+      ),
+    );
+    expect(odds.querySelector('[data-part="bar"]')).not.toBeNull();
+    expect(odds.querySelector('desc')?.textContent).toContain(
+      `bar ${String(Math.round(mc.bar_p10_p50_p90[1]))}`,
+    );
+    const detail = monteCarloRun(id).result!.detail as MonteCarloDetail;
+    expect(odds.querySelectorAll('.gp-hist-bin')).toHaveLength(detail.histograms[0]!.bins.length);
+  });
+
+  it("AC4 fastest path: min-risk result (net, moves count, risk, people-lever flag, top 3 moves); 'Show me a path' → Path", async () => {
+    const id = 'job-path';
+    const probe = 'job-path-probe';
+    const t = await mount({
+      starts: { min_risk_mix: [minRiskRun(probe, 'queued')] },
+      runs: { [id]: minRiskRun(id) },
+    });
+    await loaded(t);
+    const path = panel('cockpit-path');
+    // a cache miss is cancelled at once: the Cockpit never runs (or saves) a path by itself
+    await t.until(() => expect(t.solverCancels).toEqual([probe]));
+    expect(looked(t, 'min_risk_mix')).toEqual([{ scenarioId: SCENARIO, spec: PATH_SPEC }]);
+    expect(path.textContent).toContain(COPY.noPath);
+    expect(within(path).getByRole('button', { name: 'Show me a path' })).toBeTruthy();
+
+    // a min-risk job ends on this scenario (e.g. started from Path): the tile picks it up
+    await act(async () => {
+      t.mock.emit(jobDone(id));
+      await t.mock.flush();
+    });
+    const ref = reference.min_risk_total_bar;
+    await t.until(() =>
+      expect(path.querySelector('.gp-cockpit-big')?.textContent).toBe(fmt.money(ref.net)),
+    );
+    expect(t.solverGets).toEqual([id]);
+    expect(path.textContent).toContain(
+      `${String(RANKED.length)} moves · risk exposure ${fmt.money(ref.risk_exposure)} · no people levers`,
+    );
+    const rows = within(within(path).getByRole('list', { name: 'Top moves' })).getAllByRole(
+      'listitem',
+    );
+    expect(rows).toHaveLength(PATH_TOP_MOVES);
+    rows.forEach((row, i) => {
+      const k = RANKED[i]!;
+      const def = defOf(k);
+      const { from, to } = ref.inputs_moved_from_C[k]!;
+      expect(row.dataset['variableId']).toBe(k);
+      expect(row.textContent).toBe(
+        `${String(i + 1).padStart(2, '0')}${MOVE_LABELS[k]!}${formatByUnit(from, def.unit, def.step!)} → ${formatByUnit(to, def.unit, def.step!)}`,
+      );
+    });
+
+    fireEvent.click(within(path).getByRole('button', { name: 'Show me a path' }));
+    await t.until(() =>
+      expect(t.router.state.location.pathname).toBe(`/${tenant}/${SCENARIO}/path`),
+    );
+  });
+
+  it('AC5 every tile value is a session cell or a solver_run field as sent (nothing computed in tier 1); axe clean with results', async () => {
+    const mcId = 'job-mc-cached';
+    const pathId = 'job-path';
+    const mcRun = monteCarloRun(mcId);
+    const pathRun = minRiskRun(pathId);
+    // JOB-04: the warmed cache answers both look-ups at once (done, cached): no click, no GET
+    const t = await mount({
+      starts: {
+        monte_carlo: [monteCarloRun(mcId, 'done', true)],
+        min_risk_mix: [minRiskRun(pathId, 'done', true)],
+      },
+    });
+    await loaded(t);
+    await t.until(() => {
+      expect(panel('cockpit-odds').querySelector('[data-chart="histogram"]')).not.toBeNull();
+      expect(panel('cockpit-path').querySelector('.gp-cockpit-moves')).not.toBeNull();
+    });
+
+    // session cells: every bound number on the VP and shareholder tiles is the pushed cell
+    const roots = [...screen.getAllByTestId('cockpit-vp'), panel('cockpit-shareholder')];
+    await t.until(() => {
+      let seen = 0;
+      for (const root of roots)
+        for (const el of root.querySelectorAll<HTMLElement>('[data-node][data-member]')) {
+          const node = el.dataset['node']!;
+          const member = el.dataset['member']!;
+          expect(valueAt(root, node, member)).toBe(cellAt(node, member));
+          seen++;
+        }
+      expect(seen).toBe(vps.length * Object.keys(VP_NODES).length + 7);
+    });
+
+    // solver_run fields: shown as sent
+    const detail = mcRun.result!.detail as MonteCarloDetail;
+    const odds = panel('cockpit-odds');
+    const data = (root: HTMLElement, attr: string) =>
+      Number(root.querySelector<HTMLElement>(`[data-${attr}]`)?.getAttribute(`data-${attr}`));
+    expect(data(odds, 'clear')).toBe(detail.probabilities[0]!.p);
+    expect(data(odds, 'p50')).toBe(detail.percentiles[0]!.p50);
+    expect(data(odds, 'iterations')).toBe(detail.iterations);
+    const path = panel('cockpit-path');
+    const r = pathRun.result!;
+    expect(Number(path.querySelector<HTMLElement>('[data-metric]')?.dataset['value'])).toBe(
+      r.metrics[NET_CELL],
+    );
+    expect(data(path, 'moves')).toBe(r.ranked.length);
+    const rows = [...path.querySelectorAll<HTMLElement>('.gp-cockpit-move')];
+    expect(rows.map((e) => [Number(e.dataset['from']), Number(e.dataset['to'])])).toEqual(
+      r.ranked.slice(0, PATH_TOP_MOVES).map((m) => [m.from, m.to]),
+    );
+    expect(t.solverGets).toEqual([]);
+    expect(t.solverCancels).toEqual([]);
+
     const result = await axe.run(t.view.container, {
       rules: { 'color-contrast': { enabled: false } }, // jsdom has no layout or computed colours
     });

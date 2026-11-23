@@ -61,7 +61,7 @@ title: "Cockpit tiles: VP rings, Shareholder, Odds, Fastest path"
 epic: MOD
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: opus
 effort: high
@@ -82,6 +82,7 @@ acceptance:
 gates: [G1, G2, G11, G12, G13]
 size: M
 notes: "At M2 Odds/Fastest path show empty states; they fill when JOB-03/JOB-04 land."
+merged_at: "2026-11-23"
 ```
 
 The rest of the cockpit.
