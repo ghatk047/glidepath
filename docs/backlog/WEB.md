@@ -335,3 +335,31 @@ size: S
 notes: "From MOD-08 review."
 merged_at: "2026-11-23"
 ```
+
+```yaml
+id: WEB-11
+title: "Screens match the UX renders: self-hosted Geist, inherited fonts, scenario labels, then re-approve visual baselines"
+epic: WEB
+milestone: M4
+priority: must
+status: in_progress
+stream: C
+model: sonnet
+effort: high
+depends_on: [QA-06, SOL-13]
+tier: 1
+package: "tier1-presentation/ui (tokens, glass), tier1-presentation/web, e2e/visual/baselines"
+contract: "No contract change. Fonts load from the web bundle (no Google Fonts at runtime); every control inherits the token font."
+inputs:
+  - "docs/ux/01_moodboard.md (Geist for everything, Geist Mono for labels and axis text, tabular figures)"
+  - "docs/ux/screens/ (cockpit render: scenario chips R Rates only / A Commercial / B Op-model reset / C Balanced / D Full stretch)"
+  - "QA-06 report in e2e/README.md and the visual report"
+acceptance:
+  - "Geist and Geist Mono (open licence) are self-hosted in the web bundle via @fontsource or vendored woff2 with the licence file; no request leaves for fonts.googleapis.com (test)"
+  - "button, input, select, textarea inherit the token font; no element renders in a browser serif fallback (test: computed font-family on every control in a module render)"
+  - "scenario chips show the short scenario labels from tier 2 (bundle/preset short name, not hard-coded in tier 1) matching the cockpit render (test)"
+  - "visual baselines re-approved once with `pnpm e2e:visual -- --update` against a fresh stack on develop, compare run passes twice; old baselines replaced, not added"
+gates: [G1, G2, G3, G11, G13]
+size: S
+notes: "From QA-06 review. If short scenario labels need a tier 2 bundle field, add it in the bundle builder and contract (the only allowed out-of-tier change) and say so."
+```
