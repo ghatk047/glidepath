@@ -53,7 +53,7 @@ title: "Job relay to WebSocket and result cache"
 epic: JOB
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: high

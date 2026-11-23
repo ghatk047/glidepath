@@ -386,7 +386,7 @@ title: "Session view subscriptions (ADR-021)"
 epic: API
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
