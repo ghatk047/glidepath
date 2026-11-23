@@ -348,7 +348,7 @@ title: "Solver acceptance gate runner (G5)"
 epic: SOL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: medium

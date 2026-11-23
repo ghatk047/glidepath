@@ -117,7 +117,7 @@ title: "Demo cache warmer"
 epic: JOB
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: medium

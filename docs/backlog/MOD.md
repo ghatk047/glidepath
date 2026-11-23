@@ -197,7 +197,7 @@ title: "Path I: goal, objective, constraints, result, blend"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
@@ -263,7 +263,7 @@ title: "Market module"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
@@ -296,7 +296,7 @@ title: "Excel module: export and import review"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
