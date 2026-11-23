@@ -128,7 +128,7 @@
     ],
     "acceptance": [
       "ci.yml runs G1, G2 (affected packages via turbo --filter=...[origin/main]) and G13 on every PR (test: actionlint + dry run with act or a workflow-syntax test)",
-      "Postgres 16 and MinIO service containers exposed to tests as DATABASE_URL, DATABASE_URL_MIGRATE and S3_ENDPOINT (test: a job step runs `SELECT 1`)",
+      "Postgres 16 service container exposed to tests as DATABASE_URL and DATABASE_URL_MIGRATE; no object store container (ADR-025) (test: a job step runs `SELECT 1`)",
       "jobs parity-golden (G3), parity-fuzz (G4, nightly), solvers (G5), excel (G6), leak (G7), perf (G8), e2e (G9), compose (G14) exist and skip with a clear message while their pnpm script is a placeholder (test: script-presence step)",
       "no secrets referenced except via ${{ secrets.* }} (test: grep step)"
     ],
@@ -481,7 +481,7 @@
       "docs/adr/ADR-015-database-portability.md"
     ],
     "acceptance": [
-      "backup writes pg_dump (custom format, via DATABASE_URL_MIGRATE) and a mirror of every MinIO bucket to ./backups/<timestamp>/ (test: ops/test/backup.spec)",
+      "backup writes pg_dump (custom format, via DATABASE_URL_MIGRATE) to ./backups/<timestamp>/; stored objects are in Postgres (ADR-025) so the dump covers them (test: ops/test/backup.spec)",
       "restore into clean volumes, then /calc for C and object counts equal the pre-backup values (round-trip test)",
       "uses --no-owner --no-privileges so it works against a non-superuser URL including sslmode=require (test with pg-local --ssl)"
     ],
@@ -490,6 +490,38 @@
     ],
     "size": "S",
     "notes": ""
+  },
+  {
+    "id": "OPS-08",
+    "title": "Remove objects (MinIO) service from compose, .env.example and ops tests",
+    "epic": "OPS",
+    "milestone": "M0",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "B",
+    "model": "sonnet",
+    "effort": "medium",
+    "depends_on": [
+      "OPS-01"
+    ],
+    "tier": "ops",
+    "package": "repo-root (docker-compose*.yml, .env.example, README.md, ops/test)",
+    "contract": "Compose services db, migrate, logic, worker, web, mail; OBJECT_STORE=postgres",
+    "inputs": [
+      "docs/adr/ADR-025-object-store-in-postgres.md",
+      "docker-compose.yml",
+      "ops/test/compose-config.spec.ts"
+    ],
+    "acceptance": [
+      "no objects service, objdata volume, OBJECTS_IMAGE, MINIO_* or S3_* settings in compose or .env.example; OBJECT_STORE=postgres added (test: compose-config.spec.ts, env-example.spec.ts)",
+      "README Running locally no longer mentions MinIO (test: readme.spec.ts)",
+      "`docker compose config` is valid with and without docker-compose.neon.yml (test)"
+    ],
+    "gates": [
+      "G14"
+    ],
+    "size": "S",
+    "notes": "Follow-up to OPS-01 after the official MinIO image stopped being pullable (ADR-025)."
   },
   {
     "id": "CON-01",
@@ -1385,7 +1417,7 @@
   },
   {
     "id": "DATA-07",
-    "title": "Object store client and buckets",
+    "title": "Object store port with Postgres adapter (ADR-025)",
     "epic": "DATA",
     "milestone": "M3",
     "priority": "must",
@@ -1400,12 +1432,13 @@
     "package": "tier2-logic/data-access/src/objects",
     "contract": "ObjectStore port: put/get/stream/list/delete",
     "inputs": [
-      "docs/architecture/04_data_and_api.md#5. Tier 3 · Object storage (MinIO)",
-      "docs/architecture/11_docker_deployment.md#4. Configuration (12-factor)"
+      "docs/adr/ADR-025-object-store-in-postgres.md",
+      "docs/architecture/04_data_and_api.md#5. Tier 3 · Object storage (MinIO)"
     ],
     "acceptance": [
-      "S3 client configured by S3_ENDPOINT/keys only; buckets exports, export-snapshots, imports, ai created idempotently by migrate; 30-day lifecycle on exports (test against MinIO when S3_ENDPOINT set, else the in-memory/fs adapter)",
-      "in-memory and filesystem adapters implement the same port for tests without MinIO (test: shared contract suite)",
+      "Postgres adapter over a stored_object table (manual migration tier3-data/migrations/manual, RLS by tenant like every tenant table); buckets exports, export-snapshots, imports, ai are key prefixes; expires_at honoured for exports (30 days) (test against pg-local)",
+      "in-memory adapter implements the same port; one shared contract suite runs against both (test)",
+      "objects over 50 MB rejected; sha256 stored and verified on read (test)",
       "no storage URL ever leaves tier 2: stream API only (test)"
     ],
     "gates": [

@@ -228,7 +228,7 @@ inputs:
   - "docs/architecture/04_data_and_api.md#5. Tier 3 · Object storage (MinIO)"
   - "docs/adr/ADR-015-database-portability.md"
 acceptance:
-  - "backup writes pg_dump (custom format, via DATABASE_URL_MIGRATE) and a mirror of every MinIO bucket to ./backups/<timestamp>/ (test: ops/test/backup.spec)"
+  - "backup writes pg_dump (custom format, via DATABASE_URL_MIGRATE) to ./backups/<timestamp>/; stored objects are in Postgres (ADR-025) so the dump covers them (test: ops/test/backup.spec)"
   - "restore into clean volumes, then /calc for C and object counts equal the pre-backup values (round-trip test)"
   - "uses --no-owner --no-privileges so it works against a non-superuser URL including sslmode=require (test with pg-local --ssl)"
 gates: [G14]
@@ -237,3 +237,34 @@ notes: ""
 ```
 
 Run before the freeze; also the first step of moving to Neon later.
+
+## OPS-08 · Remove the MinIO service (ADR-025)
+
+```yaml
+id: OPS-08
+title: "Remove objects (MinIO) service from compose, .env.example and ops tests"
+epic: OPS
+milestone: M0
+priority: must
+status: in_progress
+stream: B
+model: sonnet
+effort: medium
+depends_on: [OPS-01]
+tier: ops
+package: "repo-root (docker-compose*.yml, .env.example, README.md, ops/test)"
+contract: "Compose services db, migrate, logic, worker, web, mail; OBJECT_STORE=postgres"
+inputs:
+  - "docs/adr/ADR-025-object-store-in-postgres.md"
+  - "docker-compose.yml"
+  - "ops/test/compose-config.spec.ts"
+acceptance:
+  - "no objects service, objdata volume, OBJECTS_IMAGE, MINIO_* or S3_* settings in compose or .env.example; OBJECT_STORE=postgres added (test: compose-config.spec.ts, env-example.spec.ts)"
+  - "README Running locally no longer mentions MinIO (test: readme.spec.ts)"
+  - "`docker compose config` is valid with and without docker-compose.neon.yml (test)"
+gates: [G14]
+size: S
+notes: "Follow-up to OPS-01 after the official MinIO image stopped being pullable (ADR-025)."
+```
+
+Drops the third-party object store image from the stack.

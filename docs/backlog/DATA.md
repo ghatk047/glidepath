@@ -248,7 +248,7 @@ The persistence side of the single write path.
 
 ```yaml
 id: DATA-07
-title: "Object store client and buckets"
+title: "Object store port with Postgres adapter (ADR-025)"
 epic: DATA
 milestone: M3
 priority: must
@@ -261,11 +261,12 @@ tier: 2
 package: "tier2-logic/data-access/src/objects"
 contract: "ObjectStore port: put/get/stream/list/delete"
 inputs:
+  - "docs/adr/ADR-025-object-store-in-postgres.md"
   - "docs/architecture/04_data_and_api.md#5. Tier 3 · Object storage (MinIO)"
-  - "docs/architecture/11_docker_deployment.md#4. Configuration (12-factor)"
 acceptance:
-  - "S3 client configured by S3_ENDPOINT/keys only; buckets exports, export-snapshots, imports, ai created idempotently by migrate; 30-day lifecycle on exports (test against MinIO when S3_ENDPOINT set, else the in-memory/fs adapter)"
-  - "in-memory and filesystem adapters implement the same port for tests without MinIO (test: shared contract suite)"
+  - "Postgres adapter over a stored_object table (manual migration tier3-data/migrations/manual, RLS by tenant like every tenant table); buckets exports, export-snapshots, imports, ai are key prefixes; expires_at honoured for exports (30 days) (test against pg-local)"
+  - "in-memory adapter implements the same port; one shared contract suite runs against both (test)"
+  - "objects over 50 MB rejected; sha256 stored and verified on read (test)"
   - "no storage URL ever leaves tier 2: stream API only (test)"
 gates: [G1, G2]
 size: S

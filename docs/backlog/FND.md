@@ -136,7 +136,7 @@ inputs:
   - "docs/architecture/02_repo_and_conventions.md#4. Environments"
 acceptance:
   - "ci.yml runs G1, G2 (affected packages via turbo --filter=...[origin/main]) and G13 on every PR (test: actionlint + dry run with act or a workflow-syntax test)"
-  - "Postgres 16 and MinIO service containers exposed to tests as DATABASE_URL, DATABASE_URL_MIGRATE and S3_ENDPOINT (test: a job step runs `SELECT 1`)"
+  - "Postgres 16 service container exposed to tests as DATABASE_URL and DATABASE_URL_MIGRATE; no object store container (ADR-025) (test: a job step runs `SELECT 1`)"
   - "jobs parity-golden (G3), parity-fuzz (G4, nightly), solvers (G5), excel (G6), leak (G7), perf (G8), e2e (G9), compose (G14) exist and skip with a clear message while their pnpm script is a placeholder (test: script-presence step)"
   - "no secrets referenced except via ${{ secrets.* }} (test: grep step)"
 gates: [G1]
