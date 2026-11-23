@@ -207,7 +207,7 @@ describe('denylist derivation', () => {
     expect(deny.packageNames).toContain('@glidepath/data-access');
     expect(deny.symbols.has('createDb')).toBe(true);
     expect(deny.symbols.has('loadModelBundle')).toBe(true);
-  });
+  }, 30_000); // parses every tier 2 package's exports; slow on CI runners as the repo grows
 });
 
 describe('cli', () => {
