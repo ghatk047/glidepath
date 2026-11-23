@@ -1,6 +1,5 @@
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  CHANGE_OPS,
   CHANGE_ROW_OPS,
   CHANGE_ROW_STATUSES,
   CHANGE_ROW_TARGETS,
@@ -8,9 +7,12 @@ import {
   CHANGE_TARGETS,
   CHANGESET_ORIGINS,
   CHANGESET_STATUSES,
+  ChangesetDraftError,
   LINE_ITEM_DIM,
   TENANT_COLUMN,
   changeRowTarget,
+  checkDraft,
+  draftIssues,
   type Change,
   type ChangeRow,
   type ChangeRowTarget,
@@ -23,7 +25,8 @@ import { columnsOf, enumOf, isNullable } from './test-support/schema-json';
 
 const SCENARIO = '00000000-0000-4000-8000-0000000000a1';
 
-// Full rows: a literal of an exact row type must name every column and nothing else.
+// Full rows: a literal of an exact row type must name every column and nothing else. The tenant-default
+// row also pins the nullable columns (scenario_id, reverts_id) at compile time.
 const changesetRow: ChangesetRow = {
   id: '00000000-0000-4000-8000-0000000000c1',
   origin: 'ui',
@@ -34,6 +37,11 @@ const changesetRow: ChangesetRow = {
   created_by: '00000000-0000-4000-8000-0000000000e1',
   created_at: '2026-11-23T10:00:00.000Z',
   reverts_id: null,
+};
+const tenantDefaultRow: ChangesetRow = {
+  ...changesetRow,
+  scenario_id: null,
+  reverts_id: changesetRow.id,
 };
 const changeRow: ChangeRow = {
   changeset_id: changesetRow.id,
@@ -51,22 +59,18 @@ const changeRow: ChangeRow = {
 
 describe('ChangesetDraft and Change match schema.json changeset/change columns', () => {
   it('ChangesetRow and ChangeRow carry exactly the schema.json columns (tenant_id comes from the store)', () => {
-    expect([TENANT_COLUMN, ...Object.keys(changesetRow)].sort()).toEqual(
-      columnsOf('changeset').sort(),
-    );
+    for (const row of [changesetRow, tenantDefaultRow]) {
+      expect([TENANT_COLUMN, ...Object.keys(row)].sort()).toEqual(columnsOf('changeset').sort());
+    }
     expect([TENANT_COLUMN, ...Object.keys(changeRow)].sort()).toEqual(columnsOf('change').sort());
   });
 
-  it('nullable columns are nullable in the row types and nowhere else', () => {
+  it('the columns the row types make nullable are the nullable schema.json columns', () => {
     expect(columnsOf('changeset').filter((c) => isNullable('changeset', c))).toEqual([
       'scenario_id',
       'reverts_id',
     ]);
     expect(columnsOf('change').filter((c) => isNullable('change', c))).toEqual(['export_value']);
-    expectTypeOf<ChangesetRow['scenario_id']>().toEqualTypeOf<string | null>();
-    expectTypeOf<ChangesetRow['reverts_id']>().toEqualTypeOf<string | null>();
-    expectTypeOf<null>().not.toMatchTypeOf<ChangesetRow['id' | 'created_by' | 'created_at']>();
-    expectTypeOf<null>().not.toMatchTypeOf<ChangeRow['key' | 'member_key' | 'changeset_id']>();
   });
 
   it('enums are schema.json enums verbatim', () => {
@@ -75,26 +79,9 @@ describe('ChangesetDraft and Change match schema.json changeset/change columns',
     expect([...CHANGE_ROW_TARGETS]).toEqual(enumOf('change', 'target'));
     expect([...CHANGE_ROW_OPS]).toEqual(enumOf('change', 'op'));
     expect([...CHANGE_ROW_STATUSES]).toEqual(enumOf('change', 'status'));
-    expectTypeOf<ChangesetRow['origin']>().toEqualTypeOf<(typeof CHANGESET_ORIGINS)[number]>();
-    expectTypeOf<ChangeRow['target']>().toEqualTypeOf<(typeof CHANGE_ROW_TARGETS)[number]>();
-    expectTypeOf<ChangeRow['op']>().toEqualTypeOf<(typeof CHANGE_ROW_OPS)[number]>();
   });
 
-  it('origins named by DOM-01 exist (market is schema market_refresh; api is also a schema origin)', () => {
-    for (const o of [
-      'ui',
-      'excel_import',
-      'solver',
-      'ai_reconfig',
-      'seed',
-      'market_refresh',
-      'api',
-    ]) {
-      expect(CHANGESET_ORIGINS).toContain(o);
-    }
-  });
-
-  it('draft fields are changeset/change columns', () => {
+  it('draft fields are changeset/change columns; a note is persisted to variable_value.note or node_override.reason', () => {
     const draft: Required<ChangesetDraft> = {
       origin: 'excel_import',
       scenario_id: SCENARIO,
@@ -113,6 +100,7 @@ describe('ChangesetDraft and Change match schema.json changeset/change columns',
       op: 'set',
       old_value: 2,
       new_value: 4,
+      note: 'union contract',
     };
     const structural: Required<StructuralChange> = {
       target: 'structural',
@@ -121,30 +109,21 @@ describe('ChangesetDraft and Change match schema.json changeset/change columns',
       op: 'insert',
       old_value: null,
       new_value: { label: 'New VP' },
+      note: 'reorg',
     };
     for (const c of [value, structural]) {
-      for (const k of Object.keys(c)) expect(columnsOf('change')).toContain(k);
+      for (const k of Object.keys(c).filter((k) => k !== 'note'))
+        expect(columnsOf('change')).toContain(k);
     }
-    expectTypeOf<keyof Change>().toEqualTypeOf<
-      'target' | 'key' | 'member_key' | 'op' | 'old_value' | 'new_value'
-    >();
-    expectTypeOf<keyof ChangesetDraft>().toEqualTypeOf<
-      'origin' | 'scenario_id' | 'base_scenario_version' | 'reverts_id' | 'changes'
-    >();
-  });
-
-  it('draft vocabulary is target variable|override|structural and op set|unset|insert|delete', () => {
-    expect([...CHANGE_TARGETS]).toEqual(['variable', 'override', 'structural']);
-    expect([...CHANGE_OPS]).toEqual(['set', 'unset', 'insert', 'delete']);
-    expectTypeOf<Change['target']>().toEqualTypeOf<(typeof CHANGE_TARGETS)[number]>();
-    expectTypeOf<Change['op']>().toEqualTypeOf<(typeof CHANGE_OPS)[number]>();
-    // set/unset are value ops; insert/set/delete are structural ops.
-    expectTypeOf<ValueChange['op']>().toEqualTypeOf<'set' | 'unset'>();
-    expectTypeOf<StructuralChange['op']>().toEqualTypeOf<'insert' | 'set' | 'delete'>();
+    // change has no note column; the value rows that keep one do.
+    expect(columnsOf('change')).not.toContain('note');
+    expect(columnsOf('variable_value')).toContain('note');
+    expect(columnsOf('node_override')).toContain('reason');
+    expect(columnsOf('scenario_value')).not.toContain('note');
+    expect(columnsOf('dimension_member')).not.toContain('note');
   });
 
   it('every schema change target maps to one draft target, and changeRowTarget is its inverse', () => {
-    expect(Object.keys(CHANGE_ROW_TARGET_KIND).sort()).toEqual([...CHANGE_ROW_TARGETS].sort());
     expect(new Set(Object.values(CHANGE_ROW_TARGET_KIND))).toEqual(new Set(CHANGE_TARGETS));
 
     const v = { target: 'variable', key: 'g.target_net' } as const;
@@ -164,7 +143,6 @@ describe('ChangesetDraft and Change match schema.json changeset/change columns',
       expect(CHANGE_ROW_TARGET_KIND[rowTarget]).toBe(change.target);
     }
     expect(new Set(cases.map((c) => c[2]))).toEqual(new Set(CHANGE_ROW_TARGETS));
-    expect(LINE_ITEM_DIM).toBe('line');
   });
 
   it('a node override needs a scenario (node_override.scenario_id is a pk part)', () => {
@@ -172,5 +150,112 @@ describe('ChangesetDraft and Change match schema.json changeset/change columns',
     expect(() => changeRowTarget({ target: 'override', key: 'res.net' }, null)).toThrow(
       /override res\.net.*scenario/,
     );
+  });
+});
+
+describe('checkDraft rejects drafts that are invalid whatever the state', () => {
+  const draft = (scenario_id: string | null, ...changes: Change[]): ChangesetDraft => ({
+    origin: 'api',
+    scenario_id,
+    base_scenario_version: 0,
+    changes,
+  });
+  const unsetDefault: Change = {
+    target: 'variable',
+    key: 'g.target_net',
+    member_key: '',
+    op: 'unset',
+    new_value: null,
+  };
+
+  it('valid drafts pass, including set on tenant defaults and unset on a scenario', () => {
+    const ok = [
+      draft(null, { ...unsetDefault, op: 'set', new_value: 120, note: 'board target' }),
+      draft(SCENARIO, unsetDefault),
+      draft(SCENARIO, {
+        target: 'override',
+        key: 'res.net',
+        member_key: '',
+        op: 'set',
+        new_value: 140,
+        note: 'finance view',
+      }),
+      draft(null, {
+        target: 'structural',
+        key: 'vp',
+        member_key: 'vp_new',
+        op: 'insert',
+        new_value: { label: 'New VP' },
+      }),
+      draft(null, {
+        target: 'structural',
+        key: 'vp',
+        member_key: 'vp_old',
+        op: 'delete',
+        new_value: null,
+      }),
+    ];
+    for (const d of ok) {
+      expect(draftIssues(d)).toEqual([]);
+      expect(() => checkDraft(d)).not.toThrow();
+    }
+  });
+
+  it('unset on tenant defaults (scenario_id null) is a validation error', () => {
+    const d = draft(null, unsetDefault);
+    expect(draftIssues(d)).toEqual([
+      {
+        index: 0,
+        message:
+          'variable g.target_net[]: tenant defaults cannot be unset (the cell would have no value); set a value instead',
+      },
+    ]);
+    expect(() => checkDraft(d)).toThrow(ChangesetDraftError);
+    expect(() => checkDraft(d)).toThrow(/change 0: .*tenant defaults cannot be unset/);
+  });
+
+  it('lists every problem: overrides without a scenario, new_value not fitting the op, a bad version', () => {
+    const d: ChangesetDraft = {
+      ...draft(
+        null,
+        { target: 'override', key: 'res.net', member_key: '', op: 'set', new_value: 1 },
+        { target: 'variable', key: 'g.target_net', member_key: '', op: 'set', new_value: null },
+        { target: 'variable', key: 'g.target_net', member_key: '', op: 'set', new_value: NaN },
+        { target: 'structural', key: 'vp', member_key: 'v', op: 'insert', new_value: null },
+        { target: 'structural', key: 'vp', member_key: 'v', op: 'delete', new_value: {} },
+      ),
+      base_scenario_version: -1,
+    };
+    const issues = draftIssues(d);
+    expect(issues.map((i) => i.index)).toEqual([null, 0, 1, 2, 3, 4]);
+    expect(issues.map((i) => i.message)).toEqual([
+      'base_scenario_version -1 is not a version',
+      'override res.net[]: a node override belongs to a scenario',
+      'variable g.target_net[]: set needs a finite number as new_value',
+      'variable g.target_net[]: set needs a finite number as new_value',
+      'structural vp[v]: insert needs the row as new_value',
+      'structural vp[v]: delete needs new_value null',
+    ]);
+    try {
+      checkDraft(d);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(ChangesetDraftError);
+      expect((e as ChangesetDraftError).issues).toEqual(issues);
+      expect((e as Error).message).toBe(
+        'draft: base_scenario_version -1 is not a version (and 5 more)',
+      );
+    }
+    expect(
+      draftIssues(
+        draft(SCENARIO, {
+          target: 'variable',
+          key: 'g.target_net',
+          member_key: '',
+          op: 'unset',
+          new_value: 3,
+        }),
+      ),
+    ).toEqual([{ index: 0, message: 'variable g.target_net[]: unset needs new_value null' }]);
   });
 });

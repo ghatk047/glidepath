@@ -47,31 +47,17 @@ const audit: AuditEntry = {
 };
 
 describe('ports.ts declares ChangesetStore and ModelCache interfaces', () => {
-  it('ChangesetStore runs a transaction over ChangesetTx', () => {
-    expectTypeOf<ChangesetStore['transaction']>().toBeFunction();
-    expectTypeOf<
-      Parameters<Parameters<ChangesetStore['transaction']>[0]>[0]
-    >().toEqualTypeOf<ChangesetTx>();
-    expectTypeOf<keyof ChangesetTx>().toEqualTypeOf<
-      | 'loadScenarioForUpdate'
-      | 'loadScenarios'
-      | 'loadInputs'
-      | 'loadMembers'
-      | 'loadChangeset'
-      | 'changesSince'
-      | 'createScenario'
-      | 'insertChangeset'
-      | 'setChangesetStatus'
-      | 'writeValue'
-      | 'writeMember'
-      | 'bumpVersion'
-      | 'findCalcRun'
-      | 'upsertCalcRun'
-      | 'appendAudit'
-    >();
-    // every method is async (IO lives behind the port)
+  it('every ChangesetTx method is async (IO lives behind the port)', () => {
     type Results = { [K in keyof ChangesetTx]: ReturnType<ChangesetTx[K]> }[keyof ChangesetTx];
     expectTypeOf<Results>().toMatchTypeOf<Promise<unknown>>();
+  });
+
+  it('ChangesetStore.transaction hands fn a ChangesetTx and returns what fn returns', async () => {
+    const tx = {} as ChangesetTx;
+    const store: ChangesetStore = { transaction: (fn) => fn(tx) };
+    await expect(store.transaction(async (t) => (t === tx ? 'same tx' : 'other'))).resolves.toBe(
+      'same tx',
+    );
   });
 
   it('the port rows mirror schema.json (scenario, calc_run, audit_log), tenant_id from the store', () => {

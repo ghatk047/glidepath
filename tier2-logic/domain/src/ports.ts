@@ -158,7 +158,8 @@ export interface ChangesetTx {
   writeMember(write: MemberWrite): Promise<void>;
   /**
    * Step 6: set scenario.version to `fromVersion + 1` if it still is `fromVersion`, and return the new
-   * version; rejects if the version moved.
+   * version; rejects if the version moved. Tenant defaults have no scenario row and are not bumped:
+   * their version is the count of tenant-default changesets applied (ChangesetDraft).
    */
   bumpVersion(scenarioId: ScenarioId, fromVersion: number): Promise<number>;
   /** The calc_run of a scenario for an input hash, or null (cache lookup). */
@@ -168,7 +169,10 @@ export interface ChangesetTx {
   appendAudit(entry: AuditEntry): Promise<void>;
 }
 
-/** Persistence of changesets, implemented by data-access. */
+/**
+ * Persistence of changesets, implemented by data-access. The store knows the tenant, not the user:
+ * `applyChangeset` takes the actor as an argument and passes it in the rows it writes.
+ */
 export interface ChangesetStore {
   /**
    * Run `fn` in one transaction: everything it does commits together, or nothing does if it throws.

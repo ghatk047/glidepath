@@ -31,7 +31,7 @@ describe("memberKey joins member ids in the variable's dims order, '' for scalar
   it("scalars get ''", () => {
     const v = variable('g.target_net');
     expect(v.dims).toEqual([]);
-    expect(SCALAR_MEMBER_KEY).toBe('');
+    expect(memberKey(v, {})).toBe(SCALAR_MEMBER_KEY);
     expect(memberKey(v, {})).toBe('');
     expect(memberKey(v, [])).toBe('');
     expect(splitMemberKey(v, '')).toEqual({});

@@ -1657,7 +1657,7 @@
     "epic": "DOM",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -1682,7 +1682,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": "VR05 and VR08 read engine outputs and live in DOM-05 after the parity gate."
+    "notes": "VR05 and VR08 read engine outputs and live in DOM-05 after the parity gate.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DOM-03",

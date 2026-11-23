@@ -10,9 +10,12 @@ export {
   CHANGE_TARGETS,
   CHANGESET_ORIGINS,
   CHANGESET_STATUSES,
+  ChangesetDraftError,
   LINE_ITEM_DIM,
   TENANT_COLUMN,
   changeRowTarget,
+  checkDraft,
+  draftIssues,
 } from './changeset';
 export type {
   Change,
@@ -28,6 +31,7 @@ export type {
   ChangesetOrigin,
   ChangesetRow,
   ChangesetStatus,
+  DraftIssue,
   JsonObject,
   JsonValue,
   ScenarioId,
@@ -49,6 +53,34 @@ export type {
   ScenarioLink,
 } from './resolve';
 export { reverse } from './reverse';
+export {
+  CORPORATE_LAYER,
+  INPUT_RULES,
+  INPUT_RULE_IDS,
+  LINE_ITEM_KEYS,
+  OUT_OF_SCOPE_MEMO_DOMAIN,
+  RULE_TOLERANCE,
+  VALIDATION_RULES,
+  toCellKey,
+  validateInputs,
+  vr01DomainOwnership,
+  vr02SharedServicesOwner,
+  vr03UsageKeys,
+  vr04RegistryBounds,
+  vr06RetirementSplit,
+  vr07RetiredApps,
+  vr09LineItemKeys,
+  vr10CorpInputYears,
+} from './validation';
+export type {
+  InputRule,
+  InputRuleId,
+  RuleDef,
+  RuleId,
+  Severity,
+  ValidationEntry,
+  ValidationState,
+} from './validation';
 export { SCENARIO_KINDS, modelCacheKey } from './ports';
 export type {
   AuditEntry,

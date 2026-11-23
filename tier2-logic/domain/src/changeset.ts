@@ -85,7 +85,8 @@ export type ChangeOp = (typeof CHANGE_OPS)[number];
  * Set or unset one cell of an input variable (`variable`: variable_value when the changeset has no
  * scenario, else scenario_value) or of a node override (`override`: node_override).
  * `set` writes `new_value` into this level's row; `unset` removes the row (`new_value` null), so the
- * cell resolves to what it inherits again.
+ * cell resolves to what it inherits again. Tenant defaults cannot be unset (`checkDraft`): they are
+ * the last level, so the cell would have no value at all.
  */
 export interface ValueChange {
   readonly target: 'variable' | 'override';
@@ -95,13 +96,20 @@ export interface ValueChange {
   readonly member_key: MemberKey;
   readonly op: 'set' | 'unset';
   /**
-   * The cell's resolved value before the change (`resolveInputs`: possibly inherited), null when it
-   * had none. Optional in a draft: when given, applyChangeset can check it is still current; it is
-   * always stored on the change row.
+   * The cell's value before this change, as resolved at the changeset's base version: this level's
+   * own row, else what the cell inherits (an ancestor scenario, then the tenant default), with the
+   * changeset's earlier changes applied. null when no level sets it. Optional in a draft: when given,
+   * applyChangeset checks it is still current; it is always stored on the change row.
    */
   readonly old_value?: number | null;
   /** The row's new value; null for `unset`. */
   readonly new_value: number | null;
+  /**
+   * Why the value was set, persisted with the row: `variable_value.note` for a tenant default
+   * (`scenario_id` null) and `node_override.reason` for an override. scenario_value has no note
+   * column, so a scenario value does not store it.
+   */
+  readonly note?: string;
 }
 
 /**
@@ -116,20 +124,37 @@ export interface StructuralChange {
   /** The member id (dimension_member.member_key / line_item.member_key). */
   readonly member_key: MemberId;
   readonly op: 'insert' | 'set' | 'delete';
-  /** The row before the change, null when absent. Optional in a draft, as for values. */
+  /** The row before this change, null when absent. Optional in a draft, as for values. */
   readonly old_value?: JsonObject | null;
   /** The row after the change; null for `delete`. */
   readonly new_value: JsonObject | null;
+  /**
+   * Why the row changed. Unlike variable_value.note and node_override.reason, dimension_member and
+   * line_item have no note column (a line's own `notes` is row content, in `new_value`), so the row
+   * does not store it.
+   */
+  readonly note?: string;
 }
 
 export type Change = ValueChange | StructuralChange;
 
-/** A set of changes to apply atomically to one scenario (or to the tenant defaults). */
+/**
+ * A set of changes to apply atomically to one scenario (or to the tenant defaults).
+ *
+ * A draft names no author: `applyChangeset` takes the actor (a UserId) as an explicit argument and
+ * writes it to changeset.created_by and audit_log.actor. It never reads the actor from ambient
+ * context; the store's context carries the tenant only.
+ */
 export interface ChangesetDraft {
   readonly origin: ChangesetOrigin;
   /** null = tenant defaults (variable_value). */
   readonly scenario_id: ScenarioId | null;
-  /** The scenario version the author started from (optimistic concurrency). */
+  /**
+   * The version the author started from (optimistic concurrency): `scenario.version` for a scenario.
+   * Tenant defaults have no scenario row, so their version is the number of tenant-default
+   * changesets ever applied (status `applied` or `reverted`); a tenant-default draft is current when
+   * `ChangesetTx.changesSince(null, base_scenario_version)` is empty, and no scenario version bumps.
+   */
   readonly base_scenario_version: number;
   /** Set when this draft undoes (or redoes) another changeset. */
   readonly reverts_id?: ChangesetId | null;
@@ -156,8 +181,9 @@ export interface ChangesetRow {
 /**
  * One change row (schema.json tables.change, without tenant_id). `(target, key, member_key)` names
  * the row written: `(var_key, member_key)`, `(node_key, member_key)` or `(dim_key, member_key)`.
- * For values, `old_value` is the cell's resolved value before the change and `new_value` the row's
- * new value (null when deleted); for structural rows both are row contents (null when absent).
+ * For values, `old_value` is the cell's value before this change as resolved at the changeset's base
+ * version (`ValueChange.old_value`) and `new_value` the row's new value (null when deleted); for
+ * structural rows both are row contents (null when absent).
  * `op` records whether the row was inserted, updated or deleted, which is what undo needs.
  */
 export interface ChangeRow {
@@ -213,4 +239,79 @@ export function changeRowTarget(
     case 'structural':
       return change.key === LINE_ITEM_DIM ? 'line_item' : 'dimension_member';
   }
+}
+
+// ---------------------------------------------------------------------------------- draft checks
+
+/** One problem of a draft: the index of the change in `changes`, or null for the draft itself. */
+export interface DraftIssue {
+  readonly index: number | null;
+  readonly message: string;
+}
+
+/** A draft that cannot be applied whatever the state; `issues` lists every problem. */
+export class ChangesetDraftError extends Error {
+  readonly issues: readonly DraftIssue[];
+
+  constructor(issues: readonly DraftIssue[]) {
+    const first = issues[0];
+    const where = first === undefined || first.index === null ? 'draft' : `change ${first.index}`;
+    const more = issues.length > 1 ? ` (and ${issues.length - 1} more)` : '';
+    super(`${where}: ${first?.message ?? 'invalid'}${more}`);
+    this.name = 'ChangesetDraftError';
+    this.issues = issues;
+  }
+}
+
+const isRow = (v: JsonValue): boolean => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/** What `op` needs in `new_value`, or null when it holds that. */
+function newValueProblem(c: Change): string | null {
+  if (c.target === 'structural') {
+    if (c.op === 'delete') return c.new_value === null ? null : 'delete needs new_value null';
+    return isRow(c.new_value) ? null : `${c.op} needs the row as new_value`;
+  }
+  if (c.op === 'unset') return c.new_value === null ? null : 'unset needs new_value null';
+  return typeof c.new_value === 'number' && Number.isFinite(c.new_value)
+    ? null
+    : 'set needs a finite number as new_value';
+}
+
+/**
+ * The problems that make a draft invalid whatever the stored state, in change order; empty when
+ * there are none:
+ * - `base_scenario_version` is not a non-negative integer;
+ * - `unset` of a tenant default (`scenario_id` null): the tenant default is the last level a cell
+ *   resolves from, so removing it leaves the cell without a value; set a value instead;
+ * - an override without a scenario (node_override.scenario_id is part of its key);
+ * - a `new_value` that does not fit the op (a number for a value `set`, a row for `insert` and a
+ *   structural `set`, null for `unset` and `delete`).
+ */
+export function draftIssues(draft: ChangesetDraft): DraftIssue[] {
+  const issues: DraftIssue[] = [];
+  const version = draft.base_scenario_version;
+  if (!Number.isInteger(version) || version < 0) {
+    issues.push({ index: null, message: `base_scenario_version ${version} is not a version` });
+  }
+  draft.changes.forEach((c, index) => {
+    const cell = `${c.target} ${c.key}[${c.member_key}]`;
+    if (c.target === 'variable' && c.op === 'unset' && draft.scenario_id === null) {
+      issues.push({
+        index,
+        message: `${cell}: tenant defaults cannot be unset (the cell would have no value); set a value instead`,
+      });
+    }
+    if (c.target === 'override' && draft.scenario_id === null) {
+      issues.push({ index, message: `${cell}: a node override belongs to a scenario` });
+    }
+    const problem = newValueProblem(c);
+    if (problem !== null) issues.push({ index, message: `${cell}: ${problem}` });
+  });
+  return issues;
+}
+
+/** Throw a ChangesetDraftError listing `draftIssues(draft)`, if there are any. */
+export function checkDraft(draft: ChangesetDraft): void {
+  const issues = draftIssues(draft);
+  if (issues.length > 0) throw new ChangesetDraftError(issues);
 }

@@ -237,10 +237,20 @@ describe('reverse(changeset) builds the undo draft with reverts_id', () => {
 
 // ---------------------------------------------------------------------------------------------
 // Round trip through a minimal applier: the row-level semantics applyChangeset (DOM-03) will have.
+// `old_value` is the cell's value before the change as resolved at the base version: its own row at
+// this level, else what it inherits from the levels below (here a fixed map), with earlier changes of
+// the changeset applied.
 
 type State = ReadonlyMap<string, JsonValue>;
 const cellOf = (scenario: string | null, c: Pick<Change, 'target' | 'key' | 'member_key'>) =>
   `${changeRowTarget(c, scenario)}|${c.key}|${c.member_key}`;
+
+/** Values the scenario's cells inherit from its ancestors and the tenant defaults. */
+const inherited: ReadonlyMap<string, number> = new Map([
+  ['scenario_value|lev.L05.nb|', 0.3],
+  ['scenario_value|lev.start|L09', 7],
+  ['scenario_value|corp.lab_hc_g|pilots,fy27', 1],
+]);
 
 let nextId = 0;
 function apply(draft: ChangesetDraft, state: State): { applied: Changeset; state: State } {
@@ -250,7 +260,8 @@ function apply(draft: ChangesetDraft, state: State): { applied: Changeset; state
   for (const c of draft.changes) {
     const cell = cellOf(draft.scenario_id, c);
     const exists = next.has(cell);
-    const cur = next.get(cell) ?? null;
+    const own = next.get(cell) ?? null;
+    const cur = exists || c.target === 'structural' ? own : (inherited.get(cell) ?? null);
     if (c.old_value !== undefined)
       expect(cur, `expected old value of ${cell}`).toEqual(c.old_value);
     let op: ChangeRowOp | null;
@@ -312,7 +323,15 @@ describe('undo and redo round trip', () => {
         op: 'insert',
         new_value: { label: 'New VP' },
       },
-      { target: 'variable', key: 'lev.L05.nb', member_key: '', op: 'set', new_value: 0.4 },
+      // inherited 0.3: the draft's old_value is the resolved value, not the (absent) own row
+      {
+        target: 'variable',
+        key: 'lev.L05.nb',
+        member_key: '',
+        op: 'set',
+        old_value: 0.3,
+        new_value: 0.4,
+      },
       {
         target: 'variable',
         key: 'corp.lab_hc_g',
@@ -338,6 +357,11 @@ describe('undo and redo round trip', () => {
   it('apply(reverse(cs)) restores the state; reversing the undo (redo) re-applies the edit', () => {
     const first = apply(edit, s0);
     expect(first.applied.changes).toHaveLength(7);
+    // old_value is the resolved value: inherited for a cell the scenario did not set, else its own row
+    const rowOf = (key: string) => first.applied.changes.find((r) => r.key === key);
+    expect(rowOf('lev.L05.nb')).toMatchObject({ op: 'insert', old_value: 0.3, new_value: 0.4 });
+    expect(rowOf('lev.start')).toMatchObject({ op: 'delete', old_value: 9, new_value: null });
+    expect(rowOf('corp.lab_hc_g')).toMatchObject({ op: 'update', old_value: 2, new_value: 4 });
     const undoDraft = reverse(first.applied);
     expect(undoDraft.reverts_id).toBe(first.applied.id);
     const undone = apply(undoDraft, first.state);

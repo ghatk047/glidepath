@@ -57,7 +57,7 @@ title: "Validation rules VR01–VR04, VR06, VR07, VR09, VR10 (input rules)"
 epic: DOM
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -76,6 +76,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "VR05 and VR08 read engine outputs and live in DOM-05 after the parity gate."
+merged_at: "2026-11-23"
 ```
 
 Rules as data-driven pure functions.
