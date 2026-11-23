@@ -188,7 +188,7 @@ title: "Global layer I: rail, scenario bar, flight strip, tray, theme, states"
 epic: WEB
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
