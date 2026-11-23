@@ -152,7 +152,7 @@ title: "Demo storyline e2e (G10)"
 epic: QA
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -171,6 +171,7 @@ acceptance:
 gates: [G10]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The demo, rehearsed by a robot every night.

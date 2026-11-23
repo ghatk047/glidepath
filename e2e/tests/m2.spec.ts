@@ -3,10 +3,9 @@ import { join } from 'node:path';
 import { config, readRepoJson, repoRoot } from '@glidepath/int';
 import { fmt } from '@glidepath/ui/format';
 import type { Locator, Page } from '@playwright/test';
-import { HEADLINE_CELLS, specHeadline, type HeadlineKey } from '../src/spec-headline';
 import { M2_BUDGET_MS, SHOTS } from '../playwright.m2.config';
-import { cockpitCell, edits, expectCockpitValue, scenarioButton, shown } from './cockpit';
-import { expect, goldenOf, HEADLINE, test, type Headline } from './fixtures';
+import { cockpitCell, edits, expectCockpitValue, quoted, scenarioButton, shown } from './cockpit';
+import { expect, goldenOf, HEADLINE, test } from './fixtures';
 
 /**
  * INT-03, M2 exit (09 §1) in a browser against the compose stack: the Cockpit of preset C shows
@@ -52,20 +51,6 @@ interface RegistryVariable {
 }
 const registry = readRepoJson<{ variables: RegistryVariable[] }>('docs', 'spec', 'variables.json');
 const targetDef = registry.variables.find((v) => v.id === TARGET);
-
-/** The numbers the spec quotes for a preset, by headline cell (`res.net` → 119.3). */
-function quoted(preset: string): Record<Headline, number> {
-  const row = specHeadline(preset);
-  const byCell = Object.fromEntries(
-    (Object.keys(HEADLINE_CELLS) as HeadlineKey[])
-      .filter((k) => row[k])
-      .map((k) => [HEADLINE_CELLS[k], row[k]!.value]),
-  );
-  for (const cell of HEADLINE) {
-    if (!(cell in byCell)) throw new Error(`the spec quotes no ${cell} for ${preset}`);
-  }
-  return byCell as Record<Headline, number>;
-}
 
 const popover = (page: Page) => page.locator('.gp-pop[role="dialog"]');
 const drawer = (page: Page) => page.getByRole('dialog', { name: /^Trace · / });

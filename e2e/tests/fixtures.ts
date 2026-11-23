@@ -1,7 +1,7 @@
 import './trust-ca';
 import { test as base, expect, type Page } from '@playwright/test';
 import { apiAs, config, readRepoJson, signIn } from '@glidepath/int';
-import type { Scenario } from '@glidepath/api-contract';
+import type { ApiClient, Scenario } from '@glidepath/api-contract';
 import type { GoldenFile } from '@glidepath/parity';
 
 /**
@@ -25,6 +25,8 @@ export function goldenOf(letter: string, cell: string): number {
 export interface Stack {
   /** Preset scenarios by letter (`A`..`D`). */
   presets: Map<string, Scenario>;
+  /** The contract's typed client as the same signed-in browser (for set-up a person cannot do in the UI). */
+  api: ApiClient;
   /** Signs `page`'s context in as the seed's owner. */
   signInPage(page: Page): Promise<void>;
 }
@@ -43,6 +45,7 @@ export const test = base.extend<object, { stack: Stack }>({
       });
       await use({
         presets,
+        api: apiAs(browser),
         signInPage: async (page) => {
           await page.context().addCookies(cookies);
         },

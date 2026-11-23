@@ -1,13 +1,14 @@
 # @glidepath/e2e
 
 Playwright (Chromium) against the running compose stack, reached through `web` (Caddy) like a
-browser: the G9 smoke (QA-04) and the M2 integration spec (INT-03). Not part of `turbo run test`
+browser: the G9 smoke (QA-04), the M2 integration spec (INT-03) and the demo storyline (QA-05, G10). Not part of `turbo run test`
 (they need a stack); `test` runs only the unit tests of the helpers (`src/`).
 
 ```
 docker compose up -d                  # or: ops/compose-check.sh --keep [--project glidepath-check]
 pnpm e2e -- --trace off               # G9 smoke; INT_COMPOSE_PROJECT=<project> when not `glidepath`
 pnpm int:m2 -- --trace off            # M2 integration spec (its own config and budget)
+pnpm e2e:storyline -- --trace off     # G10 demo storyline (its own config and budget)
 ```
 
 Settings are the INT settings (`tools/int/src/stack.ts`): `INT_BASE_URL` / `PUBLIC_BASE_URL`,
@@ -104,3 +105,39 @@ the same screen in `docs/ux/screens/` (13 of the 32 screens have one: Path is th
 page-height difference between the two, and for a failed comparison this run's capture and the pixel diff. That is the first
 approval of G11: the reviewer reads the pairs, and a screen that differs from its render is recorded, not "fixed" in the pack.
 `src/visual.ts` (matrix, file names, report page) and `src/visual-report.ts` (files) are unit-tested without a stack.
+
+## `tests/storyline.spec.ts` (QA-05, G10)
+
+`pnpm e2e:storyline -- --trace off` (`playwright.storyline.config.ts`, budget 600 s; the G9 config leaves it
+out). The 11 beats of `docs/ux/05_demo_storyline.md` "Run of show", one test each, then the "Ready for
+questions" moves the build has. Black box like the smoke: signed in with the INT magic link, every number the
+storyline quotes read from the spec bundle and rendered through the UI's own `fmt`
+(`src/storyline.ts`: README prose for the bar, growth and locked share; `solver_demo_results.json` for the
+minimum-risk path and the Monte Carlo odds; `spec-headline.ts` for Rates only / C / D; `golden_results.json`
+for the fuel equivalent). `src/storyline.test.ts` (part of `pnpm test`) pins that each quoted number is in the
+spec and agrees with the golden results.
+
+Beats are independent (each opens its own screen on a locked preset; an edit forks `Custom (from C)` as in
+the room), so one failing beat does not hide the next. Run order is the order of the room:
+
+1. `beat_01_…`: Cockpit C, the bar 143.0 (target plus cost growth 43.0), net 119.3, gap −23.7, risk-adjusted 82.0, EPS +0.091.
+2. `beat_02_…`: Baseline, locked share 20.8%, group by pool, click Airline platforms and US labour.
+3. `beat_03_…`: scenario bar to Rates only: net 8.1, gap −134.9, risk-adjusted 5.8.
+4. `beat_04_…`: Levers, seventeen levers, drag shelfware (L10), Cloud FinOps (L11) off and on, the strip follows.
+5. `beat_05_…`: VPs, four short bars, drag Data & analytics toward Commercial.
+6. `beat_06_…`: Find a path: net 143.0, bar cleared, US headcount unchanged, no people lever (L03 to L05) or head count moved, COLA refused to 100%.
+7. `beat_07_…`: D's headline (166.9, clear), odds C 0% and D 4.5% (within the solver gate's ±1.5 pp), the Cockpit's Odds tile.
+8. `beat_08_…`: Market, walk the trace node by node, EPS +0.091, price +1.02, fuel 1.74¢, Brent up ten dollars.
+9. `beat_09_…`: Cockpit hand-over: one-time funding and the target.
+10. `beat_10_…`: Excel, export C + D (the download), re-import it unchanged (0 changes), then an import with one conflict.
+11. `beat_11_…`: Airlines, the AA tile (Live, monogram, counts), "Add an airline".
+
+"Ready for questions": COLA to 0%, outside funding 0% and 100% (net swings by the one-time tile, EPS does
+not move), one line edited on Baseline, start month (April) of L03 to L05.
+
+The Excel conflict is made on a Custom scenario because the UI exports presets only and presets are locked:
+the test exports a Custom scenario through the API, edits the net target in the file (`src/xlsx.ts`, ExcelJS),
+changes the same target in the app, and hands the file to the review screen.
+
+Where a step waits on another backlog item the test is `test.fixme` with the item id in its title and states the
+final behaviour; the list is in the QA-05 report, and the header comment of the spec.

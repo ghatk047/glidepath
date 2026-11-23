@@ -1,5 +1,6 @@
 import { fmt } from '@glidepath/ui/format';
 import { expect, type Locator, type Page } from '@playwright/test';
+import { HEADLINE_CELLS, specHeadline, type HeadlineKey } from '../src/spec-headline';
 import { HEADLINE, type Headline } from './fixtures';
 
 /**
@@ -68,3 +69,28 @@ export const edits = (page: Page) => page.getByRole('button', { name: /edits?: o
 /** A scenario's button in the scenario bar. */
 export const scenarioButton = (page: Page, id: string) =>
   page.locator(`button[data-scenario="${id}"]`);
+
+/**
+ * The numbers the spec quotes for `scenario` (`docs/spec/README.md` "Headline numbers": `A`..`D`,
+ * `Rates` for Rates only), by headline cell (`res.net` → 119.3). A cell the spec leaves empty for that
+ * row is absent (Rates only quotes no EPS).
+ */
+export function quotedCells(scenario: string): Partial<Record<Headline, number>> {
+  const row = specHeadline(scenario);
+  const out: Partial<Record<Headline, number>> = {};
+  for (const key of Object.keys(HEADLINE_CELLS) as HeadlineKey[]) {
+    const cell = HEADLINE_CELLS[key];
+    const quoted = row[key];
+    if (quoted && (HEADLINE as readonly string[]).includes(cell)) out[cell as Headline] = quoted.value;
+  }
+  return out;
+}
+
+/** `quotedCells` for a preset whose row quotes every headline cell (A..D); throws otherwise. */
+export function quoted(preset: string): Record<Headline, number> {
+  const byCell = quotedCells(preset);
+  for (const cell of HEADLINE) {
+    if (!(cell in byCell)) throw new Error(`the spec quotes no ${cell} for ${preset}`);
+  }
+  return byCell as Record<Headline, number>;
+}

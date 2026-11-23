@@ -67,6 +67,7 @@ describe('ci.yml [FND-04]', () => {
       leak: 'G7',
       perf: 'G8',
       e2e: 'G9',
+      storyline: 'G10',
       compose: 'G14',
     };
     for (const [id, gate] of Object.entries(expected)) {
@@ -136,6 +137,26 @@ describe('ci.yml [FND-04]', () => {
     expect(m2, 'int:m2 step').toBeGreaterThan(smoke);
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
     expect(pkg.scripts['int:m2']).toMatch(/@glidepath\/e2e/);
+  });
+
+  it('G10 runs the demo storyline nightly and on demand, not on every PR [QA-05]', () => {
+    const job = jobs.storyline;
+    expect(job.name).toMatch(/^G10 /);
+    expect(job.if).toContain("'schedule'");
+    expect(job.if).toContain("'workflow_dispatch'");
+    expect(job.if).not.toContain('pull_request');
+    expect(wf.on).toHaveProperty('workflow_dispatch');
+    const steps = stepsOf('storyline');
+    const up = steps.findIndex((s) => /docker compose up/.test(s.run ?? ''));
+    const run = steps.findIndex((s) => /pnpm e2e:storyline -- --trace off/.test(s.run ?? ''));
+    expect(up, 'compose up step').toBeGreaterThanOrEqual(0);
+    expect(run, 'storyline step').toBeGreaterThan(up);
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    expect(pkg.scripts['e2e:storyline']).toMatch(/@glidepath\/e2e/);
+    expect(pkg.scripts['e2e:storyline']).not.toMatch(/not implemented/);
+    // the G9 smoke leaves the storyline spec to its own run
+    const g9 = readFileSync(join(root, 'e2e', 'playwright.config.ts'), 'utf8');
+    expect(g9).toContain("'storyline.spec.ts'");
   });
 
   it('references secrets only via ${{ secrets.* }} and carries no inline credentials', () => {
