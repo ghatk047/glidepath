@@ -61,7 +61,7 @@ jobs:
           out excel '^tier2-logic/excel/'
           out tenancy '^(tier2-logic/data-access/|tier2-logic/server/|tier3-data/)'
           out perf '^(tier2-logic/engine/|tier2-logic/server/)'
-          out infra '^(docker-compose|ops/|tier3-data/|tier1-presentation/web/|tier2-logic/(server|worker)/|\.github/)'
+          out infra '^(docker-compose|ops/|tier3-data/|tier1-presentation/web/|tier2-logic/(server|worker)/|tools/int/|\.github/)'
 
   G1:
     name: G1 Types and lint
@@ -464,6 +464,10 @@ jobs:
             4) echo "::notice title=G14 PENDING::$reason" ;;
             *) echo "::error title=G14 Container::$reason"; exit "$rc" ;;
           esac
+      - name: Run M1 integration on the seeded stack (tools/int/m1.spec.ts, INT-02)
+        if: steps.probe.outputs.ready == 'true'
+        # The stack compose-check kept up: WS preview, POST /changesets fork + recompute, GET calc = golden C.
+        run: INT_COMPOSE_PROJECT=glidepath-check pnpm int:m1
       - name: Multi-arch image build
         if: steps.probe.outputs.ready == 'true'
         run: |

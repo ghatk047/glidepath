@@ -114,6 +114,20 @@ describe('ci.yml [FND-04]', () => {
     expect(turbo.tasks.bench).toBeDefined();
   });
 
+  it('G14 runs the M1 integration spec on the stack compose-check kept up, and tools/int/ triggers it [INT-02]', () => {
+    const steps = stepsOf('compose');
+    const up = steps.findIndex((s) => /ops\/compose-check\.sh --keep/.test(s.run ?? ''));
+    const m1 = steps.findIndex((s) => /pnpm int:m1/.test(s.run ?? ''));
+    expect(up, 'compose-check step').toBeGreaterThanOrEqual(0);
+    expect(m1, 'int:m1 step').toBeGreaterThan(up);
+    expect(steps[m1].run).toContain('INT_COMPOSE_PROJECT=glidepath-check');
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    expect(pkg.scripts['int:m1']).toMatch(/@glidepath\/int/);
+    const run: string = stepsOf('changes').find((s) => s.id === 'paths').run;
+    const line = run.split('\n').find((l) => l.trim().startsWith('out infra '))!;
+    expect(new RegExp(line.match(/'([^']+)'/)![1]!).test('tools/int/m1.spec.ts')).toBe(true);
+  });
+
   it('references secrets only via ${{ secrets.* }} and carries no inline credentials', () => {
     const bare = raw.replace(/\$\{\{\s*secrets\.[A-Za-z0-9_]+\s*\}\}/g, '');
     expect(bare).not.toMatch(/secrets/i);

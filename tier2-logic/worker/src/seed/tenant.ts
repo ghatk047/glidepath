@@ -7,10 +7,13 @@ import {
 } from '@glidepath/data-access';
 import {
   applyChangeset,
+  recomputeHook,
   type ChangesetDraft,
   type ChangesetStore,
+  type ModelCache,
   type ScenarioRow,
 } from '@glidepath/domain';
+import type { CompiledModel } from '@glidepath/engine';
 import type { ModelBundle, TenantSeed } from '@glidepath/spec';
 import {
   allSourceCodes,
@@ -67,6 +70,19 @@ export function parseDemoEmail(raw: string | undefined): string | null {
   return email;
 }
 
+/** One compiled model per (tenant, model version, members hash) for the preset recomputes of one run. */
+function seedModelCache(): ModelCache<CompiledModel> {
+  const models = new Map<string, CompiledModel>();
+  return {
+    getOrCompile(key, compile) {
+      const id = `${key.tenant_id}|${key.model_version_id}|${key.members_hash}`;
+      let model = models.get(id);
+      if (!model) models.set(id, (model = compile()));
+      return model;
+    },
+  };
+}
+
 /**
  * Loads one tenant seed in a single tenant-scoped transaction (all or nothing), as the owner role:
  *
@@ -74,7 +90,8 @@ export function parseDemoEmail(raw: string | undefined): string | null {
  * 2. the five presets as locked scenario rows (DOM-04 owns scenario ops, so rows go in through the
  *    store port's createScenario, like the DOM-03 seed test);
  * 3. through `applyChangeset` with origin `seed`: the tenant's members and lines and its variable
- *    defaults (one changeset), then each preset's values (one changeset per preset);
+ *    defaults (one changeset), then each preset's values (one changeset per preset), each recomputed
+ *    so the preset has its `calc_run` (04 §2 step 6, ADR-007; `GET /scenarios/:id/calc`);
  * 4. `line_item_lever` rows (the port has no write for them).
  *
  * Idempotent: only what is missing is written. Tenant members and defaults are never overwritten
@@ -241,7 +258,14 @@ export async function seedTenant(db: Db, o: TenantSeedOptions): Promise<TenantSe
       add('changes (tenant defaults)', defaultChanges.length);
     }
 
-    // ---- 3b. each preset's values: one changeset per preset that differs
+    // ---- 3b. each preset's values: one changeset per preset that differs, recomputed (calc_run)
+    const recompute = recomputeHook({
+      tenantId,
+      modelVersionId: o.modelVersionId,
+      bundle,
+      cache: seedModelCache(),
+      now: () => now().toISOString(),
+    });
     for (const s of seed.scenarios.scenarios) {
       const id = presets[s.id]!;
       const own = await store.transaction(async (t) => {
@@ -257,7 +281,7 @@ export async function seedTenant(db: Db, o: TenantSeedOptions): Promise<TenantSe
       await applyChangeset(
         store,
         { origin: 'seed', scenario_id: id, base_scenario_version: own.version, changes },
-        { actor, bundle, now: () => now().toISOString() },
+        { actor, bundle, recompute, now: () => now().toISOString() },
       );
       add('changeset (preset)', 1);
       add('changes (preset)', changes.length);

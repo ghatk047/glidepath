@@ -1,0 +1,21 @@
+{
+  "name": "@glidepath/int",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint *.ts src",
+    "m1": "vitest run m1.spec.ts"
+  },
+  "dependencies": {
+    "@glidepath/api-contract": "workspace:*",
+    "@glidepath/parity": "workspace:*",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2"
+  }
+}

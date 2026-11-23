@@ -161,6 +161,19 @@ describe('migrate entry on pg-local', () => {
     });
   });
 
+  it('recomputes each preset changeset: every preset has a calc_run of its version, so GET calc serves it [INT-02]', async () => {
+    await inTenant(async (tx) => {
+      const scenarios = await tx.select().from(schema.scenario);
+      const runs = await tx.select().from(schema.calc_run);
+      expect(runs).toHaveLength(scenarios.length);
+      for (const s of scenarios) {
+        const run = runs.find((r) => r.scenario_id === s.id);
+        expect(run, s.key).toMatchObject({ scenario_version: s.version, model_version_id: s.model_version_id });
+        expect(Object.keys(run!.outputs as Record<string, number>), s.key).toContain('res.net[]');
+      }
+    });
+  });
+
   it('creates a fictitious demo user with an owner membership from DEMO_USER_EMAIL', async () => {
     expect(first.tenant!.demoUserId).toBe(seedIds.user(DEMO_EMAIL));
     await inTenant(async (tx) => {

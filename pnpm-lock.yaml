@@ -379,6 +379,22 @@ importers:
 
   tools/gen-types: {}
 
+  tools/int:
+    dependencies:
+      '@glidepath/api-contract':
+        specifier: workspace:*
+        version: link:../../contract/api-contract
+      '@glidepath/parity':
+        specifier: workspace:*
+        version: link:../parity
+      ws:
+        specifier: ^8.23.0
+        version: 8.23.0
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.2
+        version: 8.18.2
+
   tools/parity:
     dependencies:
       '@glidepath/engine':

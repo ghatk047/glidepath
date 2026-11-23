@@ -53,7 +53,7 @@ title: "M1 integration: parity, sessions, write path"
 epic: INT
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: D
 model: opus
 effort: high
@@ -73,6 +73,7 @@ acceptance:
 gates: [G3, G4, G7, G8]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Closes M1.

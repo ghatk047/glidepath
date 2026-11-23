@@ -21,6 +21,7 @@
     "test:excel": "pnpm --filter @glidepath/excel run test:roundtrip",
     "test:leak": "pnpm -r --workspace-concurrency=1 run test:leak",
     "tier-check": "tsx tools/tier-check/src/cli.ts",
+    "int:m1": "pnpm --filter @glidepath/int run m1",
     "e2e": "echo 'not implemented yet'",
     "e2e:storyline": "echo 'not implemented yet'",
     "bench": "turbo run bench"

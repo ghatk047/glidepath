@@ -5130,7 +5130,7 @@
     "epic": "INT",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "opus",
     "effort": "high",
@@ -5163,7 +5163,8 @@
       "G8"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "INT-03",
