@@ -278,10 +278,10 @@ merged_at: "2026-11-23"
 
 Shared by Cockpit, VPs, Path and Airlines.
 
-## WEB-08 · CSRF header and global overlays mounted (E2E fixes)
+## WEB-09 · CSRF header and global overlays mounted (E2E fixes)
 
 ```yaml
-id: WEB-08
+id: WEB-09
 title: "CSRF header and global overlays mounted (E2E fixes)"
 epic: WEB
 milestone: M2
