@@ -3,4 +3,6 @@
  * this file: `migrate.ts` so it can create every queue as the owner role, `worker.ts` so it can consume them.
  * Add one import line per handler module (JOB-03 onward).
  */
+import './jobs/excel';
+
 export {};

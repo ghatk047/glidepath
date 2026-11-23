@@ -310,6 +310,12 @@ importers:
       '@glidepath/domain':
         specifier: workspace:*
         version: link:../domain
+      '@glidepath/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@glidepath/excel':
+        specifier: workspace:*
+        version: link:../excel
       '@glidepath/spec':
         specifier: workspace:*
         version: link:../spec
@@ -326,6 +332,9 @@ importers:
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
+      exceljs:
+        specifier: 4.4.0
+        version: 4.4.0
       tsx:
         specifier: ^4.19.0
         version: 4.23.15
