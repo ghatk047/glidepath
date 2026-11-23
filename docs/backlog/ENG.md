@@ -94,7 +94,7 @@ title: "Expander: cells, cases, implicit indexing, where-filters, deps"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
@@ -127,7 +127,7 @@ title: "Topological sort, lowering to a flat program, CSR adjacency"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
@@ -159,7 +159,7 @@ title: "Full evaluation with overrides and inputHash"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
@@ -194,7 +194,7 @@ title: "PARITY GATE: golden 760/760 and parity replay 245/245"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
