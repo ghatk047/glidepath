@@ -33,8 +33,8 @@ beforeAll(async () => {
         ran.push('solverCancel');
         return c.json({ ok: true });
       });
-      app.get('/api/t/:tenant/scenarios', (c) => {
-        ran.push('scenarios');
+      app.get('/api/t/:tenant/probe-read', (c) => {
+        ran.push('probeRead');
         return c.json({ ok: true });
       });
       app.post('/api/t/:tenant/members-admin', requireRole('owner'), (c) => {
@@ -106,10 +106,10 @@ describe('role guard: viewer cannot POST changesets', () => {
     await expectForbidden(
       await send('DELETE', '/api/t/ta/solver-runs/r1', h.headers(user(VIEWER.email))),
     );
-    expect((await send('GET', '/api/t/ta/scenarios', h.headers(user(VIEWER.email)))).status).toBe(
+    expect((await send('GET', '/api/t/ta/probe-read', h.headers(user(VIEWER.email)))).status).toBe(
       200,
     );
-    expect(ran).toEqual(['scenarios']);
+    expect(ran).toEqual(['probeRead']);
   });
 
   it('the role is per tenant: the editor of A is a viewer of B', async () => {
@@ -206,7 +206,7 @@ describe('state-changing routes require same-origin + CSRF token', () => {
       ).status,
     ).toBe(200);
     expect(
-      (await h.app.request('/api/t/ta/scenarios', { headers: { cookie: editor().cookie } })).status,
+      (await h.app.request('/api/t/ta/probe-read', { headers: { cookie: editor().cookie } })).status,
     ).toBe(200);
   });
 
