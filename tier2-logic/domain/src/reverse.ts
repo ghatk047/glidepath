@@ -10,7 +10,7 @@ import {
 } from './changeset';
 
 /** Change rows that were written; `rejected`, `invalid` and `conflict` rows were not. */
-const APPLIED_ROW_STATUSES: readonly ChangeRowStatus[] = ['clean', 'accepted'];
+export const APPLIED_ROW_STATUSES: readonly ChangeRowStatus[] = ['clean', 'accepted'];
 
 function numberOrNull(v: JsonValue, row: ChangeRow): number | null {
   if (v === null || typeof v === 'number') return v;

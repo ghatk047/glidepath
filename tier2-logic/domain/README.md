@@ -1,8 +1,8 @@
 # @glidepath/domain
 
-Changesets, VR01-VR10, scenario resolution/fork/undo, hashing. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients, `fetch`, `process` and dynamic `import()` in `src`). State is read and written through the ports in `src/ports.ts` (ADR-019).
+Changesets, VR01-VR10, scenario resolution/fork/undo, scenario operations, rebase, hashing. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients, `fetch`, `process` and dynamic `import()` in `src`). State is read and written through the ports in `src/ports.ts` (ADR-019).
 
-DOM-01 provides the vocabulary of every write. DOM-02 adds the input validation rules. DOM-03 adds `applyChangeset`, the single write path; the engine step (Recompute) follows in DOM-05.
+DOM-01 provides the vocabulary of every write. DOM-02 adds the input validation rules. DOM-03 adds `applyChangeset`, the single write path; the engine step (Recompute) follows in DOM-05. DOM-04 adds the scenario operations on top of it: `createScenario`, `patchScenario`, `revert` (undo and redo), `undoRedo` and `rebase`.
 
 ## Changesets (`src/changeset.ts`)
 
@@ -51,7 +51,7 @@ const result = await applyChangeset(store, draft, {
 |---|---|---|
 | 1 | Lock the scenario row (`loadScenarioForUpdate`) or the tenant-default lock (`lockTenantDefaults`). A `clientRequestId` the actor already applied returns that changeset's result (`replayed: true`). Then `base_scenario_version` must be the stored version. | `ScenarioNotFoundError`; `ChangesetConflictError { serverVersion, changesSince }` |
 | 2 | A locked scenario forks: `createScenario` of kind `user`, key `custom-<key>`, label `Custom (from <key>)` (then `... 2`, `... 3`), parent the preset, version 0. The draft is retargeted to the fork, and `forkedFrom` is the preset. Only origin `seed` writes a locked preset in place. The preset's node overrides are not inherited, so the fork copies them in a changeset of their own first. | |
-| 3 | A value a draft sets outside its variable's registry min/max follows `BOUNDS_POLICY`: `ui` clamps it to the nearest bound (`clamped`); `excel_import`, `api` and `ai_reconfig` reject it with the cell's VR04 entry as an error; `seed`, `solver` and `market_refresh` write it and VR04 stays a warning. The seed keeps the spec's values, some of which pass a registry max. | `ChangesetRejectedError { violations }` |
+| 3 | A value a draft sets outside its variable's registry min/max follows `BOUNDS_POLICY`: `ui` clamps it to the nearest bound (`clamped`); `excel_import`, `api` and `ai_reconfig` reject it with the cell's VR04 entry as an error; `seed`, `solver` and `market_refresh` write it and VR04 stays a warning. The seed keeps the spec's values, some of which pass a registry max. An undo or redo (`reverts_id`) follows `UNDO_BOUNDS_POLICY` (`warn`) whatever its origin: it restores values as they were. | `ChangesetRejectedError { violations }` |
 | 4 | `validateInputs` on the post-change state: the target's resolved inputs with every change applied, and the members with every structural change applied (`memberOfRow`). | `ChangesetRejectedError` with the error entries |
 | 5 | `insertChangeset` (the changeset row and its change rows), then one `writeValue` / `writeMember` per change in draft order, then `setChangesetStatus(reverted, 'reverted')` for an undo. | |
 | 6 | `bumpVersion`, then `appendAudit`, then the Recompute hook, all before the commit. A throw from the hook rolls everything back. | whatever the hook throws |
@@ -77,7 +77,7 @@ const result = await applyChangeset(store, draft, {
   - `forked_from`: the preset, when this changeset forked one.
 
   `summaryOf` and `messagesOf` read the stored JSON back.
-- **Undo.** A draft with `reverts_id` (`reverse()`) marks that changeset `reverted` and appends a `changeset.revert` audit entry. DOM-04 builds `revert()` on this.
+- **Undo.** A draft with `reverts_id` (`reverse()`) marks that changeset `reverted` and appends a `changeset.revert` audit entry. `revert()` (below) builds on this.
 - **Tenant defaults** (`scenario_id` null) have no scenario row. Their version is the count of their changesets, so no version is bumped. The rules run on the tenant-default state only, not on every scenario that inherits it.
 - **Audit.** Each changeset appends `changeset.apply`, and each fork appends `scenario.fork`.
 
@@ -161,16 +161,83 @@ const entries = validateInputs({ bundle, members, values: resolveInputs(...).val
   | VR04 | `vr04RegistryBounds` | each value within its variable's `min`/`max` (a null bound is open) |
   | VR06 | `vr06RetirementSplit` | `lev.L09.split_sw + lev.L09.split_cloud <= 1` |
   | VR07 | `vr07RetiredApps` | `lev.L09.n <= portfolio.apps` |
-  | VR09 | `vr09LineItemKeys` | each line's `pool` is a `pool` member and its `domain` a `domain` member; its `vendor_key`, when set, is a `vendor` member |
+  | VR09 | `vr09LineItemKeys` | each line's `pool` is a `pool` member and its `domain` a `domain` member; its vendor key, when set, is a `vendor` member |
   | VR10 | `vr10CorpInputYears` | every corporate-layer input cell an expression reads has a value |
 
-- **VR09.** It reads the line attributes `pool` and `domain` and falls back to the line_item columns `pool_id` and `domain_key`. The vendor key comes from `vendor_key`, because a line's `vendor` attribute is free text (`vendor_text`).
+- **VR09.** It reads each key from the line attribute `v_dimension_members` exposes it as (`LINE_ITEM_KEYS`): `pool`, `domain` and `vendor` (= line_item.vendor_key, also in `memberOfRow`). A line in line_item column shape gives `pool_id`, `domain_key` and `vendor_key` instead.
+  - Seed files use `vendor` for the vendor's name as free text (line_item.vendor_text, e.g. 'Various') and give the key, if any, as `vendor_key` (zz does; AA has none). So `vendor_key` wins when a line carries it, and a seed-file line (one with any of `SEED_LINE_ATTRIBUTES`: `l1_label`, `driver_text`, `lever_hook`, which the view does not expose) has no other vendor key.
+  - Loaded through the seed, a line has `vendor` = its `vendor_key` or null, like any line read from the database.
 - **VR10.** It expands each node over its dims (or `members` subset) and picks the case per cell. It then resolves the corp references statically, as `deps` in `reference/engine.py` does: `year.in`, member literals, implicit indexing, and aggregates filtered by `where`. Both branches of an `IF` count.
 
   So `corp.asm_g` needs fy26 and fy27 but not fy25, because fy25 takes the base-year case. A reference that cannot be indexed, such as a year without an `in` attribute, is also an entry.
 
   `src/validation/expr.ts` holds a port of the reference parser for this purpose. VR10 can move to the engine's dependency queries once ENG-03 exists.
 - **Not here.** VR05 and VR08 read engine outputs and follow in DOM-05.
+
+## Scenario operations (`src/scenario.ts`)
+
+The routes `POST /scenarios` (copy, blend, empty child) and `PATCH /scenarios/:id` (rename, lock, archive) of docs/architecture/04_data_and_api.md section 3.
+
+`createScenario(store, spec, options)` runs in one `store.transaction`: the scenario row (unlocked, version 0), a `scenario.create` audit entry, then one changeset with the new scenario's values and pins, applied through the write path inside the same transaction.
+
+```ts
+await createScenario(store, { mode: 'copy', from: C }, { actor, bundle });
+await createScenario(store, { mode: 'child', parent_id: C, label: 'My plan' }, { actor, bundle });
+await createScenario(store, blendFrom(C, D, 0.49), { actor, bundle });
+// { scenario, applied: ApplyResult | null, unblended: CellKey[] }
+```
+
+| Mode | Parent | Its own rows | Kind | Key and label (`scenarioName`) |
+|---|---|---|---|---|
+| `copy` | the source's parent | the source's own values and pins, so it resolves as the source does | `user` | `copy-C`, 'Copy of <label>' |
+| `child` | the source | none: it inherits every value; pins are not inherited | `user` | `custom-C`, 'Custom (from C)', the names a fork takes |
+| `blend` | the deepest scenario every part descends from, or null | the blended cells and pins (below) | `blend` | `blend-C-D`, 'Blend of C and D' |
+
+- **Names.** A second scenario of the same name takes `-2` and ' 2', and so on. `label` replaces the default label (trimmed, not empty). `kind` replaces the kind (a solver's save passes `solver`).
+- **The first changeset.** Its origin is `options.origin` (`DEFAULT_CREATE_ORIGIN`, `ui`).
+  - It is no edit: `edits` 0, so the counter starts at 0 and the tray offers no undo of it.
+  - Values past a registry bound are written as they are (`CREATE_BOUNDS_POLICY`, `warn`).
+  - The input rules run on the new scenario as for any changeset. A blend that breaks one (e.g. two different shared-services owners blended to 0.5 each, VR02) is a `ChangesetRejectedError`, and no scenario is created.
+- **Blend.** `blendFrom(A, B, λ)` is the spec with parts A and B, weights `1 − λ` and `λ` (λ from 0 to 1), so that `x = A + λ(B − A)` (solvers.json `scenario_blend`). The contract's general form, `parts: [{ scenario_id, weight }]`, also works.
+  - A cell is blended when some part resolves it from a scenario below the parent. Its value is `x₀ + Σᵢ (wᵢ / W)·(xᵢ − x₀)` over the parts with a weight above 0: exactly `x` where they agree.
+  - Cells every part inherits are not written, so the blend follows later changes of its parent, as the parts do.
+  - A pin every weighted part has is blended the same way. A pin only some parts have cannot be (the others' value is calculated) and is listed in `unblended`, as is an input cell a weighted part has no value for.
+  - Errors: fewer than two parts, a negative or non-finite weight, weights that sum to 0, parts of different model versions (`ScenarioOperationError`).
+
+`patchScenario(store, id, { label?, locked?, archived? }, { actor, role })` needs a `ScenarioStore` (below). It locks the row, checks the patch, writes only the columns that change (`updateScenario`) and appends a `scenario.update` audit entry with their old and new values.
+
+| Rule | Error |
+|---|---|
+| Only `SCENARIO_EDIT_ROLES` (owner, editor) change scenarios; viewers and advisors do not. | `ScenarioPermissionError` (403) |
+| Only `PRESET_UNLOCK_ROLES` (owner) unlock a preset (kind `preset`): editors cannot, they copy it. Any editing role may lock. | `ScenarioPermissionError` |
+| A scenario that stays locked keeps its label: unlock it in the same patch, or copy it. | `ScenarioOperationError` (422) |
+| An empty patch or an empty label. | `ScenarioOperationError` |
+
+The key never changes, because it names the scenario in URLs. A locked user scenario forks on its next edit, as a preset does. `archived` is the column of manual migration 0001 (ADR-023), so `ScenarioRow.archived` is optional (absent = false).
+
+## Undo, redo and the tray (`src/history.ts`)
+
+- **`revert(store, changesetId, options)`.** It runs `applyChangeset(reverse(changeset))` at the scenario's current version, in one transaction. The undo keeps the origin, sets `reverts_id`, marks the changeset `reverted`, takes its edits off the counter and restores its values (`UNDO_BOUNDS_POLICY`).
+  - Redo is `revert` of the undo. An undo of a redo is `revert` of the redo.
+  - Errors:
+    - `ChangesetNotFoundError` (404) for an unknown changeset.
+    - A `ChangesetDraftError` for a changeset that is not `applied`, or one of a locked scenario. That includes the seed's own changesets on a preset, which `applyChangeset` would let origin `seed` write.
+    - A `ChangesetConflictError` with `stale` cells when a later changeset changed a cell the undo restores.
+  - With `clientRequestId`, a retry returns the first undo (`replayed`).
+- **`undoRedo(history)`.** It is pure. From `changesSince(scenarioId, 0)` it returns the tray's `{ editsCount, canUndo, canRedo, undo, redo }`, where `undo` and `redo` are the changesets to `revert`. It works as a linear stack:
+  - An edit (a changeset with `edits` > 0, so not the seed, a fork's pin copy or a new scenario's first values) is pushed, and the redo stack is cleared.
+  - An undo moves its target to the redo stack (as the undo), and a redo moves it back.
+
+## Rebase (`src/rebase.ts`)
+
+`rebase(pending, changesSince)` is pure. It takes a draft that got a version conflict and the conflict's `changesSince`: that scenario's changesets from the draft's base on, oldest first, one per version (else it throws). It returns `{ draft, version, conflicts }`:
+
+- `version` is the server version, and the draft starts there. The draft keeps origin, scenario and `reverts_id`.
+- A change to a row no changeset since changed, or changed and changed back, passes through as it is.
+- A change to a row they did change is a conflict: `{ index, cell, target, change, theirs, resolution }`, where `theirs` lists their changes to the row (changeset, origin, author, time, op, old and new value).
+  - `same`: the row already is what the change makes it (same value or row, or already gone). The change is dropped.
+  - `mine`: the pending change is kept and overwrites theirs, since the client re-sends its edits (section 4). A structural `insert` of a row they added becomes a `set`, and a `set` of a row they deleted becomes an `insert`. A given `old_value` becomes the row's value now; for an input value whose row they removed it is left out, because the inherited value is not in the history.
+- `draft` is null when every change is dropped.
 
 ## Ports (`src/ports.ts`)
 
@@ -183,6 +250,7 @@ const entries = validateInputs({ bundle, members, values: resolveInputs(...).val
   | Writes | `createScenario`, `insertChangeset`, `setChangesetStatus`, `writeValue`, `writeMember`, `bumpVersion`, `findCalcRun`, `upsertCalcRun`, `appendAudit` |
 
   `loadInputs(scenario).chain` ends with a level for the scenario itself, which may have no rows. `src/test-support/memory-store.ts` is the in-memory implementation the tests use.
+- `ScenarioStore` is a `ChangesetStore` whose transactions are `ScenarioTx`: a `ChangesetTx` plus `updateScenario(id, { label?, locked?, archived? })` for `patchScenario`. It is a separate port, so a ChangesetStore needs nothing more; data-access implements it for the PATCH route.
 - `ModelCache<TModel>.getOrCompile(key, compile)` is keyed by `ModelCacheKey` `(tenant_id, model_version_id, members_hash)`. `modelCacheKey()` builds the key with `membersHash` from `@glidepath/spec`.
 
 ## Tests

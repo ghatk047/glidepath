@@ -3,7 +3,7 @@
  * function per rule over a `ValidationState`, each returning its entries (empty = the rule holds).
  * Variable, dimension and member ids are the spec's, verbatim; no business number lives here.
  */
-import type { AttrValue, DimId, MemberId, VarId } from '@glidepath/spec';
+import type { AttrValue, DimId, Member, MemberId, VarId } from '@glidepath/spec';
 import { LINE_ITEM_DIM } from '../changeset';
 import { SCALAR_MEMBER_KEY, memberKey, type MemberKey } from '../member-key';
 import { ruleEntry, type ValidationEntry } from './catalog';
@@ -195,27 +195,75 @@ export function vr07RetiredApps(state: ValidationState): ValidationEntry[] {
 
 /**
  * The foreign keys of line_item (schema.json tables.line_item) that VR09 checks, the line member
- * attribute each one is read from (v_dimension_members; the column name is read when the attribute
- * is absent) and the dimension it must name. `vendor` on a line is free text (line_item.vendor_text),
- * so the vendor key is read from `vendor_key`.
+ * attribute v_dimension_members exposes each one as (tier3-data/migrations/0003_views.sql, and
+ * `memberOfRow`), and the dimension it must name. A line in line_item column shape gives the key
+ * under the column name instead.
+ *
+ * `seedText` marks the one attribute whose name seed files use for something else: a seed line's
+ * `vendor` is the vendor's name as free text (line_item.vendor_text, e.g. 'Various'), and its key, if
+ * any, is `vendor_key` (as in tools/testkit/seed/zz). Loaded through the seed, such a line has
+ * `vendor` = its `vendor_key` or null, like every other line read from the database.
  */
 export const LINE_ITEM_KEYS = [
-  { column: 'pool_id', attribute: 'pool', dim: 'pool', noun: 'canonical pool', nullable: false },
-  { column: 'domain_key', attribute: 'domain', dim: 'domain', noun: 'domain', nullable: false },
-  { column: 'vendor_key', attribute: 'vendor_key', dim: 'vendor', noun: 'vendor', nullable: true },
+  {
+    column: 'pool_id',
+    attribute: 'pool',
+    dim: 'pool',
+    noun: 'canonical pool',
+    nullable: false,
+    seedText: false,
+  },
+  {
+    column: 'domain_key',
+    attribute: 'domain',
+    dim: 'domain',
+    noun: 'domain',
+    nullable: false,
+    seedText: false,
+  },
+  {
+    column: 'vendor_key',
+    attribute: 'vendor',
+    dim: 'vendor',
+    noun: 'vendor',
+    nullable: true,
+    seedText: true,
+  },
 ] as const;
+
+/**
+ * Attributes only a line of a seed file carries (docs/spec/seed/aa, tools/testkit/seed/zz): the seed's
+ * names of the line_item text columns tenant_l1_label, driver_text and lever_hook_text, which
+ * v_dimension_members does not expose. A line with any of them is a seed-file line.
+ */
+export const SEED_LINE_ATTRIBUTES = ['l1_label', 'driver_text', 'lever_hook'] as const;
 
 const absent = (v: AttrValue | undefined): boolean => v === undefined || v === null || v === '';
 
 /**
+ * The value of a line_item key on a line member:
+ * - the attribute, else the column name (pool, domain);
+ * - for the vendor: `vendor_key` when the line carries it (line_item column shape, seed files with a
+ *   key); else nothing for a seed-file line, whose `vendor` is free text; else `vendor`, which
+ *   v_dimension_members and `memberOfRow` set to line_item.vendor_key.
+ */
+function lineKey(line: Member, k: (typeof LINE_ITEM_KEYS)[number]): AttrValue | undefined {
+  if (!k.seedText) return absent(line[k.attribute]) ? line[k.column] : line[k.attribute];
+  if (line[k.column] !== undefined) return line[k.column];
+  if (SEED_LINE_ATTRIBUTES.some((a) => line[a] !== undefined)) return undefined;
+  return line[k.attribute];
+}
+
+/**
  * VR09: every line's pool is a canonical pool, its domain is a domain member and its vendor key, when
- * set, is a vendor member. One entry per line and key, pointing at the line (`line[it_001]`).
+ * set, is a vendor member (`lineKey` reads each). One entry per line and key, pointing at the line
+ * (`line[it_001]`).
  */
 export function vr09LineItemKeys(state: ValidationState): ValidationEntry[] {
   const ctx = contextOf(state);
   return ctx.members(LINE_ITEM_DIM).flatMap((line) =>
     LINE_ITEM_KEYS.flatMap((k) => {
-      const raw = absent(line[k.attribute]) ? line[k.column] : line[k.attribute];
+      const raw = lineKey(line, k);
       if (absent(raw)) {
         if (k.nullable) return [];
         return [

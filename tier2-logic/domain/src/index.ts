@@ -60,6 +60,7 @@ export {
   LINE_ITEM_KEYS,
   OUT_OF_SCOPE_MEMO_DOMAIN,
   RULE_TOLERANCE,
+  SEED_LINE_ATTRIBUTES,
   VALIDATION_RULES,
   toCellKey,
   validateInputs,
@@ -86,6 +87,7 @@ export {
   FORK_KIND,
   LOCKED_WRITE_ORIGINS,
   UNCOUNTED_ORIGINS,
+  UNDO_BOUNDS_POLICY,
   applyChangeset,
   forkName,
   messagesOf,
@@ -105,8 +107,11 @@ export type {
 } from './apply';
 export {
   ChangesetConflictError,
+  ChangesetNotFoundError,
   ChangesetRejectedError,
   ScenarioNotFoundError,
+  ScenarioOperationError,
+  ScenarioPermissionError,
 } from './apply-errors';
 export type { StaleChange } from './apply-errors';
 export { LINE_ITEM_ATTRIBUTES, LINE_ITEM_JOINED_ATTRIBUTES, memberOfRow } from './member-rows';
@@ -121,6 +126,35 @@ export type {
   ModelCache,
   ModelCacheKey,
   ScenarioKind,
+  ScenarioPatch,
   ScenarioRow,
+  ScenarioStore,
+  ScenarioTx,
   ValueWrite,
 } from './ports';
+export {
+  CREATE_BOUNDS_POLICY,
+  CREATE_KIND,
+  DEFAULT_CREATE_ORIGIN,
+  PRESET_KIND,
+  PRESET_UNLOCK_ROLES,
+  SCENARIO_EDIT_ROLES,
+  TENANT_ROLES,
+  blendFrom,
+  createScenario,
+  patchScenario,
+  scenarioName,
+} from './scenario';
+export type {
+  BlendPart,
+  CreateMode,
+  CreateScenarioOptions,
+  CreateScenarioResult,
+  CreateScenarioSpec,
+  PatchScenarioOptions,
+  TenantRole,
+} from './scenario';
+export { revert, undoRedo } from './history';
+export type { UndoRedo } from './history';
+export { rebase } from './rebase';
+export type { RebaseConflict, RebaseResult, TheirChange } from './rebase';

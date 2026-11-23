@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import type { Member } from '@glidepath/spec';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { splitMemberKey } from '../member-key';
-import { isNullable, schemaJson } from '../test-support/schema-json';
+import { LINE_ITEM_ATTRIBUTES, LINE_ITEM_JOINED_ATTRIBUTES, memberOfRow } from '../member-rows';
+import { isNullable, repoRoot, schemaJson } from '../test-support/schema-json';
 import {
   loadSeedFixture,
   mutate,
@@ -14,7 +18,7 @@ import {
   type ValidationEntry,
 } from './catalog';
 import { INPUT_RULES, validateInputs } from './index';
-import { LINE_ITEM_KEYS, OUT_OF_SCOPE_MEMO_DOMAIN } from './input-rules';
+import { LINE_ITEM_KEYS, OUT_OF_SCOPE_MEMO_DOMAIN, SEED_LINE_ATTRIBUTES } from './input-rules';
 import { toCellKey, type ValidationState } from './state';
 import { CORPORATE_LAYER } from './vr10';
 
@@ -38,6 +42,19 @@ interface FailFixture extends Fixture {
 
 const VPS = ['vp_commercial', 'vp_operations', 'vp_corporate', 'vp_infra'];
 const domShare = (domain: string, vp: string) => toCellKey('org.dom_share', `${domain},${vp}`);
+
+/** A line as the database serves it (v_dimension_members, `memberOfRow`): `vendor` = vendor_key. */
+const dbLine = (id: string, vendor_key: string | null): Member =>
+  memberOfRow('line', id, {
+    name: `Line ${id}`,
+    pool_id: 'cloud',
+    domain_key: 'cybersecurity',
+    vendor_key,
+    vendor_text: 'Various',
+    in_scope: true,
+    memo: false,
+    active: true,
+  })!;
 
 /** One pass and at least one fail fixture per input rule. */
 const FIXTURES: Readonly<Record<InputRuleId, { pass: Fixture[]; fail: FailFixture[] }>> = {
@@ -325,6 +342,14 @@ const FIXTURES: Readonly<Record<InputRuleId, { pass: Fixture[]; fail: FailFixtur
           },
         },
       },
+      {
+        what: 'lines read from the database (vendor = vendor_key): a vendor member, and none',
+        mutation: { add: { line: [dbLine('it_901', 'ibm'), dbLine('it_902', null)] } },
+      },
+      {
+        what: "a seed-file line's vendor is free text (vendor_text), not a key",
+        mutation: { patch: { line: { it_002: { vendor: 'Some firm, not a vendor member' } } } },
+      },
     ],
     fail: [
       {
@@ -358,6 +383,17 @@ const FIXTURES: Readonly<Record<InputRuleId, { pass: Fixture[]; fail: FailFixtur
             cells: ['line[it_900]'],
             message:
               "Line it_900 names domain 'retired_domain', which does not exist; pick an existing domain.",
+          },
+        ],
+      },
+      {
+        what: 'a line read from the database names an unknown vendor key (vendor = vendor_key)',
+        mutation: { add: { line: [dbLine('it_903', 'acme')] } },
+        entries: [
+          {
+            cells: ['line[it_903]'],
+            message:
+              "Line it_903 names vendor 'acme', which does not exist; pick an existing vendor.",
           },
         ],
       },
@@ -476,13 +512,49 @@ describe('the ids the rules read are the spec ids', () => {
       expect(col?.constraints, k.column).toContain(`fk ${fkTarget[k.dim]}`);
       expect(isNullable('line_item', k.column), k.column).toBe(k.nullable);
     }
+    // Each key is read from the attribute v_dimension_members (and memberOfRow) exposes its column as.
     const lineAttrs = fx.bundle.dimensions.find((d) => d.id === 'line')!.attributes;
-    expect(
-      LINE_ITEM_KEYS.filter((k) => lineAttrs.includes(k.attribute)).map((k) => k.column),
-    ).toEqual(['pool_id', 'domain_key']);
+    for (const k of LINE_ITEM_KEYS) {
+      expect(lineAttrs, k.column).toContain(k.attribute);
+      expect(LINE_ITEM_ATTRIBUTES[k.column], k.column).toBe(k.attribute);
+    }
+    expect(LINE_ITEM_KEYS.filter((k) => k.seedText).map((k) => k.attribute)).toEqual(['vendor']);
     expect(fx.bundle.dimensions.map((d) => d.id)).toEqual(
       expect.arrayContaining(LINE_ITEM_KEYS.map((k) => k.dim)),
     );
+  });
+
+  it('seed-file lines carry SEED_LINE_ATTRIBUTES, which no line read from the database has; their vendor is free text', () => {
+    const viewAttrs = [...Object.values(LINE_ITEM_ATTRIBUTES), ...LINE_ITEM_JOINED_ATTRIBUTES];
+    for (const a of SEED_LINE_ATTRIBUTES) expect(viewAttrs).not.toContain(a);
+    expect(
+      Object.keys(dbLine('it_901', 'ibm')).filter((a) => SEED_LINE_ATTRIBUTES.includes(a as never)),
+    ).toEqual([]);
+
+    const zz = JSON.parse(
+      readFileSync(resolve(repoRoot, 'tools/testkit/seed/zz/dimension_members.json'), 'utf8'),
+    ) as Record<string, Member[]>;
+    for (const [tenant, members] of [
+      ['aa', fx.seed.dimensionMembers],
+      ['zz', zz],
+    ] as const) {
+      const lines = members.line!;
+      const vendors = new Set(members.vendor!.map((v) => v.id));
+      for (const line of lines) {
+        for (const a of SEED_LINE_ATTRIBUTES)
+          expect(line[a], `${tenant} ${line.id} ${a}`).toBeDefined();
+      }
+      // `vendor` is the vendor's name (vendor_text), never a vendor key; the key is `vendor_key`.
+      expect(
+        lines.filter((l) => vendors.has(l.vendor as string)).map((l) => l.id),
+        tenant,
+      ).toEqual([]);
+      expect(
+        lines.filter((l) => l.vendor_key !== undefined && !vendors.has(l.vendor_key as string)),
+        tenant,
+      ).toEqual([]);
+    }
+    expect(zz.line!.some((l) => l.vendor_key !== undefined)).toBe(true);
   });
 
   it("VR10's corp inputs are the variables of the corporate layer, which are the corp. variables", () => {

@@ -46,6 +46,18 @@ export interface ScenarioRow {
   readonly locked: boolean;
   readonly created_by: UserId;
   readonly created_at: Timestamp;
+  /**
+   * Hidden from the scenario bar (contract `Scenario.archived`): a column of manual migration 0001
+   * (ADR-023), not of schema.json. Absent means false.
+   */
+  readonly archived?: boolean;
+}
+
+/** The scenario columns a PATCH changes (rename, lock, archive): metadata, not inputs, so no changeset. */
+export interface ScenarioPatch {
+  readonly label?: string;
+  readonly locked?: boolean;
+  readonly archived?: boolean;
 }
 
 /** Everything `resolveInputs` needs for one scenario, as stored. */
@@ -212,6 +224,23 @@ export interface ChangesetStore {
    * The store is already in the caller's tenant context (withTenant).
    */
   transaction<T>(fn: (tx: ChangesetTx) => Promise<T>): Promise<T>;
+}
+
+/**
+ * A ChangesetTx that also changes scenario metadata (`patchScenario`). A separate port, so a
+ * ChangesetStore needs nothing more; data-access implements it for the PATCH route.
+ */
+export interface ScenarioTx extends ChangesetTx {
+  /**
+   * Set the columns `patch` names (label, locked, archived) on a scenario row the transaction locked
+   * with `loadScenarioForUpdate`; other columns and the version stay as they are.
+   */
+  updateScenario(scenarioId: ScenarioId, patch: ScenarioPatch): Promise<void>;
+}
+
+/** A ChangesetStore whose transactions are ScenarioTx (`patchScenario`). */
+export interface ScenarioStore extends ChangesetStore {
+  transaction<T>(fn: (tx: ScenarioTx) => Promise<T>): Promise<T>;
 }
 
 /** Key of a compiled model: one per (tenant, model_version, members_hash). */

@@ -34,6 +34,7 @@ import {
   OTHER_USER,
   T0,
   aaStore,
+  lineItemRow,
   presetId,
   presetRows,
   seedDefaultsDraft,
@@ -496,6 +497,30 @@ describe('input rules run on the post-change resolved state; any error → nothi
       { target: 'line_item', key: 'line', member_key: 'it_999', op: 'insert', old_value: null },
     ]);
     expect(store.tables.lineItems.get('it_999')).toMatchObject({ pool_id: 'software' });
+  });
+
+  it('VR09 checks the vendor key of a line as the database serves it (vendor = vendor_key)', async () => {
+    // A copy of a seed line as a line_item row: vendor_text keeps the seed's free text.
+    const line = (vendor_key: string): Change => ({
+      target: 'structural',
+      key: 'line',
+      member_key: 'it_999',
+      op: 'insert',
+      new_value: { ...lineItemRow(fx.seed.dimensionMembers.line![0]!), vendor_key },
+    });
+    const store = aaStore(fx.seed);
+    const err = await rejection<ChangesetRejectedError>(
+      applyChangeset(store, draft('ui', CUSTOM.id, 0, line('acme')), opts()),
+    );
+    expect(err.violations.map((v) => [v.rule, v.cells, v.message])).toEqual([
+      [
+        'VR09',
+        ['line[it_999]'],
+        "Line it_999 names vendor 'acme', which does not exist; pick an existing vendor.",
+      ],
+    ]);
+    const ok = await applyChangeset(store, draft('ui', CUSTOM.id, 0, line('ibm')), opts());
+    expect(ok.changeset.changes[0]).toMatchObject({ target: 'line_item', op: 'insert' });
   });
 
   it('values must fit the stored state: known variables, nodes, tenant dims and members; rows to unset or change must exist', async () => {

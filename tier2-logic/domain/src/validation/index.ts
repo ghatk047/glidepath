@@ -43,6 +43,7 @@ export type { InputRuleId, RuleDef, RuleId, Severity, ValidationEntry } from './
 export {
   LINE_ITEM_KEYS,
   OUT_OF_SCOPE_MEMO_DOMAIN,
+  SEED_LINE_ATTRIBUTES,
   vr01DomainOwnership,
   vr02SharedServicesOwner,
   vr03UsageKeys,

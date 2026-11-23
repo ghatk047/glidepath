@@ -47,7 +47,7 @@ export function dimensionMemberRow(m: Member, sort: number): JsonObject {
   return { label: json(m.label), attrs: attrs as JsonObject, sort, active: true };
 }
 
-/** A seed line as a line_item row (the seed's `vendor` is free text: vendor_text, no vendor_key). */
+/** A seed line as a line_item row: the seed's `vendor` is free text (vendor_text); its key, if any, `vendor_key`. */
 export function lineItemRow(m: Member): JsonObject {
   return {
     legacy_id: json(m.legacy_id),
@@ -55,7 +55,7 @@ export function lineItemRow(m: Member): JsonObject {
     tenant_l1_label: json(m.l1_label),
     l2: json(m.l2),
     name: json(m.name),
-    vendor_key: null,
+    vendor_key: json(m.vendor_key),
     vendor_text: json(m.vendor),
     nature: json(m.nature),
     accounting: json(m.accounting),

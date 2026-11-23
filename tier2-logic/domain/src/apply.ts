@@ -5,7 +5,8 @@
  * 1. lock the target (the scenario row, or the tenant-default lock), replay a known
  *    `clientRequestId`, and check `base_scenario_version` (else `ChangesetConflictError`);
  * 2. fork a locked preset into 'Custom (from X)' and retarget the draft (the seed writes in place);
- * 3. clamp, reject or flag values outside their registry min/max, per origin (`BOUNDS_POLICY`);
+ * 3. clamp, reject or flag values outside their registry min/max, per origin (`BOUNDS_POLICY`; an
+ *    undo or redo restores values as they were, `UNDO_BOUNDS_POLICY`);
  * 4. run the input rules on the post-change resolved state (any error: `ChangesetRejectedError`);
  * 5. write the changeset and its change rows, then upsert or delete each row it changes;
  * 6. bump the scenario version and call the Recompute hook (DOM-05), all before the commit.
@@ -92,6 +93,13 @@ export const BOUNDS_POLICY: Readonly<Record<ChangesetOrigin, BoundsPolicy>> = {
   market_refresh: 'warn',
   seed: 'warn',
 };
+
+/**
+ * Step 3 for an undo or redo (a draft with `reverts_id`), whatever its origin: it restores values a
+ * changeset replaced, so they are written as they were, also past a bound (VR04 stays a warning).
+ * Clamping or rejecting them would make the undo restore something else, or nothing.
+ */
+export const UNDO_BOUNDS_POLICY: BoundsPolicy = 'warn';
 
 /** Origins that write a locked scenario in place (the seed fills the presets); others fork it (step 2). */
 export const LOCKED_WRITE_ORIGINS: readonly ChangesetOrigin[] = ['seed'];
@@ -309,15 +317,32 @@ export async function applyChangeset<R = undefined>(
   options: ApplyOptions<R>,
 ): Promise<ApplyResult<R>> {
   checkDraft(draft);
-  const ctx: Context<R> = {
-    actor: options.actor,
-    bundle: options.bundle,
-    clientRequestId: options.clientRequestId,
-    recompute: options.recompute ?? (noRecompute as Recompute<R>),
-    newId: options.newId ?? (() => crypto.randomUUID()),
-    now: options.now ?? (() => new Date().toISOString()),
-  };
-  return store.transaction((tx) => applyIn(tx, draft, ctx));
+  const ctx = contextOf(options);
+  return store.transaction((tx) => applyIn(tx, draft, ctx, {}));
+}
+
+/**
+ * How the scenario operations of this package (./scenario, ./history) write through the path; not
+ * exported by the package. `bounds` replaces step 3's policy; `uncounted` leaves the edits counter as
+ * it is (a new scenario's first values are no edits).
+ */
+export interface WriteMode {
+  readonly bounds?: BoundsPolicy;
+  readonly uncounted?: boolean;
+}
+
+/**
+ * `applyChangeset` inside a transaction the caller already holds, so a scenario operation commits or
+ * rolls back as one (e.g. `createScenario`: the scenario row and its first values). Package-internal.
+ */
+export function applyInTx<R = undefined>(
+  tx: ChangesetTx,
+  draft: ChangesetDraft,
+  options: ApplyOptions<R>,
+  mode: WriteMode = {},
+): Promise<ApplyResult<R>> {
+  checkDraft(draft);
+  return applyIn(tx, draft, contextOf(options), mode);
 }
 
 interface Context<R> {
@@ -329,6 +354,17 @@ interface Context<R> {
   readonly now: () => Timestamp;
 }
 
+function contextOf<R>(options: ApplyOptions<R>): Context<R> {
+  return {
+    actor: options.actor,
+    bundle: options.bundle,
+    clientRequestId: options.clientRequestId,
+    recompute: options.recompute ?? (noRecompute as Recompute<R>),
+    newId: options.newId ?? (() => crypto.randomUUID()),
+    now: options.now ?? (() => new Date().toISOString()),
+  };
+}
+
 const draftError = (message: string): ChangesetDraftError =>
   new ChangesetDraftError([{ index: null, message }]);
 
@@ -336,6 +372,7 @@ async function applyIn<R>(
   tx: ChangesetTx,
   draft: ChangesetDraft,
   ctx: Context<R>,
+  mode: WriteMode,
 ): Promise<ApplyResult<R>> {
   // Step 1: lock, replay, version.
   let scenario: ScenarioRow | null = null;
@@ -347,7 +384,7 @@ async function applyIn<R>(
   }
   if (ctx.clientRequestId !== undefined) {
     const prior = await tx.findChangesetByClientRequest(ctx.actor, ctx.clientRequestId);
-    if (prior !== null) return replay(prior, draft);
+    if (prior !== null) return replayResult(prior, draft.scenario_id);
   }
   const previous = await checkVersion(tx, draft, scenario);
   const reverted = await revertTarget(tx, draft, scenario);
@@ -366,7 +403,9 @@ async function applyIn<R>(
 
   // Steps 3 and 4: the post-change state, bounds and input rules.
   const changesetId = ctx.newId();
-  const plan = await planChanges(tx, draft, target, base, changesetId, ctx);
+  const policy =
+    mode.bounds ?? (reverted !== null ? UNDO_BOUNDS_POLICY : BOUNDS_POLICY[draft.origin]);
+  const plan = await planChanges(tx, draft, target, base, changesetId, policy, ctx);
   const entries = validateInputs(plan.state);
   const errors = entries.filter((e) => e.severity === 'error');
   if (errors.length > 0) throw new ChangesetRejectedError(errors);
@@ -395,7 +434,7 @@ async function applyIn<R>(
   const edits =
     reverted !== null
       ? -summaryOf(reverted).edits
-      : UNCOUNTED_ORIGINS.includes(draft.origin)
+      : mode.uncounted === true || UNCOUNTED_ORIGINS.includes(draft.origin)
         ? 0
         : changes.length;
   const summary: ChangesetSummaryData = {
@@ -476,10 +515,13 @@ async function applyIn<R>(
   };
 }
 
-/** The result of a changeset already applied under the request's clientRequestId. */
-function replay<R>(prior: Changeset, draft: ChangesetDraft): ApplyResult<R> {
+/**
+ * The result of a changeset already applied under the request's clientRequestId, for a request on
+ * `scenarioId` (the changeset's scenario, or the preset it forked). Package-internal.
+ */
+export function replayResult<R>(prior: Changeset, scenarioId: ScenarioId | null): ApplyResult<R> {
   const summary = summaryOf(prior);
-  if (prior.scenario_id !== draft.scenario_id && summary.forked_from !== draft.scenario_id) {
+  if (prior.scenario_id !== scenarioId && summary.forked_from !== scenarioId) {
     throw draftError(
       `clientRequestId ${summary.client_request_id ?? ''} was used for changeset ${prior.id} on another scenario`,
     );
@@ -714,6 +756,7 @@ async function planChanges<R>(
   target: ScenarioRow | null,
   base: number,
   changesetId: ChangesetId,
+  policy: BoundsPolicy,
   ctx: Context<R>,
 ): Promise<Plan> {
   const { bundle } = ctx;
@@ -722,7 +765,6 @@ async function planChanges<R>(
   const variables = new Map<VarId, VariableDef>(bundle.variables.map((v) => [v.id, v]));
   const nodes = new Map(bundle.nodes.map((n) => [n.id, n]));
   const dimensions = new Map(bundle.dimensions.map((d) => [d.id, d]));
-  const policy = BOUNDS_POLICY[draft.origin];
 
   const issues: DraftIssue[] = [];
   const stale: StaleChange[] = [];

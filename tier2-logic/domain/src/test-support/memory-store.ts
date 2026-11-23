@@ -1,4 +1,4 @@
-// Test support only (never exported by the package): an in-memory ChangesetStore (ADR-019). One
+// Test support only (never exported by the package): an in-memory ScenarioStore (ADR-019). One
 // transaction at a time; a throw inside it restores the tables as they were at its start. `calls` logs
 // `begin`, every port method and `commit` / `rollback`, in order, so tests can assert the write order.
 import type { DimId, MemberId, TenantMembers } from '@glidepath/spec';
@@ -15,10 +15,10 @@ import { memberOfRow } from '../member-rows';
 import type {
   AuditEntry,
   CalcRunRow,
-  ChangesetStore,
-  ChangesetTx,
   InputState,
   ScenarioRow,
+  ScenarioStore,
+  ScenarioTx,
   ValueWrite,
 } from '../ports';
 import { resolveScenarioChain, type InputValueRow, type NodeOverrideRow } from '../resolve';
@@ -60,7 +60,7 @@ export interface MemoryStoreInit {
 
 const SEEDED = 'seed-init';
 
-export class MemoryChangesetStore implements ChangesetStore {
+export class MemoryChangesetStore implements ScenarioStore {
   tables: MemoryTables;
   readonly globalMembers: TenantMembers;
   /** `begin`, each port method name, `commit` or `rollback`; tests may push their own markers. */
@@ -96,7 +96,7 @@ export class MemoryChangesetStore implements ChangesetStore {
     };
   }
 
-  async transaction<T>(fn: (tx: ChangesetTx) => Promise<T>): Promise<T> {
+  async transaction<T>(fn: (tx: ScenarioTx) => Promise<T>): Promise<T> {
     if (this.open) throw new Error('MemoryChangesetStore: nested transaction');
     const snapshot = structuredClone(this.tables);
     this.open = true;
@@ -156,9 +156,9 @@ export class MemoryChangesetStore implements ChangesetStore {
     );
   }
 
-  private tx(): ChangesetTx {
+  private tx(): ScenarioTx {
     const t = (): MemoryTables => this.tables;
-    const log = (method: keyof ChangesetTx): void => {
+    const log = (method: keyof ScenarioTx): void => {
       if (!this.open) throw new Error(`MemoryChangesetStore: ${method} outside a transaction`);
       this.calls.push(method);
     };
@@ -268,6 +268,13 @@ export class MemoryChangesetStore implements ChangesetStore {
           if (s.key === row.key) throw new Error(`scenario key ${row.key} is taken`);
         }
         t().scenarios.set(row.id, row);
+      },
+      updateScenario: async (id, patch) => {
+        log('updateScenario');
+        const defined = Object.fromEntries(
+          Object.entries(patch).filter(([, v]) => v !== undefined),
+        ) as Partial<ScenarioRow>;
+        t().scenarios.set(id, { ...scenario(id), ...defined });
       },
       insertChangeset: async (cs) => {
         log('insertChangeset');

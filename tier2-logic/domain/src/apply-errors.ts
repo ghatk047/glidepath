@@ -4,9 +4,10 @@
  * `ChangesetDraftError` of ./changeset.
  *
  * The server maps them onto the contract (contract/api-contract): a conflict to the 409
- * `ChangesetConflict`, a rejection to a 422 problem with `violations`, a missing scenario to a 404.
+ * `ChangesetConflict`, a rejection to a 422 problem with `violations`, a missing scenario or
+ * changeset to a 404. The scenario operations (DOM-04) add a 422 and a 403.
  */
-import type { Changeset, JsonValue, ScenarioId } from './changeset';
+import type { Changeset, ChangesetId, JsonValue, ScenarioId } from './changeset';
 import type { ValidationEntry } from './validation';
 
 /** A change whose `old_value` is not the cell's value in the stored state (the draft's view is stale). */
@@ -76,5 +77,36 @@ export class ScenarioNotFoundError extends Error {
     super(`Scenario ${scenarioId} does not exist.`);
     this.name = 'ScenarioNotFoundError';
     this.scenarioId = scenarioId;
+  }
+}
+
+/** `revert` names a changeset the tenant does not have (a 404). */
+export class ChangesetNotFoundError extends Error {
+  readonly changesetId: ChangesetId;
+
+  constructor(changesetId: ChangesetId) {
+    super(`Changeset ${changesetId} does not exist.`);
+    this.name = 'ChangesetNotFoundError';
+    this.changesetId = changesetId;
+  }
+}
+
+/**
+ * A scenario operation (`createScenario`, `patchScenario`) that cannot be done as asked: an empty
+ * patch or label, a rename of a locked scenario, a blend without two parts or with bad weights. A 422
+ * problem; nothing was written.
+ */
+export class ScenarioOperationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ScenarioOperationError';
+  }
+}
+
+/** The member's role does not allow the scenario operation (a 403); nothing was written. */
+export class ScenarioPermissionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ScenarioPermissionError';
   }
 }

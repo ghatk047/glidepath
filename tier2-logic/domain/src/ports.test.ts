@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { membersHash } from '@glidepath/spec';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { TENANT_COLUMN } from './changeset';
@@ -11,8 +13,10 @@ import {
   type ModelCache,
   type ModelCacheKey,
   type ScenarioRow,
+  type ScenarioStore,
+  type ScenarioTx,
 } from './ports';
-import { columnsOf, enumOf } from './test-support/schema-json';
+import { columnsOf, enumOf, repoRoot } from './test-support/schema-json';
 
 const scenarioRow: ScenarioRow = {
   id: '00000000-0000-4000-8000-0000000000a1',
@@ -58,6 +62,22 @@ describe('ports.ts declares ChangesetStore and ModelCache interfaces', () => {
     await expect(store.transaction(async (t) => (t === tx ? 'same tx' : 'other'))).resolves.toBe(
       'same tx',
     );
+  });
+
+  it('ScenarioTx adds an async updateScenario; a ScenarioStore is a ChangesetStore', () => {
+    type Results = { [K in keyof ScenarioTx]: ReturnType<ScenarioTx[K]> }[keyof ScenarioTx];
+    expectTypeOf<Results>().toMatchTypeOf<Promise<unknown>>();
+    expectTypeOf<ScenarioStore>().toMatchTypeOf<ChangesetStore>();
+    // scenario.archived is no schema.json column: manual migration 0001 adds it (ADR-023).
+    expect(columnsOf('scenario')).not.toContain('archived');
+    const sql = readFileSync(
+      resolve(
+        repoRoot,
+        'tier3-data/migrations/manual/0001_solver_run_progress_scenario_archived.sql',
+      ),
+      'utf8',
+    );
+    expect(sql).toMatch(/ALTER TABLE scenario ADD COLUMN archived boolean NOT NULL DEFAULT false/);
   });
 
   it('the port rows mirror schema.json (scenario, calc_run, audit_log), tenant_id from the store', () => {

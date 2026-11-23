@@ -55,4 +55,28 @@ describe('domain', () => {
     expect(domain.BOUNDS_POLICY.ui).toBe('clamp');
     expect(domain.LOCKED_WRITE_ORIGINS).toEqual(['seed']);
   });
+
+  it('exports the DOM-04 contract: createScenario(), revert(), rebase(), and the scenario operations around them', () => {
+    for (const fn of [
+      'createScenario',
+      'blendFrom',
+      'scenarioName',
+      'patchScenario',
+      'revert',
+      'undoRedo',
+      'rebase',
+    ] as const) {
+      expect(typeof domain[fn]).toBe('function');
+    }
+    for (const E of [
+      domain.ChangesetNotFoundError,
+      domain.ScenarioOperationError,
+      domain.ScenarioPermissionError,
+    ]) {
+      expect(E.prototype).toBeInstanceOf(Error);
+    }
+    expect(domain.UNDO_BOUNDS_POLICY).toBe('warn');
+    expect(domain.CREATE_KIND).toEqual({ copy: 'user', child: 'user', blend: 'blend' });
+    expect(domain.PRESET_UNLOCK_ROLES).toEqual(['owner']);
+  });
 });

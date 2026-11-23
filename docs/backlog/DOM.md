@@ -125,7 +125,7 @@ title: "Scenario operations, undo/redo and rebase"
 epic: DOM
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -145,6 +145,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Custom scenarios and undo, as in the demo cut.
