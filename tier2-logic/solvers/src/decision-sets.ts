@@ -4,7 +4,7 @@
  * assumptions a solver must hold; no set ever contains one.
  */
 import { cellKey, type CellKey, type VariableDef } from '@glidepath/engine';
-import type { VariableKind } from '@glidepath/spec';
+import type { DecisionBounds, VariableKind } from '@glidepath/spec';
 import { SolverError } from './errors';
 import type { SolverModel } from './model';
 import type { DecisionSetId } from './types';
@@ -148,6 +148,24 @@ export function decisionSets(model: SolverModel, sets: readonly DecisionSetId[])
     }
   }
   return out;
+}
+
+/**
+ * The model with the reference decision bounds (SOL-12; `@glidepath/spec` `decisionBoundsFor`, generated from
+ * docs/spec/reference/solvers_demo.py) as `caps`: every `lever_intensity` cell the bounds name gets their upper
+ * bound, so the set's bounds are the reference's (`lo` is the registry min on both sides). The reference caps at
+ * the stretch presets alone, above the registry max for a few inputs; SOL-01's default bound stays for cells the
+ * bounds do not name. A cap already on the model (the user widened it) wins. `null` returns the model unchanged.
+ */
+export function withDecisionBounds(model: SolverModel, bounds: Pick<DecisionBounds, 'hi'> | null): SolverModel {
+  if (bounds === null) return model;
+  const caps = new Map<CellKey, number>();
+  for (const d of decisionSet(model, 'lever_intensity')) {
+    const hi = Object.hasOwn(bounds.hi, d.cell) ? bounds.hi[d.cell] : undefined;
+    if (hi !== undefined) caps.set(d.cell, hi);
+  }
+  for (const [cell, hi] of model.caps ?? []) caps.set(cell, hi);
+  return { ...model, caps };
 }
 
 /** Clamps `x` to the variable's bounds. */

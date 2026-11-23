@@ -12,7 +12,9 @@ import type { JsonValue } from '@glidepath/domain';
 import { engineOverrides, engineValues, modelCacheKey } from '@glidepath/domain';
 import { compile } from '@glidepath/engine';
 import type { CellKey } from '@glidepath/engine';
+import { withDecisionBounds } from '@glidepath/solvers';
 import type { SolverModel, SolverSpec } from '@glidepath/solvers';
+import { decisionBoundsFor } from '@glidepath/spec';
 import type { ModelBundle } from '@glidepath/spec';
 import { SolverJobError } from './types';
 import type { SolverJobDeps } from './types';
@@ -55,8 +57,10 @@ async function resolvedMaps(
 
 /**
  * Builds the solver's `SolverModel` for a run: the start scenario's resolved inputs (`v_inputs_resolved`,
- * pins included) evaluated once as the base, the tenant's active members, and the stretch cap from the
- * tenant's stretch presets. Everything is read in the caller's transaction; the solver then runs without one.
+ * pins included) evaluated once as the base, the tenant's active members, the stretch cap from the
+ * tenant's stretch presets, and the decision bounds of the model version (SOL-12: `decisionBoundsFor`, generated
+ * from docs/spec/reference/solvers_demo.py, so a job moves the same inputs within the same bounds as the
+ * reference). Everything is read in the caller's transaction; the solver then runs without one.
  */
 export async function loadSolverInput(tx: TenantTx, runId: string, deps: SolverJobDeps): Promise<SolverJobInput> {
   const run = await getSolverRun(tx, runId);
@@ -85,12 +89,15 @@ export async function loadSolverInput(tx: TenantTx, runId: string, deps: SolverJ
   const stretch: ReadonlyMap<CellKey, number>[] = [];
   for (const p of presets) stretch.push((await resolvedMaps(tx, p.id)).values);
 
-  const model: SolverModel = {
-    compiled,
-    base: compiled.evaluate(values, overrides),
-    bundle,
-    members,
-    ...(stretch.length === 0 ? {} : { stretch }),
-  };
+  const model: SolverModel = withDecisionBounds(
+    {
+      compiled,
+      base: compiled.evaluate(values, overrides),
+      bundle,
+      members,
+      ...(stretch.length === 0 ? {} : { stretch }),
+    },
+    decisionBoundsFor(bundle.specVersion),
+  );
   return { run, spec, start, tenant, bundle, model };
 }

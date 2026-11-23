@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
@@ -11,6 +12,8 @@ import {
 } from '@glidepath/data-access';
 import type { DbHandle, SolverRunRecord, TenantTx } from '@glidepath/data-access';
 import { start, stop } from '@glidepath/pg-local';
+import { decisionSet } from '@glidepath/solvers';
+import { REFERENCE_DECISION_BOUNDS } from '@glidepath/spec';
 import type { PgLocalInstance } from '@glidepath/pg-local';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { findTier3Data } from '../../seed/files';
@@ -19,6 +22,7 @@ import { runMigrate } from '../../seed/run';
 import { HandlerRegistry, runJob, silentLogger, systemClock } from '../../runtime';
 import type { JobContext } from '../../runtime';
 import { defaultSolverDeps } from './deps';
+import { loadSolverInput } from './load';
 import { runSolverJob } from './run';
 import { registerSolverHandlers } from './register';
 import type { SolverJobDeps, SolverJobPayload } from './types';
@@ -209,4 +213,49 @@ describe('JOB-03 solver job handlers (pg-local, seeded tenant)', () => {
     await expect(work(run, 'min_risk_mix')).rejects.toThrow(/not min_risk_mix/);
     expect((await inTenant((tx) => getSolverRun(tx, run.id)))!.status).toBe('failed');
   }, 60_000);
+});
+
+// ----------------------------------------------------------------------------- SOL-12
+
+/** G5 tolerances (tools/parity solvers-gate TOLERANCES): net to the reference's cents, risk exposure ± $0.5M. */
+const G5 = { cents: 0.005, money: 0.5 } as const;
+
+interface MinRiskReference {
+  readonly net: number;
+  readonly risk_exposure: number;
+  readonly inputs_moved_from_C: Readonly<Record<string, { readonly from: number; readonly to: number }>>;
+}
+
+describe('SOL-12 production solvers use the reference decision bounds (pg-local, seeded tenant)', () => {
+  it('min_risk_mix from C through the real handler gives net 143.0 and risk exposure 42.0 at the G5 tolerances', async () => {
+    const reference = JSON.parse(readFileSync(resolve(specDir, 'reference/solver_demo_results.json'), 'utf8')) as {
+      min_risk_total_bar: MinRiskReference;
+    };
+    const want = reference.min_risk_total_bar;
+
+    // The job's own model carries the generated bounds: every DEC cell bounded as solvers_demo.py bounds it.
+    const run = await newRun('min_risk_mix', {});
+    const input = await inTenant((tx) => loadSolverInput(tx, run.id, deps));
+    const set = decisionSet(input.model, 'lever_intensity');
+    expect(set.map((d) => d.cell)).toEqual(REFERENCE_DECISION_BOUNDS.dec);
+    for (const d of set) {
+      expect([d.lo, d.hi], d.cell).toEqual([REFERENCE_DECISION_BOUNDS.lo[d.cell], REFERENCE_DECISION_BOUNDS.hi[d.cell]]);
+    }
+
+    const done = await work(run, 'min_risk_mix');
+    expect(done.status).toBe('done');
+    const result = done.result as unknown as {
+      status: string;
+      metrics: Record<string, number>;
+      changes: { cell: string; value: number }[];
+    };
+    expect(result.status).toBe('feasible');
+    expect(result.metrics['res.net']! - result.metrics['res.bar']!).toBeGreaterThanOrEqual(-1e-6);
+    expect(Math.abs(result.metrics['res.net']! - want.net)).toBeLessThanOrEqual(G5.cents);
+    expect(Math.abs(result.metrics['risk_exposure']! - want.risk_exposure)).toBeLessThanOrEqual(G5.money);
+    // The plan is the reference's: the same inputs moved, to the same values (some above the registry max).
+    const moved = new Map(result.changes.map((c) => [c.cell, c.value]));
+    expect([...moved.keys()].sort()).toEqual(Object.keys(want.inputs_moved_from_C).sort());
+    for (const [cell, { to }] of Object.entries(want.inputs_moved_from_C)) expect(moved.get(cell), cell).toBeCloseTo(to, 9);
+  }, 120_000);
 });

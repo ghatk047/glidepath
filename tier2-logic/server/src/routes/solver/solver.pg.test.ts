@@ -1,6 +1,7 @@
-import { PROBLEM_CONTENT_TYPE, SolverRun, UserId, assertContract } from '@glidepath/api-contract';
-import type { SolverLookup } from '@glidepath/api-contract';
-import { MONTE_CARLO_DEFAULTS } from '@glidepath/solvers';
+import { PROBLEM_CONTENT_TYPE, SolverRun, TenantId, UserId, assertContract } from '@glidepath/api-contract';
+import type { QuickSolverSpec, SolverLookup } from '@glidepath/api-contract';
+import { MONTE_CARLO_DEFAULTS, decisionSet } from '@glidepath/solvers';
+import { REFERENCE_DECISION_BOUNDS } from '@glidepath/spec';
 import { getScenario, getSolverRun, listScenarios, listSolverRuns, updateSolverRun, withTenant } from '@glidepath/data-access';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -15,6 +16,7 @@ import { defaultSolverDeps } from '../../../../worker/src/jobs/solver/deps';
 import { runSolverJob } from '../../../../worker/src/jobs/solver/run';
 import type { SolverJobPayload } from '../../../../worker/src/jobs/solver/types';
 import { specBundleFromDir } from '../read/spec-source';
+import { solverModelFor } from './model';
 import { AA_ID, ANA, BOB, CAROL, MINE, asUser, presetId, startAaDatabase } from '../read/testing/aa-db';
 import type { AaDatabase } from '../read/testing/aa-db';
 
@@ -444,4 +446,26 @@ describe('API-13 save on the job: submissions carry it, the worker honours it', 
     expect(out.saved).not.toBeNull();
     expect(await scenarios()).toBe(count + 1);
   }, 240_000);
+});
+
+describe('SOL-12 quick runs build the SolverModel with the reference decision bounds', () => {
+  it('the quick-run model of every short problem bounds each DEC cell as solvers_demo.py does', async () => {
+    const withTenantFn = bindWithTenant(env.app.db);
+    const loader = dbScenarioLoader({ withTenant: withTenantFn, specBundle: specBundleFromDir() });
+    const tenantId = TenantId.parse(AA_ID);
+    const userId = UserId.parse(ANA);
+    const state = (await loader.load({ tenantId, userId }, C))!;
+    const b = REFERENCE_DECISION_BOUNDS;
+    const specs = [
+      { problem: 'breakeven', params: {} },
+      { problem: 'goal_seek', params: { var: 'lev.L01.cut[]', output: 'res.net[]', target: 0 } },
+      { problem: 'sensitivity', params: { method: 'tornado' } },
+    ] as unknown as QuickSolverSpec[];
+    for (const spec of specs) {
+      const model = await withTenantFn(tenantId, userId, (tx) => solverModelFor(tx, state, spec, { stressPresets: async () => [] }));
+      const set = decisionSet(model, 'lever_intensity');
+      expect(set.map((d) => d.cell), spec.problem).toEqual(b.dec);
+      for (const d of set) expect([d.lo, d.hi], `${spec.problem} ${d.cell}`).toEqual([b.lo[d.cell], b.hi[d.cell]]);
+    }
+  }, 60_000);
 });

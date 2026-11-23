@@ -24,6 +24,10 @@ export type {
   TenantSeed,
   TenantSeedJson,
 } from './core/seed';
+// SOL-12: the solvers' decision set and bounds, generated from docs/spec/reference/solvers_demo.py.
+export { decisionBoundsFor } from './core/decision-bounds';
+export type { DecisionBounds } from './core/decision-bounds';
+export { REFERENCE_DECISION_BOUNDS } from './reference/decision-bounds';
 export { SpecValidationError, jsonPath } from './core/errors';
 export type { SpecIssue } from './core/errors';
 export type {

@@ -37,7 +37,15 @@ export type {
   VpFeasibleParams,
 } from './types';
 export type { SolverModel } from './model';
-export { DECISION_SET_IDS, DECISION_SETS, clampToBounds, decisionSet, decisionSets, isHeld } from './decision-sets';
+export {
+  DECISION_SET_IDS,
+  DECISION_SETS,
+  clampToBounds,
+  decisionSet,
+  decisionSets,
+  isHeld,
+  withDecisionBounds,
+} from './decision-sets';
 export type { DecisionVariable } from './decision-sets';
 export { runSolver, SolverRun } from './run';
 export type { ProblemSolver, ProblemTable, RunOptions } from './run';

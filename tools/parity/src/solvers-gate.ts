@@ -18,18 +18,17 @@ import {
   runSolver,
   tornado,
   vpFeasible,
+  withDecisionBounds,
   type SolverModel,
   type SolverResult,
 } from '@glidepath/solvers';
-import { seedToTenantData, type ModelBundle, type TenantSeed } from '@glidepath/spec';
+import { decisionBoundsFor, seedToTenantData, type ModelBundle, type TenantSeed } from '@glidepath/spec';
 import { loadModelBundleFromDir, readTenantSeed } from '@glidepath/spec/node';
 import { EXIT_MISS, EXIT_OK } from './gate';
-import { paths, readJson, repoRoot } from './load';
+import { paths, readJson } from './load';
 
 /** Solver demo reference (docs/spec/reference/solver_demo_results.json). */
 export const solverDemoPath = join(paths.spec, 'reference', 'solver_demo_results.json');
-/** DEC/lo/hi of solvers_demo.py: the reference greedy's intensity bounds (SOL-04 test fixture). */
-export const decFixturePath = join(repoRoot, 'tier2-logic', 'solvers', 'test', 'fixtures', 'dec.json');
 
 /** Acceptance tolerances, as asserted by the item tests of SOL-03 .. SOL-07. */
 export const TOLERANCES = {
@@ -250,14 +249,12 @@ function modelAt(s: Seeded, start: string, scenarios = false): SolverModel {
   };
 }
 
-/** Widens the intensity caps to the reference greedy's DEC bounds (SOL-04: "the user can widen it"). */
-function withReferenceCaps(model: SolverModel, hi: Readonly<Record<string, number>>): SolverModel {
-  const caps = new Map<string, number>();
-  for (const d of decisionSet(model, 'lever_intensity')) {
-    const cap = hi[d.cell];
-    if (cap !== undefined && cap !== d.hi) caps.set(d.cell, cap);
-  }
-  return { ...model, caps };
+/**
+ * The model with the decision bounds the production solvers use (SOL-12: `decisionBoundsFor` of the model
+ * version, generated from solvers_demo.py), applied as the worker and the server apply them.
+ */
+function withProductionBounds(s: Seeded, model: SolverModel): SolverModel {
+  return withDecisionBounds(model, decisionBoundsFor(s.bundle.specVersion));
 }
 
 const noYield = () => Promise.resolve();
@@ -309,12 +306,11 @@ function movedInputs(r: Rows, res: SolverResult, model: SolverModel, want: MixRe
 async function minRiskCase(
   s: Seeded,
   ref: SolverDemoFile,
-  hi: Readonly<Record<string, number>>,
   sink: SolverRow[],
 ): Promise<void> {
   const r = new Rows('SOL-04', 'min_risk_total_bar', sink);
   const want = ref.min_risk_total_bar;
-  const model = withReferenceCaps(modelAt(s, 'C'), hi);
+  const model = withProductionBounds(s, modelAt(s, 'C'));
   r.abs(
     'risk_exposure[C]',
     riskExposure(model.base, model.members),
@@ -356,11 +352,10 @@ async function minRiskCase(
 async function vpCase(
   s: Seeded,
   ref: SolverDemoFile,
-  hi: Readonly<Record<string, number>>,
   sink: SolverRow[],
 ): Promise<void> {
   const want = ref.min_risk_total_and_vp_bars;
-  const model = withReferenceCaps(modelAt(s, 'C'), hi);
+  const model = withProductionBounds(s, modelAt(s, 'C'));
   const slack = (e: Evaluation, v: string) =>
     e.get(cellKey('vp.net', [v])) - e.get(cellKey('vp.bar', [v]));
   const tightest = Object.entries(want.vp_gaps).sort((a, b) => a[1] - b[1])[0]![0];
@@ -504,19 +499,18 @@ export function summarise(rows: readonly SolverRow[]): Tally {
 
 export async function runSolverGate(options: SolverGateOptions = {}): Promise<SolverGateResult> {
   const log = options.log ?? ((line: string) => console.log(line));
-  const [bundle, seed, ref, dec] = await Promise.all([
+  const [bundle, seed, ref] = await Promise.all([
     loadModelBundleFromDir(paths.spec),
     readTenantSeed(paths.seed),
     readJson<SolverDemoFile>(options.reference ?? solverDemoPath),
-    readJson<{ hi: Record<string, number> }>(decFixturePath),
   ]);
   const compiled = compile(bundle, seedToTenantData(seed, undefined, bundle).members);
   const seeded: Seeded = { bundle, seed, compiled };
 
   const rows: SolverRow[] = [];
   await blendCase(seeded, ref, rows);
-  await minRiskCase(seeded, ref, dec.hi, rows);
-  await vpCase(seeded, ref, dec.hi, rows);
+  await minRiskCase(seeded, ref, rows);
+  await vpCase(seeded, ref, rows);
   await monteCarloCase(seeded, ref, rows);
   tornadoCase(seeded, ref, rows);
 

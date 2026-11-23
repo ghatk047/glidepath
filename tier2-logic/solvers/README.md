@@ -37,7 +37,7 @@ SOL-04 minimum-risk lever mix (`minRiskMix()` in `src/min-risk.ts`; problem in `
 - Constraints: `total` (`res.net ≥ res.bar`) always; optional `per_vp`, `one_time_cap`, `rate_share`, `us_floor`, `gcc_hiring`, `eps` add their violation. `binding` lists held constraints the last improving step was needed for, shadow price = Δobjective per unit of slack on that step.
 - `production`: the explainable plan, then a seeded refinement stepping moved inputs back toward the start while feasible and the objective falls; `diagnostics.seed` records the seed.
 - `ranked`: one row per moved input in the order the optimiser first moved it, impacts on `res.net` along that path. `metrics`: `res.net`, `res.bar`, `res.risk`, `res.tot_ot_it`, … plus `risk_exposure`, `objective`, `violation`, `steps`, `evaluations`.
-- `test/fixtures/min_risk_path.json` is the reference greedy path, dumped by `python3 -I tier2-logic/solvers/test/fixtures/dump_min_risk.py .`. The reference bounds intensity inputs by max(C, D) alone, above the registry max for `lev.L01.cut`, `lev.L01.rel`, `lev.L03.pct` and `lev.L15.pct`; the spec widens those to the reference bounds through `model.caps` (with SOL-01's default bounds the mix still clears the bar from C: risk exposure 42.54, one-time IT 20.34, no people levers, but `lev.L08.cut` replaces `lev.L12.tpm`).
+- `test/fixtures/min_risk_path.json` is the reference greedy path, dumped by `python3 -I tier2-logic/solvers/test/fixtures/dump_min_risk.py .`. The reference bounds intensity inputs by max(C, D) alone, above the registry max for `lev.L01.cut`, `lev.L01.rel`, `lev.L03.pct` and `lev.L15.pct`; the spec widens those to the reference bounds through `model.caps` (SOL-12: `withDecisionBounds`, below; with SOL-01's default bounds the mix still clears the bar from C: risk exposure 42.54, one-time IT 20.34, no people levers, but `lev.L08.cut` replaces `lev.L12.tpm`).
 
 SOL-05 constraints, VP-feasible plan, binding constraints (`vpFeasible()` in `src/vp-feasible.ts`; problem in `src/problems/vp-feasible.ts`; search shared with SOL-04 via `solveMix`):
 
@@ -45,6 +45,11 @@ SOL-05 constraints, VP-feasible plan, binding constraints (`vpFeasible()` in `sr
 - Binding constraints and shadow prices (feasible plans): a held constraint is active when its slack is within δ, the largest slack change one step from the plan makes (forward, or back toward the start). It is relaxed by δ (then 2δ, 4δ) and re-solved with the same method; binding when the relaxed objective is lower, shadow price = objective saved / δ (objective units per unit of the constraint). The re-solve is warm and exact: it restarts at the first greedy round where the constraint was within δ of holding at the current point or any priced candidate (until then every score is unchanged). The prices are local: a greedy is not monotone in its constraints.
 - `vpFeasible(model, params)` (`vp_feasible`): `min_risk_mix` with `per_vp` added (all VPs unless the caller's `per_vp` names some). Feasible: that plan, binding and shadow prices. Infeasible: leximin ascent on `vp.coverage[v]` capped at 1 (lowest first), guards held, ties to the cheaper objective; run from the start and from the mix's end, the better kept. Status `infeasible`, `binding: []`. `detail.coverage` per VP and `metrics.min_coverage` in both cases.
 - From C with widened caps (as SOL-04): net 148.13, every VP clears, risk exposure 43.63, Operations binding by $0.01M; moved inputs equal `min_risk_total_and_vp_bars.inputs_moved_from_C` in 95 steps.
+
+SOL-12 production decision bounds (`withDecisionBounds()` in `src/decision-sets.ts`):
+
+- `withDecisionBounds(model, bounds)` sets `model.caps` to the `hi` of `bounds` for every `lever_intensity` cell they name, so the set's bounds are the reference's (`lo` is the registry min on both sides); cells they do not name keep SOL-01's default, a cap already on the model wins, `null` returns the model unchanged.
+- `bounds` is `@glidepath/spec` `decisionBoundsFor(bundle.specVersion)`: the DEC/lo/hi/step/NEG of `docs/spec/reference/solvers_demo.py`, generated into `tier2-logic/spec/src/reference/decision-bounds.ts` (checked against the reference by `tier2-logic/spec/src/decision-bounds.test.ts`). The worker's solver jobs, the server's quick runs, the JOB-04 warmer (through the worker's handlers), this package's tests and `pnpm test:solvers` all read that one module.
 
 ```ts
 import { runSolver, type SolverModel } from '@glidepath/solvers';
@@ -55,4 +60,4 @@ const result = await runSolver(model, { problem: 'min_risk_mix', params: {} }, {
 
 ## Tests
 
-`pnpm turbo run typecheck lint test --filter=@glidepath/solvers... --concurrency=1` (G1, G2 with >= 90% line coverage). `test/fixtures/dec.json` is the DEC/lo/hi of `docs/spec/reference/solvers_demo.py`, dumped by `python3 -I tier2-logic/solvers/test/fixtures/dump_dec.py .`.
+`pnpm turbo run typecheck lint test --filter=@glidepath/solvers... --concurrency=1` (G1, G2 with >= 90% line coverage). The DEC/lo/hi of `docs/spec/reference/solvers_demo.py` the tests compare with is `@glidepath/spec` `REFERENCE_DECISION_BOUNDS` (SOL-12), the same data production loads.

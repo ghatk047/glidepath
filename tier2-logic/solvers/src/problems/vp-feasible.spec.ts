@@ -9,8 +9,9 @@
  * 3. Binding constraints are reported with shadow prices.
  * 4. Infeasible → status infeasible with the plan that maximises min vp.coverage.
  *
- * As in SOL-04, `model.caps` widens the SOL-01 bound of lev.L01.cut, lev.L01.rel, lev.L03.pct and
- * lev.L15.pct to the reference greedy's bound (max of C and D), which the demo figures need.
+ * As in SOL-04, `withDecisionBounds(model, REFERENCE_DECISION_BOUNDS)` widens the SOL-01 bound of lev.L01.cut,
+ * lev.L01.rel, lev.L03.pct and lev.L15.pct to the reference greedy's bound (max of C and D), as production does
+ * (SOL-12); the demo figures need it.
  *
  * Constructed cases (2): from C, only two lever-intensity inputs may move (the stretch presets are C
  * with those two at their registry max), and g.target_net is moved so the bar sits half of the smaller
@@ -22,9 +23,10 @@
  * tests check first.
  */
 import { cellKey, type Evaluation } from '@glidepath/engine';
+import { REFERENCE_DECISION_BOUNDS } from '@glidepath/spec';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { presetValues, readRepoJson, seedModel } from '../../test/helpers';
-import { decisionSet } from '../decision-sets';
+import { decisionSet, withDecisionBounds } from '../decision-sets';
 import { minRiskMix } from '../min-risk';
 import type { SolverModel } from '../model';
 import type { SolverConstraint, SolverResult } from '../types';
@@ -43,13 +45,9 @@ interface DemoVp {
   readonly vp_gaps: Record<string, number>;
   readonly inputs_moved_from_C: Record<string, { from: number; to: number }>;
 }
-interface DecFixture {
-  readonly hi: Record<string, number>;
-}
 
 const want = readRepoJson<{ min_risk_total_and_vp_bars: DemoVp }>('docs/spec/reference/solver_demo_results.json')
   .min_risk_total_and_vp_bars;
-const dec = readRepoJson<DecFixture>('tier2-logic/solvers/test/fixtures/dec.json');
 
 /** Acceptance tolerance on net and risk exposure ($M). */
 const TOL = 0.5;
@@ -61,12 +59,7 @@ const opts = { yield: noYield };
 let model: SolverModel;
 beforeAll(async () => {
   const base = await seedModel('C');
-  const caps = new Map<string, number>();
-  for (const d of decisionSet(base, 'lever_intensity')) {
-    const hi = dec.hi[d.cell];
-    if (hi !== undefined && hi !== d.hi) caps.set(d.cell, hi);
-  }
-  model = { ...base, caps };
+  model = withDecisionBounds(base, REFERENCE_DECISION_BOUNDS);
 }, 60_000);
 
 const vpIds = () => (model.members.vp ?? []).map((m) => m.id);

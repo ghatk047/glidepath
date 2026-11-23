@@ -84,6 +84,12 @@ const data = seedToTenantData(seed, 'C', bundle);                  // { members,
 
 `pnpm turbo run typecheck lint test --filter=@glidepath/spec...`. Acceptance tests load the real `docs/spec` (194 variables, 307 nodes), check JSON-path errors on invalid fixtures, the hash properties, and that `src/core` and `src/index.ts` import no node builtin.
 
+## Reference decision bounds (SOL-12)
+
+`REFERENCE_DECISION_BOUNDS` (`src/reference/decision-bounds.ts`, generated, never edited by hand) holds the decision variables of `docs/spec/reference/solvers_demo.py` on the seed tenant: `dec` (ids in registry order), `lo`, `hi` (the reference's max(C, D) realism cap, above the registry max for a few inputs), `step`, `neg`, plus `specVersion`, `seed` and the SHA-256 of each source. `decisionBoundsFor(specVersion)` answers them for their model version and null for any other. The solvers apply them with `withDecisionBounds` (`@glidepath/solvers`); the worker's jobs and the server's quick runs do so on every model they build.
+
+Regenerate with `python3 -I tier2-logic/spec/scripts/dump_decision_bounds.py .` (runs the unchanged prologue of `solvers_demo.py`; standard library only, numpy is used when installed). `src/decision-bounds.test.ts` runs the script with `--json` and fails on any difference, and checks the recorded source hashes.
+
 ## Percent scale (WEB-10)
 
 `variablePercentScale(v)` and `nodePercentScale(n)` answer `'fraction' | 'points' | null` for a

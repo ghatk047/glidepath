@@ -8,12 +8,13 @@
  * 4. deterministic for a seed; < 10 s single process.
  *
  * The reference greedy bounds intensity inputs by max(C, D) alone; SOL-01 also caps them at the registry
- * max (they differ for lev.L01.cut, lev.L01.rel, lev.L03.pct and lev.L15.pct). `model.caps` widens those
- * to the reference bounds, as the user would (04 §1 "The user can widen it").
+ * max (they differ for lev.L01.cut, lev.L01.rel, lev.L03.pct and lev.L15.pct). `withDecisionBounds` sets the
+ * reference bounds (`REFERENCE_DECISION_BOUNDS`) as `model.caps`, as the worker and server do (SOL-12).
  */
+import { REFERENCE_DECISION_BOUNDS } from '@glidepath/spec';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { readRepoJson, seedModel } from '../../test/helpers';
-import { decisionSet } from '../decision-sets';
+import { decisionSet, withDecisionBounds } from '../decision-sets';
 import { minRiskMix } from '../min-risk';
 import type { SolverModel } from '../model';
 import type { SolverObjective, SolverResult } from '../types';
@@ -42,14 +43,10 @@ interface DemoPath {
   readonly path: readonly string[];
   readonly order: readonly string[];
 }
-interface DecFixture {
-  readonly hi: Record<string, number>;
-}
 
 const demo = readRepoJson<DemoResults>('docs/spec/reference/solver_demo_results.json');
 const want = demo.min_risk_total_bar;
 const demoPath = readRepoJson<DemoPath>('tier2-logic/solvers/test/fixtures/min_risk_path.json');
-const dec = readRepoJson<DecFixture>('tier2-logic/solvers/test/fixtures/dec.json');
 
 /** Acceptance tolerance on risk exposure and one-time IT ($M). */
 const TOL = 0.5;
@@ -61,13 +58,8 @@ let model: SolverModel;
 let result: SolverResult<'min_risk_mix'>;
 beforeAll(async () => {
   const base = await seedModel('C');
-  // Widen the SOL-01 bound to the reference bound where they differ.
-  const caps = new Map<string, number>();
-  for (const d of decisionSet(base, 'lever_intensity')) {
-    const hi = dec.hi[d.cell];
-    if (hi !== undefined && hi !== d.hi) caps.set(d.cell, hi);
-  }
-  model = { ...base, caps };
+  // The reference bounds, as production builds the model (SOL-12).
+  model = withDecisionBounds(base, REFERENCE_DECISION_BOUNDS);
   result = await minRiskMix(model, {}, { yield: noYield });
 }, 60_000);
 

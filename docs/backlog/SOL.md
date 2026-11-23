@@ -378,7 +378,7 @@ title: "Production solvers use the reference decision bounds (G5 on the live sta
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -396,6 +396,7 @@ acceptance:
 gates: [G1, G2, G5]
 size: S
 notes: "From INT-03."
+merged_at: "2026-11-23"
 ```
 
 ## SOL-13 · Path screen data from tier 2: reference points, tornado categories, warm Path runs

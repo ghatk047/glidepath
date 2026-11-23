@@ -1,28 +1,30 @@
 /**
  * SOL-01 acceptance 2: lever_intensity = scalar, scenario-varying, kind=decision lev.L* inputs; bounds
  * [registry min, min(registry max, max(C, D))]; estimates never move. Oracle: the DEC/lo/hi of
- * docs/spec/reference/solvers_demo.py, dumped by test/fixtures/dump_dec.py.
+ * docs/spec/reference/solvers_demo.py, generated into `@glidepath/spec` `REFERENCE_DECISION_BOUNDS` (SOL-12; its
+ * check against the reference is tier2-logic/spec/src/decision-bounds.test.ts).
+ *
+ * SOL-12: `withDecisionBounds` turns those bounds into the model the production solvers run on.
  */
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { VariableDef } from '@glidepath/spec';
+import { REFERENCE_DECISION_BOUNDS, type VariableDef } from '@glidepath/spec';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { presetValues, repo, seedModel } from '../test/helpers';
-import { DECISION_SET_IDS, DECISION_SETS, clampToBounds, decisionSet, decisionSets, isHeld } from './decision-sets';
+import {
+  DECISION_SET_IDS,
+  DECISION_SETS,
+  clampToBounds,
+  decisionSet,
+  decisionSets,
+  isHeld,
+  withDecisionBounds,
+} from './decision-sets';
 import { SolverError } from './errors';
 import type { SolverModel } from './model';
 import { runSolver } from './run';
 
-interface DecFixture {
-  sources: Record<string, string>;
-  dec: string[];
-  lo: Record<string, number>;
-  hi: Record<string, number>;
-  step: Record<string, number>;
-  neg: string[];
-}
-const fixture = JSON.parse(readFileSync(resolve(repo, 'tier2-logic/solvers/test/fixtures/dec.json'), 'utf8')) as DecFixture;
+const fixture = REFERENCE_DECISION_BOUNDS;
 
 let model: SolverModel;
 let registry: Map<string, VariableDef>;
@@ -36,12 +38,6 @@ beforeAll(async () => {
 });
 
 describe('SOL-01 decision sets: lever_intensity equals solvers_demo.py DEC; estimates never move', () => {
-  it('the fixture was dumped from the current spec, seed and demo', () => {
-    for (const [rel, sha] of Object.entries(fixture.sources)) {
-      expect(createHash('sha256').update(readFileSync(resolve(repo, rel))).digest('hex'), rel).toBe(sha);
-    }
-  });
-
   it('seed tenant lever_intensity set equals solvers_demo.py DEC, in registry order', () => {
     const set = decisionSet(model, 'lever_intensity');
     expect(set.map((d) => d.id)).toEqual(fixture.dec);
@@ -169,5 +165,35 @@ describe('SOL-01 decision sets: timing, switch, funding and bounds options', () 
     const bundle = { variables: model.bundle.variables.map((x) => (x === v ? { ...x, min: null, max: null } : x)) };
     const [d] = decisionSet({ ...model, bundle }, 'funding');
     expect([d!.lo, d!.hi]).toEqual([d!.value, d!.value]);
+  });
+});
+
+describe('SOL-12 withDecisionBounds: the reference decision set and bounds on a production model', () => {
+  it('lever_intensity bounds equal solvers_demo.py lo/hi for every DEC cell, with or without stretch presets', () => {
+    for (const stretch of [model.stretch, [], undefined]) {
+      const bounded = withDecisionBounds({ ...model, stretch }, REFERENCE_DECISION_BOUNDS);
+      const set = decisionSet(bounded, 'lever_intensity');
+      expect(set.map((d) => d.cell)).toEqual(fixture.dec);
+      for (const d of set) expect([d.lo, d.hi], d.cell).toEqual([fixture.lo[d.cell], fixture.hi[d.cell]]);
+    }
+    // Some reference bounds lie above the registry max: the SOL-01 default alone would cap them lower.
+    const defaults = new Map(decisionSet(model, 'lever_intensity').map((d) => [d.cell, d.hi]));
+    expect(fixture.dec.filter((id) => fixture.hi[id] !== defaults.get(id)).length).toBeGreaterThan(0);
+  });
+
+  it('a cap already on the model wins; cells the bounds do not name keep the default; null changes nothing', () => {
+    const [first, second] = decisionSet(model, 'lever_intensity');
+    const user = withDecisionBounds({ ...model, caps: new Map([[first!.cell, first!.lo]]) }, REFERENCE_DECISION_BOUNDS);
+    expect(decisionSet(user, 'lever_intensity')[0]!.hi).toBe(first!.lo);
+
+    const partial = withDecisionBounds(model, { hi: { [first!.cell]: first!.hi * 2 } });
+    const [a, b] = decisionSet(partial, 'lever_intensity');
+    expect(a!.hi).toBe(first!.hi * 2);
+    expect(b!.hi).toBe(second!.hi);
+    // Only lever_intensity cells are capped: a timing cell named by the bounds is ignored.
+    const timing = decisionSet(model, 'lever_timing')[0]!;
+    expect(withDecisionBounds(model, { hi: { [timing.cell]: 99 } }).caps?.has(timing.cell)).toBe(false);
+
+    expect(withDecisionBounds(model, null)).toBe(model);
   });
 });

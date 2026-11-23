@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url';
 import type { QuickSolverSpec } from '@glidepath/api-contract';
 import { listScenarios, loadResolvedInputs } from '@glidepath/data-access';
 import type { TenantTx } from '@glidepath/data-access';
+import { withDecisionBounds } from '@glidepath/solvers';
 import type { SolverModel } from '@glidepath/solvers';
+import { decisionBoundsFor } from '@glidepath/spec';
 import { ApiError } from '../../app/problem';
 import { inputCells } from '../../session/loader';
 import type { ScenarioState } from '../../session/loader';
@@ -70,8 +72,10 @@ async function resolvedInputs(tx: TenantTx, scenarioId: string): Promise<Readonl
 }
 
 /**
- * The `SolverModel` of `spec` on the scenario `state`. Only what the problem reads is loaded: stretch presets
- * for breakeven (the `lever_intensity` bounds), both scenarios of a blend, the shocks for stress runs.
+ * The `SolverModel` of `spec` on the scenario `state`. Every problem gets the decision bounds of the model version
+ * (SOL-12: `decisionBoundsFor`, generated from docs/spec/reference/solvers_demo.py), as the worker's jobs do. Only
+ * what the problem reads is loaded besides: stretch presets for breakeven (the `lever_intensity` bounds), both
+ * scenarios of a blend, the shocks for stress runs.
  * Rows are read in the request's tenant transaction, so RLS applies and a blend can only name the tenant's own scenarios.
  */
 export async function solverModelFor(
@@ -80,12 +84,15 @@ export async function solverModelFor(
   spec: QuickSolverSpec,
   sources: ModelSources,
 ): Promise<SolverModel> {
-  const base: SolverModel = {
-    compiled: state.model.model,
-    base: state.committed,
-    bundle: state.model.bundle,
-    members: state.model.members,
-  };
+  const base: SolverModel = withDecisionBounds(
+    {
+      compiled: state.model.model,
+      base: state.committed,
+      bundle: state.model.bundle,
+      members: state.model.members,
+    },
+    decisionBoundsFor(state.model.bundle.specVersion),
+  );
   switch (spec.problem) {
     case 'breakeven': {
       const presets = (await listScenarios(tx)).filter((s) => s.kind === 'preset' && STRETCH_PRESET_KEYS.includes(s.key));
