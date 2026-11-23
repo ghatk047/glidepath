@@ -13,3 +13,24 @@ Tests use `TEST_DATABASE_URL` or a throwaway `tools/pg-local` cluster (ADR-016);
 ## DATA-07: ObjectStore port (ADR-025)
 
 `ObjectStore` (`src/objects`): `put / get / stream / list / delete` plus `purgeExpired`, bound to one tenant, buckets `exports`, `export-snapshots`, `imports`, `ai` as a key prefix. `PostgresObjectStore(db, tenantId, userId)` stores in `stored_object` (manual migration `tier3-data/migrations/manual/0003_stored_object.sql`, FORCE RLS) via `withTenant`; `MemoryObjectStore` is the in-memory twin. Both run the shared suite in `objects/contract.ts`. Objects over 50 MB are rejected, sha256 is stored and verified on read, `exports` expire after 30 days, expired objects are invisible. Only bytes/streams leave the port, never a URL.
+
+## DATA-05: tenant-scoped transactions and read repositories
+
+- `withTenant(db, tenantId, userId, fn)` runs `fn` in one transaction whose first statement is `select set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)` (= `SET LOCAL`, values bound; gone at COMMIT/ROLLBACK). The contract's `withTenant(tenantId, userId, fn)` is this bound to the app's `Db` (server `bindWithTenant`). Empty ids are refused. `withUser(db, userId, fn)` is the pre-tenant twin: `app.user_id` set, `app.tenant_id` cleared, so RLS shows only the user's own memberships and tenants (`own_memberships`, `own_tenants`).
+- Read repositories (`src/repos`) take the transaction handed to `fn` and throw `TenantScopeError` before any SQL for anything else: the plain `Db`, a bare `db.transaction`, or a transaction kept after its `withTenant` returned. Savepoints opened from it (`tx.transaction(...)`) keep the scope.
+
+| Repository | Reads | Returns |
+|---|---|---|
+| `loadModelDefs(tx)` | model_version, dimension_def, variable_def, node_def, lever_template of the pinned model version | `ModelDefs` (lists by key) |
+| `loadMembers(tx)` | v_dimension_members, dims of the pinned model | `{ rows, members: TenantMembers, membersHash }` |
+| `listScenarios(tx)`, `getScenario(tx, id)` | scenario | `ScenarioRecord` (domain `ScenarioRow` + archived) |
+| `loadResolvedInputs(tx, scenarioId \| null)` | v_inputs_resolved | `{ scenario_id, values, overrides }` (domain `ResolvedInputs` shape + provenance) |
+| `listChangesetHistory(tx, scenarioId \| null, { limit, cursor })`, `getChangeset(tx, id)` | changeset, change, app_user | domain `Changeset` + `created_by_name`, newest first, keyset cursor |
+| `getLatestCalcRun(tx, scenarioId)` | calc_run | domain `CalcRunRow` |
+| `getTenant`, `listTenantMembers`, `getCurrentUser` | tenant, tenant_membership, app_user | tenant scope (`getCurrentUser`: either) |
+| `listMyMemberships(tx)`, `findMyMembership(tx, slug)` | tenant_membership, tenant | `withUser` scope: the user's tenants and roles |
+
+- Member order is the spec's (engine SUM order, parity): `sort`, then `member_key` in code-point order. `members` holds active members only, as `{ id, label, ...attrs }`; `rows` holds every member with `active`.
+- Ids that are not uuids answer "not found" without querying (a failed cast would abort the caller's transaction). A malformed history cursor throws `InvalidCursorError`.
+- Every query is parameterised: drizzle `sql` tag or query builder only. This package's `eslint.config.js` rejects, in runtime `src` (not tests, `src/testing` or the migration runner), `.execute()` of anything but a `sql` template, `sql.raw()` of anything but a string literal, and node-postgres `.query()`. `src/sql-safety.test.ts` checks the rule; `src/repos/repos.pg.test.ts` checks on the wire that ids, slugs and cursors travel only as bind parameters.
+- Tests run as `glidepath_app` (`src/testing/app-db.ts`) on a two-tenant seed (`src/testing/minimal-seed.ts`, the scenario chain of `tier2-logic/domain/fixtures/scenario-chain-3.json`), including a repository-level cross-tenant leak check (G7).

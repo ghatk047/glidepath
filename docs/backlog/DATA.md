@@ -192,7 +192,7 @@ title: "Tenant-scoped transactions and read repositories"
 epic: DATA
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -212,6 +212,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Every read goes through RLS with the tenant set per transaction.

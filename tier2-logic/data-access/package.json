@@ -13,6 +13,8 @@
     "check:drizzle": "tsx scripts/gen-drizzle.ts check"
   },
   "dependencies": {
+    "@glidepath/domain": "workspace:*",
+    "@glidepath/spec": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "pg": "^8.23.1"
   },

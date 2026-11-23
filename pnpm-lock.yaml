@@ -157,6 +157,12 @@ importers:
 
   tier2-logic/data-access:
     dependencies:
+      '@glidepath/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@glidepath/spec':
+        specifier: workspace:*
+        version: link:../spec
       drizzle-orm:
         specifier: ^0.45.4
         version: 0.45.4(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(pg@8.23.1)
