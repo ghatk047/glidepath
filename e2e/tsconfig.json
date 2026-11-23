@@ -10,6 +10,7 @@
     "perf",
     "playwright.perf.config.ts",
     "playwright.config.ts",
+    "playwright.m2.config.ts",
     "vitest.config.ts"
   ]
 }

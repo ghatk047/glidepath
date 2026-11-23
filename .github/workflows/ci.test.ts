@@ -128,6 +128,16 @@ describe('ci.yml [FND-04]', () => {
     expect(new RegExp(line.match(/'([^']+)'/)![1]!).test('tools/int/m1.spec.ts')).toBe(true);
   });
 
+  it('the G9 job also runs the M2 integration spec on the stack it brought up [INT-03]', () => {
+    const steps = stepsOf('e2e');
+    const smoke = steps.findIndex((s) => /pnpm e2e -- --trace off/.test(s.run ?? ''));
+    const m2 = steps.findIndex((s) => /pnpm int:m2 -- --trace off/.test(s.run ?? ''));
+    expect(smoke, 'G9 smoke step').toBeGreaterThanOrEqual(0);
+    expect(m2, 'int:m2 step').toBeGreaterThan(smoke);
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    expect(pkg.scripts['int:m2']).toMatch(/@glidepath\/e2e/);
+  });
+
   it('references secrets only via ${{ secrets.* }} and carries no inline credentials', () => {
     const bare = raw.replace(/\$\{\{\s*secrets\.[A-Za-z0-9_]+\s*\}\}/g, '');
     expect(bare).not.toMatch(/secrets/i);

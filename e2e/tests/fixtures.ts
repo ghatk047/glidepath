@@ -14,8 +14,8 @@ export const golden = readRepoJson<GoldenFile>('docs', 'spec', 'reference', 'gol
 export const HEADLINE = ['res.net', 'res.gap', 'res.risk', 'br.eps27'] as const;
 export type Headline = (typeof HEADLINE)[number];
 
-/** Golden value of `cell` in preset `letter`. */
-export function goldenOf(letter: string, cell: Headline): number {
+/** Golden value of `cell` (a spec id, verbatim) in preset `letter`. */
+export function goldenOf(letter: string, cell: string): number {
   const scenario = golden.scenarios[letter] as Record<string, unknown> | undefined;
   const v = scenario?.[cell];
   if (typeof v !== 'number') throw new Error(`golden_results.json has no ${letter}.${cell}`);

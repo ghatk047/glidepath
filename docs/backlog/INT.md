@@ -86,7 +86,7 @@ title: "M2 integration: walking skeleton on Cockpit"
 epic: INT
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: D
 model: opus
 effort: high
@@ -106,6 +106,7 @@ acceptance:
 gates: [G9, G13, G14]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Closes M2 (Fri 27 Nov).

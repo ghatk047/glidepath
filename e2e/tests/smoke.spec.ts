@@ -1,7 +1,13 @@
 import { config, readRepoJson } from '@glidepath/int';
-import { fmt } from '@glidepath/ui/format';
 import type { Page } from '@playwright/test';
 import { BUDGET_MS } from '../playwright.config';
+import {
+  edits,
+  expectCockpitValue,
+  expectedOnCockpit,
+  cockpitCell as cockpit,
+  scenarioButton,
+} from './cockpit';
 import { expect, goldenOf, HEADLINE, test, type Headline } from './fixtures';
 
 /**
@@ -28,42 +34,9 @@ interface RegistryVariable {
 const registry = readRepoJson<{ variables: RegistryVariable[] }>('docs', 'spec', 'variables.json');
 const targetDef = registry.variables.find((v) => v.id === TARGET);
 
-/** What the screen shows for each headline cell, from a golden number. */
-const shown: Record<Headline, (v: number) => string> = {
-  'res.net': (v) => fmt.money(v),
-  'res.gap': (v) => `${fmt.money(Math.abs(v))} ${v >= 0 ? 'clear' : 'short'}`,
-  'res.risk': (v) => fmt.money(v),
-  'br.eps27': (v) => fmt.eps(v),
-};
-
-/** Cockpit renders `res.net` without its unit (the unit is drawn beside it). */
-const cockpit = (page: Page, cell: Headline) => {
-  switch (cell) {
-    case 'res.net':
-      return page.locator('[data-testid="cockpit-net"] .gp-cockpit-hero-value');
-    case 'res.gap':
-      return page.locator('[data-node="res.gap"] .gp-chip');
-    case 'res.risk':
-      return page.locator('[data-node="res.risk"] dd');
-    case 'br.eps27':
-      // the flight strip's cell (the strip is hidden on Cockpit, its text is still the bound value)
-      return page.locator('[data-hud] [data-cell="eps27"]');
-  }
-};
-const expectedOnCockpit = (cell: Headline, v: number) =>
-  cell === 'res.net' ? shown[cell](v).replace(/M$/, '') : shown[cell](v);
-
-const edits = (page: Page) => page.getByRole('button', { name: /edits?: open changeset/ });
-const scenarioButton = (page: Page, id: string) => page.locator(`button[data-scenario="${id}"]`);
-
-/** The gap chip carries an icon glyph and the EPS cell its label: those match by containment. */
-const CONTAINED: ReadonlySet<Headline> = new Set(['res.gap', 'br.eps27']);
-
-async function expectHeadline(page: Page, cell: Headline, preset: string): Promise<void> {
-  const want = expectedOnCockpit(cell, goldenOf(preset, cell));
-  const got = expect(cockpit(page, cell), `${cell} of ${preset}`);
-  await (CONTAINED.has(cell) ? got.toContainText(want) : got.toHaveText(want));
-}
+/** The Cockpit's cell for `cell` shows the golden value of preset `preset`. */
+const expectHeadline = (page: Page, cell: Headline, preset: string) =>
+  expectCockpitValue(page, cell, goldenOf(preset, cell), `${cell} of ${preset}`);
 
 test.describe.configure({ mode: 'serial' });
 

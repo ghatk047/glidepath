@@ -1,12 +1,13 @@
 # @glidepath/e2e
 
-G9 E2E smoke (QA-04): Playwright (Chromium) against the running compose stack, reached through `web`
-(Caddy) like a browser. Not part of `turbo run test` (it needs a stack); `test` runs only the unit
-tests of the helpers.
+Playwright (Chromium) against the running compose stack, reached through `web` (Caddy) like a
+browser: the G9 smoke (QA-04) and the M2 integration spec (INT-03). Not part of `turbo run test`
+(they need a stack); `test` runs only the unit tests of the helpers (`src/`).
 
 ```
 docker compose up -d                  # or: ops/compose-check.sh --keep [--project glidepath-check]
-pnpm e2e -- --trace off               # INT_COMPOSE_PROJECT=<project> when it is not `glidepath`
+pnpm e2e -- --trace off               # G9 smoke; INT_COMPOSE_PROJECT=<project> when not `glidepath`
+pnpm int:m2 -- --trace off            # M2 integration spec (its own config and budget)
 ```
 
 Settings are the INT settings (`tools/int/src/stack.ts`): `INT_BASE_URL` / `PUBLIC_BASE_URL`,
@@ -55,3 +56,29 @@ browser set-up as the smoke; the tests are independent, so one metric over budge
 
 When the host's 1-minute load exceeds its CPU count the table says so: the numbers are then not a device
 measurement. Budgets are never relaxed; re-measure on a quiet machine (`--device` on the demo Mac).
+
+`tests/cockpit.ts` holds what both specs read on the Cockpit: the element each headline cell is
+drawn in and the text the UI's own `fmt` makes of a number.
+
+## `tests/m2.spec.ts` (INT-03, M2 exit of 09 §1)
+
+Its own run (`playwright.m2.config.ts`, which the G9 config leaves out of `pnpm e2e`), so the G9
+budget stays the smoke's. Serial, one signed-in page:
+
+1. `cockpit_c_shows_the_spec_headline_numbers`: the Cockpit of preset C shows net 119.3,
+   gap −23.7, risk-adjusted 82.0 and EPS +0.091 — the numbers **read from the spec**
+   (`docs/spec/README.md` § "Headline numbers", via `src/spec-headline.ts`), rendered through
+   `fmt`; the golden cells of C read the same.
+2. `edits_persist_across_reload`: one registry step on the net target in its popover commits, tier
+   2 forks `Custom (from C)`, and after `page.reload()` the fork, its edits count, its changeset
+   row and every number are back; locked preset C is still at 0 edits and still golden.
+3. `global_layer_works_…`: rail (8 modules, tenant monogram, routing), flight strip (its five
+   cells off Cockpit, golden C), scenario bar (switch to A → the spec's A numbers), edit popover
+   (the registry's min / max / step), trace drawer (`res.net`, tier 2's words and upstream chain),
+   ⌘K (button and shortcut, a spec id ranked by `GET /search`).
+4. `cockpit_c_screenshots_in_both_themes`: writes `docs/status/assets/cockpit-c-{cruise,daylight}-1440.jpg`
+   for the status note, asserting the spec numbers in each theme.
+5. `m2_suite_finishes_within_its_budget`.
+
+The spec prints `[m2] timings (ms)`, what it read on screen and the screenshots it wrote. Each run
+adds one `Custom (from C)` fork, like `int:m1`; preset C is never written.

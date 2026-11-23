@@ -412,6 +412,11 @@ jobs:
       - name: Run G9 E2E smoke
         if: steps.probe.outputs.ready == 'true'
         run: pnpm e2e -- --trace off
+      - name: Run the M2 integration spec on the same stack (e2e/tests/m2.spec.ts, INT-03)
+        if: steps.probe.outputs.ready == 'true'
+        # M2 exit (09 §1): the Cockpit of preset C shows the numbers the spec quotes, an edit
+        # survives a reload, and the global layer works. Writes the status note's screenshots.
+        run: pnpm int:m2 -- --trace off
       - name: Compose logs on failure
         if: failure() && steps.probe.outputs.ready == 'true'
         run: docker compose logs --no-color --tail 200

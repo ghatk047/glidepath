@@ -5332,7 +5332,7 @@
     "epic": "INT",
     "milestone": "M2",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "opus",
     "effort": "high",
@@ -5364,7 +5364,8 @@
       "G14"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "INT-04",

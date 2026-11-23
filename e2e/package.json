@@ -7,10 +7,11 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src tests perf playwright.config.ts playwright.perf.config.ts",
+    "lint": "eslint src tests perf playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts",
     "test": "vitest run",
     "smoke": "node run.mjs",
-    "perf": "node perf.mjs"
+    "perf": "node perf.mjs",
+    "m2": "node run.mjs --config playwright.m2.config.ts"
   },
   "dependencies": {
     "@glidepath/api-contract": "workspace:*",
