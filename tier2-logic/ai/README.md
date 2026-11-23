@@ -88,6 +88,33 @@ repairable registry layers (`corporate`), units, the invariants of 06 §4 and th
 - `checkInvariants(draft, bundle)`: `lev.rr_check` = 0, `vp.check` = 0, and `pl.rev` equal across year columns of the
   same input year (FY27 base vs FY27 + IT), on the defaults and every scenario.
 
+## Pipeline steps 6–8 (AI-05)
+
+Data in `src/pipeline/pipeline.json` (`REVIEW_CONFIG`): the registry layers lever tuning may change (`levers`) and the
+checklist step its flags belong to, the impact nodes (`base.total`, `res.net`, `res.gap`, `br.eps27`), the draft titles.
+
+- `tuneLevers(client, { promptBar, plan, facts, seed, bundle })` → `StepResult<LeverTuningDraft>` (step 6, effort `high`,
+  structured output, no tools). The prompt lists every lever input the seed sets with its value as the library default.
+  `checkLeverTuning` drops (flag `tuning_dropped`) changes to non-lever variables, unknown member keys or scenarios, and
+  values outside the registry bounds; unknown fact ids are removed (`unknown_fact`), a change on no fact gets `L`.
+- Changesets: `seedChangeset(seed, bundle)` gives, in apply order, the tenant defaults drafted by the AI (members, lines
+  and values, origin `ai_reconfig`, values noted with their source), the tenant defaults step 3 copied from the global
+  presets (the lever library, origin `seed`), then one per preset scenario (origin `seed`). `leverTuningChangeset(tuning)`
+  is the separate tuning changeset: one part per scope, origin `ai_reconfig`, each change noted with its reason.
+- `reviewPayload(input)` → `ReconfigReview` (step 7, pure, JSON): plan, sources (every page a call saw plus fact URLs),
+  facts, open questions (plan, research gaps, calibration, tuning; never blocking), review flags, validation, the
+  calibration report, the tenant plan (record, presets, line-lever links) and both drafts with change counts per
+  checklist step, their validation entries and an impact preview per state (seed against nothing, tuning against the seed).
+- `applyDraft(port, review, { accept, actor, bundle, ... })` (step 8): the only write. Checks the accept first (nothing
+  accepted, a draft the job lacks, tuning a new tenant without its seed, a seed that fails validation:
+  `ReconfigApplyError`, the port is not called). Then, in one `port.inTenant` transaction: create the tenant (seed), the
+  presets unlocked, every seed changeset through `applyChangeset`, the line-lever links, the tuning changesets only when
+  accepted, then lock the presets. On an existing tenant a tuned locked preset forks, as any edit does. A rejected
+  changeset rolls the whole apply back.
+- Why two origins: `BOUNDS_POLICY.ai_reconfig` rejects values past a registry bound and only `seed` writes a locked
+  preset in place; the global presets hold values past a bound (as step 4 reports them, warnings), so the parts copied
+  unchanged from them are written as the seed loader writes them for every tenant. Everything the AI drafted is `ai_reconfig`.
+
 ## Configuration
 
 `loadAiConfig(env)`: `ANTHROPIC_API_KEY` (required, secret: never logged or persisted), optional

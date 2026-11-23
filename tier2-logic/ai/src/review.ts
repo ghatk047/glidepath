@@ -12,6 +12,8 @@ import { ChecklistStepId } from './onboarding/checklist';
  * - `calibration_miss`: a figure of the last reported year does not tie within tolerance, or has no reported value.
  * - `invariant_broken`: an invariant of 06 §4 fails on the draft (pool effects, VP nets, base vs IT revenue).
  * - `repair_dropped`: a calibration repair change was not applied (a variable or member key it may not change).
+ * - `tuning_dropped`: a lever tuning change was left out of the tuning changeset (not a lever input, an unknown member
+ *   key or scenario, a value outside the registry bounds).
  */
 export const ReviewFlagKind = z.enum([
   'unsourced',
@@ -23,6 +25,7 @@ export const ReviewFlagKind = z.enum([
   'calibration_miss',
   'invariant_broken',
   'repair_dropped',
+  'tuning_dropped',
 ]);
 export type ReviewFlagKind = z.infer<typeof ReviewFlagKind>;
 

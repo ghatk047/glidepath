@@ -151,7 +151,7 @@ title: "Steps 6–8: lever tuning, review payload, apply"
 epic: AI
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -169,6 +169,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Draft in, reviewable changesets out.

@@ -159,3 +159,47 @@ export {
   type CalibrateOptions,
   type CalibrationResult,
 } from './steps/calibrate';
+
+// AI-05: pipeline steps 6-8 (lever tuning, review payload, apply through applyChangeset).
+export { parseReviewConfig, REVIEW_CONFIG, type ReviewConfig } from './pipeline/catalog';
+export {
+  ChangesetPart,
+  DraftChange,
+  DraftOrigin,
+  DraftReview,
+  DraftStructuralChange,
+  DraftValueChange,
+  ImpactPreview,
+  ImpactRow,
+  QuestionOrigin,
+  ReconfigChangeset,
+  ReconfigReview,
+  ReviewQuestion,
+  ReviewSource,
+  ReviewUsage,
+  TenantPlan,
+} from './schemas/review';
+export { checkLeverTuning, leverTuningStep, tunableLevers, tuneLevers, type TuneLeversInput } from './steps/lever-tuning';
+export {
+  dimensionMemberRow,
+  leverTuningChangeset,
+  lineItemRow,
+  previewImpact,
+  reviewPayload,
+  seedChangeset,
+  tenantDimensions,
+  tenantPlan,
+  withChanges,
+  type ReviewPayloadInput,
+  type ReviewPayloadOptions,
+} from './steps/review';
+export {
+  applyDraft,
+  ReconfigApplyError,
+  type AppliedChangeset,
+  type ApplyDraftRequest,
+  type ApplyDraftResult,
+  type ApplyTarget,
+  type ReconfigApplyPort,
+  type ReconfigTenant,
+} from './steps/apply';
