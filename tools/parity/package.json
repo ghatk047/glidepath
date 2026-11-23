@@ -8,6 +8,11 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "golden": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@glidepath/engine": "workspace:*",
+    "@glidepath/spec": "workspace:*"
   }
 }

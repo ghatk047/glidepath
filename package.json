@@ -15,7 +15,7 @@
     "pg:local": "tsx tools/pg-local/src/cli.ts",
     "scaffold-check": "tsx tools/scaffold-check/src/cli.ts",
     "gen:types": "tsx tools/gen-types/src/cli.ts",
-    "parity:golden": "echo 'not implemented yet'",
+    "parity:golden": "tsx tools/parity/src/cli.ts",
     "parity:fuzz": "echo 'not implemented yet'",
     "test:excel": "echo 'not implemented yet'",
     "test:leak": "echo 'not implemented yet'",

@@ -282,7 +282,14 @@ importers:
 
   tools/gen-types: {}
 
-  tools/parity: {}
+  tools/parity:
+    dependencies:
+      '@glidepath/engine':
+        specifier: workspace:*
+        version: link:../../tier2-logic/engine
+      '@glidepath/spec':
+        specifier: workspace:*
+        version: link:../../tier2-logic/spec
 
   tools/pg-local:
     dependencies:
