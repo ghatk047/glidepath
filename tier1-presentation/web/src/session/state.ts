@@ -7,7 +7,7 @@ import type {
 } from '@glidepath/api-contract';
 
 /**
- * Session view state (WEB-03): the cell map and view map, exactly as tier 2 pushed them.
+ * Session view state (WEB-03, CON-05): the cell map and view map, exactly as tier 2 pushed them.
  *
  * This module is the one place received values are written. It copies, compares and keys;
  * it never computes (lint: `eslint-rule.ts`, `noArithmeticLintConfig`). `stale` marks a value
@@ -21,6 +21,9 @@ export type ViewMessage = Of<'view'>;
 export type WarningsMessage = Of<'warnings'>;
 export type JobMessage = Of<'job'>;
 export type ChangesetMessage = Of<'changeset'>;
+export type ErrorMessage = Of<'error'>;
+/** RFC 9457 problem tier 2 sent with `error` (a rejected frame, an unknown scenario on `open`). */
+export type SessionProblem = ErrorMessage['problem'];
 
 export type CellValue = number | null;
 
@@ -46,9 +49,19 @@ export type SessionStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
 
 export interface SessionState {
   readonly status: SessionStatus;
-  /** Scenario and version of the last `snapshot` (or `changeset` on that scenario). */
+  /**
+   * Scenario the session is on: from the last `snapshot`, or the fork a `changeset{forkedFrom}`
+   * of this scenario moved it to. `version` comes from that snapshot or the last `changeset`.
+   */
   readonly scenarioId: string | null;
   readonly version: number | null;
+  /** `editsCount` of the last `changeset` on this scenario; `null` until one arrives. */
+  readonly editsCount: number | null;
+  /**
+   * Scenario an `open` was sent for whose `snapshot` has not arrived yet. Meanwhile
+   * `delta` / `view` / `warnings` / `changeset` belong to the old scenario and are ignored.
+   */
+  readonly opening: string | null;
   /** Keyed by `CellKey` (`res.net[]`). Absent: not received yet; never filled in locally. */
   readonly cells: ReadonlyMap<string, CellEntry>;
   /** Keyed by `viewKey(view, params)`. */
@@ -58,17 +71,22 @@ export interface SessionState {
   readonly jobs: ReadonlyMap<string, JobMessage>;
   /** Last changeset applied to the session's scenario (version, edits count, fork). */
   readonly changeset: ChangesetMessage | null;
+  /** Problem of the last `error` tier 2 sent, for the error chip (`problem.detail`). */
+  readonly lastError: SessionProblem | null;
 }
 
 export const initialSessionState = (): SessionState => ({
   status: 'connecting',
   scenarioId: null,
   version: null,
+  editsCount: null,
+  opening: null,
   cells: new Map(),
   views: new Map(),
   warnings: null,
   jobs: new Map(),
   changeset: null,
+  lastError: null,
 });
 
 /** Stable key of a view subscription: name plus params with sorted keys. */
@@ -91,7 +109,10 @@ export const selectView =
 export interface ApplyContext {
   /** Highest preview `seq` applied so far (0 before any). */
   readonly lastSeq: number;
-  /** `seq` of the last `cancelPreview`: answers to older previews are void (0 before any). */
+  /**
+   * Answers with a lower `seq` are void (0 before any): the last `cancelPreview`'s seq (its own
+   * answer applies), or after `open` the next seq the client will send (earlier previews are void).
+   */
   readonly floorSeq: number;
   hasCell(key: string): boolean;
   hasView(key: string): boolean;
@@ -116,9 +137,17 @@ function cow<K, V>(source: ReadonlyMap<K, V>) {
 
 /**
  * The message dispatcher: applies one frame's batch of server messages in arrival order.
- * A `delta` / `view` / `warnings` with a `seq` below the last applied (or below the last
- * cancel) is ignored; `seq: null` (commit or job) always applies. Values of cells or views
- * nobody subscribes to are dropped.
+ *
+ * - A `delta` / `view` / `warnings` whose `seq` is below the last applied (or below the floor)
+ *   is ignored. An equal `seq` applies: after a commit the rebase answers with the scratch's
+ *   `seq` again (CON-05). `seq: null` (commit, `open` or job) always applies.
+ * - While an `open` is pending (`opening`), only the `snapshot` of that scenario, `job` and
+ *   `error` apply. That snapshot ends the switch and clears the old scratch's warnings; a new
+ *   scenario starts with no changeset. An `error` ends it too: tier 2 refused the `open` and
+ *   the session stays where it was.
+ * - `changeset` precedes its `delta{seq: null}` and sets `version` and `editsCount`; one whose
+ *   `forkedFrom` is the session's scenario moves the session onto the fork.
+ * Values of cells or views nobody subscribes to are dropped.
  */
 export function applyMessages(
   state: SessionState,
@@ -128,10 +157,11 @@ export function applyMessages(
   const cells = cow(state.cells);
   const views = cow(state.views);
   const jobs = cow(state.jobs);
-  let { scenarioId, version, warnings, changeset } = state;
+  let { scenarioId, version, editsCount, opening, warnings, changeset, lastError } = state;
   let lastSeq = ctx.lastSeq;
 
   const current = (seq: number | null) => {
+    if (opening !== null) return false;
     if (seq === null) return true;
     if (seq < lastSeq || seq < ctx.floorSeq) return false;
     lastSeq = seq;
@@ -146,6 +176,15 @@ export function applyMessages(
   for (const m of messages) {
     switch (m.type) {
       case 'snapshot':
+        if (opening !== null) {
+          if (m.scenarioId !== opening) break; // the old scenario's, or an earlier open's
+          opening = null;
+          warnings = null;
+        }
+        if (m.scenarioId !== scenarioId) {
+          editsCount = null;
+          changeset = null;
+        }
         scenarioId = m.scenarioId;
         version = m.version;
         putCells(m.cells);
@@ -172,8 +211,17 @@ export function applyMessages(
         jobs.set(m.id, m);
         break;
       case 'changeset':
-        changeset = m;
-        if (m.scenarioId === scenarioId) version = m.version;
+        if (opening !== null) break;
+        if (m.forkedFrom !== undefined && m.forkedFrom === scenarioId) scenarioId = m.scenarioId;
+        if (m.scenarioId === scenarioId) {
+          changeset = m;
+          version = m.version;
+          editsCount = m.editsCount;
+        }
+        break;
+      case 'error':
+        lastError = m.problem;
+        opening = null;
         break;
     }
   }
@@ -183,8 +231,11 @@ export function applyMessages(
       ...state,
       scenarioId,
       version,
+      editsCount,
+      opening,
       warnings,
       changeset,
+      lastError,
       cells: cells.result(),
       views: views.result(),
       jobs: jobs.result(),

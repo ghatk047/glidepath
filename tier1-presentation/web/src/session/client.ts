@@ -21,17 +21,22 @@ import {
 } from './state';
 
 /**
- * WebSocket session client (WEB-03): `WS /ws/session?tenant&scenario` (CON-02, 07 §3 and §5).
+ * WebSocket session client (WEB-03, CON-05): `WS /ws/session?tenant&scenario` (07 §3 and §5).
  *
  * - Subscriptions are reference-counted per cell and per view+params; changes made in one
  *   tick go out as one `subscribe` / `unsubscribe` (and one `subscribeView` / `unsubscribeView`
  *   per view) after the tick, so a remount does not churn the socket.
- * - Previews: at most one per `PREVIEW_MIN_INTERVAL_MS` per input cell, latest value wins;
- *   `seq` is one strictly increasing counter shared by `preview` and `cancelPreview`.
+ * - Previews: at most one `preview{seq, changes}` per `PREVIEW_MIN_INTERVAL_MS` per connection,
+ *   across all cells. Changes made meanwhile wait in one pending slot, merged per cell (latest
+ *   value wins) and sent together. `seq` is one strictly increasing counter shared by
+ *   `preview` and `cancelPreview`.
+ * - `open(scenarioId)` switches the scenario on the same connection; subscriptions are kept
+ *   and tier 2 answers a `snapshot` and the subscribed views again.
+ * - After a commit's POST settles (resolved or failed), `settleCommit` sends `cancelPreview`.
  * - Server frames are parsed with `parseServerMessage`, queued, and applied in one store
- *   update per animation frame by `applyMessages` (stale `seq` ignored).
+ *   update per animation frame by `applyMessages` (stale `seq` ignored, `error` surfaced).
  * - On a drop, values stay as received but flagged stale, status is `reconnecting`, and the
- *   client reconnects with exponential backoff, then resubscribes everything held.
+ *   client reconnects with exponential backoff (on the scenario it is on), then resubscribes.
  * The client never computes a value: everything in the store came from a server message.
  */
 
@@ -61,6 +66,7 @@ const FALLBACK_FRAME_MS = 16;
 
 export interface SessionClientOptions {
   tenant: string;
+  /** Scenario of the first connection; later switches go through `open`. */
   scenario: string;
   /** Origin of the session socket, e.g. `ws://localhost:8080`; default: this page's origin as ws(s). */
   origin?: string;
@@ -78,32 +84,51 @@ export interface SessionClientOptions {
 }
 
 export interface SessionClient {
-  /** Cell map, view map, status: the view state tier 1 renders. */
+  /** Cell map, view map, status, `lastError`: the view state tier 1 renders. */
   readonly store: StoreApi<SessionState>;
   /** Hold cells (`CellKey`s like `res.net[]`); returns the release (idempotent). */
   subscribe(cells: readonly string[]): () => void;
   /** Hold a view with its params; returns the release (idempotent). */
   subscribeView<V extends ViewName>(view: V, params: ViewParams<V>): () => void;
-  /** Try `value` for input cell `variable[member]` (drag). Throttled per cell, latest wins. */
+  /** Try `value` for input cell `variable[member]` (drag). Throttled per connection, latest wins. */
   preview(variable: string, member: string, value: number): void;
   /**
+   * Try values for cells that move together (e.g. two `org.dom_share` cells): they always go
+   * out in the same `preview` frame. Same throttle as `preview`.
+   */
+  previewChanges(changes: readonly PreviewCell[]): void;
+  /**
    * Void the scratch copy: drops pending previews and sends `cancelPreview` with a fresh seq.
-   * Returns that seq, or `null` when nothing was previewed since the last cancel.
+   * No precondition (after a commit it is sent whether or not anything was previewed).
+   * Returns that seq, or `null` when there is no open connection to send it on.
    */
   cancelPreview(): number | null;
+  /**
+   * Commit path: pass the `POST /changesets` promise (after a 409, the promise of the re-send);
+   * once it settles, resolved or rejected, `cancelPreview` is sent. Returns the same outcome.
+   */
+  settleCommit<T>(post: Promise<T>): Promise<T>;
+  /**
+   * Switch the session to another scenario (scenario bar): sends `open`, drops pending
+   * previews and voids answers to earlier ones; subscriptions are kept. Until tier 2's
+   * `snapshot` arrives `store.opening` holds the scenario; an `error` lands in `lastError`.
+   */
+  open(scenarioId: string): void;
   /** Cancels the preview on Escape keydown on `target` (default `window`); returns the detach. */
   cancelOnEscape(target?: EventTarget): () => void;
   /** Ends the session: closes the socket, stops reconnecting. */
   close(): void;
 }
 
+/** One input cell a preview sets: `var[member]` = `value` (a `preview.changes` entry). */
+export interface PreviewCell {
+  readonly var: string;
+  readonly member: string;
+  readonly value: number;
+}
+
 type ClientFrame = Record<string, unknown> & { type: string };
 type ViewSub = { view: ViewName; params: object; count: number };
-interface PreviewSlot {
-  lastSentAt: number;
-  pending: { variable: string; member: string; value: number } | null;
-  timer: ReturnType<typeof setTimeout> | null;
-}
 
 const defaultOrigin = () => {
   const loc = (globalThis as { location?: { protocol: string; host: string } }).location;
@@ -124,18 +149,8 @@ export function sessionUrl(origin: string, tenant: string, scenario: string): st
   return url.toString();
 }
 
-/** One place that builds the preview frame (CON-05 will batch `changes[]`). */
-const previewFrame = (variable: string, member: string, value: number, seq: number) => ({
-  v: WS_PROTOCOL_VERSION,
-  type: 'preview',
-  var: variable,
-  member,
-  value,
-  seq,
-});
-
 export function createSessionClient(options: SessionClientOptions): SessionClient {
-  const url = sessionUrl(options.origin ?? defaultOrigin(), options.tenant, options.scenario);
+  const origin = options.origin ?? defaultOrigin();
   const connect = options.connect ?? ((u: string) => new WebSocket(u) as unknown as SessionSocket);
   const requestFrame = options.requestFrame ?? defaultFrame;
   const now = options.now ?? Date.now;
@@ -160,8 +175,12 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
   let seq = 0;
   let lastSeq = 0;
   let floorSeq = 0;
+  /** Something was previewed (sent or pending) since the last cancel, open or drop. */
   let previewing = false;
-  const slots = new Map<string, PreviewSlot>();
+  // The one pending preview slot of this connection: merged per cell, latest value wins.
+  const pending = new Map<string, PreviewCell>();
+  let previewTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastPreviewAt = Number.NEGATIVE_INFINITY;
 
   let queue: ServerMessage[] = [];
   let frameRequested = false;
@@ -173,13 +192,15 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
     if (store.getState().status !== status) store.setState({ status });
   };
 
-  const send = (frame: ClientFrame): boolean => {
-    if (!socket || !isOpen()) return false;
+  /** Checks a frame against the contract; reports and returns false when it fails. */
+  const valid = (frame: ClientFrame): boolean => {
     const parsed = parseClientMessage(frame);
-    if (!parsed.ok) {
-      options.onProtocolError?.(`not sent: ${parsed.detail}`);
-      return false;
-    }
+    if (!parsed.ok) options.onProtocolError?.(`not sent: ${parsed.detail}`);
+    return parsed.ok;
+  };
+
+  const send = (frame: ClientFrame): boolean => {
+    if (!socket || !isOpen() || !valid(frame)) return false;
     socket.send(JSON.stringify(frame));
     return true;
   };
@@ -259,54 +280,56 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
 
   const nextSeq = () => (seq += 1);
 
-  const sendPreview = (slot: PreviewSlot, variable: string, member: string, value: number) => {
-    if (send(previewFrame(variable, member, value, seq + 1))) {
+  /** Sends the pending slot as one `preview{seq, changes}` frame. */
+  function flushPreview() {
+    previewTimer = null;
+    if (!pending.size) return;
+    const changes = [...pending.values()];
+    pending.clear();
+    const frame = { v: WS_PROTOCOL_VERSION, type: 'preview', seq: seq + 1, changes };
+    if (send(frame)) {
       nextSeq();
-      slot.lastSentAt = now();
-      previewing = true;
+      lastPreviewAt = now();
     }
-  };
+  }
+
+  function previewChanges(changes: readonly PreviewCell[]) {
+    if (closed || !isOpen() || !changes.length) return; // a preview cannot wait for a connection
+    for (const c of changes) {
+      const change = { var: c.var, member: c.member, value: c.value };
+      pending.set(toCellKey(c.var, c.member), change);
+    }
+    previewing = true;
+    if (previewTimer !== null) return;
+    const wait = lastPreviewAt + PREVIEW_MIN_INTERVAL_MS - now();
+    if (wait <= 0) flushPreview();
+    else previewTimer = setTimeout(flushPreview, Math.ceil(wait));
+  }
 
   function preview(variable: string, member: string, value: number) {
-    if (closed || !isOpen()) return; // a preview cannot wait for a connection
-    const key = toCellKey(variable, member);
-    let slot = slots.get(key);
-    if (!slot) {
-      slot = { lastSentAt: Number.NEGATIVE_INFINITY, pending: null, timer: null };
-      slots.set(key, slot);
-    }
-    const s = slot;
-    if (s.timer === null && now() - s.lastSentAt >= PREVIEW_MIN_INTERVAL_MS) {
-      sendPreview(s, variable, member, value);
-      return;
-    }
-    s.pending = { variable, member, value };
-    previewing = true;
-    if (s.timer !== null) return;
-    const wait = Math.max(0, Math.ceil(s.lastSentAt + PREVIEW_MIN_INTERVAL_MS - now()));
-    s.timer = setTimeout(() => {
-      s.timer = null;
-      const p = s.pending;
-      s.pending = null;
-      if (p) sendPreview(s, p.variable, p.member, p.value);
-    }, wait);
+    previewChanges([{ var: variable, member, value }]);
   }
 
   const dropPendingPreviews = () => {
-    for (const slot of slots.values()) {
-      if (slot.timer !== null) clearTimeout(slot.timer);
-      slot.timer = null;
-      slot.pending = null;
-    }
+    if (previewTimer !== null) clearTimeout(previewTimer);
+    previewTimer = null;
+    pending.clear();
   };
 
   function cancelPreview(): number | null {
     dropPendingPreviews();
-    if (!previewing) return null;
     previewing = false;
     if (!send({ v: WS_PROTOCOL_VERSION, type: 'cancelPreview', seq: seq + 1 })) return null;
     floorSeq = nextSeq();
     return floorSeq;
+  }
+
+  async function settleCommit<T>(post: Promise<T>): Promise<T> {
+    try {
+      return await post;
+    } finally {
+      cancelPreview();
+    }
   }
 
   function cancelOnEscape(target: EventTarget = globalThis as unknown as EventTarget) {
@@ -315,6 +338,20 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
     };
     target.addEventListener('keydown', onKey);
     return () => target.removeEventListener('keydown', onKey);
+  }
+
+  // ---- scenario switch -----------------------------------------------------------------
+
+  const openFrame = (scenarioId: string) => ({ v: WS_PROTOCOL_VERSION, type: 'open', scenarioId });
+
+  function open(scenarioId: string) {
+    if (closed || !valid(openFrame(scenarioId))) return;
+    // Tier 2 drops the scratch: pending previews go, answers to earlier ones are void.
+    dropPendingPreviews();
+    previewing = false;
+    floorSeq = seq + 1;
+    store.setState({ opening: scenarioId });
+    send(openFrame(scenarioId)); // while down, sent as soon as the next connection opens
   }
 
   // ---- inbound: one batch per animation frame ------------------------------------------
@@ -345,17 +382,22 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
 
   // ---- connection ----------------------------------------------------------------------
 
-  function open() {
+  function connectSocket() {
     reconnectTimer = null;
     if (closed) return;
-    const s = connect(url);
+    // Reconnect on the scenario the session is on (after `open` or a fork), not the first one.
+    const scenario = store.getState().scenarioId ?? options.scenario;
+    const s = connect(sessionUrl(origin, options.tenant, scenario));
     socket = s;
     sentCells = new Set();
     sentViews = new Map();
+    lastPreviewAt = Number.NEGATIVE_INFINITY; // the preview rate is per connection
     s.onopen = (() => {
       if (s !== socket) return;
       attempt = 0;
       setStatus('open');
+      const opening = store.getState().opening;
+      if (opening !== null) send(openFrame(opening)); // a switch asked for while down
       sync();
     }) as SessionSocket['onopen'];
     s.onmessage = ((e: { data: unknown }) => {
@@ -376,7 +418,7 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
     store.setState((st) => markStale(st, 'reconnecting'), true);
     const base = Math.min(maxMs, initialMs * 2 ** attempt);
     attempt += 1;
-    reconnectTimer = setTimeout(open, Math.round(base * (1 + jitter * random())));
+    reconnectTimer = setTimeout(connectSocket, Math.round(base * (1 + jitter * random())));
   }
 
   function close() {
@@ -391,7 +433,18 @@ export function createSessionClient(options: SessionClientOptions): SessionClien
     store.setState((st) => markStale(st, 'closed'), true);
   }
 
-  open();
+  connectSocket();
 
-  return { store, subscribe, subscribeView, preview, cancelPreview, cancelOnEscape, close };
+  return {
+    store,
+    subscribe,
+    subscribeView,
+    preview,
+    previewChanges,
+    cancelPreview,
+    settleCommit,
+    open,
+    cancelOnEscape,
+    close,
+  };
 }
