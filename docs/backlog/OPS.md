@@ -22,7 +22,7 @@ title: "docker-compose.yml, networks and .env.example"
 epic: OPS
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high

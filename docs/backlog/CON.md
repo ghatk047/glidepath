@@ -19,7 +19,7 @@ title: "REST core schemas and problem JSON"
 epic: CON
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high

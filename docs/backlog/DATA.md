@@ -26,7 +26,7 @@ title: "tools/gen-schema: DDL migrations from schema.json"
 epic: DATA
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high

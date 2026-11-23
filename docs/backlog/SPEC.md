@@ -18,7 +18,7 @@ title: "Generate zod types and id unions from spec JSON"
 epic: SPEC
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: haiku
 effort: low
