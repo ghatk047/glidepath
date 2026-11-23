@@ -329,7 +329,7 @@ title: "Dial, Toggle, Stepper, Segmented, Radio card, Prompt bar (#11, #12, #14,
 epic: UI
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: medium
@@ -348,6 +348,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The remaining input controls.

@@ -3588,7 +3588,7 @@
     "epic": "UI",
     "milestone": "M2",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "C",
     "model": "sonnet",
     "effort": "medium",
@@ -3614,7 +3614,8 @@
       "G12"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "UI-11",
