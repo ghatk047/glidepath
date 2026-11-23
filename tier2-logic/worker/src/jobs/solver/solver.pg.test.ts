@@ -230,6 +230,8 @@ describe('SOL-12 production solvers use the reference decision bounds (pg-local,
   it('min_risk_mix from C through the real handler gives net 143.0 and risk exposure 42.0 at the G5 tolerances', async () => {
     const reference = JSON.parse(readFileSync(resolve(specDir, 'reference/solver_demo_results.json'), 'utf8')) as {
       min_risk_total_bar: MinRiskReference;
+      min_risk_total_and_vp_bars: MinRiskReference;
+      min_risk_reference: { C_risk_exposure: number; D_risk_exposure: number };
     };
     const want = reference.min_risk_total_bar;
 
@@ -257,5 +259,14 @@ describe('SOL-12 production solvers use the reference decision bounds (pg-local,
     const moved = new Map(result.changes.map((c) => [c.cell, c.value]));
     expect([...moved.keys()].sort()).toEqual(Object.keys(want.inputs_moved_from_C).sort());
     for (const [cell, { to }] of Object.entries(want.inputs_moved_from_C)) expect(moved.get(cell), cell).toBeCloseTo(to, 9);
+
+    // SOL-13: the job's model carries the C and D presets, so the one run reports all the scatter's reference points.
+    expect([...(input.model.references?.keys() ?? [])].sort()).toEqual(['C', 'D']);
+    const allVps = reference.min_risk_total_and_vp_bars;
+    expect(Math.abs(result.metrics['risk_exposure[C]']! - reference.min_risk_reference.C_risk_exposure)).toBeLessThanOrEqual(G5.money);
+    expect(Math.abs(result.metrics['risk_exposure[D]']! - reference.min_risk_reference.D_risk_exposure)).toBeLessThanOrEqual(G5.money);
+    expect(result.metrics['net[D]']!).toBeGreaterThan(result.metrics['net[C]']!);
+    expect(Math.abs(result.metrics['net[allvps]']! - allVps.net)).toBeLessThanOrEqual(G5.money);
+    expect(Math.abs(result.metrics['risk_exposure[allvps]']! - allVps.risk_exposure)).toBeLessThanOrEqual(G5.money);
   }, 120_000);
 });

@@ -59,10 +59,10 @@ export const BAR_CELL = toCellKey('res.bar');
 
 /**
  * Savings vs risk (MOD-07): the four labelled points. "Path" is the run's own
- * (`res.net[]`, `risk_exposure`); the comparison points read the reference pair tier 2 reports
- * alongside, `net[<key>]` and `risk_exposure[<key>]` (MOD-06 already carries the risk references).
- * A point renders only when both of its metrics are present, so demo runs that lack the all-VP or
- * a scenario reference simply drop that dot. The frontier curve comes from a `pareto` run's points.
+ * (`res.net[]`, `risk_exposure`); the comparison points read the reference pair tier 2 reports on the same
+ * `min_risk_mix` run (SOL-13), `net[<key>]` and `risk_exposure[<key>]` for C, D and `allvps`, so one run draws
+ * all four. A point renders only when both of its metrics are present (a tenant without the C and D presets
+ * has none). The frontier curve comes from a `pareto` run's points.
  */
 export const RISK_REF = (key: string): string => `${RISK_EXPOSURE}[${key}]`;
 export const NET_REF = (key: string): string => `net[${key}]`;
@@ -78,13 +78,9 @@ export const ODDS = { net: NET_CELL, bar: BAR_CELL } as const;
 
 /**
  * What moves net most (MOD-07): policy and timing inputs are amber, levers blue (04 inventory #22;
- * 01_moodboard). Tier 2 classifies each input; the sensitivity result the contract carries does not
- * yet keep that word, so tier 1 maps it from the registry group and layer the variable carries —
- * the governance group's target layer is policy, the rest of that group timing, everything else a
- * lever — mirroring tier 2's `defaultTornadoCategory`. (Follow-up: carry `category` on the wire.)
+ * 01_moodboard). Tier 2 classifies each input (`category` on every sensitivity row, SOL-13); tier 1
+ * only maps the word to a colour. How many bars the panel shows is display.
  */
-export const GOVERNANCE_GROUP = 'Target & governance';
-export const TARGET_LAYER = 'target';
 export const TORNADO_TOP = 10;
 
 /** Preset keys of the quick blend (`scenario_blend`), as the render's "Blend C → D". */

@@ -16,10 +16,10 @@ here.
   P10/P50/P90 and the bar line. "Run N trials" (N is tier 2's look-up trial count) starts one when a
   scenario has none (`POST /solver-runs`, `save: false`).
 - **What moves net most** (`TornadoPanel`): the quick `sensitivity` tornado on `res.net[]`. Tier 2
-  returns the inputs sorted by swing; the top ten render as bars, the swing is `|ranked.impact|`
-  ($M), and policy / timing inputs are amber by category (mapped from the registry group and layer,
-  mirroring tier 2's `defaultTornadoCategory` until the wire carries it). "Run sensitivity" starts
-  one when missing (`POST /solver-runs/quick`, `save: false`).
+  returns `detail.rows` sorted by swing, each with its `category` (lever, policy, timing) and `swing`
+  ($M); the top ten render as bars as sent, policy / timing amber by that category (SOL-13: tier 1
+  classifies and takes the magnitude of nothing). The demo warmer pre-runs this tornado and the
+  odds for D, so they show without a click. "Run sensitivity" starts one when missing (`POST /solver-runs/quick`, `save: false`).
 - **Look-ups** (`useAnalysis`): each analysis panel reads what tier 2 holds with
   `GET /solver-runs/lookup` (no enqueue, run, save or row written) and shows it; an explicit "Run"
   sends `save: false`. Only "Save as scenario" on the Result panel sends `save: true` (MOD-06).

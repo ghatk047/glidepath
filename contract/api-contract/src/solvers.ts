@@ -74,6 +74,14 @@ export type OptimiserMethod = z.infer<typeof OptimiserMethod>;
 export const SensitivityMethod = z.enum(['tornado', 'elasticity', 'sobol', 'spider']);
 export type SensitivityMethod = z.infer<typeof SensitivityMethod>;
 
+/**
+ * Colour class of a tornado / elasticity row, classified by tier 2 from the registry: `policy` (the target
+ * and its funding rules), `timing` (start, ramp, phasing), `lever` (everything else). Tier 1 only maps the
+ * word to a colour; it never classifies an input itself.
+ */
+export const TornadoCategory = z.enum(['lever', 'policy', 'timing']);
+export type TornadoCategory = z.infer<typeof TornadoCategory>;
+
 const Bounds = z
   .tuple([z.number(), z.number()])
   .refine(([lo, hi]) => lo <= hi, { message: 'bounds must be [lo, hi] with lo ≤ hi' });
@@ -345,6 +353,13 @@ export const SolverDetail = z.discriminatedUnion('problem', [
     rows: z.array(
       z.object({
         cell: CellKey,
+        /** tornado / elasticity: tier 2's colour class for the input (SOL-13). Absent on a Sobol row. */
+        category: TornadoCategory.optional(),
+        /**
+         * tornado / elasticity: the bar length, |high.output − low.output| (or the one side's distance from
+         * the base output), non-negative and already the sort key of `rows` (SOL-13). Tier 1 draws it as is.
+         */
+        swing: z.number().nonnegative().optional(),
         /** tornado / spider: output at the low and high input. */
         low: z.object({ input: z.number(), output: z.number() }).nullable(),
         high: z.object({ input: z.number(), output: z.number() }).nullable(),
@@ -369,6 +384,11 @@ export type SolverDetail = z.infer<typeof SolverDetail>;
  * one-time, P(clear) …). A metric that is a model cell is keyed by its wire cell key
  * (`res.net[]`, `vp.gap[vp_x]`, as `CellKey`), whichever solver produced it and wherever the
  * run was stored; the others keep the solver's own name (`risk_exposure`, `lambda`).
+ *
+ * `min_risk_mix` also reports the reference points of the Path screen's savings-vs-risk scatter, one
+ * (net, risk) pair for each key `C`, `D` and `allvps` (the all-VP plan): `net[<key>]` and
+ * `risk_exposure[<key>]` (SOL-13). They sit beside the run's own `res.net[]` and `risk_exposure`,
+ * so one run draws all four dots; a tenant without the C and D presets has none.
  */
 export const SolverResult = z
   .object({

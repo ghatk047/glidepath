@@ -32,4 +32,16 @@ export interface SolverModel {
    * (`v_inputs_resolved`). Tenant data the caller supplies; the solvers never read tier 3.
    */
   readonly scenarios?: ReadonlyMap<string, ReadonlyMap<CellKey, number>>;
+  /**
+   * The reference scenarios of the Path screen's savings-vs-risk scatter, by preset key (`C`, `D`): their
+   * resolved inputs (and pins). Tenant data the caller supplies. When present, a `min_risk_mix` result also
+   * reports `net[<key>]` and `risk_exposure[<key>]` for each, and for `allvps` (the all-VP plan).
+   */
+  readonly references?: ReadonlyMap<string, ReferenceScenario>;
+}
+
+/** Resolved inputs of one reference scenario (`v_inputs_resolved`: values, and pinned overrides). */
+export interface ReferenceScenario {
+  readonly values: ReadonlyMap<CellKey, number>;
+  readonly overrides?: ReadonlyMap<CellKey, number>;
 }

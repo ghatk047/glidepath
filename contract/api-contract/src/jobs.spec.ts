@@ -29,6 +29,7 @@ import {
   ReconfigRequest,
   TenantParity,
   SensitivityMethod,
+  TornadoCategory,
   SolverConstraintId,
   SolverLookup,
   SolverLookupQuery,
@@ -242,6 +243,28 @@ describe('jobs.spec: solver-runs (POST, POST quick, GET, DELETE) for every solve
     const methods = Object.keys(mix.methods!).map(specKey);
     for (const m of OptimiserMethod.options) expect(methods).toContain(m);
     expect([...SensitivityMethod.options]).toEqual(Object.keys(problem('sensitivity').methods!));
+  });
+
+  it('SOL-13: sensitivity rows carry tier 2\'s category and swing; min_risk_mix metrics carry the C, D and allvps reference points', () => {
+    expect([...TornadoCategory.options]).toEqual(['lever', 'policy', 'timing']);
+    const sens = solverProblemFixtures.sensitivity.result;
+    const row = sens.detail!.rows[0]!;
+    expect([row.category, row.swing]).toEqual(['lever', 12.5]);
+    expectParses(SolverResult, sens, 'sensitivity result with category and swing');
+    // still readable without them (a Sobol row, or a run stored before SOL-13) …
+    const { category: _c, swing: _s, ...bare } = row;
+    void _c;
+    void _s;
+    expectParses(SolverResult, { ...sens, detail: { ...sens.detail, rows: [bare] } }, 'row without category');
+    // … but never with a class the UI has no colour for, or a negative bar
+    expect(ok(SolverResult, { ...sens, detail: { ...sens.detail, rows: [{ ...row, category: 'risk' }] } })).toBe(false);
+    expect(ok(SolverResult, { ...sens, detail: { ...sens.detail, rows: [{ ...row, swing: -1 }] } })).toBe(false);
+
+    const metrics: Readonly<Record<string, number>> = solverProblemFixtures.min_risk_mix.result.metrics;
+    for (const key of ['C', 'D', 'allvps']) {
+      expect(typeof metrics[`net[${key}]`], key).toBe('number');
+      expect(typeof metrics[`risk_exposure[${key}]`], key).toBe('number');
+    }
   });
 
   it('quick runs only logic problems (03 §3): Sobol and optimisers are worker jobs', () => {

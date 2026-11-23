@@ -97,7 +97,18 @@ export const solverProblemFixtures = {
         { cell: 'lev.L06.gain[]', from: 0.2, to: 0.3, impact: 4.4 },
       ],
       binding: [{ constraint: 'total', shadowPrice: 0.42 }],
-      metrics: { 'res.net[]': 143, 'res.risk[]': 42 },
+      metrics: {
+        'res.net[]': 143,
+        'res.risk[]': 42,
+        risk_exposure: 42,
+        // The Path scatter's reference points (SOL-13): net and risk of C, D and the all-VP plan.
+        'net[C]': 119.3,
+        'risk_exposure[C]': 37.3,
+        'net[D]': 166.9,
+        'risk_exposure[D]': 54.8,
+        'net[allvps]': 148.1,
+        'risk_exposure[allvps]': 43.6,
+      },
       diagnostics: { ...diagnostics, seed: 7 },
       detail: { problem: 'min_risk_mix' },
     },
@@ -194,6 +205,8 @@ export const solverProblemFixtures = {
         rows: [
           {
             cell: 'lev.L05.nb[]',
+            category: 'lever',
+            swing: 12.5,
             low: { input: 0, output: 110.1 },
             high: { input: 1, output: 122.6 },
             elasticity: null,

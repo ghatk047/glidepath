@@ -2,12 +2,18 @@
  * `sensitivity` problem (SOL-07): tornado and elasticity on the first of `params.outputs`, one batch.
  * Sobol is a worker job (SOL-10); spider has no backlog item yet. Moves nothing.
  */
+import type { CellKey } from '@glidepath/engine';
 import { SolverError } from '../errors';
 import type { ProblemSolver } from '../run';
 import { tornado } from '../tornado';
 
+/** A cell as the wire names it (`res.net[]`) is the engine's `res.net`: a stored spec may carry either. */
+const engineCell = (cell: CellKey): CellKey => cell.replace(/\[\]$/, '');
+
 export const sensitivity: ProblemSolver<'sensitivity'> = async (run, params) => {
-  const { method, outputs } = params;
+  const { method } = params;
+  const outputs = params.outputs.map(engineCell);
+  const inputs = params.inputs?.map(engineCell);
   if (method === 'sobol') throw new SolverError('NOT_IMPLEMENTED', 'sensitivity sobol lands with SOL-10');
   if (method === 'spider') throw new SolverError('NOT_IMPLEMENTED', 'sensitivity spider has no backlog item yet');
   const output = outputs[0];
@@ -17,7 +23,7 @@ export const sensitivity: ProblemSolver<'sensitivity'> = async (run, params) => 
   await run.batch();
   const elasticity = method === 'elasticity';
   const t = tornado(run.model, output, {
-    ...(params.inputs === undefined ? {} : { inputs: params.inputs }),
+    ...(inputs === undefined ? {} : { inputs }),
     ...(params.range === undefined ? {} : { range: params.range }),
     elasticity,
   });

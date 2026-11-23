@@ -1,35 +1,25 @@
-import type { ScenarioId, TenantSlug, VariableDef } from '@glidepath/api-contract';
-import { Tornado, type TornadoCategory, type TornadoItem } from '@glidepath/ui/charts/distribution';
+import type { ScenarioId, SolverDetail, TenantSlug, VariableDef } from '@glidepath/api-contract';
+import { Tornado, type TornadoItem } from '@glidepath/ui/charts/distribution';
 import { GlassPanel } from '@glidepath/ui/glass';
 import { EmptyState, JobHeader } from '../../jobs';
-import { COPY, GOVERNANCE_GROUP, TARGET_LAYER, TORNADO_TOP } from './copy';
+import { COPY, TORNADO_TOP } from './copy';
 import { tornadoLookupParams, tornadoSpec } from './params';
 import { useAnalysis } from './useAnalysis';
 
-/** The variable id of a move's cell (`g.ot_out_share[]` → `g.ot_out_share`): text, not a lookup. */
+type Sensitivity = Extract<SolverDetail, { problem: 'sensitivity' }>;
+
+/** The variable id of a row's cell (`g.ot_out_share[]` → `g.ot_out_share`): text, not a lookup. */
 const idOf = (cell: string) => {
   const i = cell.indexOf('[');
   return i < 0 ? cell : cell.slice(0, i);
 };
 
-/** Bar length is a magnitude; tier 2's `ranked.impact` is the signed net delta. Display only. */
-const magnitude = (n: number) => (n < 0 ? -n : n);
-
-/**
- * The colour word for an input, mapped from the registry fields tier 2 authors (01_moodboard,
- * 04 #22): the governance group's target layer is policy, the rest of that group timing, everything
- * else a lever. Policy and timing draw amber, levers blue. No rule or number of tier 1's own.
- */
-function categoryOf(def: VariableDef | undefined): TornadoCategory {
-  if (def?.group !== GOVERNANCE_GROUP) return 'lever';
-  return def.layer === TARGET_LAYER ? 'policy' : 'timing';
-}
-
 /**
  * What moves net most (4 cols): the scenario's quick `sensitivity` (tornado on `res.net[]`) run.
- * Tier 2 returns the inputs already sorted by swing; tier 1 shows the top ten as bars, policy and
- * timing amber by category, and prints each swing in $M. A side-effect-free look-up shows an
- * existing run; "Run sensitivity" starts one when the scenario has none. Nothing is computed here.
+ * Tier 2's `detail.rows` come sorted by swing, each with its `category` (lever, policy, timing) and its
+ * `swing`; tier 1 shows the top ten as bars as sent, policy and timing amber by that category, and prints
+ * each swing in $M. It classifies nothing and takes no magnitude. A side-effect-free look-up shows an
+ * existing run; "Run sensitivity" starts one when the scenario has none.
  */
 export function TornadoPanel({
   tenant,
@@ -48,16 +38,21 @@ export function TornadoPanel({
   const result = tile.result;
   const defs = variables;
 
-  const items: TornadoItem[] = (result?.ranked ?? []).slice(0, TORNADO_TOP).map((m) => {
-    const id = idOf(m.cell);
-    const def = defs?.find((v) => v.id === id);
-    return {
+  const detail: Sensitivity | null =
+    result?.detail?.problem === 'sensitivity' ? result.detail : null;
+  // A row without tier 2's category and swing (a Sobol row) is not a tornado bar.
+  const items: TornadoItem[] = [];
+  for (const row of detail?.rows ?? []) {
+    if (items.length === TORNADO_TOP) break;
+    if (row.category === undefined || row.swing === undefined) continue;
+    const id = idOf(row.cell);
+    items.push({
       variableId: id,
-      label: def?.label ?? id,
-      swing: magnitude(m.impact),
-      category: categoryOf(def),
-    };
-  });
+      label: defs?.find((v) => v.id === id)?.label ?? id,
+      swing: row.swing,
+      category: row.category,
+    });
+  }
 
   const status = tile.jobId ? (
     <JobHeader id={tile.jobId} />

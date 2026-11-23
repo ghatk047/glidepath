@@ -207,6 +207,14 @@ describe('SOL-07 runSolver(sensitivity)', () => {
     expect(res.diagnostics.iterations).toBe(1);
   });
 
+  it('takes cells as the wire names them (res.net[]): the same rows as the engine cell, so a stored spec runs as is', async () => {
+    const wire = await runSolver(model, { problem: 'sensitivity', params: { method: 'tornado', outputs: ['res.net[]'], inputs: ['g.ot_out_share[]', 'hc.ctr'] } });
+    const plain = await runSolver(model, { problem: 'sensitivity', params: { method: 'tornado', outputs: ['res.net'], inputs: ['g.ot_out_share', 'hc.ctr'] } });
+    expect(wire.detail).toEqual(plain.detail);
+    expect(wire.metrics).toEqual(plain.metrics);
+    expect(wire.detail!.rows.every((r) => r.category !== undefined && typeof r.swing === 'number')).toBe(true);
+  });
+
   it('method elasticity: rows sorted by |elasticity|; relative range and inputs pass through', async () => {
     const res = await runSolver(model, {
       problem: 'sensitivity',

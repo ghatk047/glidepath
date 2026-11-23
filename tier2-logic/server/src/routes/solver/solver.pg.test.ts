@@ -117,6 +117,10 @@ describe('POST solver-runs/quick runs the short solvers on the session model', (
     expect(detail.rows[0]!.low).not.toBeNull();
     expect(run.result!.ranked.length).toBeGreaterThan(10);
     expect(run.result!.ranked[0]!.cell).toMatch(/\[[^\]]*\]$/);
+    // SOL-13: tier 2's category and swing, sorted by swing, on every row; the policy input leads
+    expect(detail.rows.every((r) => ['lever', 'policy', 'timing'].includes(r.category!) && typeof r.swing === 'number' && r.swing >= 0)).toBe(true);
+    expect(detail.rows.map((r) => r.swing)).toEqual([...detail.rows.map((r) => r.swing!)].sort((a, b) => b - a));
+    expect(new Set(detail.rows.map((r) => r.category))).toEqual(new Set(['policy', 'timing', 'lever']));
   });
 
   it('stress_presets: the named shocks of solvers.json, outputs and deltas from the start point', async () => {

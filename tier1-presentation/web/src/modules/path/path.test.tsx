@@ -191,6 +191,31 @@ const tornadoRanked = reference.tornado_net_top15.map((r) => ({
   to: r.max,
   impact: r.net_at_max - r.net_at_min,
 }));
+/** Tier 2's colour class for the inputs the fixture names (SOL-13: it rides on every sensitivity row); the rest are levers. */
+const TIER2_CATEGORY: Readonly<Record<string, 'policy' | 'timing'>> = {
+  'g.ot_out_share': 'policy',
+  'g.ot_in_year': 'timing',
+  'g.head_start': 'timing',
+};
+const tornadoRows = (category: (id: string) => 'lever' | 'policy' | 'timing' = (id) => TIER2_CATEGORY[id] ?? 'lever') =>
+  reference.tornado_net_top15.map((r) => ({
+    cell: toCellKey(r.id, ''),
+    category: category(r.id),
+    swing: r.swing,
+    low: { input: r.min, output: r.net_at_min },
+    high: { input: r.max, output: r.net_at_max },
+    elasticity: null,
+    first: null,
+    total: null,
+  }));
+const sensitivityRunWith = (rows: ReturnType<typeof tornadoRows>, ranked: typeof tornadoRanked = tornadoRanked) => ({
+  ...sensitivityRun,
+  result: {
+    ...sensitivityRun.result,
+    ranked,
+    detail: { ...sensitivityRun.result.detail, rows },
+  },
+});
 const sensitivityRun = {
   ...solverRunFixtures.sensitivity,
   id: 'job-sens',
@@ -206,17 +231,11 @@ const sensitivityRun = {
       problem: 'sensitivity' as const,
       method: 'tornado' as const,
       output: NET,
-      rows: reference.tornado_net_top15.map((r) => ({
-        cell: toCellKey(r.id, ''),
-        low: { input: r.min, output: r.net_at_min },
-        high: { input: r.max, output: r.net_at_max },
-        elasticity: null,
-        first: null,
-        total: null,
-      })),
+      rows: [] as ReturnType<typeof tornadoRows>,
     },
   },
 };
+sensitivityRun.result.detail.rows = tornadoRows();
 
 /** 20 bins over P10..P90 ± half the spread, a tent of counts (tier 2 bins the sample; the UI never does). */
 function mcBins(mc: McRef) {
@@ -869,7 +888,7 @@ describe('AC-MOD07-3: what moves net most (tornado)', () => {
     const top = reference.tornado_net_top15.slice(0, 10);
     // tier 2's order is kept; tier 1 does not re-sort
     expect(trows.map((r) => r.dataset['variableId'])).toEqual(top.map((r) => r.id));
-    // the swing drawn is |impact| in $M, the value tier 2 sent
+    // the swing drawn is the row's swing in $M, the value tier 2 sent
     expect(trows[0]!.querySelector('[data-part="value"]')!.textContent).toBe(plainSwing(top[0]!.swing));
     // policy and timing inputs are amber by category; levers are blue
     const cat = (id: string) =>
@@ -879,6 +898,43 @@ describe('AC-MOD07-3: what moves net most (tornado)', () => {
     expect(cat('g.head_start')).toBe('timing');
     expect(cat('lev.L10.ren')).toBe('lever');
     expect(cat('hc.ctr')).toBe('lever');
+  });
+
+  it('SOL-13: draws tier 2\'s category and swing as sent; it classifies nothing and takes no magnitude', async () => {
+    // Tier 2 says the opposite of what the registry group would: lev.L10.ren is timing, g.ot_out_share a lever.
+    // `ranked` is empty and its impacts would be signed: the bars must come from the rows alone.
+    const flipped = (id: string) => (id === 'lev.L10.ren' ? 'timing' : id === 'g.ot_out_share' ? 'lever' : 'policy');
+    const run = sensitivityRunWith(tornadoRows(flipped), []);
+    const t = await mount(() => donePath, () => donePath, {
+      lookups: { [`${SCENARIO}|sensitivity`]: { run, current: true, trials: null } },
+    });
+    await t.until(() =>
+      expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
+    );
+    const cat = (id: string) =>
+      tornadoPanel().querySelector<HTMLElement>(`[data-variable-id="${id}"]`)!.dataset['category'];
+    expect(cat('lev.L10.ren')).toBe('timing');
+    expect(cat('g.ot_out_share')).toBe('lever');
+    expect(cat('g.head_start')).toBe('policy');
+    const first = [...tornadoPanel().querySelectorAll<HTMLElement>('[data-part="row"]')][0]!;
+    expect(first.querySelector('[data-part="value"]')!.textContent).toBe(plainSwing(reference.tornado_net_top15[0]!.swing));
+  });
+
+  it('SOL-13: a row without tier 2\'s category or swing is not drawn', async () => {
+    const rows = tornadoRows();
+    const { category: _c, ...noCategory } = rows[0]!;
+    const { swing: _s, ...noSwing } = rows[1]!;
+    void _c;
+    void _s;
+    const run = sensitivityRunWith([noCategory, noSwing, ...rows.slice(2)] as typeof rows);
+    const t = await mount(() => donePath, () => donePath, {
+      lookups: { [`${SCENARIO}|sensitivity`]: { run, current: true, trials: null } },
+    });
+    await t.until(() =>
+      expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
+    );
+    const ids = [...tornadoPanel().querySelectorAll<HTMLElement>('[data-part="row"]')].map((r) => r.dataset['variableId']);
+    expect(ids).toEqual(reference.tornado_net_top15.slice(2, 12).map((r) => r.id));
   });
 
   it('runs a quick sensitivity when the scenario has none', async () => {
@@ -917,8 +973,8 @@ describe('AC-MOD07-4: every analysis value from tier 2', () => {
       expect(metricValues.has(g.dataset['x'] ?? ''), g.outerHTML).toBe(true);
       expect(metricValues.has(g.dataset['y'] ?? ''), g.outerHTML).toBe(true);
     }
-    // the tornado swings equal |impact| of the runs tier 2 sent
-    const swings = new Set(tornadoRanked.map((m) => plainSwing(Math.abs(m.impact))));
+    // the tornado swings equal the swing of the rows tier 2 sent
+    const swings = new Set(reference.tornado_net_top15.map((r) => plainSwing(r.swing)));
     for (const v of tornadoPanel().querySelectorAll<HTMLElement>('[data-part="value"]')) {
       expect(swings.has(v.textContent ?? ''), v.textContent ?? '').toBe(true);
     }

@@ -1,14 +1,17 @@
 import { createSolverRun, getLatestCalcRun, listScenarios, listSolverRuns, withTenant } from '@glidepath/data-access';
 import type { Db, SolverRunKind, TenantTx } from '@glidepath/data-access';
+import type { JsonValue } from '@glidepath/domain';
 import { HandlerRegistry, runJob, silentLogger, systemClock } from '../runtime';
 import { registerSolverHandlers } from '../jobs/solver/register';
-import type { SolverJobDeps } from '../jobs/solver/types';
+import { runSolverJob } from '../jobs/solver/run';
+import { QUEUE_SENSITIVITY } from '../jobs/solver/types';
+import type { SolverJobDeps, SolverJobPayload } from '../jobs/solver/types';
 import { cacheKeyOf, sameKey, storedKey, withCacheKey } from './cache-key';
 import type { CacheKey } from './cache-key';
 
 /** One result to pre-run: a solver problem from a preset scenario, with the parameters the cockpit sends. */
 export interface WarmJob {
-  readonly problem: 'monte_carlo' | 'min_risk_mix' | 'vp_feasible';
+  readonly problem: 'monte_carlo' | 'min_risk_mix' | 'vp_feasible' | 'sensitivity';
   /** `solver_run.kind` of the problem. */
   readonly kind: SolverRunKind;
   /** Key of the locked preset the run starts from (tenant data: a tenant without it is skipped). */
@@ -18,15 +21,24 @@ export interface WarmJob {
 }
 
 /**
+ * The Path screen's tornado: quick `sensitivity` as a tornado on net. These are the exact params the screen's
+ * look-up sends (`tier1-presentation/web/src/modules/path/params.ts` `tornadoSpec`, wire cell `res.net[]`), so the
+ * look-up (API-13) hashes to the key the warmer files the run under; `warm.pg.test.ts` proves the hit.
+ */
+export const PATH_TORNADO_PARAMS: Readonly<Record<string, unknown>> = { method: 'tornado', outputs: ['res.net[]'] };
+
+/**
  * The demo storyline's "Before the day" (docs/ux/05_demo_storyline.md): Monte Carlo for C and D so the odds
- * appear at once, and the min-risk and VP-feasible plans from C (09 section 4, min-risk row) so the fastest path
- * is there when asked. Parameters are left to tier 2's defaults; no business number lives here.
+ * appear at once, the min-risk and VP-feasible plans from C (09 section 4, min-risk row) so the fastest path
+ * is there when asked, and the Path screen's tornado for D (SOL-13: with the odds above, Path shows its results
+ * without a Run click). Monte Carlo and the optimisers use tier 2's defaults; no business number lives here.
  */
 export const WARM_JOBS: readonly WarmJob[] = [
   { problem: 'monte_carlo', kind: 'monte_carlo', preset: 'C', params: {} },
   { problem: 'monte_carlo', kind: 'monte_carlo', preset: 'D', params: {} },
   { problem: 'min_risk_mix', kind: 'optimize', preset: 'C', params: {} },
   { problem: 'vp_feasible', kind: 'optimize', preset: 'C', params: {} },
+  { problem: 'sensitivity', kind: 'sensitivity', preset: 'D', params: PATH_TORNADO_PARAMS },
 ];
 
 export type WarmStatus = 'ran' | 'hit' | 'skipped' | 'failed';
@@ -83,6 +95,12 @@ export async function warmTenant(options: WarmOptions): Promise<WarmReport> {
   const log = options.log ?? (() => undefined);
   const registry = new HandlerRegistry();
   registerSolverHandlers(registry, () => deps);
+  // The tornado is a quick run in the API; the worker's own sensitivity queue is Sobol only, so the warmer runs the
+  // tornado through the same job runner (run row, progress, result) under a handler of its own.
+  registry.registerHandler<SolverJobPayload>(QUEUE_SENSITIVITY, async (ctx) => {
+    const out = await runSolverJob(ctx, { problem: 'sensitivity' }, deps);
+    return out.stored as JsonValue;
+  });
   const inTenant = <T>(fn: (tx: TenantTx) => Promise<T>): Promise<T> => withTenant(db, tenantId, userId, fn);
   const shutdown = options.signal ?? new AbortController().signal;
   const entries: WarmEntry[] = [];

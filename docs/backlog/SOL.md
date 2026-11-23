@@ -407,7 +407,7 @@ title: "Path screen data from tier 2: reference points, tornado categories, warm
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -424,4 +424,5 @@ acceptance:
 gates: [G1, G2, G5, G13]
 size: S
 notes: "From MOD-06/MOD-07 reviews. Start after SOL-12 merges (same solver-model code)."
+merged_at: "2026-11-23"
 ```

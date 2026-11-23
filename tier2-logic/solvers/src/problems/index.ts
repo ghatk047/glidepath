@@ -31,7 +31,7 @@ export const PROBLEMS: ProblemTable = {
   goal_seek: goalSeekProblem,
   breakeven: breakevenProblem,
   scenario_blend: async (run, params) => (await import('./blend')).scenarioBlendProblem(run, params),
-  min_risk_mix: async (run, params) => (await import('./min-risk')).minRiskMixProblem(run, params),
+  min_risk_mix: async (run, params) => (await import('./reference-points')).minRiskMixWithReferences(run, params),
   pareto: pending('pareto'),
   vp_feasible: async (run, params) => (await import('./vp-feasible')).vpFeasibleProblem(run, params),
   monte_carlo: monteCarlo,

@@ -7,7 +7,9 @@ import type { PgLocalInstance } from '@glidepath/pg-local';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // The API's side of the cache (JOB-02): the submit path the cockpit's solver route uses. Imported by path so the
 // test checks the warmer against the real thing; the worker does not depend on the server at run time.
-import { cacheKeyOf as serverKeyOf } from '../../../server/src/jobs/cache';
+import { cacheKeyOf as serverKeyOf, findLatestRun } from '../../../server/src/jobs/cache';
+import { latestCalcInputHash } from '../../../server/src/jobs/submit';
+import { SolverSpec as ContractSolverSpec } from '../../../../contract/api-contract/src/solvers';
 import { paramsHash as serverParamsHash } from '../../../server/src/jobs/params-hash';
 import { createSolverSubmitter } from '../../../server/src/jobs/submit';
 import { defaultSolverDeps } from '../jobs/solver/deps';
@@ -79,12 +81,14 @@ describe('JOB-04 demo cache warmer (pg-local, seeded tenant)', () => {
       'monte_carlo:D:ran',
       'min_risk_mix:C:ran',
       'vp_feasible:C:ran',
+      'sensitivity:D:ran',
     ]);
-    expect([first.ran, first.hits, first.failed, first.skipped]).toEqual([4, 0, 0, 0]);
+    expect([first.ran, first.hits, first.failed, first.skipped]).toEqual([5, 0, 0, 0]);
     expect(await doneRuns()).toEqual([
       { problem: 'min_risk_mix', preset: 'C' },
       { problem: 'monte_carlo', preset: 'C' },
       { problem: 'monte_carlo', preset: 'D' },
+      { problem: 'sensitivity', preset: 'D' },
       { problem: 'vp_feasible', preset: 'C' },
     ]);
     // Each finished run carries a result; the demo tenant is left as seeded (no scenario saved).
@@ -98,10 +102,10 @@ describe('JOB-04 demo cache warmer (pg-local, seeded tenant)', () => {
     }
 
     const second = await warmTenant({ db: app.db, tenantId, userId, deps });
-    expect(second.entries.map((e) => e.status)).toEqual(['hit', 'hit', 'hit', 'hit']);
-    expect([second.ran, second.hits]).toEqual([0, 4]);
+    expect(second.entries.map((e) => e.status)).toEqual(['hit', 'hit', 'hit', 'hit', 'hit']);
+    expect([second.ran, second.hits]).toEqual([0, 5]);
     expect(second.entries.map((e) => e.runId)).toEqual(first.entries.map((e) => e.runId));
-    expect((await doneRuns()).length).toBe(4);
+    expect((await doneRuns()).length).toBe(5);
   }, 300_000);
 
   it('migrate runs it when WARM=1 (demo profile)', async () => {
@@ -118,12 +122,12 @@ describe('JOB-04 demo cache warmer (pg-local, seeded tenant)', () => {
     expect(await doneRuns()).toEqual([]);
 
     const warm = await runMigrate(opts({ WARM: '1' }));
-    expect(warm.warm?.ran).toBe(4);
+    expect(warm.warm?.ran).toBe(5);
     expect(warm.warm?.failed).toBe(0);
-    expect((await doneRuns()).length).toBe(4);
+    expect((await doneRuns()).length).toBe(5);
 
     const again = await runMigrate(opts({ WARM: '1' }));
-    expect([again.warm?.ran, again.warm?.hits]).toEqual([0, 4]);
+    expect([again.warm?.ran, again.warm?.hits]).toEqual([0, 5]);
   }, 300_000);
 
   it('Cockpit odds and fastest-path data load from cache in < 200 ms via the API', async () => {
@@ -154,6 +158,33 @@ describe('JOB-04 demo cache warmer (pg-local, seeded tenant)', () => {
       else expect(['optimal', 'feasible', 'infeasible']).toContain(result.status);
     }
   }, 120_000);
+
+  it('SOL-13: the Path screen\'s look-ups (tornado and Monte Carlo for D, as tier 1 sends them) hit after the warm', async () => {
+    await warmTenant({ db: app.db, tenantId, userId, deps });
+    const scenarios = await inTenant((tx) => listScenarios(tx));
+    const d = scenarios.find((s) => s.key === 'D')!;
+    // The query the screen sends (path/params.ts: `tornadoLookupParams`; the Monte Carlo panel sends no params),
+    // parsed as the lookup route parses it, then asked of the same read-only function the route uses.
+    const lookups = [
+      { problem: 'sensitivity', params: '{"method":"tornado","outputs":["res.net[]"]}' },
+      { problem: 'monte_carlo', params: undefined },
+    ];
+    for (const q of lookups) {
+      const spec = ContractSolverSpec.parse({ problem: q.problem, params: q.params === undefined ? {} : JSON.parse(q.params) });
+      const found = await inTenant(async (tx) => findLatestRun(tx, d.id, spec, await latestCalcInputHash(tx, d.id)));
+      expect(found.run, q.problem).not.toBeNull();
+      expect(found.current, q.problem).toBe(true);
+      expect(found.run!.status).toBe('done');
+    }
+    // and the tornado it shows is tier 2's: rows with category and swing, sorted by swing
+    const tornado = await inTenant(async (tx) =>
+      findLatestRun(tx, d.id, { problem: 'sensitivity', params: JSON.parse(lookups[0]!.params!) }, await latestCalcInputHash(tx, d.id)),
+    );
+    const rows = (tornado.run!.result as { detail: { rows: { category: string; swing: number }[] } }).detail.rows;
+    expect(rows.length).toBeGreaterThan(10);
+    expect(rows.every((r) => ['lever', 'policy', 'timing'].includes(r.category) && r.swing >= 0)).toBe(true);
+    expect(rows.map((r) => r.swing)).toEqual(rows.map((r) => r.swing).sort((a, b) => b - a));
+  }, 300_000);
 
   it('files results under the same key the server computes', () => {
     for (const params of [{}, { iterations: 500, seed: 3 }, { b: 1, a: { y: 2, x: [1, undefined] } }, null]) {

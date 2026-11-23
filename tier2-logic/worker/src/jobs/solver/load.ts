@@ -13,7 +13,7 @@ import { engineOverrides, engineValues, modelCacheKey } from '@glidepath/domain'
 import { compile } from '@glidepath/engine';
 import type { CellKey } from '@glidepath/engine';
 import { withDecisionBounds } from '@glidepath/solvers';
-import type { SolverModel, SolverSpec } from '@glidepath/solvers';
+import type { ReferenceScenario, SolverModel, SolverSpec } from '@glidepath/solvers';
 import { decisionBoundsFor } from '@glidepath/spec';
 import type { ModelBundle } from '@glidepath/spec';
 import { SolverJobError } from './types';
@@ -87,7 +87,13 @@ export async function loadSolverInput(tx: TenantTx, runId: string, deps: SolverJ
   const wanted = new Set(deps.stretchPresets);
   const presets = (await listScenarios(tx)).filter((s) => s.kind === 'preset' && !s.archived && wanted.has(s.key));
   const stretch: ReadonlyMap<CellKey, number>[] = [];
-  for (const p of presets) stretch.push((await resolvedMaps(tx, p.id)).values);
+  // The same presets are the Path scatter's reference points (SOL-13): a min_risk_mix result reports their net and risk.
+  const references = new Map<string, ReferenceScenario>();
+  for (const p of presets) {
+    const resolved = await resolvedMaps(tx, p.id);
+    stretch.push(resolved.values);
+    references.set(p.key, resolved);
+  }
 
   const model: SolverModel = withDecisionBounds(
     {
@@ -96,6 +102,7 @@ export async function loadSolverInput(tx: TenantTx, runId: string, deps: SolverJ
       bundle,
       members,
       ...(stretch.length === 0 ? {} : { stretch }),
+      ...(references.size === 0 ? {} : { references }),
     },
     decisionBoundsFor(bundle.specVersion),
   );

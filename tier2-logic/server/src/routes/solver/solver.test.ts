@@ -82,7 +82,7 @@ describe('toContractResult', () => {
     expect(once.changes).toEqual([{ target: 'variable', key: 'lev.start', member: 'L03', value: 2 }]);
     expect(once.ranked[0]!.cell).toBe('res.net[]');
     expect(once.metrics).toEqual({ 'res.net[]': 10 });
-    expect(once.detail).toMatchObject({ problem: 'sensitivity', output: 'res.net[]', rows: [{ cell: 'g.target_net[]' }] });
+    expect(once.detail).toMatchObject({ problem: 'sensitivity', output: 'res.net[]', rows: [{ cell: 'g.target_net[]', category: 'policy', swing: 4 }] });
     expect(toContractResult(once)).toEqual(once);
   });
 
@@ -104,6 +104,25 @@ describe('toContractResult', () => {
       diagnostics,
     });
     expect(Object.keys(out.metrics)).toEqual(['res.net[]', 'res.bar[]', 'res.gap[]', 'res.risk[]', 'br.eps27[]', 'risk_exposure', 'objective', 'violation', 'steps', 'res.net.p10', 'p_clear_bar']);
+    expect(toContractResult(out).metrics).toEqual(out.metrics);
+  });
+
+  it('SOL-13: the reference points of a min_risk_mix run reach the wire under their own names (net[K], risk_exposure[K])', () => {
+    const refs = Object.fromEntries(
+      ['C', 'D', 'allvps'].flatMap((k, i) => [
+        [`net[${k}]`, 100 + i],
+        [`risk_exposure[${k}]`, 40 + i],
+      ]),
+    );
+    const out = toContractResult({
+      problem: 'min_risk_mix',
+      status: 'optimal',
+      changes: [],
+      ranked: [],
+      metrics: { 'res.net': 143, risk_exposure: 42, ...refs },
+      diagnostics,
+    });
+    expect(out.metrics).toEqual({ 'res.net[]': 143, risk_exposure: 42, ...refs });
     expect(toContractResult(out).metrics).toEqual(out.metrics);
   });
 

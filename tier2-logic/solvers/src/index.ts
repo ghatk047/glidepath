@@ -36,7 +36,8 @@ export type {
   StressPresetsParams,
   VpFeasibleParams,
 } from './types';
-export type { SolverModel } from './model';
+export type { ReferenceScenario, SolverModel } from './model';
+export { ALL_VPS_KEY, referenceMetricKeys } from './problems/reference-points';
 export {
   DECISION_SET_IDS,
   DECISION_SETS,
