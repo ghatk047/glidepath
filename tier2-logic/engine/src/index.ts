@@ -35,6 +35,10 @@ export type { EngineErrorCode, SourceLocation } from './errors';
 export { parse, toPyTuple, tokenize } from './parse';
 export type { AggFn, Ast, BinOp, ParseCache, PyTuple, Token } from './parse';
 
+// Expander (ENG-03): `expand(bundle, members): Cell[]`, cells with chosen expression, resolution, deps.
+export { cellKey, expand } from './expand';
+export type { Cell, Resolved } from './expand';
+
 /**
  * Compile a model_version for one tenant's members: parse, expand, toposort, lower (03 §1 pipeline).
  * Stub until ENG-04.
