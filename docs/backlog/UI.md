@@ -166,7 +166,7 @@ title: "Shell components: Rail, Scenario bar, Tenant button (#1, #2, #6)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
@@ -198,7 +198,7 @@ title: "Flight strip, Status chip, Toast (#3, #18, #27)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
