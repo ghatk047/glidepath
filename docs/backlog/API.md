@@ -409,3 +409,33 @@ merged_at: "2026-11-23"
 ```
 
 Derived series reach tier 1 the same way cells do.
+
+## API-13 · Solver result lookup without side effects (Cockpit tiles)
+
+```yaml
+id: API-13
+title: "Solver result lookup without side effects (Cockpit tiles)"
+epic: API
+milestone: M3
+priority: must
+status: in_progress
+stream: B
+model: sonnet
+effort: high
+depends_on: [API-09, JOB-03, MOD-02]
+tier: 2
+package: "contract/api-contract, tier2-logic/server/src/routes/solver, tier1-presentation/web/src/modules/cockpit"
+contract: "cache-only solver lookup; save flag on job payload; wire-form metric keys"
+inputs:
+  - "tier1-presentation/web/src/modules/cockpit/runs.ts (probe-and-cancel to remove)"
+  - "tier2-logic/server/src/jobs/cache.ts, submit.ts"
+acceptance:
+  - "contract and server offer a side-effect-free lookup of a cached/latest solver result for (scenario, problem, params) that never enqueues (test)"
+  - "job submissions carry save (default false for tile lookups; Path's explicit run decides) and JOB-03 honours it (test)"
+  - "solver result metrics use the contract's wire cell keys consistently (res.net[]), mapped in one place (test)"
+  - "Cockpit Odds and Fastest path use the lookup; no cancelled solver_run rows from looking at the Cockpit (test)"
+  - "the trial count shown on 'Run N trials' comes from tier 2 (registry/solver defaults), not a literal in tier 1 (test)"
+gates: [G1, G2, G13]
+size: S
+notes: "From MOD-02 review."
+```
