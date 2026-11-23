@@ -225,7 +225,7 @@ title: "Write repositories implementing the domain ChangesetStore port"
 epic: DATA
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high

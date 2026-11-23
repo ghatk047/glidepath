@@ -233,7 +233,7 @@ title: "Incremental rerun with dirty propagation"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
@@ -297,7 +297,7 @@ title: "Explain and upstream/downstream queries"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh

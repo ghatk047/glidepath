@@ -21,7 +21,7 @@ title: "M0 integration: stack up, gates green, seed path ready"
 epic: INT
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: high
