@@ -19,7 +19,7 @@
     "parity:fuzz": "echo 'not implemented yet'",
     "test:excel": "echo 'not implemented yet'",
     "test:leak": "echo 'not implemented yet'",
-    "tier-check": "echo 'not implemented yet'",
+    "tier-check": "tsx tools/tier-check/src/cli.ts",
     "e2e": "echo 'not implemented yet'",
     "e2e:storyline": "echo 'not implemented yet'",
     "bench": "echo 'not implemented yet'"

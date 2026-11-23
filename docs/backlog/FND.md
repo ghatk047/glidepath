@@ -92,7 +92,7 @@ title: "tools/tier-check: web bundle inspector"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -111,6 +111,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The bundle-level half of G13: catches tier-2 code that slipped into the SPA through any route lint cannot see.
