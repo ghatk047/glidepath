@@ -124,7 +124,7 @@ title: "Read routes: bundle, members, scenarios, inputs, history"
 epic: API
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -144,6 +144,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Definitions and labels tier 1 renders from.

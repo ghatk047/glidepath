@@ -3,6 +3,9 @@ import type { DbHandle } from '@glidepath/data-access';
 import { Hono } from 'hono';
 import { requestSecrets } from './logger';
 import type { Logger } from './logger';
+import { registerReadRoutes } from '../routes/read';
+import { specBundleFromDir } from '../routes/read/spec-source';
+import type { SpecBundleSource } from '../routes/read/spec-source';
 import { errorHandler, notFoundHandler, problemResponse } from './problem';
 import { bindWithTenant, noAuthentication, noMemberships, tenantMiddleware } from './tenant';
 import type { AppEnv, Authenticator, MembershipResolver, WithTenant } from './tenant';
@@ -19,6 +22,8 @@ export interface AppDeps {
   membership?: MembershipResolver;
   /** Tenant-scoped transaction; default: local stand-in with the same signature as DATA-05's. */
   withTenant?: WithTenant;
+  /** Spec bundle of a model version (bundle route); default: `SPEC_DIR`, else the repository's `docs/spec`. */
+  specBundle?: SpecBundleSource;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
 }
@@ -87,6 +92,8 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
       withTenant: deps.withTenant ?? bindWithTenant(db.db),
     }),
   );
+
+  registerReadRoutes(app, { specBundle: deps.specBundle ?? specBundleFromDir() });
 
   app.onError(errorHandler());
   app.notFound(notFoundHandler);

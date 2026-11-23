@@ -15,12 +15,15 @@
   "dependencies": {
     "@glidepath/api-contract": "workspace:*",
     "@glidepath/data-access": "workspace:*",
+    "@glidepath/domain": "workspace:*",
+    "@glidepath/spec": "workspace:*",
     "@hono/node-server": "^2.1.11",
     "hono": "^4.13.20",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@glidepath/pg-local": "workspace:*",
+    "@glidepath/testkit": "workspace:*",
     "esbuild": "^0.28.2"
   }
 }

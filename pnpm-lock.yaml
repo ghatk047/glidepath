@@ -227,6 +227,12 @@ importers:
       '@glidepath/data-access':
         specifier: workspace:*
         version: link:../data-access
+      '@glidepath/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@glidepath/spec':
+        specifier: workspace:*
+        version: link:../spec
       '@hono/node-server':
         specifier: ^2.1.11
         version: 2.1.11(hono@4.13.20)
@@ -240,6 +246,9 @@ importers:
       '@glidepath/pg-local':
         specifier: workspace:*
         version: link:../../tools/pg-local
+      '@glidepath/testkit':
+        specifier: workspace:*
+        version: link:../../tools/testkit
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
