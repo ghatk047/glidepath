@@ -229,7 +229,7 @@ title: "tools/pg-local: throwaway Postgres 16 for tests without Docker"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: medium

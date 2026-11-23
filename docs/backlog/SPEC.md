@@ -53,7 +53,7 @@ title: "Spec loader, ModelBundle and members hash"
 epic: SPEC
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: high
