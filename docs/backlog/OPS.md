@@ -123,7 +123,7 @@ title: "docker-compose.dev.yml hot-reload override and mailpit"
 epic: OPS
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: medium
@@ -141,6 +141,7 @@ acceptance:
 gates: [G14]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Daily dev loop on the Mac.

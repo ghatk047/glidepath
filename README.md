@@ -42,6 +42,16 @@ Stop with `docker compose down`. Your data stays in the `pgdata` volume. `docker
 
 What runs where: `web` (tier 1) is only on the `edge` network. `db` (tier 3) is only on the internal `data` network. `logic` joins both, and `worker` joins `data` and `egress` (for the Claude API). Only `web` (80/443) and mailpit (8025) publish ports. Both bind to 127.0.0.1, and `WEB_BIND_ADDRESS` changes this for web.
 
+### Daily development with hot reload
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
+
+`docker-compose.dev.yml` runs the web tier on the Vite dev server (http://localhost:5173, HMR) and `logic` and `worker` under `tsx watch`, all from bind mounts of this checkout, so a saved file reloads in the container. Dependencies install into named volumes (`devnm-*`), never into the host's `node_modules`. `migrate` still runs from the `glidepath/logic` image, so build it once first (`docker compose build migrate`).
+
+Published ports are all bound to 127.0.0.1: Postgres on 5432 (for psql or a GUI) and mailpit on http://localhost:8025, which starts without `COMPOSE_PROFILES=dev`.
+
 ### Using Neon (or another managed Postgres) instead of the local db
 
 Tier 2 reads the database only from `DATABASE_URL` and `DATABASE_URL_MIGRATE`, and TLS comes from the URL. To switch:

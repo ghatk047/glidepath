@@ -1,0 +1,156 @@
+# Glidepath dev override: hot reload from bind mounts (docs/architecture/11_docker_deployment.md §3).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# What changes against docker-compose.yml:
+#   web     Vite dev server (HMR) on http://localhost:5173 instead of Caddy; source bind-mounted
+#   logic   `tsx watch` of the API server from the bind-mounted source
+#   worker  `tsx watch` of the pg-boss worker from the bind-mounted source
+#   db      5432 published on 127.0.0.1 only, for psql / a GUI
+#   mail    mailpit (UI http://localhost:8025) starts without COMPOSE_PROFILES=dev
+# There is no objects/MinIO service (ADR-025: objects live in Postgres), so nothing to expose for it.
+#
+# `migrate` is unchanged (it runs from the logic image): build that image once with
+# `docker compose build migrate` before the first dev run.
+# The repo is mounted at /repo; the container's node_modules live in named volumes so the
+# macOS host's node_modules (other platform binaries) is never touched. `devdeps` runs
+# `pnpm install` into them once per `up`, and the watchers start after it.
+#
+# Everything published here is bound to 127.0.0.1 so the laptop does not serve the LAN.
+
+x-dev-node: &dev-node
+  image: node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
+  build: !reset null
+  init: true
+  working_dir: /repo
+  volumes:
+    - .:/repo
+    - devnm-root:/repo/node_modules
+    - devnm-web:/repo/tier1-presentation/web/node_modules
+    - devnm-ui:/repo/tier1-presentation/ui/node_modules
+    - devnm-server:/repo/tier2-logic/server/node_modules
+    - devnm-worker:/repo/tier2-logic/worker/node_modules
+    - devnm-data-access:/repo/tier2-logic/data-access/node_modules
+    - devnm-contract:/repo/contract/api-contract/node_modules
+    - devpnpm:/pnpm
+
+x-dev-node-env: &dev-node-env
+  CI: "true"
+  PNPM_HOME: /pnpm
+  PATH: /pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+networks:
+  # Non-internal, so the published db port works (the `data` network is internal: true).
+  # Only db joins it; logic, worker and web stay where docker-compose.yml put them.
+  devhost: {}
+
+volumes:
+  devpnpm: {}
+  devnm-root: {}
+  devnm-web: {}
+  devnm-ui: {}
+  devnm-server: {}
+  devnm-worker: {}
+  devnm-data-access: {}
+  devnm-contract: {}
+
+services:
+  db:
+    networks: [data, devhost]
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  mail:
+    profiles: !reset []
+    ports:
+      - "127.0.0.1:8025:8025"
+
+  # One-shot installer shared by web, logic and worker (avoids three concurrent installs).
+  devdeps:
+    <<: *dev-node
+    command:
+      - sh
+      - -c
+      - >-
+        corepack enable && corepack prepare pnpm@10.28.0 --activate &&
+        pnpm install --frozen-lockfile
+        --filter "@glidepath/web..." --filter "@glidepath/server..." --filter "@glidepath/worker..."
+    environment: *dev-node-env
+    restart: "no"
+    networks: [edge]
+
+  logic:
+    <<: *dev-node
+    command:
+      - sh
+      - -c
+      - corepack enable && exec pnpm --filter @glidepath/server exec tsx watch src/app/server.ts
+    environment:
+      <<: *dev-node-env
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      OBJECT_STORE: ${OBJECT_STORE:-postgres}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env (see .env.example)}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost}
+      SMTP_URL: ${SMTP_URL:-smtp://mail:1025}
+      SESSION_IDLE_MIN: ${SESSION_IDLE_MIN:-}
+      AUTH_LINK_TTL_MIN: ${AUTH_LINK_TTL_MIN:-}
+    depends_on:
+      devdeps: { condition: service_completed_successfully }
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  worker:
+    <<: *dev-node
+    command:
+      - sh
+      - -c
+      - corepack enable && exec pnpm --filter @glidepath/worker exec tsx watch src/worker.ts
+    environment:
+      <<: *dev-node-env
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      OBJECT_STORE: ${OBJECT_STORE:-postgres}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
+      JOB_CONCURRENCY: ${JOB_CONCURRENCY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_MAX_TOKENS_PER_JOB: ${AI_MAX_TOKENS_PER_JOB:-}
+    depends_on:
+      devdeps: { condition: service_completed_successfully }
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    <<: *dev-node
+    command:
+      - sh
+      - -c
+      - corepack enable && exec pnpm --filter @glidepath/web exec vite --host 0.0.0.0 --port 5173
+    environment:
+      <<: *dev-node-env
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost}
+    ports: !override
+      - "127.0.0.1:5173:5173"
+    # Replaces (not appends to) web's caddydata volume.
+    volumes: !override
+    - .:/repo
+    - devnm-root:/repo/node_modules
+    - devnm-web:/repo/tier1-presentation/web/node_modules
+    - devnm-ui:/repo/tier1-presentation/ui/node_modules
+    - devnm-server:/repo/tier2-logic/server/node_modules
+    - devnm-worker:/repo/tier2-logic/worker/node_modules
+    - devnm-data-access:/repo/tier2-logic/data-access/node_modules
+    - devnm-contract:/repo/contract/api-contract/node_modules
+    - devpnpm:/pnpm
+    depends_on:
+      devdeps: { condition: service_completed_successfully }
+      logic: { condition: service_healthy }

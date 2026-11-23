@@ -28,6 +28,8 @@ export interface ComposeService {
   /** Published ports as "host_ip:published:target" (host_ip may be empty). */
   ports: string[];
   hasEnvFile: boolean;
+  /** Container paths of bind mounts (`./x:/path` or type: bind). */
+  bindMounts: string[];
 }
 
 export interface ComposeModel {
@@ -191,12 +193,73 @@ export function composeConfigFromYaml(opts: ComposeOptions & { file?: string }):
   return normalize(raw, 'yaml');
 }
 
+/**
+ * Parses and merges several Compose files without Docker, the way `-f a -f b` does:
+ * maps merge recursively, lists append (ports and volumes de-duplicated), scalars are replaced,
+ * `!reset` clears a key and `!override` replaces it outright.
+ */
+export function composeConfigFromYamlFiles(
+  opts: ComposeOptions & { files: string[] },
+): ComposeModel {
+  const root = opts.root ?? REPO_ROOT;
+  const env = expandEnv(parseEnvFile(readFileSync(opts.envFile, 'utf8')));
+  let merged: unknown = {};
+  for (const f of opts.files) {
+    const text = readFileSync(join(root, f), 'utf8');
+    const doc = parseYaml(text, {
+      merge: true,
+      customTags: [
+        { tag: '!reset', resolve: () => ({ [RESET]: true }) },
+        { tag: '!reset', collection: 'seq', resolve: () => ({ [RESET]: true }) },
+        { tag: '!reset', collection: 'map', resolve: () => ({ [RESET]: true }) },
+        { tag: '!override', collection: 'seq', resolve: (v) => ({ [OVERRIDE]: plain(v) }) },
+        { tag: '!override', collection: 'map', resolve: (v) => ({ [OVERRIDE]: plain(v) }) },
+      ],
+    });
+    merged = mergeCompose(merged, doc);
+  }
+  return normalize(interpolateDeep(unwrapMarkers(merged), env), 'yaml');
+}
+
+const RESET = '__compose_reset__';
+const OVERRIDE = '__compose_override__';
+
+function unwrapMarkers(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(unwrapMarkers);
+  if (isObj(v)) {
+    if (RESET in v) return null;
+    if (OVERRIDE in v) return unwrapMarkers(v[OVERRIDE]);
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unwrapMarkers(x)]));
+  }
+  return v;
+}
+
+function mergeCompose(base: unknown, over: unknown): unknown {
+  if (isObj(over) && RESET in over) return over;
+  if (isObj(over) && OVERRIDE in over) return over;
+  if (isObj(base) && OVERRIDE in base) base = base[OVERRIDE];
+  if (isObj(base) && isObj(over)) {
+    const out: Obj = { ...base };
+    for (const [k, v] of Object.entries(over)) out[k] = k in base ? mergeCompose(base[k], v) : v;
+    return out;
+  }
+  if (Array.isArray(base) && Array.isArray(over)) {
+    // Service lists (networks: [a]) merge as a union; others append.
+    return [...new Set([...base, ...over].map((x) => JSON.stringify(x)))].map((x) => JSON.parse(x));
+  }
+  if (isObj(base) && Array.isArray(over)) return over; // networks map vs list
+  if (Array.isArray(base) && isObj(over)) return over;
+  return over;
+}
+
 /** YAML parse with merge keys and Compose's `!reset` / `!override` tags kept as plain values. */
 export function parseComposeYaml(text: string): unknown {
   return parseYaml(text, {
     merge: true,
     customTags: [
       { tag: '!reset', resolve: () => null },
+      { tag: '!reset', collection: 'seq', resolve: () => null },
+      { tag: '!reset', collection: 'map', resolve: () => null },
       { tag: '!override', collection: 'seq', resolve: (v) => v },
       { tag: '!override', collection: 'map', resolve: (v) => v },
     ],
@@ -247,6 +310,20 @@ function portStrings(v: unknown): string[] {
   });
 }
 
+function bindMounts(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const m of v) {
+    if (isObj(m)) {
+      if (m.type === 'bind') out.push(String(m.target));
+    } else {
+      const [src, dst] = String(m).split(':');
+      if (src && dst && /^[./~]/.test(src)) out.push(dst);
+    }
+  }
+  return out;
+}
+
 function normalize(raw: unknown, source: ComposeSource): ComposeModel {
   const doc = isObj(raw) ? raw : {};
   const services: Record<string, ComposeService> = {};
@@ -266,6 +343,7 @@ function normalize(raw: unknown, source: ComposeSource): ComposeModel {
       depends_on: deps,
       ports: portStrings(svc.ports),
       hasEnvFile: svc.env_file !== undefined,
+      bindMounts: bindMounts(svc.volumes),
     };
   }
   const networks: Record<string, { internal: boolean }> = {};
@@ -278,4 +356,11 @@ function normalize(raw: unknown, source: ComposeSource): ComposeModel {
     networks,
     volumes: listOrKeys(doc.volumes),
   };
+}
+
+/** The yaml library hands custom-tag resolvers its node classes; flatten to plain JS. */
+function plain(v: unknown): unknown {
+  return v && typeof (v as { toJSON?: unknown }).toJSON === 'function'
+    ? (v as { toJSON(): unknown }).toJSON()
+    : v;
 }
