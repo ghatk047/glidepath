@@ -263,6 +263,14 @@ export class Session {
     });
   }
 
+  /**
+   * Pushes a server message that does not depend on the session's state and is not ordered with its frames
+   * (a `job` update from the JobRelay, JOB-02). Dropped once the session is closed.
+   */
+  deliver(message: ServerMessage): void {
+    if (!this.closed) this.out(message);
+  }
+
   /** The connection is gone: drop everything queued. */
   close(): void {
     this.closed = true;

@@ -53,7 +53,7 @@ title: "Job relay to WebSocket and result cache"
 epic: JOB
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -71,6 +71,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Progress bars and instant re-runs.
