@@ -158,7 +158,7 @@ title: "Post-commit recompute, calc_run, VR05 and VR08"
 epic: DOM
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
