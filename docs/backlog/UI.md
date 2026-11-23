@@ -549,7 +549,7 @@ title: "Monthly curve (#26)"
 epic: UI
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -566,6 +566,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 2027 by month.
