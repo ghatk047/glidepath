@@ -33,7 +33,7 @@ title: "Tokens to CSS variables, Cruise and Daylight themes"
 epic: UI
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: medium
@@ -54,6 +54,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Everything visual reads from here.
