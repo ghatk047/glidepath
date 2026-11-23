@@ -124,7 +124,7 @@ title: "GitHub Actions CI with gate jobs"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: medium
@@ -144,6 +144,7 @@ acceptance:
 gates: [G1]
 size: S
 notes: "Rubric: CI YAML tweaks are haiku/low; first full CI is sonnet/medium. CI runs on GitHub; builders cannot see it, so the orchestrator checks the first run."
+merged_at: "2026-11-23"
 ```
 
 Wires the gates from 08 so later items only flip their job from skipped to required.
