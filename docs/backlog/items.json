@@ -220,7 +220,7 @@
     "epic": "FND",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "sonnet",
     "effort": "medium",
@@ -248,7 +248,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": "Builders cannot reach the owner's Mac and may have no Docker daemon; every DB test must run on this."
+    "notes": "Builders cannot reach the owner's Mac and may have no Docker daemon; every DB test must run on this.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "OPS-01",

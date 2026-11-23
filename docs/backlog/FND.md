@@ -230,7 +230,7 @@ title: "tools/pg-local: throwaway Postgres 16 for tests without Docker"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: medium
@@ -251,6 +251,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: "Builders cannot reach the owner's Mac and may have no Docker daemon; every DB test must run on this."
+merged_at: "2026-11-23"
 ```
 
 Lets every DB-touching item run its tests in the build container.

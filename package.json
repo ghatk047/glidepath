@@ -12,6 +12,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "pg:local": "tsx tools/pg-local/src/cli.ts",
     "scaffold-check": "tsx tools/scaffold-check/src/cli.ts",
     "gen:types": "tsx tools/gen-types/src/cli.ts",
     "parity:golden": "echo 'not implemented yet'",
