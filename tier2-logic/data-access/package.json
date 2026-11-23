@@ -7,7 +7,18 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src",
-    "test": "vitest run"
+    "lint": "eslint src scripts",
+    "test": "vitest run",
+    "gen:drizzle": "tsx scripts/gen-drizzle.ts generate",
+    "check:drizzle": "tsx scripts/gen-drizzle.ts check"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@glidepath/gen-schema": "workspace:*",
+    "@glidepath/pg-local": "workspace:*",
+    "@types/pg": "^8.23.1"
   }
 }
