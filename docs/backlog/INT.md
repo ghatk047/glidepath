@@ -119,7 +119,7 @@ title: "M3 integration: all modules bound, solvers and Excel green"
 epic: INT
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: high
