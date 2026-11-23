@@ -88,7 +88,7 @@ title: "Jobs, solver, Excel, AI and market schemas"
 epic: CON
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
