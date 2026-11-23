@@ -296,7 +296,7 @@ title: "Excel module: export and import review"
 epic: MOD
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -316,6 +316,7 @@ acceptance:
 gates: [G1, G2, G11, G12, G13]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Excel in, safely.
