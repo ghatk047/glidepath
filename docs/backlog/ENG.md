@@ -210,7 +210,7 @@ inputs:
   - "docs/architecture/08_quality_and_testing.md#1. Gates (G3)"
 acceptance:
   - "`pnpm parity:golden` evaluates the five presets (rates, A, B, C, D) from docs/spec/seed/aa and matches all 760 values in golden_results.json (scalars, levers.*, vp.*) within 1e-6 relative / 1e-9 absolute: 760/760 (G3)"
-  - "replays the 245 checks of parity_report.json with its parity_overrides plus values {corp.it_swb_mode: 0} as in run_tests.py and matches each check's `engine` value within 1e-6 absolute (values are rounded to 6 dp): 245/245 (test: parity-replay.spec.ts)"
+  - "replays the 245 checks of parity_report.json using the replay table in tier2-logic/engine/PORTING.md §6 (212 with parity_overrides + {corp.it_swb_mode: 0}, 18 chargeback-off without overrides, 15 invariants on plain presets) and matches each check's `engine` value within 1e-6 absolute after Python-style round(x, 6): 245/245 (test: parity-replay.spec.ts)"
   - "writes tools/parity/out/golden-report.json with per-value diffs; non-zero exit on any miss (test)"
   - "CI job parity-golden enabled and required for PRs touching docs/spec, tier2-logic/engine, tier3-data/seed (FND-04 job flipped on)"
 gates: [G1, G2, G3]
