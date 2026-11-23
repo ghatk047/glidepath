@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 import { config } from '@glidepath/int';
-import { DEVICE_SCALE_FACTOR, MAX_DIFF_PIXEL_RATIO, PIXEL_THRESHOLD } from './src/visual';
+import { DEVICE_SCALE_FACTOR, MAX_DIFF_PIXELS, PIXEL_THRESHOLD } from './src/visual';
 
 /**
  * Visual baselines (QA-06, G11): every module in both themes at 1440 and 390 px, compared with the
@@ -22,7 +22,7 @@ export default defineConfig({
     timeout: 15_000,
     toHaveScreenshot: {
       threshold: PIXEL_THRESHOLD,
-      maxDiffPixelRatio: MAX_DIFF_PIXEL_RATIO,
+      maxDiffPixels: MAX_DIFF_PIXELS,
       animations: 'disabled',
       caret: 'hide',
       // device pixels (2x), like the UX pack's renders; the default 'css' would write 1x files

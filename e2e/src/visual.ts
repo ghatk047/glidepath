@@ -37,12 +37,26 @@ export const DEVICE_SCALE_FACTOR = 2;
 
 /**
  * The G11 pixel threshold. `PIXEL_THRESHOLD` is Playwright's per-pixel colour tolerance (YIQ
- * distance, 0 strict .. 1 anything); `MAX_DIFF_PIXEL_RATIO` is the share of pixels allowed to
- * differ beyond it. Anti-aliasing noise passes; a moved panel, a changed token or a different
- * number does not.
+ * distance, 0 strict .. 1 anything); `MAX_DIFF_PIXELS` is the absolute number of pixels allowed to
+ * differ beyond it. It is absolute on purpose: a share of a tall 2x full-page image (0.2% of a
+ * 780 x 4300 capture is about 6,700 pixels) is more than a reordered chip or a changed label, so
+ * those slipped through. Anti-aliasing noise is a few dozen pixels; one changed word is hundreds.
  */
 export const PIXEL_THRESHOLD = 0.1;
-export const MAX_DIFF_PIXEL_RATIO = 0.002;
+export const MAX_DIFF_PIXELS = 100;
+
+/**
+ * Injected during capture only (never in the product). Full-page capture lays `position: fixed`
+ * elements out against the first viewport, so they land mid-page and cover panel headers. The
+ * floating Net/Bar/Gap flight strip (`.gp-hud`) is hidden (its values are on the screen anyway;
+ * `visibility` keeps the layout). The phone bottom nav (`.gp-rail` at phone width) is put in the
+ * flow so it is still captured, once, instead of floating over the content. The desktop rail is
+ * sticky, draws at the top of the page and is left alone.
+ */
+export const CAPTURE_CSS = `
+.gp-hud { visibility: hidden !important; }
+@media (max-width: 640px) { .gp-rail { position: static !important; } }
+`;
 
 /** A module's name in the UX pack's file names. */
 const UX_NAME: Readonly<Record<VisualModule, string>> = {
@@ -289,7 +303,7 @@ export function buildReport(entries: readonly ReportEntry[], meta: ReportMeta): 
 <body>
 <main>
 <h1>Visual baselines (G11)</h1>
-<p class="lede">Each screen as the app draws it (Baseline) beside the UX pack's render of the same screen (<code>docs/ux/screens/</code>). On first approval the reviewer reads the pairs here and decides. Later runs compare with the approved baseline at a colour tolerance of ${PIXEL_THRESHOLD} and at most ${(MAX_DIFF_PIXEL_RATIO * PERCENT).toFixed(1)}% of pixels differing.</p>
+<p class="lede">Each screen as the app draws it (Baseline) beside the UX pack's render of the same screen (<code>docs/ux/screens/</code>). On first approval the reviewer reads the pairs here and decides. Later runs compare with the approved baseline at a colour tolerance of ${PIXEL_THRESHOLD} and at most ${MAX_DIFF_PIXELS} pixels differing.</p>
 <table data-slot="summary">
 <tr><th>Screens (8 modules × 2 themes × 2 widths)</th><td data-count="total">${s.total}</td></tr>
 <tr><th>With a UX pack render</th><td data-count="with-render">${s.withRender}</td></tr>

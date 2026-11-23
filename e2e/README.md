@@ -122,7 +122,9 @@ toggle stores it, `glidepath.theme`) at 2 widths (1440 and 390 CSS px), device s
 renders. 32 tests, titled `<module>-<theme>-<width>`, each `toHaveScreenshot` against
 `visual/baselines/chromium-<platform>/<module>-<theme>-<width>.png` (committed, one set per platform because fonts and
 rasterisation differ between a Linux container and a Mac). The pixel threshold is in `src/visual.ts`: colour tolerance 0.1 and
-at most 0.2% of pixels differing. Without `--update` a missing baseline fails; it is never written silently.
+at most 100 pixels differing (absolute, not a share: a share of a tall 2x page hides a reordered chip). During capture the
+harness injects `CAPTURE_CSS` (`src/visual.ts`): the floating flight strip (`.gp-hud`) is hidden and the phone bottom nav is put in
+the flow, because full-page capture would otherwise draw fixed elements mid-page over panel headers. Product code is untouched. Without `--update` a missing baseline fails; it is never written silently.
 
 The last test, `visual_report_generated_beside_the_ux_screens`, writes the reviewer's report
 `visual-report/index.html` (git-ignored; the folder holds the images and can be zipped): every baseline beside the render of

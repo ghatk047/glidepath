@@ -5,6 +5,7 @@ import type { BrowserContext, Page, TestInfo } from '@playwright/test';
 import { expect, test } from '../tests/fixtures';
 import {
   allShots,
+  CAPTURE_CSS,
   DEVICE_SCALE_FACTOR,
   THEMES,
   VIEWPORT_HEIGHT,
@@ -98,6 +99,8 @@ test.describe('visual baselines: 8 modules x 2 themes x 2 widths (G11)', () => {
             await page.goto(`/${config.tenant}/${presetC}/${shot.module}`);
             await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
             await settled(page, shot.module);
+            // fixed overlays would land mid-page in a full-page capture; see CAPTURE_CSS
+            await page.addStyleTag({ content: CAPTURE_CSS });
             await expect(page).toHaveScreenshot(`${shot.key}.png`, { fullPage: true });
           });
         }

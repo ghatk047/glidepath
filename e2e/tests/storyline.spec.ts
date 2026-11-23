@@ -133,7 +133,7 @@ test.describe('Demo storyline: run of show (QA-05, G10)', () => {
     await expect(page.getByTestId('cockpit-net')).toBeVisible(); // the gauge, with the bar notch
     await expect(barNode(page)).toHaveText(fmt.money(prose.bar.value));
     expect(Number(await barNode(page).getAttribute('data-value'))).toBeCloseTo(prose.bar.value, 1);
-    await expect(page.locator('g[data-step="growth"]')).toHaveAttribute(
+    await expect(page.locator('.gp-bridge-bar[data-step="growth"]')).toHaveAttribute(
       'aria-label',
       new RegExp(escapeRe(fmt.signed(prose.growth.value))),
     );

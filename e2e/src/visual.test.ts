@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   allShots,
   buildReport,
+  CAPTURE_CSS,
   heightDelta,
   imageSize,
+  MAX_DIFF_PIXELS,
+  PIXEL_THRESHOLD,
   MODULES,
   reportSummary,
   THEMES,
@@ -168,5 +171,18 @@ describe('writing the report from files (report generated)', () => {
 
   it('keeps baselines per platform', () => {
     expect(baselineDirFor('chromium-linux')).toMatch(/visual\/baselines\/chromium-linux$/);
+  });
+});
+
+describe('the G11 threshold and capture style', () => {
+  it('allows anti-aliasing noise only: an absolute count of at most 200 pixels, colour tolerance 0.1', () => {
+    expect(PIXEL_THRESHOLD).toBe(0.1);
+    expect(MAX_DIFF_PIXELS).toBeGreaterThanOrEqual(50);
+    expect(MAX_DIFF_PIXELS).toBeLessThanOrEqual(200);
+  });
+
+  it('neutralises the flight strip and the phone bottom nav during capture', () => {
+    expect(CAPTURE_CSS).toMatch(/\.gp-hud\s*\{[^}]*visibility:\s*hidden/);
+    expect(CAPTURE_CSS).toMatch(/\.gp-rail\s*\{[^}]*position:\s*static/);
   });
 });
