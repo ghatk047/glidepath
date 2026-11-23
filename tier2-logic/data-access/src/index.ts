@@ -38,6 +38,9 @@ export type {
   VariableDefRow,
 } from './repos/model';
 export type { ScenarioRecord } from './repos/scenarios';
+// Write repositories (DATA-06): the domain's ChangesetStore over Postgres, and the job repositories.
+export * from './write';
+export * from './jobs';
 /** Raw SQL fragments for callers that hold a transaction or Db but may not import drizzle (G13). */
 export { sql } from 'drizzle-orm';
 export * as schema from './schema';

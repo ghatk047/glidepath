@@ -1,4 +1,5 @@
-/** Small, pure conversions from node-postgres values to the row types the repositories return. */
+/** Small, pure conversions between node-postgres values and the row types the repositories use. */
+import { sql } from 'drizzle-orm';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,3 +31,22 @@ export const numOrNull = (v: unknown): number | null => (v === null || v === und
 
 /** Nullable text as string | null (char(n) included). */
 export const strOrNull = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
+
+/** An ISO 8601 timestamp (as the domain carries them) as a Date for a timestamptz column. */
+export function toDate(v: string): Date {
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) throw new Error(`data-access: not a timestamp: ${v}`);
+  return d;
+}
+
+/** A finite number as the text a numeric column takes; anything else is refused before any SQL. */
+export function numeric(v: number): string {
+  if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`data-access: not a finite number: ${String(v)}`);
+  return String(v);
+}
+
+/**
+ * A JSON value for a NOT NULL jsonb column. drizzle turns a JS null into SQL NULL, which such a column
+ * refuses; JSON null (the value `null` the domain's JsonValue allows) is written as the literal.
+ */
+export const jsonb = (v: unknown): unknown => (v === null || v === undefined ? sql`'null'::jsonb` : v);

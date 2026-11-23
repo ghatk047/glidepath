@@ -2,6 +2,31 @@
 
 Repositories over tier 3: Drizzle schema, queries, RLS session, object store client. The only tier-2 package that opens database connections.
 
+## DATA-06: write repositories (the domain ChangesetStore port)
+
+`src/write` implements `ChangesetStore` / `ChangesetTx` of `@glidepath/domain` (ADR-019) over Postgres, so `applyChangeset` writes through it. Every method runs on the transaction of a live `withTenant` (`tenantScope` check, `TenantScopeError` otherwise), `tenant_id` comes from that scope, and RLS applies.
+
+- `createChangesetStore(tx)`: the store bound to the caller's `withTenant` transaction. `transaction(fn)` runs `fn` in a savepoint, so a throw undoes what `fn` wrote and the caller's transaction stays usable; commit is the caller's.
+- `createTenantChangesetStore(db, tenantId, userId)`: for the server; each `transaction(fn)` is its own `withTenant` (commit on return, rollback on a throw).
+- `changesetTx(tx)`: the port view alone.
+
+| Port method | Postgres |
+|---|---|
+| `loadScenarioForUpdate` | `select ... from scenario ... for update` |
+| `lockTenantDefaults` | `pg_advisory_xact_lock(hashtextextended('glidepath:tenant-defaults:<tenant>', 0))` (transaction scoped, pooler safe) |
+| `loadScenarios`, `loadInputs`, `loadMembers`, `loadMemberRows`, `loadChangeset`, `findChangesetByClientRequest`, `changesSince` | `loadInputs` reads the stored rows (variable_value, scenario_value per level of the chain, node_override), the last level being the scenario itself even without rows; `loadMembers` is `members` of the read repository (active only); `changesSince` is status `applied` or `reverted`; `findChangesetByClientRequest` matches `changeset.summary ->> 'client_request_id'` |
+| `createScenario`, `insertChangeset` (+ change rows), `setChangesetStatus`, `appendAudit` | inserts / update; the change note is in `change.messages`, `client_request_id` and `edits_count` in `changeset.summary` |
+| `writeValue` | upsert (`on conflict`) or delete of variable_value (`note`, `changeset_id`, `updated_at`), scenario_value, node_override (`reason`); the scenario must be the tenant's |
+| `writeMember` | line_item / dimension_member: update the named columns of an existing row, else insert; `row: null` deletes (a line's line_item_lever rows go with it); a column the table lacks is an error |
+| `bumpVersion` | `update scenario set version = from + 1 where version = from`; `ScenarioVersionError` if it moved |
+| `findCalcRun`, `upsertCalcRun` | `calc_run` keyed `(scenario_id, input_hash)`; `ms` is rounded (integer column) |
+
+Choices the port leaves open: a new `variable_value` row gets confidence `M` (`DEFAULT_NEW_VALUE_CONFIDENCE`, option `newValueConfidence`), an existing row keeps its confidence and source; a value write without a note clears the row's note (as the in-memory store does); JSON `null` in a NOT NULL jsonb column is written as `'null'::jsonb`. `findChangesetByClientRequest` scans the author's changesets (no index on `created_by` or the summary key); add one in a manual migration if history grows large.
+
+`src/jobs` holds the job repositories, all tenant-scoped like the read repositories: `create/get/list/update/delete` for `solver_run` (incl. progress, `cancel_requested`), `export_job`, `import_job` and `ai_reconfig_job`.
+
+`write/changeset-store.pg.test.ts` runs each method on pg-local, the DOM-03 behaviours (replay, fork, conflict, clamp, undo, note, edits count) through the real `applyChangeset`, a cross-tenant WITH CHECK test per written table, and lock tests on two connections; `jobs/jobs.pg.test.ts` covers the job repositories.
+
 ## DATA-04: DB client, Drizzle schema, migration runner
 
 - `createDb(DATABASE_URL, options?)` returns `{ db, pool, close() }` (Drizzle over a `pg` pool). It reads only the URL it is given: host, role, database and TLS (`sslmode`, libpq semantics: `require` = encrypted without certificate verification, `verify-ca`/`verify-full` = verified). Pooler safe (ADR-015): no startup options, no session-level SET, named prepared statements dropped unless `preparedStatements: true`, pool size via `poolMax` (default 10). `dbOptionsFromEnv()` reads the optional `DB_POOL_MAX` / `DB_PREPARED_STATEMENTS` for callers that want them. Tenant context belongs in `db.transaction` with `SET LOCAL` / `set_config(..., true)`.

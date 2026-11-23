@@ -81,7 +81,7 @@ interface Raw extends Record<string, unknown> {
 }
 
 /** The change rows of `ids`, grouped by changeset id, each list in seq order. */
-async function changeRows(tx: TenantTx, tenantId: string, ids: readonly string[]): Promise<Map<string, ChangeRow[]>> {
+export async function changeRows(tx: TenantTx, tenantId: string, ids: readonly string[]): Promise<Map<string, ChangeRow[]>> {
   const out = new Map<string, ChangeRow[]>(ids.map((id) => [id, []]));
   if (ids.length === 0) return out;
   const rows = await tx
