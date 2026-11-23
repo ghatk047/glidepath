@@ -119,7 +119,7 @@ title: "E2E smoke (G9)"
 epic: QA
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -138,6 +138,7 @@ acceptance:
 gates: [G9]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The walking-skeleton check.

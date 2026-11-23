@@ -7,7 +7,17 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src",
-    "test": "vitest run"
+    "lint": "eslint src tests playwright.config.ts",
+    "test": "vitest run",
+    "smoke": "node run.mjs"
+  },
+  "dependencies": {
+    "@glidepath/api-contract": "workspace:*",
+    "@glidepath/int": "workspace:*",
+    "@glidepath/parity": "workspace:*",
+    "@glidepath/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
   }
 }
