@@ -192,7 +192,7 @@ title: "Tenant-scoped transactions and read repositories"
 epic: DATA
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: xhigh
