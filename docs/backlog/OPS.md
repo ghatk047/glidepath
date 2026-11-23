@@ -275,3 +275,33 @@ merged_at: "2026-11-23"
 ```
 
 Drops the third-party object store image from the stack.
+
+```yaml
+id: OPS-09
+title: "Public demo through Cloudflare Tunnel, with Cloudflare Access as the sign-in"
+epic: OPS
+milestone: M4
+priority: must
+status: in_progress
+stream: B
+model: opus
+effort: high
+depends_on: [OPS-06]
+tier: ops
+package: "docker-compose.yml (tunnel profile), .env.example, ops/README.md, tier2-logic/server/src/auth (Access identity), ops/demo-check"
+contract: "`docker compose --profile demo --profile tunnel up -d` serves the app at PUBLIC_BASE_URL through a Cloudflare Tunnel; a request carrying a valid Cloudflare Access JWT signs the user in as that email"
+inputs:
+  - "Owner decision 2026-11-23: deploy on the owner's Mac mini behind Cloudflare Tunnel, access limited by Cloudflare Access to @gmail.com and @infosys.com emails; the AI (Anthropic key) feature is not used"
+  - "tier2-logic/server/src/auth (magic link, passkey, memberships); magic links go to the local mail sink, so outside users cannot sign in without this item"
+  - "ops/docker/web/Caddyfile (site address = PUBLIC_BASE_URL, tls internal)"
+acceptance:
+  - "compose service `tunnel` (profile tunnel) runs cloudflare/cloudflared pinned by version, `tunnel --no-autoupdate run` with TUNNEL_TOKEN from .env, on the edge network only (cannot reach db); .env.example documents TUNNEL_TOKEN and that the dashboard public hostname points at https://web:443 with origin server name = the PUBLIC_BASE_URL host and no TLS verify (test: compose-config.spec)"
+  - "auth: when CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD are set, the server verifies the Cf-Access-Jwt-Assertion header (RS256 against https://<team>/cdn-cgi/access/certs, cached; aud, iss, exp checked) and creates a session for its email; an invalid or missing JWT falls back to the existing sign-in; with the vars unset nothing changes (tests with a locally signed JWT and a fake certs endpoint)"
+  - "an Access-verified email with no membership gets one on the tenants listed in ACCESS_AUTO_TENANTS (default aa) with role ACCESS_AUTO_ROLE (default editor, or the closest existing role); allowed email domains are enforced by Cloudflare Access, and optionally re-checked by ACCESS_ALLOWED_DOMAINS (test)"
+  - "logic can reach the certs endpoint (egress network) and nothing else changes for web/db isolation (G13 test still passes)"
+  - "AI-07 dropped by the owner: demo-check skips the UA draft check when AI_ENABLED=0 (default 0 in .env.example) and says 'skipped (AI off)'; storyline beat_11 UA/AS stays fixme (test)"
+  - "ops/README 'Public demo (Cloudflare)' section: the dashboard steps, the .env keys, start/stop commands"
+gates: [G1, G2, G7, G13, G14]
+size: M
+notes: "From the owner's 2026-11-23 request. No secrets in git: TUNNEL_TOKEN and the AUD live only in the Mac's .env."
+```

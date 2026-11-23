@@ -215,7 +215,8 @@ title: "Rehearsed UA run, cached in the seed"
 epic: AI
 milestone: M4
 priority: must
-status: todo
+status: blocked
+blocked_reason: "dropped by the owner 2026-11-23: AI feature not used"
 stream: B
 model: opus
 effort: high
@@ -234,7 +235,7 @@ acceptance:
   - "no airline marks in the bundle (lint: airline-strings allowed only under seed/)"
 gates: [G1, G2]
 size: M
-notes: "Needs ANTHROPIC_API_KEY. If the build container has none, the orchestrator asks the owner to run the one command on the Mac and commits the output folder."
+notes: "Dropped by the owner 2026-11-23 (the AI/Anthropic feature is not used in the demo). Kept as blocked."
 ```
 
 The Airlines beat of the demo, real but cached.
