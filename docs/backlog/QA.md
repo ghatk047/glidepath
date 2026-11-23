@@ -56,7 +56,7 @@ title: "Synthetic second tenant zz"
 epic: QA
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: high

@@ -89,7 +89,7 @@ title: "applyChangeset core (version check, fork, clamp, rules, write)"
 epic: DOM
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh
