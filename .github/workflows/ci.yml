@@ -59,7 +59,7 @@ jobs:
           out engine '^(docs/spec/|tier2-logic/engine/|tier2-logic/spec/|tools/parity/|package\.json$)'
           out solvers '^(tier2-logic/solvers/|tier2-logic/engine/|tools/parity/|docs/spec/reference/solver_demo_results\.json$)'
           out excel '^tier2-logic/excel/'
-          out tenancy '^(tier2-logic/data-access/|tier2-logic/server/|tier3-data/)'
+          out tenancy '^(tier2-logic/data-access/|tier2-logic/server/|tier2-logic/worker/|tier3-data/)'
           out perf '^(tier2-logic/engine/|tier2-logic/server/)'
           out infra '^(docker-compose|ops/|tier3-data/|tier1-presentation/web/|tier2-logic/(server|worker)/|tools/int/|\.github/)'
 
