@@ -85,6 +85,8 @@ async function createDatabase(opts: TestDatabaseOptions): Promise<TestDatabase> 
   const password = randomBytes(12).toString('hex');
   let role: string | null = null;
   await withAdmin(adminUrl, async (admin) => {
+    // glidepath_owner / glidepath_app (cluster-wide, idempotent): tier3-data/migrations/0002_rls.sql grants to them (DATA-02).
+    await admin.query(readFileSync(new URL('../../../tier3-data/postgres/init/01_roles.sql', import.meta.url), 'utf8'));
     try {
       await admin.query(
         `CREATE ROLE ${quoteIdent(wantedRole)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '${password}'`,

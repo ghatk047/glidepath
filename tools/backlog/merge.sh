@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")/../.."
 ID=$1; BR=$2; WT=$3
-MSG=$(git log -1 --format=%s "$BR")
+MSG=$(git log -1 --no-merges --format=%s "$BR")
 if ! git merge --squash -q "$BR"; then
   CONF=$(git diff --name-only --diff-filter=U)
   if [ "$CONF" = "pnpm-lock.yaml" ]; then

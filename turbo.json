@@ -7,7 +7,9 @@
       ]
     },
     "lint": {},
-    "test": {},
+    "test": {
+      "passThroughEnv": ["TEST_DATABASE_URL", "TESTCONTAINERS", "PG_BIN"]
+    },
     "build": {
       "dependsOn": [
         "^build"

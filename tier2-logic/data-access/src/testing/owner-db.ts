@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { clientConfig } from '@glidepath/pg-local';
 import pg from 'pg';
 
@@ -21,6 +22,8 @@ export async function createOwnedDatabase(adminUrl: string): Promise<OwnedDataba
   const admin = new pg.Client(clientConfig(adminUrl));
   await admin.connect();
   try {
+    // glidepath_owner / glidepath_app (cluster-wide, idempotent): tier3-data/migrations/0002_rls.sql grants to them (DATA-02).
+    await admin.query(readFileSync(new URL('../../../../tier3-data/postgres/init/01_roles.sql', import.meta.url), 'utf8'));
     await admin.query(`CREATE ROLE ${role} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD 'owner-pw'`);
     await admin.query(`CREATE DATABASE ${database} OWNER ${role}`);
   } finally {
