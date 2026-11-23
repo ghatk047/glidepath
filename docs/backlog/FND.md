@@ -197,7 +197,7 @@ title: "PLANNING_NOTES.md (folded prompt 00)"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: opus
 effort: high
@@ -217,6 +217,7 @@ acceptance:
 gates: [G1]
 size: S
 notes: "Deviation: rubric puts docs at sonnet/medium; opus/high because the ADR challenge and risk register are architecture judgement (prompt 00 ran at opus/high)."
+merged_at: "2026-11-23"
 ```
 
 Short, table-first planning notes so the orchestrator has one page of risks and decisions.

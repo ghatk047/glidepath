@@ -186,7 +186,7 @@
     "epic": "FND",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "opus",
     "effort": "high",
@@ -211,7 +211,8 @@
       "G1"
     ],
     "size": "S",
-    "notes": "Deviation: rubric puts docs at sonnet/medium; opus/high because the ADR challenge and risk register are architecture judgement (prompt 00 ran at opus/high)."
+    "notes": "Deviation: rubric puts docs at sonnet/medium; opus/high because the ADR challenge and risk register are architecture judgement (prompt 00 ran at opus/high).",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "FND-07",
