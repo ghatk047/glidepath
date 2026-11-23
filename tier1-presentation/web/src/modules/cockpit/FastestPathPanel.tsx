@@ -17,7 +17,7 @@ const variableOf = (cell: string) => cell.slice(0, cell.indexOf('['));
 
 /** "70% → 100%" in the registry unit and step of the variable (as the sliders print it). */
 function valueText(def: VariableDef | undefined, v: number): string {
-  return def ? formatByUnit(v, def.unit, def.step ?? 1) : String(v);
+  return def ? formatByUnit(v, def.unit, def.step ?? 1, def.percentScale ?? undefined) : String(v);
 }
 
 function PathGlyph() {
