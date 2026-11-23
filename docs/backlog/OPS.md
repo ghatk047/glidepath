@@ -153,7 +153,7 @@ title: "Compose checks: clean start < 3 min, web cannot reach db"
 epic: OPS
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -172,6 +172,7 @@ acceptance:
 gates: [G13, G14]
 size: S
 notes: "Needs a Docker daemon: runs in CI and on the Mac; in a daemon-less builder only shellcheck + dry-run are checked."
+merged_at: "2026-11-23"
 ```
 
 Turns the physical tier separation and the 3-minute start into a repeatable check.

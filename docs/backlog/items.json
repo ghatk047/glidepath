@@ -397,7 +397,7 @@
     "epic": "OPS",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -425,7 +425,8 @@
       "G14"
     ],
     "size": "S",
-    "notes": "Needs a Docker daemon: runs in CI and on the Mac; in a daemon-less builder only shellcheck + dry-run are checked."
+    "notes": "Needs a Docker daemon: runs in CI and on the Mac; in a daemon-less builder only shellcheck + dry-run are checked.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "OPS-06",

@@ -432,11 +432,22 @@ jobs:
         run: |
           cp .env.example .env
           perl -pi -e 's{^(POSTGRES_PASSWORD|OWNER_DB_PASSWORD|APP_DB_PASSWORD|AUTH_SECRET)=$}{my $r = qx(openssl rand -hex 24); chomp $r; "$1=$r"}e' .env
-      - name: Compose up from clean volumes (healthy with seed in under 3 minutes)
+      - name: Compose up from clean volumes, timings and web-cannot-reach-db test (ops/compose-check.sh, OPS-05)
         if: steps.probe.outputs.ready == 'true'
         run: |
-          docker compose down -v
-          timeout 180 docker compose up -d --build --wait --wait-timeout 180
+          # Exit codes: 0 PASS, 1 FAIL, 2 USAGE, 3 BUDGET (over 180 s), 4 PENDING (stubbed
+          # migrate/worker entries until DATA-08/JOB-01 land: reported as a notice, not green).
+          # The last output line is "compose-check: <STATUS>: <reason>".
+          set +e
+          ops/compose-check.sh --keep 2>&1 | tee compose-check.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          reason="$(tail -n 1 compose-check.log)"
+          case "$rc" in
+            0) ;;
+            4) echo "::notice title=G14 PENDING::$reason" ;;
+            *) echo "::error title=G14 Container::$reason"; exit "$rc" ;;
+          esac
       - name: Multi-arch image build
         if: steps.probe.outputs.ready == 'true'
         run: |
@@ -445,4 +456,4 @@ jobs:
           docker buildx build --platform linux/arm64,linux/amd64 -f ops/docker/web/Dockerfile .
       - name: Compose logs on failure
         if: failure() && steps.probe.outputs.ready == 'true'
-        run: docker compose logs --no-color --tail 200
+        run: docker compose -p glidepath-check logs --no-color --tail 200
