@@ -7,9 +7,10 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "eslint src bench",
     "test": "vitest run",
-    "bench": "vitest bench --run"
+    "bench": "tsx bench/guard-cli.ts run",
+    "bench:baseline": "tsx bench/guard-cli.ts run --update"
   },
   "dependencies": {
     "@glidepath/spec": "workspace:*"

@@ -364,7 +364,7 @@ title: "Engine benches and budget guard"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -381,6 +381,7 @@ acceptance:
 gates: [G1, G8]
 size: S
 notes: "Kept at opus/xhigh per the product-owner rule for engine items, though the work is small."
+merged_at: "2026-11-23"
 ```
 
 Holds the budgets from 03 §5 in CI.
