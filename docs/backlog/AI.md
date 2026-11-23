@@ -119,7 +119,7 @@ title: "Steps 4–5: validate and calibrate against the last reported year"
 epic: AI
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
