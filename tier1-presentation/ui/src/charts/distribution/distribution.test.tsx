@@ -173,7 +173,7 @@ describe('Tornado (#22)', () => {
 describe('charts/distribution stays presentational (no formulas or business rules)', () => {
   const dir = __dirname;
   const sources = readdirSync(dir)
-    .filter((f) => /\.(ts|tsx)$/.test(f))
+    .filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\.tsx?$/.test(f))
     .map((f) => ({ f, text: readFileSync(join(dir, f), 'utf8') }));
 
   it('imports only react-free ui siblings: no tier 2, tier 3 or contract code', () => {
