@@ -1,0 +1,26 @@
+# Used instead of a root .dockerignore when building ops/docker/web/Dockerfile (BuildKit).
+# The web image is tier 1 only: no tier 2 or tier 3 code, no docs, no secrets, no tests' output.
+.git
+.claude
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+tier2-logic
+tier3-data
+docs
+e2e
+tools
+ops/test
+ops/src
+ops/README.md
+ops/package.json
+ops/tsconfig.json
+ops/docker/logic
+backups

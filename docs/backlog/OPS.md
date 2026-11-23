@@ -90,7 +90,7 @@ title: "web image (Caddy + SPA) and Caddyfile"
 epic: OPS
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -109,6 +109,7 @@ acceptance:
 gates: [G13, G14]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Tier 1 container: static files and a reverse proxy, nothing else.
