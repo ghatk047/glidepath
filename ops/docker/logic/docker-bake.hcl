@@ -12,7 +12,7 @@ variable "REGISTRY" {
 }
 
 variable "STRICT_ENTRYPOINTS" {
-  default = "0"
+  default = "1"
 }
 
 variable "SERVER_ENTRY" {

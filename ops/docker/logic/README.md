@@ -49,7 +49,7 @@ Build args (also variables in `docker-bake.hcl`), relative to the repo root:
 | `MIGRATE_ENTRY` | `tier2-logic/worker/dist/migrate.js` |
 | `STRICT_ENTRYPOINTS` | `0` |
 
-The whole directory of each entry is copied, so chunks and source maps travel with it. With `STRICT_ENTRYPOINTS=0` an entry that was not built becomes a stub that prints which file is missing and exits 78, so the image builds while a package is still a skeleton. Flip the default to `STRICT_ENTRYPOINTS=1` (in the Dockerfile and `docker-bake.hcl`) once API-01, JOB-01 and DATA-08 have landed; the build then fails on a missing entry.
+The whole directory of each entry is copied, so chunks and source maps travel with it. With `STRICT_ENTRYPOINTS=0` an entry that was not built becomes a stub that prints which file is missing and exits 78, so the image builds while a package is still a skeleton. The default is now `STRICT_ENTRYPOINTS=1` (in the Dockerfile and `docker-bake.hcl`), since API-01, JOB-01 and DATA-08 have landed: the build fails on a missing entry.
 
 ## Spec bundle (`SPEC_DIR`)
 

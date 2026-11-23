@@ -21,7 +21,7 @@ title: "M0 integration: stack up, gates green, seed path ready"
 epic: INT
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: opus
 effort: high
@@ -40,6 +40,8 @@ acceptance:
 gates: [G1, G2, G13, G14]
 size: S
 notes: "merged wiring 2026-11-23; G14 PENDING until DATA-08 migrate entry and JOB-01 worker entry land, then set STRICT_ENTRYPOINTS=1"
+merged_at: "2026-11-23"
+note: "G14 PASS strict: 6 services in 22s, M0 data and token checks ok"
 ```
 
 Closes M0.

@@ -29,8 +29,8 @@ ARG SERVER_ENTRY=tier2-logic/server/dist/server.js
 ARG WORKER_ENTRY=tier2-logic/worker/dist/worker.js
 ARG MIGRATE_ENTRY=tier2-logic/worker/dist/migrate.js
 # 0: an entry whose build output is missing becomes a stub that exits 78 (skeleton phase).
-# 1: a missing entry fails the build. Set 1 once API-01, JOB-01 and DATA-08 have landed.
-ARG STRICT_ENTRYPOINTS=0
+# 1: a missing entry fails the build (default since API-01, JOB-01 and DATA-08 landed).
+ARG STRICT_ENTRYPOINTS=1
 ENV CI=true \
     PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH
