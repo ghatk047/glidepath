@@ -122,7 +122,7 @@ title: "Binding hooks and bound components"
 epic: WEB
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
