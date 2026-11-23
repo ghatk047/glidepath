@@ -175,6 +175,8 @@ None changes a number `Model.run` produces for a model it accepts and evaluates 
 | `Change` | Engine-level union `{ target: 'variable', cell, value: number } \| { target: 'override', cell, value: number \| null }` (null removes a pin). `domain` cannot be imported here (02 §1), so DOM maps its changeset `Change` onto this. |
 | `BatchInput`, `BatchResult` | SoA: `size`, `values: ReadonlyMap<CellKey, Float64Array>` (varied inputs in; downstream closure out), `failed: Uint8Array` per lane (ENG-08). |
 | `explain(cell, at?)` | 03 §1 lists `explain(cell)`. Values and drivers need an evaluation, and a compiled model is shared across sessions (ModelCache), so the evaluation is an optional second argument; without it, `Explanation` has structure only. |
+| `upstream`, `downstream` (ENG-09) | Read-only views over the CSR of `compile` (`src/compile/csr.ts`; no second graph). `upstream` is breadth first, first-reference order within a level; `downstream` is node cells in topological order. A well-formed variable cell no formula reads has neither (Python `users.get(k, [])`); any other key the CSR lacks is UNKNOWN_CELL (Python returns `[]` for anything). |
+| `Explanation` (ENG-09) | `src/explain`. `inputs` = the cell's CSR deps (resolved keys) with values; `words` = the chosen expression with spec labels (generic over bound variables; literal indices name their member). `drivers` = provided inputs and pinned node cells the cell reads (the walk stops at a pin), each moved by `h = max(\|x\|, 1)·2^-26` (exact as `(x + h) - x`) and the cell recomputed by rerun over the reverse CSR within the cell's upstream cone, early stop on `Object.is`; `derivative` = Δy/h, `sensitivity` = derivative·x (ranks as 04 §5 elasticity, defined at y = 0), `elasticity` = sensitivity/y. Only non-zero sensitivities are kept, by \|sensitivity\| descending. A rerun that raises drops that driver. |
 | `inputHash` | "SHA-256 of sorted cells + model version" via `sha256Hex` from `@glidepath/spec`. Recommended: cells sorted by key, each value as its float64 bit pattern (so a one-ulp change and −0 change the hash), the pins likewise, and a model digest computed once in `compile` from the bundle **and the members in order** (members change results; `membersHash` ignores order, see §7). |
 
 Error codes and the Python exception each one corresponds to (fuzz: "raises in TS ⇔ raises in Python", same class):
@@ -279,6 +281,8 @@ Python dump scripts in `tier2-logic/engine/test/fixtures/`, each run as `python3
 | `dump_ast.py` | every expression string → `parse()` tuple as nested arrays | ENG-02 `ast-parity.spec.ts` |
 | `dump_deps.py` | every cell → sorted `cdeps`; `Model.order` | ENG-03 `deps-parity.spec.ts`, ENG-04 `toposort.spec.ts` |
 | `dump_run_c.py` | every cell of `run('C')` with `repr` floats | ENG-05: find the first diverging cell in topological order |
+| `dump_closure.py` | 50 sampled keys → `cdeps` levels and `users` closure (counts + SHA-256) | ENG-09 `queries.spec.ts` |
+| `dump_explain.py` | `res.net`, `br.eps27` in C and PARITY(C) → every candidate driver's `Model.rerun` derivative (bit patterns) | ENG-09 `explain.spec.ts` |
 
 ## 7. Notes for items outside the engine
 

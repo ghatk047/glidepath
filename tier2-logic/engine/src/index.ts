@@ -48,3 +48,9 @@ export type { EvaluationDiagnostics, ExtraInputs, ResolvedInputs, ScenarioInputs
 // Incremental rerun (ENG-07): `rerun(prev, changes)`, dirty walk over the reverse CSR with early stop.
 export { rerun } from './eval';
 export type { RerunDiagnostics, RerunEvaluation } from './eval';
+
+// Explain (ENG-09): `explain(cell, at?)`, formula in words, drivers by local sensitivity (rerun);
+// `upstream`/`downstream` are read-only views over the CSR.
+export { FD_STEP, formulaInWords, localSensitivities } from './explain';
+export type { LocalSensitivity } from './explain';
+export type { ExplainDriver, ExplainRef } from './types';

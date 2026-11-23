@@ -13,6 +13,7 @@ import {
   type SlotEvaluation,
 } from '../eval';
 import { expand, symbolDims, type Cell } from '../expand';
+import { downstream, explainCell, upstream } from '../explain';
 import type { ParseCache } from '../parse';
 import type {
   BatchInput,
@@ -23,7 +24,7 @@ import type {
   Evaluation,
   Explanation,
 } from '../types';
-import { buildAdjacency, downstreamOf, upstreamOf, type Adjacency } from './csr';
+import { buildAdjacency, type Adjacency } from './csr';
 import { lower } from './lower';
 import type { Program } from './program';
 import { topoSort } from './toposort';
@@ -31,7 +32,6 @@ import { topoSort } from './toposort';
 /** Which backlog item builds each `CompiledModel` method that is not built yet. */
 export const PENDING_METHODS = {
   evaluateBatch: 'ENG-08',
-  explain: 'ENG-09',
 } as const satisfies Partial<Record<keyof CompiledModel, string>>;
 
 /** What compile found that is not an error. */
@@ -96,20 +96,19 @@ export class EngineModel implements CompiledModel {
     throw notImplemented('CompiledModel.evaluateBatch', PENDING_METHODS.evaluateBatch);
   }
 
+  /** Expression, inputs, words; values and drivers with an evaluation (src/explain, ENG-09). */
   explain(cell: CellKey, at?: Evaluation): Explanation {
-    void cell;
-    void at;
-    throw notImplemented('CompiledModel.explain', PENDING_METHODS.explain);
+    return explainCell(this, cell, at);
   }
 
-  /** Raw upstream over the dependency CSR (ENG-09 adds explain on top). */
+  /** What feeds `cell`, breadth first: a read-only view over the dependency CSR. */
   upstream(cell: CellKey, depth?: number): CellKey[] {
-    return upstreamOf(this.graph, cell, depth);
+    return upstream(this, cell, depth);
   }
 
-  /** Raw downstream over the reverse CSR, in topological order. */
+  /** What `cell` moves, in topological order: a read-only view over the reverse CSR. */
   downstream(cell: CellKey): CellKey[] {
-    return downstreamOf(this.graph, cell);
+    return downstream(this, cell);
   }
 }
 

@@ -63,22 +63,67 @@ export interface BatchResult {
   readonly failed: Uint8Array;
 }
 
+/** A cell an explanation names: what it is (spec id, label, unit) and, with an evaluation, its value. */
+export interface ExplainRef {
+  readonly cell: CellKey;
+  /** Node or variable id of the cell (the key without its members). */
+  readonly id: string;
+  /** `node` for a node's key (a dangling key too), `input` for a variable's. */
+  readonly kind: 'node' | 'input';
+  /** Spec label of the node or variable; its id when the label is empty. */
+  readonly label: string;
+  readonly unit: string;
+  /** The value, when an evaluation was given and holds the cell (a dangling key has none). */
+  readonly value?: number;
+}
+
+/**
+ * A driver of an explained cell `y`: a provided input, or a pinned node cell, that `y` reads (directly
+ * or not; reads under a pin do not count). Local sensitivity at the evaluation (03 §1 Modes, Explain):
+ * the driver `x` moves by a forward-difference step and `y` is recomputed incrementally, cells
+ * downstream of `x` only (rerun).
+ */
+export interface ExplainDriver extends ExplainRef {
+  /** The driver's value `x` in the evaluation. */
+  readonly value: number;
+  /** ∂y/∂x: `(y(x + h) - y(x)) / h`, `h = max(|x|, 1) * 2^-26` (made exact as `(x + h) - x`). */
+  readonly derivative: number;
+  /**
+   * `derivative * x`: y's linearised change, in y's unit, for a 100% change of `x`. Drivers are ranked
+   * by its absolute value, which ranks them as the elasticity of 04 §5 does, and stays defined at y = 0.
+   */
+  readonly sensitivity: number;
+  /** Elasticity `∂y/∂x * x / y` (04 §5): `sensitivity / y`; null when y is 0 or not finite. */
+  readonly elasticity: number | null;
+}
+
 /** "What is this number": the trace drawer and ⌘K (03 §1 Modes, Explain). */
 export interface Explanation {
   readonly cell: CellKey;
   /** Node or variable id of the cell. */
   readonly id: string;
   readonly kind: 'node' | 'input';
+  /** Spec label of the node or variable; its id when the label is empty. */
+  readonly label: string;
+  readonly unit: string;
   /** The expression chosen for this cell (its case, else `expr`); null for an input. */
   readonly expression: string | null;
-  /** The cell's value, when an evaluation was given. */
+  /** The cell's value, when an evaluation was given (an input the evaluation lacks has none). */
   readonly value?: number;
-  /** Cells this cell reads, in first-reference order, with values when an evaluation was given. */
-  readonly inputs: readonly { readonly cell: CellKey; readonly value?: number }[];
-  /** The formula in words, from spec labels. */
+  /** True when the evaluation pins this node cell (override): its expression was not evaluated. */
+  readonly pinned: boolean;
+  /**
+   * Cells this cell reads (resolved keys, both IF branches, aggregate members that pass `where`), in
+   * first-reference order, with values when an evaluation was given. Empty for an input.
+   */
+  readonly inputs: readonly ExplainRef[];
+  /** The formula in words, from spec labels (`Input: <label>` for an input). */
   readonly words: string;
-  /** Top drivers by local sensitivity; empty without an evaluation. */
-  readonly drivers: readonly { readonly cell: CellKey; readonly sensitivity: number }[];
+  /**
+   * Every driver with a non-zero sensitivity, by |sensitivity| descending (ties: nearest first); the
+   * caller shows the top ones. Empty without an evaluation, for an input and for a pinned cell.
+   */
+  readonly drivers: readonly ExplainDriver[];
 }
 
 /** A model compiled for one (model_version, tenant members). Pure and shareable across sessions. */
