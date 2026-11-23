@@ -130,6 +130,16 @@ describe('tier-check', () => {
     expect(runTierCheck({ root, log }).exitCode).toBe(EXIT_CLEAN);
   });
 
+  it('ignores a tier 2 name inside CSS, URL paths and comments, but flags it when called', () => {
+    bundle(
+      'assets/app.js',
+      'const css = `.gp-validateRuleSet text { mix-validateRuleSet-mode: x }`; /* charts/validateRuleSet */ const u = `/t/:tenant/x/:id/validateRuleSet`;',
+    );
+    expect(runTierCheck({ root, log }).exitCode).toBe(EXIT_CLEAN);
+    bundle('assets/app.js', 'const n = a-validateRuleSet(b);');
+    expect(runTierCheck({ root, log }).exitCode).toBe(EXIT_LEAK);
+  });
+
   it('ignores member access that shares a tier 2 name, but still flags a bare call', () => {
     const name = [...deriveDenylist(root).symbols.keys()][0]!;
     bundle(

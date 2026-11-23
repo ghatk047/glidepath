@@ -92,6 +92,9 @@ export function scanText(text: string, file: string, deny: Denylist): Finding[] 
       before === '.'
     )
       continue;
+    // A word inside a hyphenated or slashed run (`.gp-bridge`, `mix-blend-mode`, `/changesets/:id/revert`,
+    // `charts/bridge` in a comment) is CSS, a URL or prose, not code, unless it is called (`x-bridge(`).
+    if ((before === '-' || before === '/' || after[0] === '-') && after[0] !== '(') continue;
     // Class/object method definitions (`}compile(){` inside a library class) define a member, not a tier 2 export.
     if (
       before !== undefined &&

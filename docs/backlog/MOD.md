@@ -25,7 +25,7 @@ title: "Cockpit hero: Net savings gauge, Bridge, Your inputs"
 epic: MOD
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: opus
 effort: high
@@ -48,6 +48,7 @@ acceptance:
 gates: [G1, G2, G11, G12, G13]
 size: M
 notes: "Near-critical for M2: QA-04 and INT-03 wait on it. Built against the mock session; real numbers checked in INT-03."
+merged_at: "2026-11-23"
 ```
 
 Can we reach the bar? — the first screen of the demo.

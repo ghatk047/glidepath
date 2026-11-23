@@ -1,4 +1,4 @@
-export { createAppRouter, type AppRouter } from './router';
+export { createAppRouter, defaultAppServices, type AppRouter, type AppServices } from './router';
 export {
   MODULE_IDS,
   PRELOADED_MODULES,

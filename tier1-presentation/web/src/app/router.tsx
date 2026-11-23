@@ -1,13 +1,17 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   Outlet,
-  createRootRoute,
+  createRootRouteWithContext,
   createRoute,
   createRouter,
   notFound,
   redirect,
   type RouterHistory,
 } from '@tanstack/react-router';
+import { ScenarioId, TenantSlug, type ApiClient } from '@glidepath/api-contract';
+import { DataProvider, createDataClient, createServerState, type ServerState } from '../data';
+import { GlobalLayout } from '../global/shell';
+import { createSessionClient, type SessionClient } from '../session';
 import { MODULE_IDS, isModuleId, loadModule, type ModuleId } from './modules';
 import { parseViewSearch } from './search';
 import { viewStore } from './view-store';
@@ -21,18 +25,78 @@ const lazyModules = Object.fromEntries(
   MODULE_IDS.map((id) => [id, lazy(() => loadModule(id))]),
 ) as Record<ModuleId, ReturnType<typeof lazy>>;
 
+/**
+ * What the screens talk to: the REST client and server-state cache (WEB-02) and the factory of
+ * the one WS session per tenant (WEB-03). Tests pass doubles; the app uses the defaults.
+ */
+export interface AppServices {
+  client: ApiClient;
+  serverState: ServerState;
+  createSession(tenant: string, scenario: string): SessionClient;
+}
+
+export const defaultAppServices = (): AppServices => ({
+  client: createDataClient(),
+  serverState: createServerState(),
+  createSession: (tenant, scenario) => createSessionClient({ tenant, scenario }),
+});
+
+interface RouterContext {
+  services: AppServices;
+}
+
+/**
+ * The screen's one session client: created for the tenant (on the URL's scenario at that time),
+ * closed on unmount or a tenant change. Scenario switches go through `open` (GlobalLayout).
+ */
+function useTenantSession(
+  create: AppServices['createSession'],
+  tenant: string,
+  scenario: string,
+): SessionClient | null {
+  const [state, setState] = useState<{ tenant: string; session: SessionClient } | null>(null);
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
+  useEffect(() => {
+    const session = create(tenant, scenarioRef.current);
+    setState({ tenant, session });
+    return () => session.close();
+  }, [create, tenant]);
+  return state?.tenant === tenant ? state.session : null;
+}
+
+function Root() {
+  const { services } = rootRoute.useRouteContext();
+  return (
+    <DataProvider client={services.client} serverState={services.serverState}>
+      <Outlet />
+    </DataProvider>
+  );
+}
+
 function ModuleScreen() {
-  const { module } = moduleRoute.useParams();
+  const { services } = rootRoute.useRouteContext();
+  const { tenant, scenario, module } = moduleRoute.useParams();
   const search = moduleRoute.useSearch();
   const { lever, group, key, node } = search;
   useEffect(() => {
     viewStore.getState().syncSelection({ lever, group, key, node });
   }, [lever, group, key, node]);
+  const session = useTenantSession(services.createSession, tenant, scenario);
   const Screen = lazyModules[module];
+  const loading = <div className="gp-module-loading" aria-busy="true" />;
+  if (!session) return loading;
   return (
-    <Suspense fallback={<div className="gp-module-loading" aria-busy="true" />}>
-      <Screen />
-    </Suspense>
+    <GlobalLayout
+      tenant={TenantSlug.parse(tenant)}
+      scenarioId={ScenarioId.parse(scenario)}
+      module={module}
+      session={session}
+    >
+      <Suspense fallback={loading}>
+        <Screen />
+      </Suspense>
+    </GlobalLayout>
   );
 }
 
@@ -40,8 +104,8 @@ function NotFound() {
   return <p role="alert">Page not found.</p>;
 }
 
-const rootRoute = createRootRoute({
-  component: Outlet,
+const rootRoute = createRootRouteWithContext<RouterContext>()({
+  component: Root,
   notFoundComponent: NotFound,
   validateSearch: parseViewSearch,
 });
@@ -85,10 +149,14 @@ const routeTree = rootRoute.addChildren([
   scenarioRoute.addChildren([scenarioIndexRoute, moduleRoute]),
 ]);
 
-export function createAppRouter(history?: RouterHistory) {
+export function createAppRouter(
+  history?: RouterHistory,
+  services: AppServices = defaultAppServices(),
+) {
   return createRouter({
     routeTree,
     history,
+    context: { services },
     // Only lever, group, key and node survive in the URL; anything else is dropped.
     search: { strict: true },
     defaultPreload: 'intent',
