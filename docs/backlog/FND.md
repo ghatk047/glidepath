@@ -196,7 +196,7 @@ title: "PLANNING_NOTES.md (folded prompt 00)"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: high
