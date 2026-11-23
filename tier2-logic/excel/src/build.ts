@@ -122,7 +122,7 @@ const SCENARIO_KEYS_SEPARATOR = '+';
 const TEXT_SHEETS = new Set(['readme', 'meta', 'lists']);
 
 /** Roles of columns whose cells carry a variable's value. */
-const VALUE_ROLES: ReadonlySet<ColumnRole> = new Set<ColumnRole>([
+export const VALUE_ROLES: ReadonlySet<ColumnRole> = new Set<ColumnRole>([
   'default',
   'scenario',
   'value',
@@ -329,7 +329,9 @@ function cellSpec(sheet: SheetDef, row: RowDef, lc: LaidColumn, look: Lookups): 
   const varId = col.varId ?? row.varId;
   if (varId === undefined) {
     const raw = row.attrs?.[col.attr ?? col.id];
-    const value = raw === undefined || raw === null ? null : (raw as string | number | boolean);
+    // An empty text is a blank cell: it reads back as `null`.
+    const value =
+      raw === undefined || raw === null || raw === '' ? null : (raw as string | number | boolean);
     const shown =
       typeof value === 'string' || typeof value === 'number'
         ? value

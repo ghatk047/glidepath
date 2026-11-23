@@ -49,3 +49,25 @@ export type {
   SheetKind,
   ValueType,
 } from './types';
+
+export {
+  ParseError,
+  identifyWorkbook,
+  parseLoadedWorkbook,
+  parseNumberText,
+  parseWorkbook,
+} from './parse';
+export type {
+  Identity,
+  ImportMode,
+  ParseIssue,
+  ParseIssueCode,
+  ParseIssueSeverity,
+  ParseOptions,
+  ParsedColumn,
+  ParsedMeta,
+  ParsedRow,
+  ParsedSheet,
+  ParsedWorkbook,
+  UnknownColumn,
+} from './parse';
