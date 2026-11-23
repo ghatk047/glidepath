@@ -62,7 +62,7 @@ title: "Auth: magic link, session cookies, /api/me, /api/tenants, roles"
 epic: API
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: xhigh
@@ -124,7 +124,7 @@ title: "Read routes: bundle, members, scenarios, inputs, history"
 epic: API
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
