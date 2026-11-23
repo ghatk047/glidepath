@@ -88,9 +88,15 @@ importers:
 
   ops:
     devDependencies:
+      '@glidepath/parity':
+        specifier: workspace:*
+        version: link:../tools/parity
       '@glidepath/pg-local':
         specifier: workspace:*
         version: link:../tools/pg-local
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
       yaml:
         specifier: 2.9.1
         version: 2.9.1

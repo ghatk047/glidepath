@@ -12,3 +12,6 @@ test-results/
 
 # ops/backup.sh output (tenant data)
 /backups/
+
+# ops/demo-pin.sh inputs: parity reports (pnpm parity:golden --out tier3-data/seed/parity), baked into the logic image
+/tier3-data/seed/parity/

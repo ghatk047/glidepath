@@ -186,7 +186,7 @@ title: "Demo profile with pinned digests and ops/demo-check.sh"
 epic: OPS
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -207,6 +207,7 @@ acceptance:
 gates: [G14]
 size: M
 notes: "AI-07 dependency dropped (2026-11-23): AI-07 needs the user's Mac. Build the UA-draft check now; it fails with a clear reason until the UA cache lands. Also: wire --parity/--ai-cache into compose migrate for the demo profile, and check cached min-risk C matches solver_demo_results within G5 (catches a cache warmed before SOL-12)."
+merged_at: "2026-11-23"
 ```
 
 The pre-demo checklist as a script.

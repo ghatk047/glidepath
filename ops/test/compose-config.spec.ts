@@ -1,7 +1,9 @@
 // OPS-01: services and networks of docs/architecture/11_docker_deployment.md §1–§2.
 // Runs against `docker compose config` when the Compose CLI is installed, and always
 // against the parsed YAML, so a daemon-less builder checks the same contract.
-import { readdirSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -11,6 +13,8 @@ import {
   composeConfigFromYaml,
   hasDockerCompose,
   parseComposeYaml,
+  parseEnvFile,
+  readEnvExample,
   REPO_ROOT,
   runComposeConfig,
   writeTestEnvFile,
@@ -67,13 +71,17 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
   });
 
   it('runs the three tier-2 commands from one image', () => {
-    expect(svc('migrate').command).toEqual(['node', 'dist/migrate.js', '--seed', 'aa']);
+    // The shell only adds --parity / --ai-cache when the image carries them (OPS-06, tested below).
+    expect(svc('migrate').command!.slice(0, 2)).toEqual(['sh', '-c']);
+    expect(svc('migrate').command!.slice(3)).toEqual(['migrate', '--seed', 'aa']);
+    // `docker compose config` prints a literal $ as $$ (re-parseable output); the container sees one.
+    expect(svc('migrate').command![2]!.replaceAll('$$', '$')).toContain('exec node dist/migrate.js "$@"');
     expect(svc('logic').command).toEqual(['node', 'dist/server.js']);
     expect(svc('worker').command).toEqual(['node', 'dist/worker.js']);
   });
 
-  it('puts mail in the dev profile only and every other service in no profile', () => {
-    expect(svc('mail').profiles).toEqual(['dev']);
+  it('puts mail in the dev and demo profiles only and every other service in no profile', () => {
+    expect(svc('mail').profiles).toEqual(['dev', 'demo']);
     for (const [name, s] of Object.entries(c.services))
       if (name !== 'mail') expect(s.profiles, name).toEqual([]);
   });
@@ -235,5 +243,101 @@ describe.skipIf(!DOCKER)('docker compose config (Compose CLI)', () => {
     // The db service is still there for whoever asks for it explicitly.
     const withDb = composeConfigFromDocker({ envFile, files, profiles: ['local-db'] });
     expect(Object.keys(withDb.services)).toContain('db');
+  });
+});
+
+// ------------------------------------------------------------------ OPS-06: demo profile
+const SHA = (c: string) => `@sha256:${c.repeat(64)}`;
+const DEMO_TAG = 'demo-2026-12-04';
+const PINS = {
+  LOGIC_IMAGE_PIN: SHA('a'),
+  WEB_IMAGE_PIN: SHA('b'),
+  DB_IMAGE_PIN: SHA('c'),
+  MAIL_IMAGE_PIN: SHA('d'),
+};
+const demoEnv = (extra: Record<string, string> = {}) =>
+  writeTestEnvFile(REPO_ROOT, { COMPOSE_PROFILES: 'demo', TAG: DEMO_TAG, ...PINS, ...extra });
+
+describe.each(SOURCES)('demo profile (%s)', (source) => {
+  const load = (envFile: string, profiles = ['demo']): ComposeModel =>
+    source === 'docker'
+      ? composeConfigFromDocker({ envFile, profiles })
+      : composeConfigFromYaml({ envFile });
+
+  it('runs the images tagged demo-2026-12-04, each pinned by digest', () => {
+    const c = load(demoEnv());
+    expect(c.services.migrate!.image).toBe(`glidepath/logic:${DEMO_TAG}${PINS.LOGIC_IMAGE_PIN}`);
+    expect(c.services.logic!.image).toBe(c.services.migrate!.image);
+    expect(c.services.worker!.image).toBe(c.services.migrate!.image);
+    expect(c.services.web!.image).toBe(`glidepath/web:${DEMO_TAG}${PINS.WEB_IMAGE_PIN}`);
+    expect(c.services.db!.image).toMatch(new RegExp(`^postgres:16\\.\\d+-bookworm${PINS.DB_IMAGE_PIN}$`));
+    expect(c.services.mail!.image).toMatch(new RegExp(`^axllent/mailpit:v[\\d.]+${PINS.MAIL_IMAGE_PIN}$`));
+    for (const [name, s] of Object.entries(c.services))
+      expect(s.image, name).toMatch(/^[^@]+:[^@]+@sha256:[0-9a-f]{64}$/);
+  });
+
+  it('includes the local mail sink so magic links work offline (GAP-09)', () => {
+    const c = load(demoEnv());
+    expect(Object.keys(c.services)).toContain('mail');
+    expect(c.services.mail!.ports).toEqual(['127.0.0.1:8025:8025']);
+    expect(c.services.logic!.environment.SMTP_URL).toBe('smtp://mail:1025');
+  });
+
+  it('leaves the images unpinned (tag only) when no pin is set, as in dev', () => {
+    const c = load(writeTestEnvFile(), ['dev']);
+    for (const [name, s] of Object.entries(c.services)) expect(s.image, name).not.toContain('@');
+  });
+});
+
+describe('demo pins in the repo', () => {
+  const record = join(REPO_ROOT, 'ops/demo-pins.env');
+  it.skipIf(!existsSync(record))('ops/demo-pins.env (the committed freeze record) pins all four images', () => {
+    const env = parseEnvFile(readFileSync(record, 'utf8'));
+    expect(env.get('TAG')).toBe(DEMO_TAG);
+    for (const k of Object.keys(PINS)) expect(env.get(k), k).toMatch(/^@sha256:[0-9a-f]{64}$/);
+  });
+
+  it('.env.example lists the four pins, empty', () => {
+    const env = parseEnvFile(readEnvExample());
+    for (const k of Object.keys(PINS)) expect(env.get(k), k).toBe('');
+  });
+});
+
+describe('migrate command in the compose file (OPS-06 --parity / --ai-cache)', () => {
+  const script = (() => {
+    const c = composeConfigFromYaml({ envFile: writeTestEnvFile() });
+    return c.services.migrate!.command![2]!;
+  })();
+  const seedDir = (files: string[]) => {
+    const dir = mkdtempSync(join(tmpdir(), 'glidepath-seed-'));
+    for (const f of files) {
+      mkdirSync(join(dir, f, '..'), { recursive: true });
+      writeFileSync(join(dir, f), '{}');
+    }
+    return dir;
+  };
+  /** Runs the script with node replaced by echo and the seed dir by a temp dir; returns the migrate arguments. */
+  const argsFor = (files: string[]): string => {
+    const dir = seedDir(files);
+    const body = script.replace('d=/app/tier3-data/seed', `d=${dir}`).replace('exec node dist/migrate.js', 'echo');
+    const r = spawnSync('sh', ['-c', body, 'migrate', '--seed', 'aa'], { encoding: 'utf8' });
+    expect(r.status).toBe(0);
+    return r.stdout.trim().replaceAll(dir, '<seed>');
+  };
+
+  it('seeds only when the image has neither parity reports nor a UA cache (tolerates a missing directory)', () => {
+    expect(argsFor([])).toBe('--seed aa');
+  });
+  it('adds --parity when both reports are there', () => {
+    expect(argsFor(['parity/golden-report.json', 'parity/replay-report.json'])).toBe('--seed aa --parity <seed>/parity');
+    expect(argsFor(['parity/golden-report.json'])).toBe('--seed aa');
+  });
+  it('adds --ai-cache when the UA bundle is there', () => {
+    expect(argsFor(['ai-cache/ua/manifest.json'])).toBe('--seed aa --ai-cache <seed>/ai-cache/ua');
+  });
+  it('adds both, parity first', () => {
+    expect(argsFor(['parity/golden-report.json', 'parity/replay-report.json', 'ai-cache/ua/manifest.json'])).toBe(
+      '--seed aa --parity <seed>/parity --ai-cache <seed>/ai-cache/ua',
+    );
   });
 });

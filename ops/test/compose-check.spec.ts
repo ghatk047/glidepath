@@ -17,7 +17,7 @@ const COMPOSE = parseComposeYaml(COMPOSE_TEXT) as {
 // The script runs with COMPOSE_PROFILES=dev (from .env.example), so every service is in play.
 const SERVICES = Object.keys(COMPOSE.services);
 // The tenant migrate seeds, from its command in docker-compose.yml (`--seed <id>`).
-const SEED = /"--seed",\s*"([a-z0-9_-]+)"/.exec(COMPOSE_TEXT)![1]!;
+const SEED = /^\s*- --seed\s*\n\s*- ([a-z0-9_-]+)/m.exec(COMPOSE_TEXT)![1]!;
 
 // ---------------------------------------------------------------------- fake docker
 // ops/test/fake-docker.sh plays the scenarios; FAKE_SCENARIO picks one.

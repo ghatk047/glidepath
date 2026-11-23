@@ -115,7 +115,9 @@ dc() { docker compose -p "$PROJECT" --env-file "$ENV_FILE" -f "$ROOT/docker-comp
 # `--seed <id>` argument loads, and the token stylesheet tier 1 must serve.
 MIGRATIONS_DIR=tier3-data/migrations
 TOKENS_CSS=tier1-presentation/ui/src/tokens/tokens.css
-SEED="$(sed -n 's/.*"--seed", *"\([a-z0-9_-]*\)".*/\1/p' docker-compose.yml | head -n 1)"
+# The tenant is the list item after `- --seed` (migrate's command is a shell, OPS-06), else the old inline form.
+SEED="$(awk '/^ *- --seed *$/ { getline; sub(/^ *- */, ""); print; exit }' docker-compose.yml)"
+[ -n "$SEED" ] || SEED="$(sed -n 's/.*"--seed", *"\([a-z0-9_-]*\)".*/\1/p' docker-compose.yml | head -n 1)"
 
 # image:Dockerfile; ops/test/compose-check.spec.ts keeps this in step with docker-compose.yml
 IMAGES="glidepath/logic:ops/docker/logic/Dockerfile glidepath/web:ops/docker/web/Dockerfile"

@@ -226,7 +226,9 @@ describe('entrypoints: dist/server.js, dist/worker.js, dist/migrate.js', () => {
 
   it('are the commands docker-compose.yml runs', () => {
     const compose = readFileSync(join(REPO_ROOT, 'docker-compose.yml'), 'utf8');
-    expect(compose).toContain('command: ["node", "dist/migrate.js", "--seed", "aa"]');
+    // migrate runs through a shell that adds --parity / --ai-cache when the image has them (OPS-06).
+    expect(compose).toContain('exec node dist/migrate.js "$$@"');
+    expect(compose).toMatch(/- --seed\s*\n\s*- aa\b/);
     expect(compose).toContain('command: ["node", "dist/server.js"]');
     expect(compose).toContain('command: ["node", "dist/worker.js"]');
   });

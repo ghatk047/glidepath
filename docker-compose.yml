@@ -4,9 +4,14 @@
 #   docker compose up -d        # https://localhost
 #
 # Networks (physical tier separation, G13):
-#   edge   web <-> logic (and mail in the dev profile)
+#   edge   web <-> logic (and mail in the dev and demo profiles)
 #   data   internal: true; logic, worker, migrate <-> db. web is NOT on it.
 #   egress outbound internet for the worker (Claude API)
+#
+# Demo (docs/architecture/02_repo_and_conventions.md section 4): `docker compose --profile demo up -d` runs the
+# images tagged demo-2026-12-04, each pinned by digest, plus the local mail sink so magic links work offline.
+# `ops/demo-pin.sh` builds or tags the images and writes TAG, COMPOSE_PROFILES=demo and the four *_IMAGE_PIN
+# digests into .env (ops/README.md "Demo profile"); then `ops/demo-check.sh` verifies the stack.
 #
 # Configuration is environment only (12-factor, ADR-013). Compose reads .env for the ${...}
 # values below and hands each service only the settings it needs. Tier 2 gets the database
@@ -16,7 +21,7 @@
 name: glidepath
 
 x-logic: &logic
-  image: glidepath/logic:${TAG:-dev}
+  image: glidepath/logic:${TAG:-dev}${LOGIC_IMAGE_PIN:-}
   build:
     context: .
     dockerfile: ops/docker/logic/Dockerfile
@@ -42,7 +47,7 @@ volumes:
 services:
   # ---------------------------------------------------------------- tier 3
   db:
-    image: postgres:16.16-bookworm
+    image: postgres:16.16-bookworm${DB_IMAGE_PIN:-}
     restart: unless-stopped
     environment:
       # Bootstrap superuser of the local container only. Tier 2 never sees these.
@@ -68,8 +73,21 @@ services:
   # ---------------------------------------------------------------- tier 2
   migrate:
     <<: *logic
-    # One-shot: migrations, model defs and the AA seed; logic and worker wait for it.
-    command: ["node", "dist/migrate.js", "--seed", "aa"]
+    # One-shot: migrations, model defs and the AA seed; logic and worker wait for it. The shell adds the demo
+    # inputs the image carries when they exist (a plain checkout has neither): `--parity` records the parity
+    # replay the Airlines tile shows (`pnpm parity:golden --out tier3-data/seed/parity` before the build, API-14) and
+    # `--ai-cache` imports the rehearsed UA reconfiguration (`pnpm ai:rehearse --tenant ua`, AI-07). `$$` is Compose's `$`.
+    command:
+      - sh
+      - -c
+      - >-
+        d=/app/tier3-data/seed;
+        [ -f $$d/parity/golden-report.json ] && [ -f $$d/parity/replay-report.json ] && set -- "$$@" --parity $$d/parity;
+        [ -f $$d/ai-cache/ua/manifest.json ] && set -- "$$@" --ai-cache $$d/ai-cache/ua;
+        exec node dist/migrate.js "$$@"
+      - migrate
+      - --seed
+      - aa
     restart: "no"
     environment:
       <<: *logic-env
@@ -125,7 +143,7 @@ services:
 
   # ---------------------------------------------------------------- tier 1
   web:
-    image: glidepath/web:${TAG:-dev}
+    image: glidepath/web:${TAG:-dev}${WEB_IMAGE_PIN:-}
     build:
       context: .
       dockerfile: ops/docker/web/Dockerfile
@@ -143,11 +161,12 @@ services:
     depends_on:
       logic: { condition: service_healthy }
 
-  # ---------------------------------------------------------------- dev only
+  # ---------------------------------------------------------------- dev and demo
   mail:
-    # Catches magic-link emails: http://localhost:8025 (SMTP_URL=smtp://mail:1025).
-    image: axllent/mailpit:v1.33.1
-    profiles: [dev]
+    # Catches magic-link emails: http://localhost:8025 (SMTP_URL=smtp://mail:1025). Also in the demo profile:
+    # sign-in works with Wi-Fi off, and ops/demo-check.sh signs in through it (GAP-09).
+    image: axllent/mailpit:v1.33.1${MAIL_IMAGE_PIN:-}
+    profiles: [dev, demo]
     restart: unless-stopped
     ports:
       - "127.0.0.1:8025:8025"
