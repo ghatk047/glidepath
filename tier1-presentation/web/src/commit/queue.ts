@@ -326,6 +326,7 @@ export function createCommitQueue(options: CommitQueueOptions): CommitQueue {
       if (store.getState().scenarioId === scenarioId) return;
       undoStack = [];
       redoStack = [];
+      forks.clear(); // the person chose a scenario: an edit of a preset forks it again (INT-04)
       store.setState({
         scenarioId,
         version: null,

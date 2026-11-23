@@ -101,6 +101,18 @@ describe('JOB-01 worker runtime on pg-boss', () => {
     expect(max).toBe(3);
   }, 60_000);
 
+  it('an excel.* / ai.* handler result is the pg-boss job output (what the server awaits) (INT-04)', async () => {
+    const reg = new HandlerRegistry();
+    reg.registerHandler('excel.test', async () => ({ id: 'e1', fileName: 'x.xlsx' }));
+    const rt = await boot(reg);
+    const id = (await send(rt, 'excel.test', null))!;
+    const job = await waitFor(async () => {
+      const j = await rt.boss.getJobById('excel.test', id);
+      return j?.state === 'completed' ? j : null;
+    });
+    expect(job.output).toEqual({ id: 'e1', fileName: 'x.xlsx' });
+  }, 60_000);
+
   it('runs a solver job: running, result stored, done with progress 1; a failing handler ends failed', async () => {
     const reg = new HandlerRegistry();
     const seenStatus: string[] = [];

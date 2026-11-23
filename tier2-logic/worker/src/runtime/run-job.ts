@@ -92,7 +92,7 @@ export async function failUnstartedRun(deps: Pick<RunJobDeps, 'db' | 'logger'>, 
  * Rethrows the handler's error for a failed job so pg-boss records the failure; a cancelled job ends
  * normally.
  */
-export async function runJob(deps: RunJobDeps, reg: Registration, job: JobInput): Promise<void> {
+export async function runJob(deps: RunJobDeps, reg: Registration, job: JobInput): Promise<JsonValue | undefined> {
   const { db, clock, logger } = deps;
   const payload = parsePayload(reg.queue, job.data);
   const { tenantId, userId } = payload;
@@ -183,7 +183,7 @@ export async function runJob(deps: RunJobDeps, reg: Registration, job: JobInput)
 
   if (runId === null) {
     if (failure) throw failure.error;
-    return;
+    return result; // excel.* / ai.*: the output pg-boss stores, which the server's queue.run awaits (INT-04)
   }
 
   if (cancelRequested) {

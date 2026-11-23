@@ -13,6 +13,7 @@
     "playwright.config.ts",
     "playwright.m2.config.ts",
     "playwright.visual.config.ts",
+    "playwright.int-m3.config.ts",
     "vitest.config.ts"
   ]
 }

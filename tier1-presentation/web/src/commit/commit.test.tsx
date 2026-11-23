@@ -298,6 +298,26 @@ describe('AC2: 409 → pending edits re-sent on the server version', () => {
 });
 
 describe('AC3: fork response switches URL and scenario bar to Custom (from X)', () => {
+  it('after the person switches back to the preset, its next edit targets the preset, not the old fork (INT-04)', async () => {
+    const t = serve();
+    const { q, session } = queue();
+    const first = q.commit(variable(TARGET.key, TARGET.value as number));
+    await q.flush();
+    await first;
+    expect(q.store.getState().scenarioId).toBe(CUSTOM);
+
+    // scenario bar → the preset again: the session reopens on it, the queue follows
+    session.store.setState({ scenarioId: PRESET, version: presetC!.version });
+    q.setScenario(PRESET);
+    await waitFor(() => expect(q.store.getState().scenarioId).toBe(PRESET));
+
+    const second = q.commit(variable(LEVER, leverD));
+    await q.flush();
+    await second;
+    expect(t.posts).toHaveLength(2);
+    expect(t.posts[1]).toMatchObject({ scenarioId: PRESET, baseVersion: presetC!.version });
+  });
+
   it('moves the URL to the fork, keeps module and selection, and the bar shows tier 2 label', async () => {
     const t = serve();
     const serverState = createServerState();

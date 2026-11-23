@@ -12,8 +12,9 @@ export const BUDGET_MS = 180_000;
  */
 export default defineConfig({
   testDir: 'tests',
-  // The M2 integration spec (INT-03) runs on its own budget: `playwright.m2.config.ts`.
-  testIgnore: ['m2.spec.ts'],
+  // The M2 (INT-03) and M3 (INT-04) integration specs run on their own budgets:
+  // `playwright.m2.config.ts`, `playwright.int-m3.config.ts`.
+  testIgnore: ['m2.spec.ts', 'int-m3.spec.ts'],
   fullyParallel: false,
   workers: 1,
   retries: 0,

@@ -119,7 +119,7 @@ title: "M3 integration: all modules bound, solvers and Excel green"
 epic: INT
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: D
 model: opus
 effort: high
@@ -138,6 +138,7 @@ acceptance:
 gates: [G5, G6, G7, G9]
 size: S
 notes: "After M3 the orchestrator accepts only must items and bug fixes."
+merged_at: "2026-11-23"
 ```
 
 Closes M3 (Tue 1 Dec).

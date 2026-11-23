@@ -1,5 +1,6 @@
 import { connectionConfig, createDb, dbOptionsFromEnv } from '@glidepath/data-access';
 import type { DbHandle, DbOptions } from '@glidepath/data-access';
+import type { JsonValue } from '@glidepath/domain';
 import { PgBoss } from './boss';
 import type { Job } from './boss';
 import { systemClock } from './clock';
@@ -42,7 +43,7 @@ export interface WorkerRuntimeOptions {
   readonly dbOptions?: DbOptions;
 }
 
-type Handler = (jobs: Job<object>[]) => Promise<void>;
+type Handler = (jobs: Job<object>[]) => Promise<JsonValue | undefined>;
 
 /**
  * The worker's job runtime (JOB-01, ADR-008): connects with DATABASE_URL, starts pg-boss, consumes
@@ -142,7 +143,8 @@ export class WorkerRuntime {
       });
     }
     const handler: Handler = async (jobs) => {
-      await Promise.all(jobs.map((job) => this.execute(reg, job)));
+      // batchSize 1: the one job's output is what pg-boss stores as its output (INT-04)
+      return (await Promise.all(jobs.map((job) => this.execute(reg, job))))[0];
     };
     await boss.work(
       reg.queue,
@@ -155,8 +157,8 @@ export class WorkerRuntime {
     );
   }
 
-  private execute(reg: Registration, job: Job<object>): Promise<void> {
-    const run = async (): Promise<void> => {
+  private execute(reg: Registration, job: Job<object>): Promise<JsonValue | undefined> {
+    const run = async (): Promise<JsonValue | undefined> => {
       let release: () => void;
       try {
         release = await this.slots.acquire();
@@ -169,7 +171,7 @@ export class WorkerRuntime {
           await failUnstartedRun(this.deps(), reg.queue, job.data, 'worker stopped before the run started');
           throw new WorkerStoppingError();
         }
-        await runJob(this.deps(), reg, { id: job.id, data: job.data, signal: job.signal });
+        return await runJob(this.deps(), reg, { id: job.id, data: job.data, signal: job.signal });
       } finally {
         release();
       }

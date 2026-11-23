@@ -7,12 +7,13 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src tests perf visual playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts playwright.visual.config.ts",
+    "lint": "eslint src tests perf visual playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts playwright.visual.config.ts playwright.int-m3.config.ts",
     "visual": "node visual.mjs",
     "test": "vitest run",
     "smoke": "node run.mjs",
     "perf": "node perf.mjs",
-    "m2": "node run.mjs --config playwright.m2.config.ts"
+    "m2": "node run.mjs --config playwright.m2.config.ts",
+    "m3": "node run.mjs --config playwright.int-m3.config.ts"
   },
   "dependencies": {
     "@glidepath/api-contract": "workspace:*",
@@ -21,6 +22,7 @@
     "@glidepath/ui": "workspace:*"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.63.0",
+    "exceljs": "4.4.0"
   }
 }
