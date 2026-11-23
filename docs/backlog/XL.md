@@ -119,7 +119,7 @@ title: "validate.ts: per-cell and cross-row validation"
 epic: XL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
@@ -148,7 +148,7 @@ title: "diff.ts: three-way and foreign two-way diff"
 epic: XL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: xhigh

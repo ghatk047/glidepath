@@ -88,7 +88,7 @@ title: "Steps 1–3: scope, research with sources, seed draft"
 epic: AI
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
