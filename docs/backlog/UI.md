@@ -261,7 +261,7 @@ title: "Sliders: decision and estimate (#7, #8)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
@@ -294,7 +294,7 @@ title: "Editable number and Edit popover (#9, #10)"
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
