@@ -1,7 +1,11 @@
 export const packageName = '@glidepath/gen-schema';
 
 export { buildModel } from './model';
-export type { Model, ModelTable, ModelColumn } from './model';
+export type { Model, ModelTable, ModelColumn, ModelIndex } from './model';
+export { buildFullModel, MANUAL_OVERLAY, OVERLAY_TYPES, pgTypeName } from './manual-overlay';
+export type { ManualOverlay, OverlayTable, OverlayColumn, OverlayAddedColumns, OverlayFk, OverlayType, OverlayDefault } from './manual-overlay';
+export { readCatalog, diffAgainstCatalog } from './catalog-diff';
+export type { Catalog, CatalogTable, Query } from './catalog-diff';
 export { renderSchemaSql, INDEXES } from './ddl';
 export { generateMigrations, checkMigrations, writeMigrations, SCHEMA_MIGRATION, RLS_MIGRATION, VIEWS_MIGRATION } from './generate';
 export {

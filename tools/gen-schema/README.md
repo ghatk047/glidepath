@@ -33,3 +33,9 @@ Local role bootstrap: `tier3-data/postgres/init` (docker `/docker-entrypoint-ini
 ## Tests
 
 `src/testing/db.ts` (ADR-016): `TEST_DATABASE_URL` (a superuser URL, e.g. the CI service) gets a fresh database per test file, bootstrapped by the init SQL; otherwise a `tools/pg-local` cluster started with `--init tier3-data/postgres/init`. Roles are cluster-wide and other packages' tests may share the server, so tests never rename or re-privilege `glidepath_app` / `glidepath_owner` (negative cases use throwaway roles).
+
+## Manual overlay (ADR-023, FIX-02)
+
+`src/manual-overlay.ts` declares the columns and tables that hand-written migrations in `tier3-data/migrations/manual/` add on top of `schema.json` (`scenario.archived`, `solver_run` progress columns, `auth_token`, `auth_session`, `passkey`, `stored_object`). `buildFullModel` (spec model + overlay) feeds the typed Drizzle schema (`tier2-logic/data-access` `gen:drizzle`) only; the generated SQL still comes from `buildModel`, so the manual SQL stays the source of that DDL and `gen-schema check` is unaffected. Only what Drizzle models goes in the overlay: columns, primary/unique/foreign keys, indexes. CHECKs, triggers, RLS and grants stay in SQL.
+
+`src/manual-overlay.pg.test.ts` applies generated + manual migrations to a database and compares them with the full model (`catalog-diff.ts`: table set, column order, types, nullability, defaults, keys, FK delete action, indexes, RLS of tenant tables); a changed type, nullability, default, key, index, or a column or table present on one side only fails it. Each manual migration that changes the schema needs an overlay entry.

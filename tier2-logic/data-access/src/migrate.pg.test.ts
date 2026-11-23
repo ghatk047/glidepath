@@ -5,6 +5,7 @@ import { getTestDatabaseUrl } from '@glidepath/pg-local';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { diffAgainstCatalog, buildFullModel, loadSchema, readCatalog } from '@glidepath/gen-schema';
 import { TRACKING_TABLE, defaultMigrationsDir, listMigrations, migrate } from './migrate';
 import { tables } from './schema';
 import { createOwnedDatabase, withClient } from './testing/owner-db';
@@ -128,10 +129,18 @@ describe('migrate(DATABASE_URL_MIGRATE)', () => {
 });
 
 describe('schema.ts matches the migrated database', () => {
-  it('every generated table has the same columns, nullability, types and constraint names as tier3-data/migrations', async () => {
+  it('every table (schema.json and manual migrations) has the same columns, nullability, types and constraint names as the migrated database', async () => {
     const db = await freshDb();
     await migrate(db.url);
     await withClient(db.url, async (c) => {
+      // No table of the migrated database is missing from schema.ts (manual tables included).
+      const dbTables = (await c.query<{ n: string }>(
+        `SELECT relname AS n FROM pg_class c JOIN pg_namespace s ON s.oid = c.relnamespace
+          WHERE s.nspname = 'public' AND c.relkind = 'r' AND relname <> $1 ORDER BY 1`,
+        [TRACKING_TABLE],
+      )).rows.map((r) => r.n);
+      expect(Object.keys(tables).sort()).toEqual(dbTables);
+
       for (const [name, table] of Object.entries(tables)) {
         const cfg = getTableConfig(table as PgTable);
         expect(cfg.name).toBe(name);
@@ -166,5 +175,14 @@ describe('schema.ts matches the migrated database', () => {
         expect(cfg.indexes.map((i) => i.config.name).sort(), `${name} indexes`).toEqual(idx.rows.map((r) => r.indexname).sort());
       }
     });
+  }, 120_000);
+});
+
+describe('gen-schema model (spec + manual overlay) matches the migrated database', () => {
+  it('the full model has no drift against the catalog after generated and manual migrations', async () => {
+    const db = await freshDb();
+    await migrate(db.url);
+    const catalog = await withClient(db.url, (c) => readCatalog((sql, params) => c.query(sql, params), [TRACKING_TABLE]));
+    expect(diffAgainstCatalog(buildFullModel(loadSchema()), catalog)).toEqual([]);
   }, 120_000);
 });

@@ -1,12 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { buildModel, INDEXES, loadSchema, schemaJsonPath } from '@glidepath/gen-schema';
+import { buildFullModel, INDEXES, loadSchema, schemaJsonPath } from '@glidepath/gen-schema';
 import type { Model, ModelColumn, ModelTable } from '@glidepath/gen-schema';
 
 /**
  * Generates the Drizzle table definitions (src/schema.ts) from
- * docs/spec/schema.json. The relational reading rules (keys, FKs, nullability,
+ * docs/spec/schema.json plus the manual overlay (tools/gen-schema
+ * manual-overlay.ts: columns and tables added by hand-written ADR-023
+ * migrations; the generated SQL does not include it). The relational reading rules (keys, FKs, nullability,
  * enums, dependency order) are the ones that produce tier3-data/migrations
  * (tools/gen-schema `buildModel`), so schema.ts and the DDL cannot disagree on
  * structure; schema.test.ts additionally compares schema.ts with a migrated database.
@@ -58,8 +60,21 @@ function columnBuilder(c: ModelColumn): ColumnRender {
       break;
     case 'char(1)':
     case 'char(3)':
+    case 'char(64)':
       expr = `char(${n}, { length: ${base.slice(5, -1)} })`;
       imp = ['char'];
+      break;
+    case 'bigint':
+      expr = `bigint(${n}, { mode: 'number' })`;
+      imp = ['bigint'];
+      break;
+    case 'real':
+      expr = `real(${n})`;
+      imp = ['real'];
+      break;
+    case 'bytea':
+      expr = `bytea(${n})`;
+      imp = [];
       break;
     case 'citext':
       expr = `citext(${n})`;
@@ -88,6 +103,15 @@ function columnBuilder(c: ModelColumn): ColumnRender {
   return { imports: imp, expr };
 }
 
+/** Drizzle default builder for the SQL defaults the model can carry. */
+function drizzleDefault(table: string, c: ModelColumn): string {
+  const d = c.defaultSql!;
+  if (d === 'now()') return '.defaultNow()';
+  if (d === 'gen_random_uuid()') return '.defaultRandom()';
+  if (d === 'true' || d === 'false' || /^-?\d+(\.\d+)?$/.test(d)) return `.default(${d})`;
+  throw new Error(`gen-drizzle: no Drizzle default for ${table}.${c.name} DEFAULT ${d}`);
+}
+
 function renderTable(t: ModelTable, imports: Set<string>): string {
   const lines: string[] = [];
   for (const c of t.columns) {
@@ -95,8 +119,9 @@ function renderTable(t: ModelTable, imports: Set<string>): string {
     r.imports.forEach((i) => imports.add(i));
     let expr = r.expr;
     if (c.notNull) expr += '.notNull()';
-    if (c.defaultSql !== undefined) expr += `.default(${c.defaultSql})`;
-    lines.push(`  ${/^[a-z_][a-z0-9_]*$/.test(c.name) ? c.name : q(c.name)}: ${expr},`);
+    if (c.defaultSql !== undefined) expr += drizzleDefault(t.name, c);
+    const note = c.manualSource ? ` // ${c.manualSource}` : '';
+    lines.push(`  ${/^[a-z_][a-z0-9_]*$/.test(c.name) ? c.name : q(c.name)}: ${expr},${note}`);
   }
   const extras: string[] = [];
   const cols = (names: string[]): string => names.map((x) => `t${prop(x)}`).join(', ');
@@ -110,16 +135,21 @@ function renderTable(t: ModelTable, imports: Set<string>): string {
     imports.add('foreignKey');
     const target = f.refTable === t.name ? 't' : f.refTable;
     const refCols = f.refColumns.map((x) => `${target}${prop(x)}`).join(', ');
+    const onDelete = f.onDelete ? `.onDelete(${q(f.onDelete)})` : '';
     extras.push(
-      `    foreignKey({ name: ${q(f.name)}, columns: [${cols(f.columns)}], foreignColumns: [${refCols}] }),`,
+      `    foreignKey({ name: ${q(f.name)}, columns: [${cols(f.columns)}], foreignColumns: [${refCols}] })${onDelete},`,
     );
   }
-  for (const i of INDEXES.filter((x) => x.table === t.name)) {
+  const indexes = [...INDEXES.filter((x) => x.table === t.name).map((i) => ({ ...i, where: undefined as string | undefined })), ...t.indexes.map((i) => ({ ...i, table: t.name }))];
+  for (const i of indexes) {
     imports.add(i.unique ? 'uniqueIndex' : 'index');
-    extras.push(`    ${i.unique ? 'uniqueIndex' : 'index'}(${q(i.name)}).on(${cols(i.columns)}),`);
+    const where = i.where === undefined ? '' : `.where(sql\`${i.where.replace(/[`\\$]/g, '\\$&')}\`)`;
+    if (where) imports.add('sql');
+    extras.push(`    ${i.unique ? 'uniqueIndex' : 'index'}(${q(i.name)}).on(${cols(i.columns)})${where},`);
   }
   imports.add('pgTable');
   return [
+    ...(t.manualSource ? [`// Manual migration ${t.manualSource} (ADR-023); declared in tools/gen-schema manual-overlay.ts.`] : []),
     `export const ${t.name} = pgTable(`,
     `  ${q(t.name)},`,
     `  {`,
@@ -151,14 +181,19 @@ export function renderDrizzleSchema(model: Model): string {
     .join('\n');
   const tableBlock = model.tables.map((t) => renderTable(t, imports)).join('\n\n');
   const usesCitext = model.tables.some((t) => t.columns.some((c) => c.sqlType === 'citext'));
-  if (usesCitext) imports.add('customType');
+  const usesBytea = model.tables.some((t) => t.columns.some((c) => c.sqlType === 'bytea'));
+  if (usesCitext || usesBytea) imports.add('customType');
+  const usesSql = imports.has('sql');
+  imports.delete('sql');
 
   const out: string[] = [
-    `// GENERATED by tier2-logic/data-access/scripts/gen-drizzle.ts from docs/spec/schema.json (spec_version ${model.specVersion}). Do not edit.`,
+    `// GENERATED by tier2-logic/data-access/scripts/gen-drizzle.ts from docs/spec/schema.json (spec_version ${model.specVersion}) plus the manual overlay. Do not edit.`,
     `// Regenerate: pnpm --filter @glidepath/data-access gen:drizzle`,
-    `// Structure mirrors tier3-data/migrations/0001_schema.sql (same model, tools/gen-schema).`,
+    `// Structure mirrors tier3-data/migrations/0001_schema.sql (same model, tools/gen-schema) and the columns/tables`,
+    `// that manual migrations (tier3-data/migrations/manual, ADR-023) add, declared in tools/gen-schema/src/manual-overlay.ts.`,
     ``,
     `import { ${[...imports].sort().join(', ')} } from 'drizzle-orm/pg-core';`,
+    ...(usesSql ? [`import { sql } from 'drizzle-orm';`] : []),
     ``,
   ];
   if (usesCitext) {
@@ -172,12 +207,23 @@ export function renderDrizzleSchema(model: Model): string {
       ``,
     );
   }
+  if (usesBytea) {
+    out.push(
+      `/** Postgres bytea; returned as Buffer. */`,
+      `const bytea = customType<{ data: Buffer }>({`,
+      `  dataType() {`,
+      `    return 'bytea';`,
+      `  },`,
+      `});`,
+      ``,
+    );
+  }
   out.push(
     enumBlock,
     ``,
     tableBlock,
     ``,
-    `/** Every generated table by name, in dependency order. */`,
+    `/** Every table by name, in dependency order: schema.json tables, then tables of manual migrations. */`,
     `export const tables = {`,
     ...model.tables.map((t) => `  ${t.name},`),
     `} as const;`,
@@ -187,7 +233,7 @@ export function renderDrizzleSchema(model: Model): string {
 }
 
 export function generateDrizzleSchema(): string {
-  return renderDrizzleSchema(buildModel(loadSchema(schemaJsonPath)));
+  return renderDrizzleSchema(buildFullModel(loadSchema(schemaJsonPath)));
 }
 
 export interface CheckResult {

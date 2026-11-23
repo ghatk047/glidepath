@@ -10,6 +10,16 @@ export interface FkRef {
   columns: string[];
   refTable: string;
   refColumns: string[];
+  /** Only the overlay uses it (manual FKs with ON DELETE CASCADE). */
+  onDelete?: 'cascade';
+}
+
+export interface ModelIndex {
+  name: string;
+  columns: string[];
+  unique: boolean;
+  /** Partial-index predicate, as SQL. */
+  where?: string;
 }
 
 export interface ModelColumn {
@@ -21,6 +31,8 @@ export interface ModelColumn {
   notNull: boolean;
   defaultSql?: string;
   description: string;
+  /** Set on columns declared by the manual overlay: the manual migration that adds them. */
+  manualSource?: string;
 }
 
 export interface ModelTable {
@@ -31,6 +43,10 @@ export interface ModelTable {
   primaryKey: string[];
   uniques: { name: string; columns: string[] }[];
   fks: (FkRef & { name: string })[];
+  /** Extra indexes the model itself carries (overlay tables); spec tables use `INDEXES` in ddl.ts. */
+  indexes: ModelIndex[];
+  /** Set on tables declared by the manual overlay: the manual migration that creates them. */
+  manualSource?: string;
   /** FKs named in schema.json that Postgres cannot express (discriminated target). */
   unenforcedRefs: { column: string; note: string }[];
 }
@@ -235,6 +251,7 @@ function buildTable(name: string, t: SpecTable, allNames: Set<string>): ModelTab
     primaryKey,
     uniques,
     fks,
+    indexes: [],
     unenforcedRefs,
   };
 }
