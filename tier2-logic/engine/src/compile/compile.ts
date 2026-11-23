@@ -4,7 +4,14 @@
  */
 import type { ModelBundle, TenantMembers } from '@glidepath/spec';
 import { notImplemented } from '../errors';
-import { evaluate, inputHash, modelDigest, type SlotEvaluation } from '../eval';
+import {
+  evaluate,
+  inputHash,
+  modelDigest,
+  rerun,
+  type RerunEvaluation,
+  type SlotEvaluation,
+} from '../eval';
 import { expand, symbolDims, type Cell } from '../expand';
 import type { ParseCache } from '../parse';
 import type {
@@ -23,7 +30,6 @@ import { topoSort } from './toposort';
 
 /** Which backlog item builds each `CompiledModel` method that is not built yet. */
 export const PENDING_METHODS = {
-  rerun: 'ENG-07',
   evaluateBatch: 'ENG-08',
   explain: 'ENG-09',
 } as const satisfies Partial<Record<keyof CompiledModel, string>>;
@@ -76,10 +82,12 @@ export class EngineModel implements CompiledModel {
     return inputHash(this.modelDigest, values, overrides);
   }
 
-  rerun(prev: Evaluation, changes: readonly Change[]): Evaluation {
-    void prev;
-    void changes;
-    throw notImplemented('CompiledModel.rerun', PENDING_METHODS.rerun);
+  /**
+   * Incremental (`Model.rerun`, S23, D3): bitwise equal to `evaluate` of `prev`'s inputs and pins with
+   * `changes` applied, running only the dirty cells, with early stop on bitwise-unchanged values.
+   */
+  rerun(prev: Evaluation, changes: readonly Change[]): RerunEvaluation {
+    return rerun(this, prev, changes);
   }
 
   evaluateBatch(base: Evaluation, vectors: BatchInput): BatchResult {

@@ -25,7 +25,8 @@ export interface EvaluableModel {
 /** An evaluation over the program's slots. Node cells read their slot; inputs read `values`. */
 export class SlotEvaluation implements Evaluation {
   constructor(
-    private readonly model: EvaluableModel,
+    /** The compiled model this evaluation belongs to (`rerun` carries values over only within it). */
+    readonly model: EvaluableModel,
     /** Every slot after the run: node cells `[0, nCells)`, then inputs, constants, temporaries. */
     readonly slots: Float64Array,
     readonly values: ReadonlyMap<CellKey, number>,

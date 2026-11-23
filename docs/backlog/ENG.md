@@ -233,7 +233,7 @@ title: "Incremental rerun with dirty propagation"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -253,6 +253,7 @@ acceptance:
 gates: [G1, G2, G3, G8]
 size: M
 notes: "Early stop when value unchanged."
+merged_at: "2026-11-23"
 ```
 
 What makes the slider live.

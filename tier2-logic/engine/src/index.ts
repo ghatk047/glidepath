@@ -44,3 +44,7 @@ export type { CompileDiagnostics } from './compile';
 // Evaluation (ENG-05): `evaluate(values, overrides?)`, `inputHash`, and `resolveInputs` (Model.input_cells).
 export { findScenario, inputHash, putValue, resolveInputs, SlotEvaluation } from './eval';
 export type { EvaluationDiagnostics, ExtraInputs, ResolvedInputs, ScenarioInputs } from './eval';
+
+// Incremental rerun (ENG-07): `rerun(prev, changes)`, dirty walk over the reverse CSR with early stop.
+export { rerun } from './eval';
+export type { RerunDiagnostics, RerunEvaluation } from './eval';
