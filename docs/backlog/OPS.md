@@ -219,7 +219,7 @@ title: "ops/backup.sh and ops/restore.sh"
 epic: OPS
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: medium

@@ -56,7 +56,7 @@ title: "build.ts: workbook, formatting and export snapshot"
 epic: XL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
