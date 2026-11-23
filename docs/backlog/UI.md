@@ -133,7 +133,7 @@ title: "Motion: number roll, springs, reduced motion"
 epic: UI
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -152,6 +152,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: S
 notes: "Interpolates the display only; the target value always comes from tier 2."
+merged_at: "2026-11-23"
 ```
 
 Numbers that glide, never invented.
