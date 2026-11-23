@@ -263,7 +263,7 @@ title: "Sliders: decision and estimate (#7, #8)"
 epic: UI
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: opus
 effort: high
@@ -284,6 +284,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The control the demo is felt through.
