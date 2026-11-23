@@ -6,7 +6,7 @@ The user has Docker and no cloud account yet; a cloud host must be able to run t
 
 ## Decision
 
-Docker Compose on the owner's Mac is the first environment. Images are multi-arch (arm64 and amd64). All configuration is environment variables listed in `.env.example`. Rejected: Fly.io and Neon for v1.0.
+Docker Compose on the owner's Mac is the first environment. Images are multi-arch (arm64 and amd64). All configuration is environment variables listed in `.env.example`. Rejected: Fly.io for v1.0. Neon is the planned next database host (ADR-015): the stack takes its database only from DATABASE_URL, so moving is a config change.
 
 ## Consequences
 

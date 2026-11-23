@@ -6,7 +6,7 @@ The demo needs simple sign-in that works locally; SSO can follow later.
 
 ## Decision
 
-Email magic link (dev mailbox container locally) plus passkey. Roles come from `tenant_membership`. Tier 2 issues session cookies. Rejected: hand-rolled auth.
+Email magic link (local mailbox container, present in both the dev and demo profiles so sign-in works offline). Passkey is a "should" (API-03), not required for the demo. Roles come from `tenant_membership`. Tier 2 issues session cookies. Rejected: hand-rolled auth.
 
 ## Consequences
 

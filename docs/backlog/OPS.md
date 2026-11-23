@@ -198,6 +198,7 @@ acceptance:
   - "demo profile uses images tagged demo-2026-12-04 pinned by digest (test: compose-config.spec.ts)"
   - "`ops/demo-check.sh` verifies all containers healthy, AA seed loaded, /calc for C equals golden_results.json C headline values (res.net, res.gap, res.risk, br.eps27) within 1e-6 relative, cached Monte Carlo C/D and min-risk results present, cached UA reconfig draft present; exits non-zero with a one-line reason (test: script against the stack)"
   - "check resolves no external hostnames (runs with networking off) (test: run with --network none for the checker container)"
+  - "demo profile includes the local mail sink so magic-link sign-in works offline (GAP-09); demo-check signs in through it (test: demo-check)"
 gates: [G14]
 size: M
 notes: ""
