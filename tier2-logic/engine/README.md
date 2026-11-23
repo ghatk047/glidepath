@@ -6,10 +6,11 @@ Parser, compiler, evaluator (full, incremental, batch), explain. Pure: no IO. Ty
 
 ## Status
 
-ENG-01 skeleton: `src/index.ts` exports the interfaces of `docs/architecture/03_engine_and_solvers.md` §1 (`compile`, `CompiledModel`, `TenantData`, `Evaluation`, `Change`, `BatchInput`, `BatchResult`, `Explanation`, `EngineError`) and re-exports `ModelBundle` and member types from `@glidepath/spec`. `compile` throws `EngineError` `NOT_IMPLEMENTED` until ENG-04. Work order: ENG-02 → 03 → 04 → 05 → 06 (parity gate).
+ENG-01 skeleton: `src/index.ts` exports the interfaces of `docs/architecture/03_engine_and_solvers.md` §1 (`compile`, `CompiledModel`, `TenantData`, `Evaluation`, `Change`, `BatchInput`, `BatchResult`, `Explanation`, `EngineError`) and re-exports `ModelBundle` and member types from `@glidepath/spec`. Work order: ENG-02 → 03 → 04 → 05 → 06 (parity gate).
 
 - ENG-02 `src/parse`: `tokenize`, `Parser`, `parse(src, cache?)` → `Ast` (num, str, neg, bin, call, agg, ref); `toPyTuple` gives engine.py's tuple shape. Every spec expression's AST equals Python's (`test/fixtures/dump_ast.py` → `ast.json`). Syntax errors are `EngineError` SYNTAX with `pos` (offset into the expression as written) and `source`.
 - ENG-03 `src/expand`: `expand(bundle, members)` → `Cell[]` in expansion order: chosen case per cell, resolved expression (bound variables and attributes folded to constants, refs as cell keys, `where` filtered at compile time, `COUNT` a constant) and deps. Per-cell deps equal Python `cdeps` for all 3,370 cells (`test/fixtures/dump_deps.py` → `deps.json`). `src/eval/pyops.ts` holds the Python float semantics (Neumaier `pySum`, `pyMin`/`pyMax`, `pyPow`, truthiness) shared by static where-filters and evaluation.
+- ENG-04 `src/compile`: `compile(bundle, members)` → `EngineModel` (a `CompiledModel`): Kahn toposort equal to `Model.order` (cycle = CYCLE naming up to 10 cells), lowering to one flat program over a `Float64Array` of slots (node cells, inputs, constants, temps; `IF`/`SAFEDIV` lazy via jumps; aggregates as member-ordered slot lists; `disassemble` prints a cell's code), forward and reverse CSR adjacency with raw `upstream`/`downstream`. Methods still to come throw `NOT_IMPLEMENTED` naming their item (`PENDING_METHODS`).
 
 ```ts
 import { compile, type CompiledModel, type TenantData } from '@glidepath/engine';
@@ -21,4 +22,6 @@ result.get('res.net');
 
 ## Tests
 
-`pnpm turbo run typecheck lint test --filter=@glidepath/engine...`
+`pnpm turbo run typecheck lint test --filter=@glidepath/engine...` (G1, G2 with >= 90% line coverage).
+
+Benches (G8): `pnpm --filter ./tier2-logic/engine bench` (`bench/engine.bench.ts`: `engine.compile`).

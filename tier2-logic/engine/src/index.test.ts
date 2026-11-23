@@ -17,7 +17,8 @@ import {
   type TenantData,
   type TenantMembers,
 } from './index';
-import { METHOD_OWNERS, pendingModel } from './pending';
+import { PENDING_METHODS } from './compile';
+import { bundleOf, membersOf } from '../test/helpers';
 
 const here = dirname(fileURLToPath(import.meta.url));
 type Cells = ReadonlyMap<CellKey, number>;
@@ -29,35 +30,27 @@ describe('engine', () => {
 });
 
 describe('03 §1 interfaces and stubs (index.test.ts)', () => {
-  it('compile is a stub that throws "not implemented"', () => {
-    const call = () => compile({} as ModelBundle, {});
+  it('compile returns a CompiledModel; compile errors are EngineErrors', () => {
+    const model = compile(bundleOf({ nodes: [{ id: 'n', expr: '1' }] }), membersOf({}));
+    expect(model.upstream('n')).toEqual([]);
+    const call = () => compile(bundleOf({ nodes: [{ id: 'n', expr: 'n + 1' }] }), {});
     expect(call).toThrow(EngineError);
-    expect(call).toThrow(/not implemented: compile \(ENG-04\)/);
     try {
       call();
     } catch (e) {
-      expect((e as EngineError).code).toBe('NOT_IMPLEMENTED');
+      expect((e as EngineError).code).toBe('CYCLE');
     }
   });
 
-  it('every CompiledModel method has a stub that throws "not implemented" naming its item', () => {
-    const model = pendingModel();
-    const methods = Object.keys(METHOD_OWNERS) as (keyof CompiledModel)[];
-    expect(methods.sort()).toEqual(
-      [
-        'downstream',
-        'evaluate',
-        'evaluateBatch',
-        'explain',
-        'inputHash',
-        'rerun',
-        'upstream',
-      ].sort(),
-    );
+  it('every CompiledModel method not built yet throws "not implemented" naming its item', () => {
+    const model = compile(bundleOf({ nodes: [{ id: 'n', expr: '1' }] }), {});
+    const methods = Object.keys(PENDING_METHODS) as (keyof typeof PENDING_METHODS)[];
+    expect(methods.length).toBeGreaterThan(0);
     for (const m of methods) {
-      const fn = model[m] as () => unknown;
-      expect(fn, m).toThrow(
-        new RegExp(`not implemented: CompiledModel\\.${m} \\(${METHOD_OWNERS[m]}\\)`),
+      const fn = (model[m] as (...args: unknown[]) => unknown).bind(model);
+      expect(() => fn(), m).toThrow(EngineError);
+      expect(() => fn(), m).toThrow(
+        new RegExp(`not implemented: CompiledModel\\.${m} \\(${PENDING_METHODS[m]}\\)`),
       );
     }
   });

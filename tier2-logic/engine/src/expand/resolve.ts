@@ -36,8 +36,9 @@ export interface Binding {
 }
 
 /**
- * Variable name → binding, in insertion order (Python dict). Bind with `new Map(env).set(v, b)`:
- * re-binding a name keeps its first position, as in Python (S01).
+ * Variable name → binding, in insertion order (Python dict). Python binds an aggregate variable with
+ * `e2 = dict(env); e2[v] = b`; the resolver sets and restores the binding in place, which gives the same
+ * order: re-binding a name keeps its first position, a new name goes last (S01).
  */
 export type Env = ReadonlyMap<string, Binding>;
 
@@ -103,10 +104,16 @@ function indexString(v: ConstValue): string | undefined {
   return undefined;
 }
 
+const splitCache = new Map<string, readonly [string, string]>();
 /** Split `l.pool` into the variable and the attribute name at the first dot. */
-function splitAttr(name: string): [string, string] {
-  const dot = name.indexOf('.');
-  return [name.slice(0, dot), name.slice(dot + 1)];
+function splitAttr(name: string): readonly [string, string] {
+  let hit = splitCache.get(name);
+  if (!hit) {
+    const dot = name.indexOf('.');
+    hit = [name.slice(0, dot), name.slice(dot + 1)];
+    splitCache.set(name, hit);
+  }
+  return hit;
 }
 
 /** The resolution of one cell: its expression with constants folded and refs as keys, and its deps. */
@@ -123,6 +130,7 @@ export interface ResolvedCell {
 export class Resolver {
   private cell: CellKey | undefined;
   private source = '';
+  private readonly bindingsByDim = new Map<DimId, readonly Binding[]>();
 
   constructor(
     readonly symbols: SymbolTable,
@@ -151,6 +159,38 @@ export class Resolver {
     if (!this.table.has(dim))
       throw this.fail('UNKNOWN_DIMENSION', `unknown dimension '${dim}'`, pos);
     return this.table.ids(dim);
+  }
+
+  /** One binding per member of `dim`, in tenant order (shared: bindings are immutable). */
+  private bindings(dim: DimId, pos: number): readonly Binding[] {
+    let out = this.bindingsByDim.get(dim);
+    if (!out) {
+      out = this.dimIds(dim, pos).map((member) => ({ dim, member }));
+      this.bindingsByDim.set(dim, out);
+    }
+    return out;
+  }
+
+  /**
+   * Runs `each` once per member of the aggregate's dim with its variable bound, in member order, then
+   * restores `env` (Python: a fresh `dict(env)` per member).
+   */
+  private forEachMember(
+    env: Env,
+    ast: Extract<Ast, { kind: 'agg' }>,
+    each: (env: Env, b: Binding) => void,
+  ): void {
+    const scope = env as Map<string, Binding>;
+    const prev = scope.get(ast.var);
+    try {
+      for (const b of this.bindings(ast.dim, ast.pos)) {
+        scope.set(ast.var, b);
+        each(scope, b);
+      }
+    } finally {
+      if (prev) scope.set(ast.var, prev);
+      else scope.delete(ast.var);
+    }
   }
 
   /** A string, None or list may only be compared or used as an index (S26). */
@@ -215,21 +255,20 @@ export class Resolver {
         return { kind: 'call', fn, args, pos };
       }
       case 'agg': {
-        const ids = this.dimIds(ast.dim, pos);
+        this.dimIds(ast.dim, pos);
         this.checkAgg(ast);
         if (ast.where) this.checkStatic(ast.where, new Set([...env.keys(), ast.var]));
         const terms: Resolved[] = [];
         const members: MemberId[] = [];
-        for (const m of ids) {
-          const e2 = new Map(env).set(ast.var, { dim: ast.dim, member: m });
-          if (ast.where && !this.whereOk(ast.where, e2)) continue;
-          members.push(m);
+        this.forEachMember(env, ast, (e2, b) => {
+          if (ast.where && !this.whereOk(ast.where, e2)) return;
+          members.push(b.member);
           if (ast.body) {
             const t = this.resolveAst(ast.body, e2, deps);
             this.numeric(t, `a term of ${ast.fn}`);
             terms.push(t);
           }
-        }
+        });
         if (ast.fn === 'COUNT') return { kind: 'const', value: members.length, pos };
         return { kind: 'agg', fn: ast.fn, terms, members, pos };
       }
@@ -417,15 +456,14 @@ export class Resolver {
       }
       case 'agg': {
         const acc: number[] = [];
-        for (const m of this.dimIds(ast.dim, pos)) {
-          const e2 = new Map(env).set(ast.var, { dim: ast.dim, member: m });
-          if (ast.where && !pyTruthyValue(this.evalStatic(ast.where, e2))) continue;
+        this.forEachMember(env, ast, (e2) => {
+          if (ast.where && !pyTruthyValue(this.evalStatic(ast.where, e2))) return;
           acc.push(
             ast.fn === 'COUNT'
               ? 1
               : this.num(this.evalStatic(ast.body!, e2), `a term of ${ast.fn}`, pos),
           );
-        }
+        });
         if (ast.fn === 'SUM' || ast.fn === 'COUNT') return pySum(acc);
         if (acc.length === 0) return 0;
         return ast.fn === 'MAXOVER' ? pyMax(acc) : pyMin(acc);
@@ -515,9 +553,9 @@ export class Resolver {
         idx.map((a) => this.resolveIndex(a, env)),
       );
     }
-    const bindings = [...env.values()].reverse();
     const mem = dims.map((d) => {
-      const b = bindings.find((x) => x.dim === d);
+      let b: Binding | undefined;
+      for (const x of env.values()) if (x.dim === d) b = x; // the last inserted binding of dim d
       if (!b) {
         throw this.fail(
           'IMPLICIT_INDEX',
