@@ -300,6 +300,20 @@ describe('collect-dist.sh and merge-node-modules.sh', () => {
     expect(bad.status).not.toBe(0);
     expect(bad.stderr).toContain('hono');
   });
+
+  it('leaves @types out of the runtime tree, even when two deploys pin different versions', () => {
+    const root = mkdtempSync(join(tmpdir(), 'glidepath-merge-types-'));
+    const pkg = (nm: string, name: string, version: string) =>
+      write(join(nm, name, 'package.json'), `{\n  "name": "${name}",\n  "version": "${version}"\n}\n`);
+    pkg(join(root, 'one'), '@types/node', '22.20.5');
+    pkg(join(root, 'one'), 'hono', '4.1.0');
+    pkg(join(root, 'two'), '@types/node', '14.18.63');
+    pkg(join(root, 'two'), 'exceljs', '4.4.0');
+    const r = run('sh', [sh('merge-node-modules.sh'), join(root, 'out'), join(root, 'one'), join(root, 'two')]);
+    expect(r.status, r.stderr).toBe(0);
+    expect(existsSync(join(root, 'out', '@types'))).toBe(false);
+    for (const p of ['hono', 'exceljs']) expect(existsSync(join(root, 'out', p, 'package.json')), p).toBe(true);
+  });
 });
 
 describe('ops/docker/logic/README.md', () => {

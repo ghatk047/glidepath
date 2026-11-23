@@ -9,7 +9,7 @@ import type { Logger } from './logger';
 import { registerExplainRoutes } from '../routes/explain';
 import { registerReadRoutes } from '../routes/read';
 import { afterCommitMiddleware, registerWriteRoutes } from '../routes/write';
-import type { SessionHub } from '../routes/write';
+import type { SessionHub as CommitNotifier } from '../routes/write';
 import { specBundleFromDir } from '../routes/read/spec-source';
 import type { SpecBundleSource } from '../routes/read/spec-source';
 import type { SessionHub } from '../session/hub';
@@ -37,7 +37,7 @@ export interface AppDeps {
   /** Spec bundle of a model version (bundle route); default: `SPEC_DIR`, else the repository's `docs/spec`. */
   specBundle?: SpecBundleSource;
   /** Told after each committed write (the WS session hub, API-07); default: nobody. */
-  hub?: SessionHub;
+  hub?: CommitNotifier;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
   /** What-if sessions (API-06): mounts the `GET /ws/session` handshake; `listen` wires the upgrades. */

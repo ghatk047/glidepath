@@ -6,7 +6,9 @@
 #
 # A package present in two inputs must have the same version; otherwise the build fails
 # (two entries would need different copies of it, which one shared tree cannot give them).
-# Dot entries (.pnpm, .bin, .modules.yaml) are pnpm bookkeeping and are not copied.
+# Dot entries (.pnpm, .bin, .modules.yaml) are pnpm bookkeeping and are not copied. @types/* holds
+# type declarations only (no runtime code), so it is left out: two deploys may pin different versions
+# (exceljs pulls @types/node 14 next to the workspace's 22) and the runtime image needs neither.
 set -eu
 
 out=${1:?usage: merge-node-modules.sh <out-dir> <node_modules>...}
@@ -32,6 +34,7 @@ for nm in "$@"; do
     [ -e "$entry" ] || continue
     name=$(basename "$entry")
     case "$name" in
+      @types) continue ;;
       @*)
         mkdir -p "$out/$name"
         for pkg in "$entry"/*; do
