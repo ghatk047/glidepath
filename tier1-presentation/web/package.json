@@ -6,8 +6,26 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@glidepath/api-contract": "workspace:*",
+    "@glidepath/ui": "workspace:*",
+    "@tanstack/react-router": "^1.170.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "^26.1.0",
+    "vite": "^7.3.0"
   }
 }

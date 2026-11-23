@@ -1,0 +1,26 @@
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: var(--type-m-size);
+  font-weight: var(--type-m-weight);
+}
+
+.gp-module {
+  padding: var(--space-panel-pad);
+}
+
+.gp-module-loading {
+  min-height: 50vh;
+  margin: var(--space-gap);
+  border-radius: var(--radius-panel);
+  background: var(--glass);
+  opacity: 0.4;
+}
