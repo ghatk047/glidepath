@@ -23,7 +23,7 @@ title: "template.ts: sheet definitions from excel_template.json"
 epic: XL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -43,6 +43,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Which variable goes on which sheet, driven by the bundle.

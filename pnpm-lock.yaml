@@ -174,7 +174,18 @@ importers:
         specifier: workspace:*
         version: link:../spec
 
-  tier2-logic/excel: {}
+  tier2-logic/excel:
+    dependencies:
+      '@glidepath/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@glidepath/spec':
+        specifier: workspace:*
+        version: link:../spec
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 3.2.7
+        version: 3.2.7(vitest@3.2.7(@types/node@22.20.5)(jsdom@31.0.1)(msw@2.15.0(@types/node@22.20.5)(typescript@5.9.3))(tsx@4.23.15)(yaml@2.9.1))
 
   tier2-logic/server:
     dependencies:
