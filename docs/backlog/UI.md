@@ -518,7 +518,7 @@ title: "Trace node, Move row, Diff row (#23, #24, #25)"
 epic: UI
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -537,6 +537,7 @@ acceptance:
 gates: [G1, G2, G12]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Row components for Market, Path and Excel.
