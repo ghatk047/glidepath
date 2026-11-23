@@ -53,6 +53,40 @@ export const RISK_EXPOSURE = 'risk_exposure';
 export const EVALUATIONS = 'evaluations';
 export const STEPS = 'steps';
 
+/** The net and bar cells the Monte Carlo odds and the savings-vs-risk bar line read. */
+export const NET_CELL = toCellKey('res.net');
+export const BAR_CELL = toCellKey('res.bar');
+
+/**
+ * Savings vs risk (MOD-07): the four labelled points. "Path" is the run's own
+ * (`res.net[]`, `risk_exposure`); the comparison points read the reference pair tier 2 reports
+ * alongside, `net[<key>]` and `risk_exposure[<key>]` (MOD-06 already carries the risk references).
+ * A point renders only when both of its metrics are present, so demo runs that lack the all-VP or
+ * a scenario reference simply drop that dot. The frontier curve comes from a `pareto` run's points.
+ */
+export const RISK_REF = (key: string): string => `${RISK_EXPOSURE}[${key}]`;
+export const NET_REF = (key: string): string => `net[${key}]`;
+export const SCATTER_REFS: readonly { readonly key: string; readonly label: string }[] = [
+  { key: 'C', label: 'C' },
+  { key: 'allvps', label: 'All VPs' },
+  { key: 'D', label: 'D' },
+];
+export const PATH_POINT = 'Path';
+
+/** Odds (MOD-07): P(`res.net` ≥ `res.bar`) per scenario and the net histogram, from Monte Carlo. */
+export const ODDS = { net: NET_CELL, bar: BAR_CELL } as const;
+
+/**
+ * What moves net most (MOD-07): policy and timing inputs are amber, levers blue (04 inventory #22;
+ * 01_moodboard). Tier 2 classifies each input; the sensitivity result the contract carries does not
+ * yet keep that word, so tier 1 maps it from the registry group and layer the variable carries —
+ * the governance group's target layer is policy, the rest of that group timing, everything else a
+ * lever — mirroring tier 2's `defaultTornadoCategory`. (Follow-up: carry `category` on the wire.)
+ */
+export const GOVERNANCE_GROUP = 'Target & governance';
+export const TARGET_LAYER = 'target';
+export const TORNADO_TOP = 10;
+
 /** Preset keys of the quick blend (`scenario_blend`), as the render's "Blend C → D". */
 export const BLEND_PAIR = { from: 'C', to: 'D' } as const;
 
@@ -117,4 +151,29 @@ export const COPY = {
   compareTable: (from: string) => `Path compared with ${from}`,
   pathColumn: 'Path',
   failed: 'The run failed.',
+
+  // Savings vs risk (4)
+  savingsRisk: 'Savings vs risk',
+  savingsUnit: '$M',
+  savingsChart: 'Net savings versus risk exposure',
+  frontierNote: 'Dashed line: frontier sketch between solved points',
+  barLineLabel: (value: string) => `Bar ${value}`,
+
+  // Odds (4)
+  odds: 'Odds of clearing',
+  oddsRunsEach: (runs: string) => `${runs} runs each`,
+  clearsBar: 'clears the bar',
+  oddsNote: 'Delivery weighted by lever confidence.',
+  notSimulated: (name: string) => `${name} has not been simulated.`,
+  runTrials: (trials: string | null) => (trials === null ? 'Run trials' : `Run ${trials} trials`),
+  distribution: (name: string) => `Distribution of net savings for ${name}`,
+  startFailed: 'The run could not start',
+
+  // What moves net most (4)
+  tornado: 'What moves net most',
+  swingUnit: 'swing $M',
+  tornadoChart: 'What moves net savings most',
+  tornadoNote: 'Amber: policy and timing, not levers',
+  runSensitivity: 'Run sensitivity',
+  noSensitivity: 'This scenario has not been analysed.',
 } as const;

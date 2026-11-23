@@ -5,7 +5,7 @@ import type {
   SolverObjective,
   SolverSpec,
 } from '@glidepath/api-contract';
-import { METHOD } from './copy';
+import { METRIC, METHOD } from './copy';
 
 /**
  * What the Goal panel holds (the user's choices), before it becomes a solver spec.
@@ -46,3 +46,25 @@ export const blendSpec = (from: ScenarioId, to: ScenarioId): QuickSolverSpec => 
   problem: 'scenario_blend',
   params: { from, to },
 });
+
+/**
+ * Path II analysis specs. Tier 1 names the problem and (for the tornado) the output cell; every
+ * other parameter is tier 2's default. All three run `save: false` (an analysis panel never writes
+ * a scenario), so they are safe to look up and re-run.
+ *
+ * - `oddsSpec`: `monte_carlo` with tier 2's seeded defaults (the key the demo cache warmer files C
+ *   and D under); P(clear) and the net histogram come from the result's `detail`.
+ * - `tornadoSpec`: quick `sensitivity` as a tornado on net (`res.net[]`); the rows come back sorted
+ *   by swing, policy and timing inputs tier 2's to classify.
+ * - `frontierSpec`: `pareto`; its `detail.points` draw the savings-vs-risk frontier when a run
+ *   exists (post-demo), hidden otherwise.
+ */
+export const oddsSpec: SolverSpec = { problem: 'monte_carlo', params: {} };
+export const tornadoSpec: QuickSolverSpec = {
+  problem: 'sensitivity',
+  params: { method: 'tornado', outputs: [METRIC.net] },
+};
+export const frontierSpec: SolverSpec = { problem: 'pareto', params: {} };
+
+/** The look-up key for the tornado: the same parameters, as the API-13 query's JSON `params`. */
+export const tornadoLookupParams = JSON.stringify(tornadoSpec.params);

@@ -13,9 +13,12 @@ import { presetLetter, useShellNavigation, useToast } from '../../global/shell';
 import { JobsProvider, solverRunCanceller } from '../../jobs';
 import { BLEND_PAIR, COPY, cy } from './copy';
 import { GoalPanel, usePathChoice } from './GoalPanel';
+import { OddsPanel } from './OddsPanel';
 import { blendSpec, pathSpec, type PathChoice } from './params';
 import { ResultPanel } from './ResultPanel';
+import { SavingsRiskPanel } from './SavingsRiskPanel';
 import { PathStyles } from './styles';
+import { TornadoPanel } from './TornadoPanel';
 import { terminal, useSolverRun } from './useSolverRun';
 
 /**
@@ -81,6 +84,10 @@ function PathScreen() {
       ? (saver.run.error?.detail ?? COPY.failed)
       : null);
 
+  // The savings-vs-risk points read the Path (min_risk_mix) run's metrics; a blend run has none.
+  const pathResult =
+    runner.run?.result && runner.run.result.problem === 'min_risk_mix' ? runner.run.result : null;
+
   return (
     <main className="gp-module gp-path" aria-label={COPY.module}>
       <PathStyles />
@@ -109,6 +116,13 @@ function PathScreen() {
           saving={saver.busy}
           saveError={saveError}
         />
+        <SavingsRiskPanel tenant={tenant} scenarioId={scenarioId} result={pathResult} />
+        <OddsPanel
+          tenant={tenant}
+          from={blendFrom ? { id: blendFrom.id, name: nameOf(blendFrom) } : { id: scenarioId, name: from }}
+          to={blendTo ? { id: blendTo.id, name: nameOf(blendTo) } : { id: scenarioId, name: from }}
+        />
+        <TornadoPanel tenant={tenant} scenarioId={scenarioId} variables={bundle.data?.variables} />
       </Grid>
     </main>
   );

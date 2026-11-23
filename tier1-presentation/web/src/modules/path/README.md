@@ -1,8 +1,28 @@
 # modules/path
 
 Path · "Find a path" (03_screens; `docs/ux/screens/solver-*-1440`). MOD-06 builds Goal (4) and
-Result (8); Savings vs risk, Odds and the tornado are MOD-07. Renders inside `GlobalLayout`; every
-number is a session cell or a solver run tier 2 answered. Nothing is computed here.
+Result (8); Savings vs risk (4), Odds (4) and the tornado (4) are MOD-07. Renders inside
+`GlobalLayout`; every number is a session cell or a solver run tier 2 answered. Nothing is computed
+here.
+
+- **Savings vs risk** (`SavingsRiskPanel`): a scatter of net against risk exposure. Points are the
+  (net, risk) pairs the Path (`min_risk_mix`) run reports — `res.net[]` / `risk_exposure` for Path,
+  and `net[<key>]` / `risk_exposure[<key>]` references for C, the all-VP optimum and D (MOD-06
+  already carries the risk references). The dashed bar line is `res.bar[]`. The frontier curve comes
+  from a `pareto` run's `detail.points`, looked up side-effect-free (API-13) and hidden until one
+  exists (post-demo). Tier 1 only scales the values to the svg.
+- **Odds** (`OddsPanel`): the Monte Carlo runs of C and D (`useAnalysis` look-up, API-13).
+  P(`res.net` ≥ `res.bar`) for each from `detail.probabilities`, and D's net histogram with
+  P10/P50/P90 and the bar line. "Run N trials" (N is tier 2's look-up trial count) starts one when a
+  scenario has none (`POST /solver-runs`, `save: false`).
+- **What moves net most** (`TornadoPanel`): the quick `sensitivity` tornado on `res.net[]`. Tier 2
+  returns the inputs sorted by swing; the top ten render as bars, the swing is `|ranked.impact|`
+  ($M), and policy / timing inputs are amber by category (mapped from the registry group and layer,
+  mirroring tier 2's `defaultTornadoCategory` until the wire carries it). "Run sensitivity" starts
+  one when missing (`POST /solver-runs/quick`, `save: false`).
+- **Look-ups** (`useAnalysis`): each analysis panel reads what tier 2 holds with
+  `GET /solver-runs/lookup` (no enqueue, run, save or row written) and shows it; an explicit "Run"
+  sends `save: false`. Only "Save as scenario" on the Result panel sends `save: true` (MOD-06).
 
 - **Goal** (`GoalPanel`): goal = `res.bar`, pressing it edits `g.target_net` (popover, commit
   queue). Objective radio cards = `min_risk_mix.objective_options` (`OBJECTIVES` in `copy.ts`).

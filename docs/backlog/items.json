@@ -4827,7 +4827,7 @@
     "epic": "MOD",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "C",
     "model": "opus",
     "effort": "high",
@@ -4857,7 +4857,8 @@
       "G13"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "MOD-08",

@@ -43,6 +43,7 @@ const fx = coreRouteFixtures;
 const tenant = specFixtures.tenant;
 const presets = specFixtures.scenarios.scenarios;
 const C = presetSnapshot('C');
+const D = presetSnapshot('D');
 const SCENARIO = C.scenarioId;
 const presetId = (key: string) => presets.find((p) => p.key === key)!.id;
 const bundle = specFixtures.bundle;
@@ -54,6 +55,21 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 interface Moved {
   from: number;
   to: number;
+}
+interface TornadoRow {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+  net_at_min: number;
+  net_at_max: number;
+  swing: number;
+}
+interface McRef {
+  iterations: number;
+  net_p10_p50_p90: [number, number, number];
+  bar_p10_p50_p90: [number, number, number];
+  prob_clear_bar: number;
 }
 const reference = JSON.parse(
   readFileSync(join(HERE, '../../../../../docs/spec/reference/solver_demo_results.json'), 'utf8'),
@@ -69,6 +85,7 @@ const reference = JSON.parse(
     eps27: number;
     inputs_moved_from_C: Record<string, Moved>;
   };
+  min_risk_total_and_vp_bars: { net: number; risk_exposure: number };
   min_risk_reference: { C_risk_exposure: number; D_risk_exposure: number };
   goal_seek_blend_C_to_D: {
     lambda: number;
@@ -78,8 +95,12 @@ const reference = JSON.parse(
     one_time_it: number;
     eps27: number;
   };
+  tornado_net_top15: TornadoRow[];
+  monte_carlo_C: McRef;
+  monte_carlo_D: McRef;
 };
 const ref = reference.min_risk_total_bar;
+const allVps = reference.min_risk_total_and_vp_bars;
 
 /**
  * Tier 2's answer to "Find a path", as API-09 will send it: the reference run's moves in an order
@@ -104,6 +125,11 @@ const pathMetrics: Record<string, number> = {
   risk_exposure: ref.risk_exposure,
   'risk_exposure[C]': reference.min_risk_reference.C_risk_exposure,
   'risk_exposure[D]': reference.min_risk_reference.D_risk_exposure,
+  'risk_exposure[allvps]': allVps.risk_exposure,
+  // Savings-vs-risk reference nets tier 2 reports beside the risk references (MOD-07).
+  'net[C]': cell('res.net'),
+  'net[D]': D.cells[toCellKey('res.net', '')] as number,
+  'net[allvps]': allVps.net,
   evaluations: ref.evaluations,
   steps: ref.steps,
 };
@@ -152,6 +178,117 @@ const blendRun = {
 const SAVED = 'sc-path-143';
 
 // ---------------------------------------------------------------------------------------------
+// MOD-07 analysis fixtures: the tornado, Monte Carlo and Pareto runs tier 2 answers.
+// ---------------------------------------------------------------------------------------------
+
+const NET = toCellKey('res.net', '');
+const BAR = toCellKey('res.bar', '');
+
+/** Tier 2's top-15 net sensitivity, already sorted by swing; `impact` is the signed net delta. */
+const tornadoRanked = reference.tornado_net_top15.map((r) => ({
+  cell: toCellKey(r.id, ''),
+  from: r.min,
+  to: r.max,
+  impact: r.net_at_max - r.net_at_min,
+}));
+const sensitivityRun = {
+  ...solverRunFixtures.sensitivity,
+  id: 'job-sens',
+  scenarioId: SCENARIO,
+  quick: true,
+  spec: { problem: 'sensitivity' as const, params: { method: 'tornado' as const, outputs: [NET] } },
+  result: {
+    ...solverRunFixtures.sensitivity.result!,
+    status: 'feasible' as const,
+    ranked: tornadoRanked,
+    metrics: { [NET]: ref.net },
+    detail: {
+      problem: 'sensitivity' as const,
+      method: 'tornado' as const,
+      output: NET,
+      rows: reference.tornado_net_top15.map((r) => ({
+        cell: toCellKey(r.id, ''),
+        low: { input: r.min, output: r.net_at_min },
+        high: { input: r.max, output: r.net_at_max },
+        elasticity: null,
+        first: null,
+        total: null,
+      })),
+    },
+  },
+};
+
+/** 20 bins over P10..P90 ± half the spread, a tent of counts (tier 2 bins the sample; the UI never does). */
+function mcBins(mc: McRef) {
+  const [p10, , p90] = mc.net_p10_p50_p90;
+  const n = 20;
+  const lo = p10 - (p90 - p10) / 2;
+  const width = (2 * (p90 - p10)) / n;
+  return Array.from({ length: n }, (_, i) => ({
+    lo: lo + i * width,
+    hi: lo + (i + 1) * width,
+    count: Math.round(100 - Math.abs(i - (n - 1) / 2) * 8),
+  }));
+}
+const mcRun = (id: string, scenarioId: string, mc: McRef) => {
+  const [p10, p50, p90] = mc.net_p10_p50_p90;
+  const [b10, b50, b90] = mc.bar_p10_p50_p90;
+  return {
+    ...solverRunFixtures.monte_carlo,
+    id,
+    scenarioId,
+    quick: false,
+    spec: { problem: 'monte_carlo' as const, params: {} },
+    result: {
+      ...solverRunFixtures.monte_carlo.result!,
+      status: 'feasible' as const,
+      metrics: { p_clear_bar: mc.prob_clear_bar },
+      diagnostics: { iterations: mc.iterations, ms: 1 },
+      detail: {
+        problem: 'monte_carlo' as const,
+        iterations: mc.iterations,
+        seed: 1,
+        percentiles: [
+          { cell: NET, p10, p50, p90 },
+          { cell: BAR, p10: b10, p50: b50, p90: b90 },
+        ],
+        probabilities: [{ cell: NET, against: BAR, p: mc.prob_clear_bar }],
+        histograms: [{ cell: NET, bins: mcBins(mc) }],
+        contributions: [],
+      },
+    },
+  };
+};
+const mcC = mcRun('job-mc-c', SCENARIO, reference.monte_carlo_C);
+const mcD = mcRun('job-mc-d', 'sc-D', reference.monte_carlo_D);
+
+/** A Pareto frontier run (post-demo): feasible (risk, net) points the scatter curve connects. */
+const frontierPoints = [
+  { bar: 100, net: 119.3, risk: 37.3, oneTime: 20, feasible: true, scenarioId: null },
+  { bar: 120, net: 143.0, risk: 42.0, oneTime: 20, feasible: true, scenarioId: null },
+  { bar: 130, net: 148.1, risk: 43.6, oneTime: 20, feasible: true, scenarioId: null },
+  { bar: 140, net: 166.9, risk: 54.8, oneTime: 20, feasible: true, scenarioId: null },
+];
+const paretoRun = {
+  ...solverRunFixtures.pareto,
+  id: 'job-pareto',
+  scenarioId: SCENARIO,
+  spec: { problem: 'pareto' as const, params: {} },
+  result: {
+    ...solverRunFixtures.pareto.result!,
+    status: 'feasible' as const,
+    detail: { problem: 'pareto' as const, points: frontierPoints },
+  },
+};
+
+type Lookup = { run: object | null; current: boolean; trials: number | null };
+const noneLookup = (problem: string): Lookup => ({
+  run: null,
+  current: false,
+  trials: problem === 'monte_carlo' ? 2000 : null,
+});
+
+// ---------------------------------------------------------------------------------------------
 // tier 2 double (msw; API-09 is mocked here) and the WS session, through the app router
 // ---------------------------------------------------------------------------------------------
 
@@ -171,14 +308,35 @@ interface Served {
   posts: ChangesetRequest[];
   starts: SolverRunRequest[];
   quicks: QuickSolverRunRequest[];
+  lookupQueries: Record<string, string>[];
 }
 
-function serve(start: (body: SolverRunRequest) => object, get: () => object): Served {
+interface MountExtra {
+  /** `GET /solver-runs/lookup` answers, keyed `${scenarioId}|${problem}` (default: nothing held). */
+  lookups?: Record<string, Lookup>;
+  /** `POST /solver-runs` (and `/quick`) answers for the analysis panels, keyed by problem. */
+  analysis?: Record<string, object>;
+}
+
+function serve(
+  start: (body: SolverRunRequest) => object,
+  get: () => object,
+  extra: MountExtra = {},
+): Served {
   const posts: ChangesetRequest[] = [];
   const starts: SolverRunRequest[] = [];
   const quicks: QuickSolverRunRequest[] = [];
+  const lookupQueries: Record<string, string>[] = [];
   let saved = false;
   server.use(
+    // API-13: a side-effect-free read of what tier 2 holds for (scenario, problem, params).
+    http.get(`${BASE}${apiRoutes.solverRunLookup.path}`, ({ request }) => {
+      const query = Object.fromEntries(new URL(request.url).searchParams);
+      lookupQueries.push(query);
+      const problem = query['problem'] ?? '';
+      const held = extra.lookups?.[`${query['scenarioId'] ?? ''}|${problem}`];
+      return HttpResponse.json(held ?? noneLookup(problem));
+    }),
     http.get(`${BASE}${apiRoutes.me.path}`, () => HttpResponse.json(fx.me.response)),
     http.get(`${BASE}${apiRoutes.tenants.path}`, () => HttpResponse.json({ tenants: [tenantRow] })),
     http.get(`${BASE}${apiRoutes.bundle.path}`, () => HttpResponse.json(bundle)),
@@ -241,23 +399,32 @@ function serve(start: (body: SolverRunRequest) => object, get: () => object): Se
           { status: 201 },
         );
       }
-      return HttpResponse.json(start(body), { status: 201 });
+      // The analysis panels (Odds) start their own problem; the Path flow stays with `start`.
+      const answer = body.spec.problem === 'min_risk_mix' ? start(body) : extra.analysis?.[body.spec.problem];
+      return HttpResponse.json(answer ?? start(body), { status: 201 });
     }),
     http.post(`${BASE}${apiRoutes.solverRunQuick.path}`, async ({ request }) => {
       const body = (await request.json()) as QuickSolverRunRequest;
       quicks.push(body);
-      return HttpResponse.json(blendRun);
+      const answer = body.spec.problem === 'scenario_blend' ? blendRun : extra.analysis?.[body.spec.problem];
+      return HttpResponse.json(answer ?? blendRun);
     }),
-    http.get(`${BASE}${apiRoutes.solverRunGet.path}`, () => HttpResponse.json(get())),
+    http.get(`${BASE}${apiRoutes.solverRunGet.path}`, ({ params }) => {
+      const id = String(params['id']);
+      // The analysis panels re-read a started run once its job ends; answer by id.
+      const byId = extra.analysis && Object.values(extra.analysis).find((r) => (r as { id?: string }).id === id);
+      return HttpResponse.json(byId ?? get());
+    }),
   );
-  return { posts, starts, quicks };
+  return { posts, starts, quicks, lookupQueries };
 }
 
 async function mount(
   start: (body: SolverRunRequest) => object = () => donePath,
   get: () => object = () => donePath,
+  extra: MountExtra = {},
 ) {
-  const served = serve(start, get);
+  const served = serve(start, get, extra);
   const mock: MockSession = createMockSession({
     snapshots: presets.map((p) => presetSnapshot(p.key)),
   });
@@ -324,6 +491,15 @@ const goal = () => screen.getByRole('region', { name: 'Goal' });
 const result = () => screen.getByTestId('path-result');
 const rows = () => [...document.querySelectorAll<HTMLElement>('ol.gp-path-moves > li')];
 const find = () => within(goal()).getByRole('button', { name: /Find a path/ });
+const scatter = () => screen.getByTestId('path-scatter');
+const oddsPanel = () => screen.getByTestId('path-odds');
+const tornadoPanel = () => screen.getByTestId('path-tornado');
+const point = (label: string) => scatter().querySelector<HTMLElement>(`[data-point="${label}"]`);
+/** Lookups that hand the Odds panel the Monte Carlo runs for C and D. */
+const mcLookups = { [`${SCENARIO}|monte_carlo`]: { run: mcC, current: true, trials: 2000 }, [`sc-D|monte_carlo`]: { run: mcD, current: true, trials: 2000 } };
+const tornadoLookup = { [`${SCENARIO}|sensitivity`]: { run: sensitivityRun, current: true, trials: null } };
+/** The bare swing label the tornado prints (chart `plain(v, 1)`): $M dropped, from `fmt`. */
+const plainSwing = (v: number) => fmt.money(v, { digits: 1 }).replace(/^(−?)\$(.*)M$/, '$1$2');
 
 // ---------------------------------------------------------------------------------------------
 
@@ -602,9 +778,158 @@ describe('AC5: every value from the session or the API', () => {
   });
 });
 
+describe('AC-MOD07-1: savings vs risk scatter', () => {
+  it('plots C, Path, All VPs and D from tier-2 metrics with the bar line; the frontier shows only with a Pareto result', async () => {
+    const t = await mount();
+    fireEvent.click(find());
+    await t.until(() => expect(point('Path')).toBeTruthy());
+
+    // the four points sit at the (risk, net) the Path run reported — nothing derived here
+    const at = (label: string) => {
+      const g = point(label)!;
+      return [g.dataset['x'], g.dataset['y']];
+    };
+    expect(at('Path')).toEqual([String(ref.risk_exposure), String(ref.net)]);
+    expect(at('C')).toEqual([
+      String(reference.min_risk_reference.C_risk_exposure),
+      String(cell('res.net')),
+    ]);
+    expect(at('All VPs')).toEqual([String(allVps.risk_exposure), String(allVps.net)]);
+    expect(at('D')).toEqual([
+      String(reference.min_risk_reference.D_risk_exposure),
+      String(D.cells[toCellKey('res.net', '')]),
+    ]);
+
+    // the bar line is res.bar; no Pareto run, so no frontier curve
+    const barLine = scatter().querySelector<HTMLElement>('[data-part="bar-line"]')!;
+    expect(barLine.dataset['value']).toBe(String(ref.bar));
+    expect(scatter().querySelector('[data-part="frontier"]')).toBeNull();
+  });
+
+  it('draws the frontier curve when a Pareto run exists (post-demo)', async () => {
+    const t = await mount(() => donePath, () => donePath, {
+      lookups: { [`${SCENARIO}|pareto`]: { run: paretoRun, current: true, trials: null } },
+    });
+    fireEvent.click(find());
+    await t.until(() => expect(point('Path')).toBeTruthy());
+    await t.until(() => expect(scatter().querySelector('[data-part="frontier"]')).toBeTruthy());
+    expect(
+      t.lookupQueries.some((q) => q['problem'] === 'pareto' && q['scenarioId'] === SCENARIO),
+    ).toBe(true);
+  });
+});
+
+describe('AC-MOD07-2: odds', () => {
+  it('shows P(clear) for C and D and the D histogram from the Monte Carlo runs', async () => {
+    const t = await mount(() => donePath, () => donePath, { lookups: mcLookups });
+    await t.until(() =>
+      expect(oddsPanel().querySelector('[data-scenario="C"] [data-clear]')).toBeTruthy(),
+    );
+    const clearOf = (name: string) =>
+      oddsPanel().querySelector<HTMLElement>(`[data-scenario="${name}"] [data-clear]`)!;
+    expect(clearOf('C').dataset['clear']).toBe(String(reference.monte_carlo_C.prob_clear_bar));
+    expect(clearOf('C').textContent).toBe('0%');
+    expect(clearOf('D').dataset['clear']).toBe(String(reference.monte_carlo_D.prob_clear_bar));
+    expect(clearOf('D').textContent).toBe('4.5%');
+    // the full-stretch (D) net histogram, bound by name
+    expect(
+      within(oddsPanel()).getByRole('img', { name: 'Distribution of net savings for D' }),
+    ).toBeTruthy();
+  });
+
+  it('offers a run action when a scenario has not been simulated (tier 2 trial count)', async () => {
+    const t = await mount(() => donePath, () => donePath, { analysis: { monte_carlo: mcD } });
+    await t.until(() =>
+      expect(within(oddsPanel()).getByText('D has not been simulated.')).toBeTruthy(),
+    );
+    // the trial count on the action is tier 2's (the look-up's 2,000), never a literal
+    const action = oddsPanel().querySelector<HTMLElement>('.gp-empty-action')!;
+    expect(action.textContent).toBe(`Run ${fmt.fte(2000)} trials`);
+    fireEvent.click(action);
+    await t.until(() =>
+      expect(
+        t.starts.some(
+          (s) => s.spec.problem === 'monte_carlo' && s.scenarioId === 'sc-D' && s.save === false,
+        ),
+      ).toBe(true),
+    );
+    await t.until(() =>
+      expect(within(oddsPanel()).getByRole('img', { name: /Distribution of net savings for D/ })).toBeTruthy(),
+    );
+  });
+});
+
+describe('AC-MOD07-3: what moves net most (tornado)', () => {
+  it('shows the top ten inputs in tier 2 swing order, policy and timing amber by category', async () => {
+    const t = await mount(() => donePath, () => donePath, { lookups: tornadoLookup });
+    await t.until(() =>
+      expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
+    );
+    const trows = [...tornadoPanel().querySelectorAll<HTMLElement>('[data-part="row"]')];
+    const top = reference.tornado_net_top15.slice(0, 10);
+    // tier 2's order is kept; tier 1 does not re-sort
+    expect(trows.map((r) => r.dataset['variableId'])).toEqual(top.map((r) => r.id));
+    // the swing drawn is |impact| in $M, the value tier 2 sent
+    expect(trows[0]!.querySelector('[data-part="value"]')!.textContent).toBe(plainSwing(top[0]!.swing));
+    // policy and timing inputs are amber by category; levers are blue
+    const cat = (id: string) =>
+      tornadoPanel().querySelector<HTMLElement>(`[data-variable-id="${id}"]`)!.dataset['category'];
+    expect(cat('g.ot_out_share')).toBe('policy');
+    expect(cat('g.ot_in_year')).toBe('timing');
+    expect(cat('g.head_start')).toBe('timing');
+    expect(cat('lev.L10.ren')).toBe('lever');
+    expect(cat('hc.ctr')).toBe('lever');
+  });
+
+  it('runs a quick sensitivity when the scenario has none', async () => {
+    const t = await mount(() => donePath, () => donePath, { analysis: { sensitivity: sensitivityRun } });
+    await t.until(() =>
+      expect(within(tornadoPanel()).getByRole('button', { name: 'Run sensitivity' })).toBeTruthy(),
+    );
+    fireEvent.click(within(tornadoPanel()).getByRole('button', { name: 'Run sensitivity' }));
+    await t.until(() => expect(t.quicks.some((q) => q.spec.problem === 'sensitivity')).toBe(true));
+    const sent = t.quicks.find((q) => q.spec.problem === 'sensitivity')!;
+    expect(sent).toMatchObject({
+      scenarioId: SCENARIO,
+      spec: { problem: 'sensitivity', params: { method: 'tornado', outputs: [NET] } },
+      save: false,
+    });
+    await t.until(() =>
+      expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
+    );
+  });
+});
+
+describe('AC-MOD07-4: every analysis value from tier 2', () => {
+  it('scatter, odds and tornado values equal the fixtures (the module computes nothing)', async () => {
+    const t = await mount(() => donePath, () => donePath, {
+      lookups: { ...mcLookups, ...tornadoLookup },
+    });
+    fireEvent.click(find());
+    await t.until(() => expect(point('Path')).toBeTruthy());
+    await t.until(() => expect(oddsPanel().querySelector('[data-clear]')).toBeTruthy());
+    await t.until(() =>
+      expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
+    );
+    // every scatter coordinate is a metric tier 2 sent
+    const metricValues = new Set(Object.values(pathMetrics).map(String));
+    for (const g of scatter().querySelectorAll<HTMLElement>('[data-point]')) {
+      expect(metricValues.has(g.dataset['x'] ?? ''), g.outerHTML).toBe(true);
+      expect(metricValues.has(g.dataset['y'] ?? ''), g.outerHTML).toBe(true);
+    }
+    // the tornado swings equal |impact| of the runs tier 2 sent
+    const swings = new Set(tornadoRanked.map((m) => plainSwing(Math.abs(m.impact))));
+    for (const v of tornadoPanel().querySelectorAll<HTMLElement>('[data-part="value"]')) {
+      expect(swings.has(v.textContent ?? ''), v.textContent ?? '').toBe(true);
+    }
+  });
+});
+
 describe('G12: accessibility', () => {
   it('has no serious or critical axe violations (empty and with a result)', async () => {
-    const t = await mount();
+    const t = await mount(() => donePath, () => donePath, {
+      lookups: { ...mcLookups, ...tornadoLookup },
+    });
     const run = async () => {
       const out = await axe.run(t.view.container, {
         rules: { 'color-contrast': { enabled: false } }, // jsdom has no layout or colours
@@ -617,6 +942,7 @@ describe('G12: accessibility', () => {
     fireEvent.click(find());
     await t.until(() => expect(result()).toBeTruthy());
     await t.landed();
+    await t.until(() => expect(point('Path')).toBeTruthy());
     fireEvent.click(within(result()).getByRole('button', { name: 'Compare with C' }));
     expect(await run()).toEqual([]);
   });
