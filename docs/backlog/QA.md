@@ -183,7 +183,7 @@ title: "Visual baselines (G11)"
 epic: QA
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -200,6 +200,7 @@ acceptance:
 gates: [G11]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Keeps the glass looking like the approved UX.

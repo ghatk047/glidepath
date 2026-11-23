@@ -8,9 +8,11 @@
     "src",
     "tests",
     "perf",
+    "visual",
     "playwright.perf.config.ts",
     "playwright.config.ts",
     "playwright.m2.config.ts",
+    "playwright.visual.config.ts",
     "vitest.config.ts"
   ]
 }

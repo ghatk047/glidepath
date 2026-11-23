@@ -82,3 +82,25 @@ budget stays the smoke's. Serial, one signed-in page:
 
 The spec prints `[m2] timings (ms)`, what it read on screen and the screenshots it wrote. Each run
 adds one `Custom (from C)` fork, like `int:m1`; preset C is never written.
+
+## Visual baselines (QA-06, G11)
+
+```
+pnpm e2e:visual -- --trace off        # compare with the approved baselines; INT_COMPOSE_PROJECT=<project> when it is not `glidepath`
+pnpm e2e:visual -- --update           # approve: write the baselines that are missing or differ (first approval, or a reviewed change)
+```
+
+`visual/visual.spec.ts` (own config `playwright.visual.config.ts`, driver `visual.mjs`; same stack and sign-in as the
+smoke) takes a full-page screenshot of each of the 8 modules of preset C in 2 themes (`cruise`, `daylight`; set the way the
+toggle stores it, `glidepath.theme`) at 2 widths (1440 and 390 CSS px), device scale 2 and reduced motion, like the UX pack's
+renders. 32 tests, titled `<module>-<theme>-<width>`, each `toHaveScreenshot` against
+`visual/baselines/chromium-<platform>/<module>-<theme>-<width>.png` (committed, one set per platform because fonts and
+rasterisation differ between a Linux container and a Mac). The pixel threshold is in `src/visual.ts`: colour tolerance 0.1 and
+at most 0.2% of pixels differing. Without `--update` a missing baseline fails; it is never written silently.
+
+The last test, `visual_report_generated_beside_the_ux_screens`, writes the reviewer's report
+`visual-report/index.html` (git-ignored; the folder holds the images and can be zipped): every baseline beside the render of
+the same screen in `docs/ux/screens/` (13 of the 32 screens have one: Path is the pack's `solver`, Excel its `data`), the
+page-height difference between the two, and for a failed comparison this run's capture and the pixel diff. That is the first
+approval of G11: the reviewer reads the pairs, and a screen that differs from its render is recorded, not "fixed" in the pack.
+`src/visual.ts` (matrix, file names, report page) and `src/visual-report.ts` (files) are unit-tested without a stack.

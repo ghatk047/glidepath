@@ -7,7 +7,8 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src tests perf playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts",
+    "lint": "eslint src tests perf visual playwright.config.ts playwright.perf.config.ts playwright.m2.config.ts playwright.visual.config.ts",
+    "visual": "node visual.mjs",
     "test": "vitest run",
     "smoke": "node run.mjs",
     "perf": "node perf.mjs",

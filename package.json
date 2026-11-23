@@ -27,6 +27,7 @@
     "int:m1": "pnpm --filter @glidepath/int run m1",
     "e2e": "pnpm --filter @glidepath/e2e run smoke",
     "e2e:perf": "pnpm --filter @glidepath/e2e run perf",
+    "e2e:visual": "pnpm --filter @glidepath/e2e run visual",
     "int:m2": "pnpm --filter @glidepath/e2e run m2",
     "e2e:storyline": "echo 'not implemented yet'",
     "bench": "turbo run bench"
