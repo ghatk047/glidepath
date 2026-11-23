@@ -151,7 +151,7 @@ title: "M4 integration: Airlines, demo profile, storyline green"
 epic: INT
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: high
