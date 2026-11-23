@@ -84,7 +84,8 @@ export const ODDS_CELLS = { net: 'res.net', bar: 'res.bar' } as const;
 
 /**
  * Fastest path: `metrics` keys read from the min-risk (`min_risk_mix`) `solver_run` result.
- * `res.net[]` in the contract's cell-key form (or `res.net`, as API-09 passes solver keys through);
+ * `res.net` is a model cell, so it is keyed in the contract's cell-key form `res.net[]` (tier 2
+ * maps every solver's cells to it, API-13; the panel builds the key with `toCellKey`);
  * `risk_exposure` as the solver names it (expected non-delivery); `people_moves`, the number of
  * moves on people levers (no solver sends it yet: absent, the clause is left out, nothing guessed).
  */
@@ -185,8 +186,11 @@ export const COPY = {
   chanceOfClearing: 'chance of clearing the bar',
   runs: (text: string) => `${text} runs`,
   notSimulated: 'This scenario has not been simulated.',
-  /** The empty state's action (03_screens, 02 §6). Tier 1 sends no count: tier 2 runs its default. */
-  runTrials: 'Run 2,000 trials',
+  /**
+   * The empty state's action (03_screens, 02 §6). The count is tier 2's default, as its look-up
+   * answered (`trials`); until then the action carries no number. Tier 1 sends no count either.
+   */
+  runTrials: (trials: string | null) => (trials === null ? 'Run trials' : `Run ${trials} trials`),
   distribution: 'Distribution of net savings',
   // Fastest path
   pathLabel: 'Fastest path to the bar',

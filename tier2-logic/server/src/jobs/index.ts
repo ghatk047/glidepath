@@ -9,8 +9,8 @@ export {
   RELAY_RUNS_PER_SCENARIO,
 } from './relay';
 export type { JobRelay, JobRelayDeps, JobSource, JobTarget } from './relay';
-export { cacheKeyOf, findCachedRun, storedKey, withCacheKey, CACHE_SCAN_LIMIT } from './cache';
-export type { CacheKey, SpecLike } from './cache';
+export { cacheKeyOf, findCachedRun, findLatestRun, storedKey, withCacheKey, CACHE_SCAN_LIMIT } from './cache';
+export type { CacheKey, FoundRun, SpecLike } from './cache';
 export { canonicalJson, paramsHash } from './params-hash';
 export { createSolverSubmitter, latestCalcInputHash, solverQueue } from './submit';
 export type { EnqueueJob, InputHashOf, SolverSubmit, SolverSubmitDeps, SolverSubmitted } from './submit';

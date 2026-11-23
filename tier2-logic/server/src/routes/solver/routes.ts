@@ -1,22 +1,24 @@
 import {
   QuickSolverRunRequest,
+  SolverLookupQuery,
   SolverRunParams,
   SolverRunRequest,
+  SolverSpec as SolverSpecSchema,
   TenantParams,
   problemTypes,
 } from '@glidepath/api-contract';
-import type { QuickSolverSpec, SolverSpec } from '@glidepath/api-contract';
+import type { QuickSolverSpec, SolverLookup, SolverSpec } from '@glidepath/api-contract';
 import { createSolverRun, getScenario, getSolverRun, updateSolverRun } from '@glidepath/data-access';
 import type { SolverRunRecord, TenantTx } from '@glidepath/data-access';
 import { applyChangeset, createScenario } from '@glidepath/domain';
 import type { Change as DomainChange, JsonValue } from '@glidepath/domain';
 import { EngineError } from '@glidepath/engine';
-import { SolverError, runSolver } from '@glidepath/solvers';
+import { MONTE_CARLO_DEFAULTS, SolverError, runSolver } from '@glidepath/solvers';
 import type { Context, Hono } from 'hono';
 import { ApiError } from '../../app/problem';
 import type { AppEnv } from '../../app/tenant';
 import type { ScenarioLoader } from '../../session';
-import { cacheKeyOf, latestCalcInputHash, withCacheKey } from '../../jobs';
+import { cacheKeyOf, findLatestRun, latestCalcInputHash, withCacheKey } from '../../jobs';
 import type { SpecLike, InputHashOf, SolverSubmit, SolverSubmitted } from '../../jobs';
 import { loadScenario, writeContext } from '../write/support';
 import { guarded } from '../write/errors';
@@ -105,6 +107,8 @@ const resultLabel = (problem: string): string => {
  *   stops and the same spec is enqueued as a job (`solver.<problem>`): 202 with the queued `SolverRun`, whose id is the
  *   job id (an identical earlier result answers 200 at once, as `cached`).
  * - `POST solver-runs`: any problem, enqueued (cache first), 201 with the `SolverRun`; progress follows as WS `job`.
+ * - `GET solver-runs/lookup`: the newest finished run held for `(scenario, problem, params)`; reads only, never runs,
+ *   enqueues or writes (the Cockpit tiles; API-13).
  * - `GET solver-runs/:id`: status, progress and, once finished, the result.
  * - `DELETE solver-runs/:id`: sets `cancel_requested`; the worker stops at its next batch (idempotent, 200).
  */
@@ -193,6 +197,7 @@ export function registerSolverRoutes(app: Hono<AppEnv>, deps: SolverRoutesDeps):
           scenarioId: req.scenarioId,
           kind: solverKind(spec.problem),
           spec: withRun(spec, { ...meta, quick: false }),
+          save: meta.save,
         });
         return c.json(toSolverRun(submitted.run), submitted.cached ? 200 : 202);
       }
@@ -238,8 +243,32 @@ export function registerSolverRoutes(app: Hono<AppEnv>, deps: SolverRoutesDeps):
         scenarioId: req.scenarioId,
         kind: solverKind(req.spec.problem),
         spec: withRun(req.spec, meta),
+        save: meta.save,
       });
       return c.json(toSolverRun(submitted.run), 201);
+    }),
+  );
+
+  // Registered before `:id`: `lookup` is not a run id. A GET, so every member may read it (viewers too).
+  app.get('/api/t/:tenant/solver-runs/lookup', (c) =>
+    guard(c, async () => {
+      TenantParams.parse(c.req.param());
+      const query = SolverLookupQuery.parse(c.req.query());
+      const t = c.get('tenant');
+      const scenario = await getScenario(t.tx, query.scenarioId);
+      if (scenario === null) throw noScenario();
+      // The same parse a start request gets, so the params hash to the key the run was filed under.
+      const spec = SolverSpecSchema.parse({
+        problem: query.problem,
+        params: query.params === undefined ? {} : JSON.parse(query.params),
+      });
+      const { run, current } = await findLatestRun(t.tx, query.scenarioId, spec, await inputHashOf(t.tx, query.scenarioId));
+      const answer: SolverLookup = {
+        run: run === null ? null : { ...toSolverRun(run), ...(current ? { scenarioVersion: scenario.version } : {}) },
+        current,
+        trials: spec.problem === 'monte_carlo' ? (spec.params.iterations ?? MONTE_CARLO_DEFAULTS.iterations) : null,
+      };
+      return c.json(answer, 200, { 'cache-control': 'private, no-cache' });
     }),
   );
 

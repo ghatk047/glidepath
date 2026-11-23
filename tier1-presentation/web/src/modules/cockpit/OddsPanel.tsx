@@ -34,13 +34,14 @@ function oddsOf(detail: MonteCarloDetail) {
  * Odds (4 cols): the scenario's Monte Carlo `solver_run` result. P(`res.net` ≥ `res.bar`) as
  * the big number, the run count, the net histogram with P10 / P50 / P90 and the bar line (the
  * bar's P50), "P50 $74.5M" in the header. Without a result: "This scenario has not been
- * simulated." + "Run 2,000 trials" (`POST /solver-runs` monte_carlo with tier 2's defaults);
- * while it runs the header shows the job's note, progress and cancel (WEB-08).
+ * simulated." + "Run N trials" (`POST /solver-runs` monte_carlo with tier 2's defaults; N is the
+ * trial count tier 2's look-up answers); while it runs the header shows the job's note, progress and cancel (WEB-08).
  */
 export function OddsPanel() {
   const tile = useTileRun('monte_carlo');
   const detail = tile.result?.detail?.problem === 'monte_carlo' ? tile.result.detail : null;
   const odds = detail ? oddsOf(detail) : null;
+  const runTrials = COPY.runTrials(tile.trials === null ? null : fmt.fte(tile.trials));
   const active = tile.job.active || tile.run?.status === 'queued' || tile.run?.status === 'running';
 
   const status =
@@ -94,7 +95,7 @@ export function OddsPanel() {
           <EmptyState
             line={COPY.notSimulated}
             action={{
-              label: COPY.runTrials,
+              label: runTrials,
               disabled: tile.starting || active,
               onAction: () => void tile.start(),
             }}

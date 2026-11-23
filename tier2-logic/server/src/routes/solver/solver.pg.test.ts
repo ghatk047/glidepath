@@ -1,5 +1,7 @@
 import { PROBLEM_CONTENT_TYPE, SolverRun, UserId, assertContract } from '@glidepath/api-contract';
-import { getSolverRun, updateSolverRun, withTenant } from '@glidepath/data-access';
+import type { SolverLookup } from '@glidepath/api-contract';
+import { MONTE_CARLO_DEFAULTS } from '@glidepath/solvers';
+import { getScenario, getSolverRun, listScenarios, listSolverRuns, updateSolverRun, withTenant } from '@glidepath/data-access';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../app/app';
@@ -8,19 +10,25 @@ import { bindWithTenant } from '../../app/tenant';
 import { captureLogger } from '../../app/testing/fixtures';
 import { createSolverSubmitter } from '../../jobs';
 import { dbScenarioLoader } from '../../session';
+// Test wiring only (as compose/queue.pg.test.ts): the worker's own solver handler runs the job this server enqueued.
+import { defaultSolverDeps } from '../../../../worker/src/jobs/solver/deps';
+import { runSolverJob } from '../../../../worker/src/jobs/solver/run';
+import type { SolverJobPayload } from '../../../../worker/src/jobs/solver/types';
 import { specBundleFromDir } from '../read/spec-source';
 import { AA_ID, ANA, BOB, CAROL, MINE, asUser, presetId, startAaDatabase } from '../read/testing/aa-db';
 import type { AaDatabase } from '../read/testing/aa-db';
 
 /**
  * API-09 on the AA test database (app role, RLS applies): quick runs on the session's model, the 2 s limit and
- * the job fallback, enqueue / status / cancel of worker jobs, and the contract of every answer.
+ * the job fallback, enqueue / status / cancel of worker jobs, and the contract of every answer. The last two
+ * describes are API-13: the side-effect-free lookup, and `save` on the job data (honoured by JOB-03's handler).
  */
 
 let env: AaDatabase;
 let app: Hono<AppEnv>;
 let slow: Hono<AppEnv>;
-const sent: { queue: string; payload: { tenantId: string; userId: string; runId: string } }[] = [];
+let other: Hono<AppEnv>;
+const sent: { queue: string; payload: { tenantId: string; userId: string; runId: string; save: boolean } }[] = [];
 
 const ana = asUser(ANA);
 const C = presetId('C');
@@ -62,6 +70,8 @@ beforeAll(async () => {
   const solver = { loader, submit, specBundle, inputHashOf: async () => 'input-hash-1' };
   app = createApp({ ...base, solver });
   slow = createApp({ ...base, solver: { ...solver, quickLimitMs: 0 } });
+  // The same tenant after its inputs changed: another input hash, so earlier runs are out of date.
+  other = createApp({ ...base, solver: { ...solver, inputHashOf: async () => 'input-hash-2' } });
 }, 180_000);
 
 afterAll(() => env?.close());
@@ -72,7 +82,7 @@ describe('POST solver-runs/quick runs the short solvers on the session model', (
   it('goal_seek: solves one input to a target and passes assertContract', async () => {
     // The start value is the answer for its own output: a target the scan always brackets.
     const base = await asRun(await quick({ problem: 'sensitivity', params: { method: 'tornado', outputs: ['res.net[]'] } }));
-    const net = base.result!.metrics['res.net']!;
+    const net = base.result!.metrics['res.net[]']!;
     const run = await asRun(await quick({ problem: 'goal_seek', params: { var: 'lev.L01.cut[]', output: 'res.net[]', target: net } }));
     expect(run).toMatchObject({ quick: true, status: 'done', progress: 1, cached: false, cancelRequested: false, scenarioId: C });
     expect(run.result).toMatchObject({ problem: 'goal_seek', status: 'optimal' });
@@ -125,7 +135,7 @@ describe('POST solver-runs/quick runs the short solvers on the session model', (
 
   it('save: the result becomes a solver scenario below the start point (changeset origin solver)', async () => {
     const base = await asRun(await quick({ problem: 'sensitivity', params: { method: 'tornado', outputs: ['res.net[]'] } }));
-    const net = base.result!.metrics['res.net']!;
+    const net = base.result!.metrics['res.net[]']!;
     const run = await asRun(
       await quick({ problem: 'goal_seek', params: { var: 'lev.L01.cut[]', output: 'res.net[]', target: net } }, { save: true }),
     );
@@ -171,7 +181,7 @@ describe('over the quick limit: 202 and a job id', () => {
     expect(run).toMatchObject({ quick: false, status: 'queued', progress: 0, result: null, scenarioId: C });
     expect(run.spec.problem).toBe('sensitivity');
     expect(sent).toHaveLength(before + 1);
-    expect(sent[before]).toEqual({ queue: 'solver.sensitivity', payload: { tenantId: AA_ID, userId: ANA, runId: run.id } });
+    expect(sent[before]).toEqual({ queue: 'solver.sensitivity', payload: { tenantId: AA_ID, userId: ANA, runId: run.id, save: false } });
     // The id is the job's: GET answers it.
     const status = await assertContract('solverRunGet', await get(`/api/t/aa/solver-runs/${run.id}`));
     expect(status.status).toBe('queued');
@@ -202,7 +212,7 @@ describe('POST/GET/DELETE solver-runs: worker jobs', () => {
     expect(run).toMatchObject({ status: 'queued', progress: 0, quick: false, save: true, cached: false, scenarioId: MINE, scenarioVersion: 4, result: null, error: null, cancelRequested: false });
     expect(run.spec).toEqual(spec);
     expect(sent).toHaveLength(before + 1);
-    expect(sent[before]).toEqual({ queue: 'solver.min_risk_mix', payload: { tenantId: AA_ID, userId: ANA, runId: id } });
+    expect(sent[before]).toEqual({ queue: 'solver.min_risk_mix', payload: { tenantId: AA_ID, userId: ANA, runId: id, save: true } });
     const row = await withTenant(env.app.db, AA_ID, ANA, (tx) => getSolverRun(tx, id));
     expect(row).toMatchObject({ kind: 'optimize', status: 'queued', scenario_id: MINE });
   });
@@ -236,6 +246,8 @@ describe('POST/GET/DELETE solver-runs: worker jobs', () => {
       changes: [{ target: 'variable', key: 'lev.L01.cut', member: '', value: 0.2 }],
       ranked: [{ cell: 'lev.L01.cut[]', from: 0.1, to: 0.2, impact: 3.5 }],
     });
+    // the stored solver key `res.net` is served as the wire cell key
+    expect(done.result!.metrics).toEqual({ 'res.net[]': 101.5 });
   });
 
   it('a failed run answers its error as a problem', async () => {
@@ -285,4 +297,151 @@ describe('POST/GET/DELETE solver-runs: worker jobs', () => {
     expect(hit.result).toEqual(first.result);
     expect(sent).toHaveLength(before);
   });
+});
+
+const runRows = () => withTenant(env.app.db, AA_ID, ANA, (tx) => listSolverRuns(tx, { limit: 500 }));
+const lookupUrl = (scenarioId: string, problem: string, params?: unknown) =>
+  `/api/t/aa/solver-runs/lookup?scenarioId=${scenarioId}&problem=${problem}${params === undefined ? '' : `&params=${encodeURIComponent(JSON.stringify(params))}`}`;
+const lookup = async (url: string, a: Hono<AppEnv> = app): Promise<SolverLookup> =>
+  assertContract('solverRunLookup', await a.request(url, { headers: ana.headers }));
+
+/** A Monte Carlo result as a worker stores it (engine cells). */
+const mcResult = {
+  problem: 'monte_carlo',
+  status: 'feasible',
+  changes: [],
+  ranked: [],
+  metrics: { 'res.net.p50': 80, p_clear_bar: 0.25 },
+  diagnostics: { iterations: 2000, ms: 9, seed: 1 },
+  detail: {
+    iterations: 2000,
+    seed: 1,
+    percentiles: [{ cell: 'res.net', p10: 60, p50: 80, p90: 100 }],
+    probabilities: [{ cell: 'res.net', against: 'res.bar', p: 0.25 }],
+    histograms: [],
+    contributions: [],
+  },
+};
+
+const noCancelled = (rows: { status: string; cancel_requested: boolean }[]) =>
+  rows.filter((r) => r.status === 'cancelled' || r.cancel_requested);
+
+describe('API-13 GET solver-runs/lookup: a result lookup without side effects', () => {
+  let doneId = '';
+
+  it('answers null when nothing is held, with the Monte Carlo trial count from tier 2, and writes nothing', async () => {
+    const before = await runRows();
+    const sentBefore = sent.length;
+    const none = await lookup(lookupUrl(C, 'monte_carlo'));
+    // the solver's default (solvers.json: 2,000), not a number tier 1 holds
+    expect(none).toEqual({ run: null, current: false, trials: MONTE_CARLO_DEFAULTS.iterations });
+    expect(await lookup(lookupUrl(C, 'monte_carlo', { iterations: 500 }))).toMatchObject({ trials: 500 });
+    expect(await lookup(lookupUrl(C, 'min_risk_mix'))).toEqual({ run: null, current: false, trials: null });
+    // a miss never enqueues and leaves no run behind, cancelled or otherwise
+    expect(sent).toHaveLength(sentBefore);
+    expect(await runRows()).toEqual(before);
+  });
+
+  it('returns the newest finished run of (scenario, problem, params): the one for the present inputs, with the scenario version it is valid for', async () => {
+    const started = await assertContract('solverRunStart', await post('/api/t/aa/solver-runs', { scenarioId: C, spec: { problem: 'monte_carlo', params: {} } }));
+    doneId = started.id;
+    // queued and running runs are not results
+    expect((await lookup(lookupUrl(C, 'monte_carlo'))).run).toBeNull();
+    await withTenant(env.app.db, AA_ID, ANA, (tx) => updateSolverRun(tx, doneId, { status: 'done', progress: 1, result: mcResult as never }));
+
+    const rows = await runRows();
+    const sentBefore = sent.length;
+    const hit = await lookup(lookupUrl(C, 'monte_carlo'));
+    const version = (await withTenant(env.app.db, AA_ID, ANA, (tx) => getScenario(tx, C)))!.version;
+    expect(hit).toMatchObject({ current: true, trials: 2000, run: { id: doneId, status: 'done', scenarioId: C, scenarioVersion: version } });
+    expect(hit.run!.result!.metrics).toEqual({ 'res.net.p50': 80, p_clear_bar: 0.25 });
+    expect(hit.run!.result!.detail).toMatchObject({ percentiles: [{ cell: 'res.net[]' }], probabilities: [{ cell: 'res.net[]', against: 'res.bar[]' }] });
+    // explicit params key like the start request's; other params are another key, another scenario another run
+    expect((await lookup(lookupUrl(C, 'monte_carlo', {}))).run?.id).toBe(doneId);
+    expect((await lookup(lookupUrl(C, 'monte_carlo', { iterations: 500 }))).run).toBeNull();
+    expect((await lookup(lookupUrl(MINE, 'monte_carlo'))).run).toBeNull();
+    // reading changes nothing: no job, no row, nothing cancelled
+    expect(sent).toHaveLength(sentBefore);
+    const after = await runRows();
+    expect(after).toEqual(rows);
+    expect(noCancelled(after)).toEqual(noCancelled(rows)); // no run cancelled (or asked to be) by looking
+  });
+
+  it('after the inputs changed it still returns the latest result, as out of date (current: false, as stored)', async () => {
+    const stale = await lookup(lookupUrl(C, 'monte_carlo'), other);
+    expect(stale.current).toBe(false);
+    expect(stale.run).toMatchObject({ id: doneId, status: 'done' });
+    // the version it was computed for, not the scenario's present one
+    expect(stale.run!.scenarioVersion).toBeLessThanOrEqual(
+      (await withTenant(env.app.db, AA_ID, ANA, (tx) => getScenario(tx, C)))!.version,
+    );
+  });
+
+  it('is a read for members: a stranger and an unknown scenario get 404, a bad query 422', async () => {
+    expect((await app.request(lookupUrl(C, 'monte_carlo'), { headers: asUser(CAROL).headers })).status).toBe(404);
+    expect((await app.request(lookupUrl(C, 'monte_carlo'), { headers: asUser(BOB).headers })).status).toBe(404);
+    const unknown = await app.request(lookupUrl('00000000-0000-4000-8000-00000000dead', 'monte_carlo'), { headers: ana.headers });
+    expect(unknown.status).toBe(404);
+    expect(unknown.headers.get('content-type')).toContain(PROBLEM_CONTENT_TYPE);
+    expect((await app.request(lookupUrl(C, 'nope'), { headers: ana.headers })).status).toBe(422);
+    expect((await app.request(`/api/t/aa/solver-runs/lookup?scenarioId=${C}&problem=monte_carlo&params=%5B1%5D`, { headers: ana.headers })).status).toBe(422);
+    // `lookup` is not a run id: the route is not shadowed by `:id`
+    expect((await app.request(`/api/t/aa/solver-runs/lookup?scenarioId=${C}`, { headers: ana.headers })).status).toBe(422);
+  });
+});
+
+describe('API-13 save on the job: submissions carry it, the worker honours it', () => {
+  const spec = { problem: 'min_risk_mix', params: {} };
+  const scenarios = async () => (await withTenant(env.app.db, AA_ID, ANA, (tx) => listScenarios(tx))).length;
+
+  /** Runs the enqueued job through the worker's own solver handler, as the worker would. */
+  const work = (payload: SolverJobPayload) =>
+    runSolverJob(
+      {
+        tenantId: AA_ID,
+        userId: ANA,
+        payload,
+        signal: new AbortController().signal,
+        progress: () => undefined,
+        withTenant: (fn) => withTenant(env.app.db, AA_ID, ANA, fn),
+      },
+      { problem: 'min_risk_mix' },
+      defaultSolverDeps(),
+    );
+
+  it('a job submitted without save is sent save: false, and the worker saves no scenario for it (Cockpit tiles)', async () => {
+    const before = sent.length;
+    const run = await assertContract('solverRunStart', await post('/api/t/aa/solver-runs', { scenarioId: C, spec }));
+    expect(run.save).toBe(false);
+    expect(sent[before]!.payload).toEqual({ tenantId: AA_ID, userId: ANA, runId: run.id, save: false });
+    const count = await scenarios();
+    const out = await work(sent[before]!.payload as SolverJobPayload);
+    expect(out.saved).toBeNull();
+    expect(await scenarios()).toBe(count);
+  }, 120_000);
+
+  it('a job submitted with save: true is sent save: true, is never answered from the cache, and the worker saves its scenario', async () => {
+    // a finished identical run is held: a request without save is answered from it
+    const first = await assertContract('solverRunStart', await post('/api/t/aa/solver-runs', { scenarioId: C, spec }));
+    await withTenant(env.app.db, AA_ID, ANA, (tx) =>
+      updateSolverRun(tx, first.id, {
+        status: 'done',
+        progress: 1,
+        result: { problem: 'min_risk_mix', status: 'optimal', changes: [], ranked: [], metrics: {}, diagnostics: { iterations: 1, ms: 1 } },
+      }),
+    );
+    const before = sent.length;
+    const cached = await assertContract('solverRunStart', await post('/api/t/aa/solver-runs', { scenarioId: C, spec }));
+    expect(cached).toMatchObject({ cached: true, status: 'done' });
+    expect(sent).toHaveLength(before);
+
+    const run = await assertContract('solverRunStart', await post('/api/t/aa/solver-runs', { scenarioId: C, spec, save: true }));
+    expect(run).toMatchObject({ save: true, cached: false, status: 'queued' });
+    expect(sent).toHaveLength(before + 1);
+    expect(sent[before]!.payload).toEqual({ tenantId: AA_ID, userId: ANA, runId: run.id, save: true });
+    const count = await scenarios();
+    const out = await work(sent[before]!.payload as SolverJobPayload);
+    expect(out.saved).not.toBeNull();
+    expect(await scenarios()).toBe(count + 1);
+  }, 240_000);
 });

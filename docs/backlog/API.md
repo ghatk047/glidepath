@@ -419,7 +419,7 @@ title: "Solver result lookup without side effects (Cockpit tiles)"
 epic: API
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -439,4 +439,5 @@ acceptance:
 gates: [G1, G2, G13]
 size: S
 notes: "From MOD-02 review."
+merged_at: "2026-11-23"
 ```

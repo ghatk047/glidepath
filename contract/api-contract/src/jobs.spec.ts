@@ -28,6 +28,8 @@ import {
   ReconfigRequest,
   SensitivityMethod,
   SolverConstraintId,
+  SolverLookup,
+  SolverLookupQuery,
   SolverObjective,
   SolverOutcome,
   SolverResult,
@@ -106,6 +108,7 @@ describe('jobs.spec: CON-03 routes (04 §3, 04 §5)', () => {
       [
         'POST /api/t/:tenant/solver-runs',
         'POST /api/t/:tenant/solver-runs/quick',
+        'GET /api/t/:tenant/solver-runs/lookup',
         'GET /api/t/:tenant/solver-runs/:id',
         'DELETE /api/t/:tenant/solver-runs/:id',
         'POST /api/t/:tenant/exports',
@@ -267,6 +270,36 @@ describe('jobs.spec: solver-runs (POST, POST quick, GET, DELETE) for every solve
     expect(run({ problem: 'min_risk_mix', params: { constraints: [{ id: 'bounds' }] } })).toBe(
       false,
     );
+  });
+
+  it('API-13 solver-runs/lookup: a GET with (scenario, problem, params) that answers a run or null, with the Monte Carlo trial count from tier 2', () => {
+    const { solverRunLookup: route, solverRunGet } = jobRoutes;
+    const table = Object.keys(jobRoutes);
+    // before `:id`, which would otherwise take `lookup` for a run id
+    expect(table.indexOf('solverRunLookup')).toBeLessThan(table.indexOf('solverRunGet'));
+    expect([route.method, route.response, route.query]).toEqual(['GET', SolverLookup, SolverLookupQuery]);
+    expect('body' in route).toBe(false);
+    expect(solverRunGet.path).toBe('/api/t/:tenant/solver-runs/:id');
+    expect(shapeKeys(SolverLookup)).toEqual(['current', 'run', 'trials']);
+    // params are tier 2's defaults when absent; given, they are the JSON object of the problem's params
+    const q = { scenarioId: 'sc-1', problem: 'monte_carlo' };
+    expect(ok(SolverLookupQuery, q)).toBe(true);
+    expect(ok(SolverLookupQuery, { ...q, params: '{"iterations":500}' })).toBe(true);
+    expect(ok(SolverLookupQuery, { ...q, params: '[1]' })).toBe(false);
+    expect(ok(SolverLookupQuery, { ...q, params: 'not json' })).toBe(false);
+    expect(ok(SolverLookupQuery, { ...q, problem: 'nope' })).toBe(false);
+    // nothing held: run null, not current, no trials for a problem without draws
+    expect(ok(SolverLookup, { run: null, current: false, trials: null })).toBe(true);
+    expect(ok(SolverLookup, { run: null, current: false, trials: 0 })).toBe(false);
+    expect(ok(SolverLookup, { run: solverRunFixtures.min_risk_mix, current: true, trials: null })).toBe(true);
+  });
+
+  it('API-13 metrics: a cell metric is keyed by its wire cell key in every result fixture', () => {
+    for (const [id, fx] of Object.entries(solverProblemFixtures)) {
+      for (const key of Object.keys(fx.result.metrics)) {
+        if (key.includes('.')) expect(key, `${id} metric ${key}`).toMatch(/^[^[\]\s]+\[[^[\]]*\]$/);
+      }
+    }
   });
 
   it('job progress matches DATA-11 solver_run.progress / progress_note / cancel_requested', () => {

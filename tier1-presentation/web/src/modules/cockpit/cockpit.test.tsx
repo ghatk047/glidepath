@@ -12,6 +12,7 @@ import {
   type BridgeView,
   type ChangesetRequest,
   MembersResponse,
+  type SolverLookup,
   type SolverRunRequest,
 } from '@glidepath/api-contract';
 import {
@@ -137,6 +138,8 @@ interface MountOptions {
   members?: MembersResponse;
   /** Preset C's snapshot (default: the generated golden snapshot). */
   snapshotC?: typeof C;
+  /** `GET /solver-runs/lookup` answers by problem (default: nothing held; Monte Carlo trials 2,000, as tier 2's default). */
+  lookups?: Partial<Record<string, SolverLookup>>;
   /** `POST /solver-runs` answers by problem, in order (none left: a 404 problem). */
   starts?: Partial<Record<string, SolverRunIn[]>>;
   /** `GET /solver-runs/:id` answers by id. */
@@ -146,6 +149,7 @@ interface MountOptions {
 function serve(options: MountOptions = {}) {
   const posts: ChangesetRequest[] = [];
   const solverStarts: SolverRunRequest[] = [];
+  const solverLookups: Record<string, string>[] = [];
   const solverGets: string[] = [];
   const solverCancels: string[] = [];
   const starts = Object.fromEntries(
@@ -155,6 +159,18 @@ function serve(options: MountOptions = {}) {
     http.get(`${BASE}${apiRoutes.members.path}`, () =>
       HttpResponse.json(options.members ?? specFixtures.members),
     ),
+    // before `:id`: the lookup is a read that tier 2 answers from what it holds
+    http.get(`${BASE}${apiRoutes.solverRunLookup.path}`, ({ request }) => {
+      const query = Object.fromEntries(new URL(request.url).searchParams);
+      solverLookups.push(query);
+      const held = options.lookups?.[query['problem'] ?? ''];
+      const none: SolverLookup = {
+        run: null,
+        current: false,
+        trials: query['problem'] === 'monte_carlo' ? 2000 : null,
+      };
+      return HttpResponse.json(held ?? none);
+    }),
     http.post(`${BASE}${apiRoutes.solverRunStart.path}`, async ({ request }) => {
       const body = (await request.json()) as SolverRunRequest;
       solverStarts.push(body);
@@ -227,7 +243,7 @@ function serve(options: MountOptions = {}) {
       });
     }),
   );
-  return { posts, solverStarts, solverGets, solverCancels };
+  return { posts, solverStarts, solverLookups, solverGets, solverCancels };
 }
 
 async function mount(options: MountOptions = {}) {
@@ -777,36 +793,37 @@ describe('MOD-02 Cockpit tiles', () => {
 
   it("AC3 odds: 'Run 2,000 trials' without a Monte Carlo result; then histogram, P10/P50/P90, bar and P(clear) from the solver_run (monte_carlo_C)", async () => {
     const id = 'job-mc-c';
-    const probe = 'job-mc-probe';
     const t = await mount({
-      // the cache look-up misses (a fresh run is queued), then the user's run
-      starts: { monte_carlo: [monteCarloRun(probe, 'queued'), monteCarloRun(id, 'queued')] },
+      // the look-up finds nothing held; the user's run is the first start
+      starts: { monte_carlo: [monteCarloRun(id, 'queued')] },
       runs: { [id]: monteCarloRun(id) },
     });
     await loaded(t);
     const odds = panel('cockpit-odds');
-    // the look-up asks with tier 2's defaults; on a miss the queued run is cancelled at once
-    await t.until(() => expect(t.solverCancels).toEqual([probe]));
-    expect(looked(t, 'monte_carlo')).toEqual([{ scenarioId: SCENARIO, spec: MC_SPEC }]);
-    await act(async () => {
-      t.mock.emit({ ...jobDone(probe), status: 'cancelled', progress: 0 });
-      await t.mock.flush();
-    });
-    await t.settle();
-    expect(t.solverGets).not.toContain(probe);
+    // the look-up asks for the tile's problem with tier 2's defaults (no params) and is a read
+    await t.until(() =>
+      expect(t.solverLookups.filter((q) => q['problem'] === 'monte_carlo')).toEqual([
+        { scenarioId: SCENARIO, problem: 'monte_carlo' },
+      ]),
+    );
+    await t.until(() =>
+      expect(within(odds).getByRole('button', { name: 'Run 2,000 trials' })).toBeTruthy(),
+    );
     expect(odds.textContent).toContain('This scenario has not been simulated.');
     expect(odds.querySelector('[data-chart="histogram"]')).toBeNull();
     expect(odds.querySelector('[data-status="cancelled"]')).toBeNull();
+    // looking at the Cockpit queued nothing and cancelled nothing
+    expect(t.solverStarts).toEqual([]);
+    expect(t.solverCancels).toEqual([]);
 
-    // the action starts tier 2's Monte Carlo on this scenario with tier 2's defaults
+    // the action starts tier 2's Monte Carlo on this scenario with tier 2's defaults, not saving
     fireEvent.click(within(odds).getByRole('button', { name: 'Run 2,000 trials' }));
     await t.until(() =>
       expect(looked(t, 'monte_carlo')).toEqual([
-        { scenarioId: SCENARIO, spec: MC_SPEC },
-        { scenarioId: SCENARIO, spec: MC_SPEC },
+        { scenarioId: SCENARIO, spec: MC_SPEC, save: false },
       ]),
     );
-    expect(t.solverCancels).not.toContain(id);
+    expect(t.solverCancels).toEqual([]);
     // progress arrives as `job` messages: the header shows tier 2's note, the action waits
     await act(async () => {
       t.mock.emit({
@@ -857,16 +874,16 @@ describe('MOD-02 Cockpit tiles', () => {
 
   it("AC4 fastest path: min-risk result (net, moves count, risk, people-lever flag, top 3 moves); 'Show me a path' → Path", async () => {
     const id = 'job-path';
-    const probe = 'job-path-probe';
-    const t = await mount({
-      starts: { min_risk_mix: [minRiskRun(probe, 'queued')] },
-      runs: { [id]: minRiskRun(id) },
-    });
+    const t = await mount({ runs: { [id]: minRiskRun(id) } });
     await loaded(t);
     const path = panel('cockpit-path');
-    // a cache miss is cancelled at once: the Cockpit never runs (or saves) a path by itself
-    await t.until(() => expect(t.solverCancels).toEqual([probe]));
-    expect(looked(t, 'min_risk_mix')).toEqual([{ scenarioId: SCENARIO, spec: PATH_SPEC }]);
+    // the look-up finds nothing: the Cockpit never runs (or saves) a path by itself, and starts nothing
+    await t.until(() =>
+      expect(t.solverLookups).toContainEqual({ scenarioId: SCENARIO, problem: 'min_risk_mix' }),
+    );
+    await t.settle();
+    expect(t.solverStarts).toEqual([]);
+    expect(t.solverCancels).toEqual([]);
     expect(path.textContent).toContain(COPY.noPath);
     expect(within(path).getByRole('button', { name: 'Show me a path' })).toBeTruthy();
 
@@ -903,16 +920,59 @@ describe('MOD-02 Cockpit tiles', () => {
     );
   });
 
+  it('API-13 Cockpit Odds and Fastest path read tier 2 with a look-up: nothing is queued, cancelled or saved by viewing; an older result is shown dimmed', async () => {
+    const t = await mount({
+      lookups: {
+        monte_carlo: {
+          run: { ...monteCarloRun('job-mc-old'), scenarioVersion: C.version + 1 },
+          current: false,
+          trials: 2000,
+        },
+        min_risk_mix: { run: minRiskRun('job-path-now'), current: true, trials: null },
+      },
+    });
+    await loaded(t);
+    await t.until(() => {
+      expect(panel('cockpit-odds').querySelector('[data-chart="histogram"]')).not.toBeNull();
+      expect(panel('cockpit-path').querySelector('.gp-cockpit-moves')).not.toBeNull();
+    });
+    await t.settle();
+    // one look-up per tile, no params; no POST (so no queued run to cancel) and no DELETE
+    expect([...t.solverLookups].sort((a, b) => a['problem']!.localeCompare(b['problem']!))).toEqual([
+      { scenarioId: SCENARIO, problem: 'min_risk_mix' },
+      { scenarioId: SCENARIO, problem: 'monte_carlo' },
+    ]);
+    expect(t.solverStarts).toEqual([]);
+    expect(t.solverCancels).toEqual([]);
+    expect(t.solverGets).toEqual([]);
+    // the older Monte Carlo result is kept as tier 2 sent it, dimmed; the current path is not
+    expect(panel('cockpit-odds').querySelector('[data-stale]')).not.toBeNull();
+    expect(panel('cockpit-path').querySelector('[data-stale]')).toBeNull();
+  });
+
+  it("API-13 the trial count on 'Run N trials' is tier 2's (the look-up's), never a literal in tier 1", async () => {
+    const t = await mount({
+      lookups: { monte_carlo: { run: null, current: false, trials: 500 } },
+    });
+    await loaded(t);
+    const odds = panel('cockpit-odds');
+    await t.until(() =>
+      expect(within(odds).getByRole('button', { name: 'Run 500 trials' })).toBeTruthy(),
+    );
+    expect(odds.textContent).not.toContain('2,000');
+    expect(COPY.runTrials(null)).toBe('Run trials');
+  });
+
   it('AC5 every tile value is a session cell or a solver_run field as sent (nothing computed in tier 1); axe clean with results', async () => {
     const mcId = 'job-mc-cached';
     const pathId = 'job-path';
     const mcRun = monteCarloRun(mcId);
     const pathRun = minRiskRun(pathId);
-    // JOB-04: the warmed cache answers both look-ups at once (done, cached): no click, no GET
+    // JOB-04: the warmed cache answers both look-ups (done, current): no click, no GET
     const t = await mount({
-      starts: {
-        monte_carlo: [monteCarloRun(mcId, 'done', true)],
-        min_risk_mix: [minRiskRun(pathId, 'done', true)],
+      lookups: {
+        monte_carlo: { run: monteCarloRun(mcId, 'done', true), current: true, trials: 2000 },
+        min_risk_mix: { run: minRiskRun(pathId, 'done', true), current: true, trials: null },
       },
     });
     await loaded(t);
@@ -954,6 +1014,7 @@ describe('MOD-02 Cockpit tiles', () => {
       r.ranked.slice(0, PATH_TOP_MOVES).map((m) => [m.from, m.to]),
     );
     expect(t.solverGets).toEqual([]);
+    expect(t.solverStarts).toEqual([]);
     expect(t.solverCancels).toEqual([]);
 
     const result = await axe.run(t.view.container, {

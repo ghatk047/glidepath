@@ -74,8 +74,8 @@ export function FastestPathPanel() {
 
   let body;
   if (result) {
-    // the contract's cell form, else the solver's node id (API-09 passes metric keys through)
-    const net = result.metrics[NET] ?? result.metrics[PATH_METRICS.net];
+    // tier 2 keys a cell metric by its wire cell key (API-13)
+    const net = result.metrics[NET];
     const risk = result.metrics[PATH_METRICS.risk];
     const people = result.metrics[PATH_METRICS.people];
     const summary = [

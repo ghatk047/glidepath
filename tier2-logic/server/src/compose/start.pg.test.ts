@@ -83,13 +83,13 @@ describe('startServer composes the job queue, the relay and the Excel limit', ()
     const run = await assertContract('solverRunStart', res);
     expect(run.status).toBe('queued');
 
-    // The real queue holds the job: tenant, user and run id.
+    // The real queue holds the job: tenant, user, run id and the request's `save` (false here, API-13).
     let job = null;
     for (let i = 0; job === null && i < 40; i++) {
-      [job] = await boss.fetch<{ tenantId: string; userId: string; runId: string }>('solver.min_risk_mix');
+      [job] = await boss.fetch<{ tenantId: string; userId: string; runId: string; save: boolean }>('solver.min_risk_mix');
       if (job === null || job === undefined) await new Promise((r) => setTimeout(r, 100));
     }
-    expect(job?.data).toEqual({ tenantId: AA_ID, userId: ANA, runId: run.id });
+    expect(job?.data).toEqual({ tenantId: AA_ID, userId: ANA, runId: run.id, save: false });
 
     const queued = await socket.until((m) => m.type === 'job' && m.id === run.id && m.status === 'queued');
     expect(queued.at(-1)).toMatchObject({ type: 'job', id: run.id, status: 'queued', kind: 'solver' });

@@ -444,6 +444,11 @@ export const jobRouteFixtures = {
     body: { scenarioId: 'sc-custom-c', spec: solverProblemFixtures.goal_seek.spec },
     response: solverRun('goal_seek', { quick: true }),
   },
+  solverRunLookup: {
+    params: { tenant },
+    query: { scenarioId: 'sc-custom-c', problem: 'monte_carlo' },
+    response: { run: solverRun('monte_carlo', { cached: true }), current: true, trials: 2000 },
+  },
   solverRunGet: {
     params: { tenant, id: 'job-monte_carlo' },
     response: solverRun('monte_carlo', {

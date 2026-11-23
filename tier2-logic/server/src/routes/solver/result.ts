@@ -1,5 +1,6 @@
 import { SolverResult } from '@glidepath/api-contract';
 import type { CellKey, ProblemId } from '@glidepath/api-contract';
+import { NodeIds } from '@glidepath/spec/generated';
 import { checked } from '../read/mappers';
 import { splitWireCell, toWireCell } from '../../session/cells';
 
@@ -8,7 +9,8 @@ import { splitWireCell, toWireCell } from '../../session/cells';
  * (`res.net`, `lev.start[L03]`) and variable changes `{ target, cell, value }`; the wire has `res.net[]` and
  * `{ target, key, member, value }`. The conversion is idempotent, so a result a worker stored already in wire
  * form passes through unchanged, and display series (`detail`) are mapped cell by cell, never recomputed.
- * Values the wire cannot carry (NaN, infinity) are dropped from `metrics`.
+ * Values the wire cannot carry (NaN, infinity) are dropped from `metrics`, and a metric that is a model cell is
+ * keyed by its wire cell key (`res.net` to `res.net[]`; {@link wireMetricKey}), whichever problem produced it.
  */
 
 type Raw = Readonly<Record<string, unknown>>;
@@ -34,6 +36,19 @@ const withWireCell = (r: Raw, ...fields: string[]): Raw => {
   for (const f of fields) if (typeof r[f] === 'string') out[f] = wire(r[f]);
   return out;
 };
+
+const NODE_IDS: ReadonlySet<string> = new Set(NodeIds);
+
+/**
+ * The key a metric has on the wire, and the one place that decides it (API-13). Solvers key their headline cells
+ * by engine cell (`res.net`, `vp.gap[vp_x]`) and name the rest (`risk_exposure`, `lambda`, `p_clear_bar`, the
+ * derived `res.net.p50`). A key that is a spec node id, bare or with its member, is a cell and becomes `id[member]`;
+ * any other name is kept as the solver gave it. Idempotent.
+ */
+export function wireMetricKey(key: string): string {
+  const id = splitWireCell(key)?.id ?? key;
+  return NODE_IDS.has(id) ? toWireCell(key) : key;
+}
 
 const wireKeys = (rec: unknown): Record<string, unknown> =>
   isObject(rec) ? Object.fromEntries(Object.entries(rec).map(([k, v]) => [wire(k), v])) : {};
@@ -65,7 +80,11 @@ export function toContractResult(raw: unknown): SolverResult {
   if (!isObject(raw)) throw new TypeError('a solver result is an object');
   const problem = String(raw.problem) as ProblemId;
   const metrics = isObject(raw.metrics)
-    ? Object.fromEntries(Object.entries(raw.metrics).filter(([, v]) => typeof v === 'number' && Number.isFinite(v)))
+    ? Object.fromEntries(
+        Object.entries(raw.metrics)
+          .filter(([, v]) => typeof v === 'number' && Number.isFinite(v))
+          .map(([k, v]) => [wireMetricKey(k), v]),
+      )
     : {};
   return checked('solver result', SolverResult, {
     problem,

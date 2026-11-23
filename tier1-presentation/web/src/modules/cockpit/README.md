@@ -25,19 +25,18 @@ MOD-02 the VP rings, Shareholder, Odds and Fastest path tiles. Renders inside `G
   `monte_carlo` and `min_risk_mix` (lowest risk exposure) `solver_run` (`runs.ts`). Odds draws
   `detail` as sent: P(`res.net[]` ≥ `res.bar[]`), run count, the `res.net[]` histogram with
   P10 / P50 / P90 and the bar line at `res.bar[]` P50; without a result, the WEB-08 empty state
-  "Run 2,000 trials" (`POST /solver-runs` monte_carlo, no params: tier 2's defaults), with
-  `JobHeader` progress and cancel while it runs. Fastest path shows `metrics['res.net[]']`,
-  the move count, `metrics.risk_exposure`, the people clause from `metrics.people_moves` (left out
+  "Run N trials" (`POST /solver-runs` monte_carlo, no params, `save: false`: tier 2's defaults; N is
+  the `trials` of tier 2's look-up, "Run trials" until it answers), with
+  `JobHeader` progress and cancel while it runs. Fastest path shows `metrics['res.net[]']`
+  (tier 2 keys every cell metric in that wire form, API-13), the move count, `metrics.risk_exposure`, the people clause from `metrics.people_moves` (left out
   when absent) and the first three ranked moves "from → to" in the registry unit; "Show me a
   path" opens Path.
-- `runs.ts`: which run each tile shows. The contract has no "latest run of a scenario" lookup
-  and no cache-only request, so on mount each tile asks `POST /solver-runs` with its problem and
-  `params: {}` (`TILE_SPECS`, tier 2's defaults: the JOB-04 warm-cache key). A hit answers `done`
-  at once; a miss queued a fresh run, which the tile cancels straight away (`DELETE`), so viewing
-  the Cockpit never runs a simulation or saves a min-risk scenario by itself. A tile also shows
-  the run the user starts and any solver job that ends on the session (`job` message, then one
-  `GET /solver-runs/:id`; cancelled look-ups are ignored). A result from an older scenario
-  version is shown dimmed (`data-stale`).
+- `runs.ts`: which run each tile shows. On mount each tile calls `GET /solver-runs/lookup` for its
+  problem with no params (`TILE_SPECS`, tier 2's defaults: the JOB-04 warm-cache key). It is a read: the
+  newest finished run tier 2 holds (a cache hit, or an older one, shown dimmed), plus the Monte Carlo
+  `trials`. Nothing is queued, cancelled or saved by viewing the Cockpit. A tile also shows the run the
+  user starts (`POST`, `save: false`) and any solver job that ends on the session (`job` message, then
+  one `GET /solver-runs/:id`). A result from an older scenario version is shown dimmed (`data-stale`).
 - `scale.ts`: the gauge axis end (display only; the contract carries no gauge scale).
 - Tests: `cockpit.test.tsx` mounts the app router with msw REST doubles and the contract's mock
   session (values from the generated golden fixtures; solver runs shaped from

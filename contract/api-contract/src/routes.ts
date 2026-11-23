@@ -28,7 +28,14 @@ import {
   TenantParams,
   TenantsResponse,
 } from './core';
-import { QuickSolverRunRequest, SolverRun, SolverRunParams, SolverRunRequest } from './solvers';
+import {
+  QuickSolverRunRequest,
+  SolverLookup,
+  SolverLookupQuery,
+  SolverRun,
+  SolverRunParams,
+  SolverRunRequest,
+} from './solvers';
 import {
   ExportRequest,
   ExportResult,
@@ -203,6 +210,18 @@ export const jobRoutes = {
     params: TenantParams,
     body: QuickSolverRunRequest,
     response: SolverRun,
+  },
+  /**
+   * Side-effect-free read of the newest finished run for `(scenario, problem, params)` (API-13).
+   * Declared before `solverRunGet`: `lookup` is not a run id.
+   */
+  solverRunLookup: {
+    method: 'GET',
+    path: '/api/t/:tenant/solver-runs/lookup',
+    status: 200,
+    params: TenantParams,
+    query: SolverLookupQuery,
+    response: SolverLookup,
   },
   solverRunGet: {
     method: 'GET',

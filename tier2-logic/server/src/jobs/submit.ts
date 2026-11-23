@@ -7,7 +7,10 @@ import { cacheKeyOf, findCachedRun, withCacheKey } from './cache';
 import type { SpecLike } from './cache';
 
 /** Sends a job to pg-boss (the worker's `enqueueJob` bound to a started boss); returns the job id or null. */
-export type EnqueueJob = (queue: string, payload: { tenantId: string; userId: string; runId: string }) => Promise<string | null>;
+export type EnqueueJob = (
+  queue: string,
+  payload: { tenantId: string; userId: string; runId: string; save: boolean },
+) => Promise<string | null>;
 
 /**
  * The inputHash of a scenario's committed inputs (engine hash of cells plus model version), or null when none
@@ -33,6 +36,11 @@ export interface SolverSubmit {
   /** `solver_run.kind` (the enum of the table; the route maps problem ids to it). */
   readonly kind: SolverRunKind;
   readonly spec: SpecLike;
+  /**
+   * The request's `save`: sent to the worker in the job data (JOB-03 saves a result as a scenario only for
+   * `save !== false`). Absent = false. A saving request is never answered from the cache.
+   */
+  readonly save?: boolean;
 }
 
 export interface SolverSubmitted {
@@ -52,19 +60,22 @@ export const solverQueue = (problem: string): string => `solver.${problem}`;
  * written and nothing is enqueued. Otherwise the run is created `queued` with its key and sent to
  * `solver.<problem>` after the transaction committed (so the worker finds the row).
  *
- * A hit does not copy `result_scenario_id`: saving a result as a scenario is a separate step per run.
+ * A hit does not copy `result_scenario_id`: saving a result as a scenario is a separate step per run, so a request
+ * with `save: true` skips the cache and always runs (the job saves; a cached run would save nothing). The job data
+ * carries `save` either way, so a job started without it never adds a scenario.
  */
 export function createSolverSubmitter(deps: SolverSubmitDeps): (request: SolverSubmit) => Promise<SolverSubmitted> {
   const inputHashOf = deps.inputHashOf ?? latestCalcInputHash;
   return async (request) => {
     const { tenantId, userId, scenarioId, kind, spec } = request;
+    const save = request.save === true;
     const staged = await deps.withTenant(tenantId, userId, async (tx) => {
       const inputHash = await inputHashOf(tx, scenarioId);
       if (inputHash === null) {
         return { hit: false as const, run: await createSolverRun(tx, { kind, scenario_id: scenarioId, spec: spec as never }) };
       }
       const key = cacheKeyOf(spec, inputHash);
-      const found = await findCachedRun(tx, scenarioId, key);
+      const found = save ? null : await findCachedRun(tx, scenarioId, key);
       if (!found) {
         return { hit: false as const, run: await createSolverRun(tx, { kind, scenario_id: scenarioId, spec: withCacheKey(spec, key) }) };
       }
@@ -81,7 +92,7 @@ export function createSolverSubmitter(deps: SolverSubmitDeps): (request: SolverS
       return { run: staged.run, cached: true, jobId: null };
     }
     try {
-      const jobId = await deps.enqueue(solverQueue(spec.problem), { tenantId, userId, runId: staged.run.id });
+      const jobId = await deps.enqueue(solverQueue(spec.problem), { tenantId, userId, runId: staged.run.id, save });
       return { run: staged.run, cached: false, jobId };
     } catch (err) {
       // The run would sit `queued` for ever: end it and let the caller see the failure.

@@ -64,3 +64,29 @@ export async function findCachedRun(tx: TenantTx, scenarioId: string, key: Cache
     }) ?? null
   );
 }
+
+/** What a lookup found: the run, and whether it was computed from the scenario's present inputs. */
+export interface FoundRun {
+  readonly run: SolverRunRecord | null;
+  /** True: `run` carries the key of the present inputs (a cache hit). False: older inputs, or no run. */
+  readonly current: boolean;
+}
+
+/**
+ * The newest finished run of the scenario for `(problem, params)`, read only (API-13): the newest one with the
+ * present `inputHash` (`current`) when there is one, else the newest with any other hash (kept for display as
+ * out of date), else none. `inputHash` null (no committed inputs hashed yet) finds only the out-of-date kind.
+ * Writes nothing and enqueues nothing.
+ */
+export async function findLatestRun(tx: TenantTx, scenarioId: string, spec: SpecLike, inputHash: string | null): Promise<FoundRun> {
+  const wanted = cacheKeyOf(spec, inputHash ?? '');
+  const runs = await listSolverRuns(tx, { scenarioId, status: 'done', limit: CACHE_SCAN_LIMIT });
+  let older: SolverRunRecord | null = null;
+  for (const r of runs) {
+    const k = storedKey(r.spec);
+    if (k === null || k.problem !== wanted.problem || k.paramsHash !== wanted.paramsHash) continue;
+    if (inputHash !== null && k.inputHash === inputHash) return { run: r, current: true };
+    older ??= r;
+  }
+  return { run: older, current: false };
+}

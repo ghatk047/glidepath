@@ -14,13 +14,14 @@ import { useJob, type JobHandle } from '../../jobs';
 /**
  * The `solver_run`s behind the Odds and Fastest path tiles, per tenant, scenario and problem.
  *
- * The contract has no "latest run of this scenario" lookup and no cache-only request (reported
- * as a gap in MOD-02). So a tile learns its run three ways:
- * 1. Cache look-up on mount: `POST /solver-runs` with the tile's spec and `params: {}` (tier 2's
- *    defaults, the key the JOB-04 warmer files C and D under). A hit answers `done` at once.
- *    A miss queues a fresh run: the tile cancels it straight away (`DELETE`), so looking at the
- *    Cockpit never runs a simulation, nor saves a min-risk scenario, by itself.
- * 2. The run the user starts ("Run 2,000 trials", same spec; also cache first).
+ * A tile learns its run three ways:
+ * 1. Look-up on mount: `GET /solver-runs/lookup` for the tile's problem with no params (tier 2's
+ *    defaults, the key the JOB-04 warmer files C and D under; API-13). It reads what tier 2
+ *    holds (the newest finished run, a cache hit or older) and never enqueues, runs, saves or
+ *    writes a row, so looking at the Cockpit leaves nothing behind. It also answers the trial
+ *    count the "Run N trials" action prints: tier 2's, not a number held here.
+ * 2. The run the user starts ("Run N trials", `POST /solver-runs`, the tile's spec, `save: false`;
+ *    cache first).
  * 3. Any solver job that ends on this session (`job` messages reach every session of the tenant
  *    and scenario, JOB-02), fetched once with `GET /solver-runs/:id`.
  * Runs are kept as tier 2 sent them; nothing is derived.
@@ -31,7 +32,8 @@ export type TileProblem = 'monte_carlo' | 'min_risk_mix';
 
 /**
  * What each tile asks tier 2 for: the problem with `params: {}`, i.e. every parameter left to
- * tier 2's defaults (2,000 seeded trials; lowest risk exposure, total bar). Tier 1 chooses none.
+ * tier 2's defaults (seeded trials; lowest risk exposure, total bar). Tier 1 chooses none.
+ * The look-up asks for the same problem and no params, the same key.
  */
 export const TILE_SPECS: { readonly [P in TileProblem]: SolverSpec & { problem: P } } = {
   monte_carlo: { problem: 'monte_carlo', params: {} },
@@ -47,10 +49,10 @@ interface RunsState {
   readonly errors: Readonly<Record<string, string>>;
   /** Ended jobs already fetched (or being fetched), by job id. */
   readonly fetched: Readonly<Record<string, true>>;
-  /** Tiles whose cache look-up was sent, by `runKey`. */
+  /** Tiles whose look-up was sent, by `runKey`. */
   readonly looked: Readonly<Record<string, true>>;
-  /** Runs a cache look-up queued and cancelled, by id: never shown. */
-  readonly probes: Readonly<Record<string, true>>;
+  /** Trials a Monte Carlo run of the tile would make, as the look-up answered (tier 2's); by `runKey`. */
+  readonly trials: Readonly<Record<string, number>>;
 }
 
 const initial = (): RunsState => ({
@@ -59,7 +61,7 @@ const initial = (): RunsState => ({
   errors: {},
   fetched: {},
   looked: {},
-  probes: {},
+  trials: {},
 });
 
 /** View state of the Cockpit tiles: which run each tile shows. No business values computed. */
@@ -94,7 +96,6 @@ function remember(tenant: string, run: SolverRun) {
   if (!problem) return;
   const key = runKey(tenant, run.scenarioId, problem);
   cockpitRuns.setState((s) => {
-    if (s.probes[run.id]) return s;
     const had = s.runs[key];
     // A late POST answer (queued) never replaces the same run already fetched as ended.
     if (had?.id === run.id && ENDED.has(had.status) && !ENDED.has(run.status)) return s;
@@ -122,10 +123,9 @@ export function useSolverRunDiscovery(): void {
   const jobs = useStore(session.store, (s) => s.jobs);
 
   useEffect(() => {
-    const { fetched, probes } = cockpitRuns.getState();
+    const { fetched } = cockpitRuns.getState();
     const todo = [...jobs.values()].filter(
-      (j) =>
-        (j.kind ?? 'solver') === 'solver' && ENDED.has(j.status) && !fetched[j.id] && !probes[j.id],
+      (j) => (j.kind ?? 'solver') === 'solver' && ENDED.has(j.status) && !fetched[j.id],
     );
     if (!todo.length) return;
     cockpitRuns.setState((s) => ({
@@ -155,7 +155,9 @@ export interface TileRun {
   readonly starting: boolean;
   /** One line when the last start failed. */
   readonly error: string | null;
-  /** `POST /solver-runs` of the tile's spec for this scenario (cache first, else a job). */
+  /** Draws a Monte Carlo run would make, from tier 2's look-up; `null` until it answered (or for other tiles). */
+  readonly trials: number | null;
+  /** `POST /solver-runs` of the tile's spec for this scenario (cache first, else a job; never saved). */
   start(): Promise<void>;
 }
 
@@ -167,29 +169,28 @@ export function useTileRun(problem: TileProblem): TileRun {
   const run = useStore(cockpitRuns, (s) => s.runs[key]);
   const starting = useStore(cockpitRuns, (s) => s.starting[key] === true);
   const error = useStore(cockpitRuns, (s) => s.errors[key] ?? null);
+  const trials = useStore(cockpitRuns, (s) => s.trials[key] ?? null);
   const version = useStore(session.store, (s) => (s.scenarioId === scenarioId ? s.version : null));
   const job = useJob(run?.id);
 
-  // Cache look-up, once per tile and scenario on this screen session.
+  // Look-up, once per tile and scenario on this screen session. A read: nothing is queued or stored.
   useEffect(() => {
-    const s = cockpitRuns.getState();
-    if (s.looked[key] || s.runs[key]) return;
+    if (cockpitRuns.getState().looked[key]) return;
     cockpitRuns.setState((st) => ({ looked: { ...st.looked, [key]: true } }));
-    const t = tenant as TenantSlug;
     api
-      .solverRunStart({ params: { tenant: t }, body: { scenarioId, spec: TILE_SPECS[problem] } })
+      .solverRunLookup({ params: { tenant: tenant as TenantSlug }, query: { scenarioId, problem } })
       .then(
-        (next) => {
-          if (next.status === 'done' || next.cached) {
-            remember(tenant, next);
-            return;
-          }
-          if (next.status !== 'queued' && next.status !== 'running') return;
-          // A miss: this look-up queued a fresh run. Stop it; the tile keeps its empty state.
-          cockpitRuns.setState((st) => ({ probes: { ...st.probes, [next.id]: true } }));
-          api.solverRunCancel({ params: { tenant: t, id: next.id } }).catch(() => undefined);
+        (found) => {
+          const { run: held, trials: draws } = found;
+          cockpitRuns.setState((st) => ({
+            ...(draws === null ? {} : { trials: { ...st.trials, [key]: draws } }),
+            // a run the user started meanwhile, or a job that ended, is newer than what was held
+            ...(held && !st.runs[key] && tileProblem(held) === problem
+              ? { runs: { ...st.runs, [key]: held } }
+              : {}),
+          }));
         },
-        // No answer (a viewer may not start runs, or tier 2 is away): the empty state stays.
+        // No answer (tier 2 is away): the empty state stays and a later job message can fill it.
         () => undefined,
       );
   }, [api, tenant, scenarioId, key, problem]);
@@ -202,7 +203,8 @@ export function useTileRun(problem: TileProblem): TileRun {
     try {
       const next = await api.solverRunStart({
         params: { tenant: tenant as TenantSlug },
-        body: { scenarioId, spec: TILE_SPECS[problem] },
+        // `save: false`: the Cockpit never adds a scenario; a run that saves is Path's explicit choice
+        body: { scenarioId, spec: TILE_SPECS[problem], save: false },
       });
       remember(tenant, next);
     } catch (e) {
@@ -220,6 +222,7 @@ export function useTileRun(problem: TileProblem): TileRun {
     stale: run !== undefined && version !== null && run.scenarioVersion !== version,
     starting,
     error,
+    trials,
     start,
   };
 }

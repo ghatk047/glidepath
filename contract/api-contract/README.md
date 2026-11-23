@@ -80,6 +80,15 @@ solver | import | ai.reconfig and `cancelRequested`) and from the `GET` route.
   methods). Optional params are tier 2's defaults. Answer: `SolverRun` with the DATA-11 job
   state (`status`, `progress` 0..1, `progressNote`, `cancelRequested`), `result: SolverResult`
   (03 §3, plus optional `detail` display series per problem) and `resultScenarioId`.
+  `save` absent = false, also for the worker job; a saving request is never answered from the result cache.
+  A metric that is a model cell is keyed by its wire cell key (`res.net[]`); other metrics keep the
+  solver's name (`risk_exposure`).
+- **Solver lookup** (API-13): `GET /solver-runs/lookup?scenarioId&problem[&params]` answers
+  `SolverLookup {run, current, trials}` and never enqueues, runs, saves or writes: the newest
+  finished run for `(scenario, problem, params)` (`current` when computed from the scenario's
+  present inputs; else the latest older one, as stored; else `null`), and `trials`, the Monte Carlo
+  draws tier 2 would run (`params.iterations`, else the solver default). `params` is the JSON of
+  the problem's params, absent = `{}` (tier 2's defaults). Declared before `GET /solver-runs/:id`.
 - **Excel** (`src/excel.ts`): `POST /exports` → `ExportResult` with a `FileRef`;
   `POST /imports` is a raw upload (`requestType: 'bytes'`, `?filename=`) → `ImportJob`;
   `GET /imports/:id` → `ImportJob` with `report: DeltaReport`; `POST /imports/:id/apply`

@@ -216,7 +216,10 @@ const requestShape = {
   scenarioId: ScenarioId,
   /**
    * true: tier 2 saves the result as a new scenario (`kind = solver`, through
-   * `applyChangeset`, origin `solver`) and reports `resultScenarioId`. Absent = false.
+   * `applyChangeset`, origin `solver`) and reports `resultScenarioId`. Absent = false: tier 2
+   * hands the flag to the worker job as well, so a job without it never adds a scenario. A
+   * `save: true` request is never answered from the result cache (the save is a side effect
+   * the cached run did not have).
    */
   save: z.boolean().optional(),
 };
@@ -363,7 +366,9 @@ export type SolverDetail = z.infer<typeof SolverDetail>;
 /**
  * 03 §3 `SolverResult`. `changes` are the moves (decision inputs only), ready to become a
  * changeset on a new scenario; `metrics` are headline numbers keyed by tier 2 (net, risk,
- * one-time, P(clear) …).
+ * one-time, P(clear) …). A metric that is a model cell is keyed by its wire cell key
+ * (`res.net[]`, `vp.gap[vp_x]`, as `CellKey`), whichever solver produced it and wherever the
+ * run was stored; the others keep the solver's own name (`risk_exposure`, `lambda`).
  */
 export const SolverResult = z
   .object({
@@ -428,3 +433,51 @@ export const SolverRun = z
     path: ['result', 'problem'],
   });
 export type SolverRun = z.infer<typeof SolverRun>;
+
+// ---------------------------------------------------------------------------
+// Lookup without side effects (API-13)
+// ---------------------------------------------------------------------------
+
+const isJsonObject = (text: string): boolean => {
+  try {
+    const v: unknown = JSON.parse(text);
+    return v !== null && typeof v === 'object' && !Array.isArray(v);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * `GET /api/t/:tenant/solver-runs/lookup?scenarioId&problem[&params]`: what tier 2 already holds for
+ * `(scenario, problem, params)`. Query values are text, so `params` is the JSON of the problem's
+ * parameters; absent = `{}`, every parameter left to tier 2's defaults (the key the demo cache
+ * warmer files its runs under).
+ */
+export const SolverLookupQuery = z.object({
+  scenarioId: ScenarioId,
+  problem: ProblemId,
+  params: z
+    .string()
+    .refine(isJsonObject, { message: 'params must be a JSON object' })
+    .optional(),
+});
+export type SolverLookupQuery = z.infer<typeof SolverLookupQuery>;
+
+/**
+ * The answer of a lookup. Reading never enqueues, runs, saves or writes a row.
+ *
+ * - `run`: the newest finished run of this scenario, problem and params: one computed from the
+ *   scenario's present inputs (`current: true`; its `scenarioVersion` is the scenario's present
+ *   version, as for a result-cache hit), else the newest finished run of the same problem and
+ *   params from earlier inputs (`current: false`, kept as stored: a result to show dimmed).
+ *   `null`: none (`current: false`).
+ * - `trials`: the draws a Monte Carlo run with these params would make (`params.iterations`, else
+ *   the solver default held by tier 2); `null` for the other problems. Tier 1 prints it, never
+ *   holds the number.
+ */
+export const SolverLookup = z.object({
+  run: SolverRun.nullable(),
+  current: z.boolean(),
+  trials: z.number().int().positive().nullable(),
+});
+export type SolverLookup = z.infer<typeof SolverLookup>;

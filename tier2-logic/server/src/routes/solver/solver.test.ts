@@ -5,7 +5,7 @@ import { ConfigError, loadConfig } from '../../app/config';
 import { KIND_OF_PROBLEM, solverKind } from './kinds';
 import { parseStressPresets } from './model';
 import { toEngineSpec } from './params';
-import { toContractResult } from './result';
+import { toContractResult, wireMetricKey } from './result';
 import { metaOf, toSolverRun } from './run';
 
 const record = (over: Partial<SolverRunRecord> = {}): SolverRunRecord => ({
@@ -81,9 +81,30 @@ describe('toContractResult', () => {
     const once = toContractResult(raw);
     expect(once.changes).toEqual([{ target: 'variable', key: 'lev.start', member: 'L03', value: 2 }]);
     expect(once.ranked[0]!.cell).toBe('res.net[]');
-    expect(once.metrics).toEqual({ 'res.net': 10 });
+    expect(once.metrics).toEqual({ 'res.net[]': 10 });
     expect(once.detail).toMatchObject({ problem: 'sensitivity', output: 'res.net[]', rows: [{ cell: 'g.target_net[]' }] });
     expect(toContractResult(once)).toEqual(once);
+  });
+
+  it('API-13 metrics: model cells are keyed by their wire cell key in one place, named metrics are kept, and the mapping is idempotent', () => {
+    expect(wireMetricKey('res.net')).toBe('res.net[]');
+    expect(wireMetricKey('res.net[]')).toBe('res.net[]');
+    expect(wireMetricKey('vp.gap[vp_commercial]')).toBe('vp.gap[vp_commercial]');
+    for (const name of ['risk_exposure', 'people_moves', 'lambda', 'p_clear_bar', 'p_clear_vp[vp_x]', 'res.net.p50', 'draws']) {
+      expect(wireMetricKey(name), name).toBe(name);
+    }
+    // every solver's own keys (min-risk cells, Monte Carlo P10/P50/P90 and P(clear), blend) come out of one function
+    const solverKeys = ['res.net', 'res.bar', 'res.gap', 'res.risk', 'br.eps27', 'risk_exposure', 'objective', 'violation', 'steps', 'res.net.p10', 'p_clear_bar'];
+    const out = toContractResult({
+      problem: 'min_risk_mix',
+      status: 'optimal',
+      changes: [],
+      ranked: [],
+      metrics: Object.fromEntries(solverKeys.map((k, i) => [k, i])),
+      diagnostics,
+    });
+    expect(Object.keys(out.metrics)).toEqual(['res.net[]', 'res.bar[]', 'res.gap[]', 'res.risk[]', 'br.eps27[]', 'risk_exposure', 'objective', 'violation', 'steps', 'res.net.p10', 'p_clear_bar']);
+    expect(toContractResult(out).metrics).toEqual(out.metrics);
   });
 
   it('maps stress outputs and deltas keys, pareto points and Monte Carlo cells', () => {
