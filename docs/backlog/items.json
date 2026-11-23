@@ -1472,7 +1472,7 @@
     "epic": "DATA",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "medium",
@@ -1497,7 +1497,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DATA-08",
