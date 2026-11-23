@@ -19,10 +19,7 @@ const REQUIRED = [
   'DATABASE_URL_MIGRATE',
   'POSTGRES_PASSWORD',
   'APP_DB_PASSWORD',
-  'S3_ENDPOINT',
-  'S3_ACCESS_KEY',
-  'S3_SECRET_KEY',
-  'MINIO_ROOT_PASSWORD',
+  'OBJECT_STORE',
   'AUTH_SECRET',
   'PUBLIC_BASE_URL',
   'SMTP_URL',
@@ -47,6 +44,12 @@ describe('.env.example', () => {
     expect(env.has(key)).toBe(true);
   });
 
+  it('sets OBJECT_STORE=postgres and has no OBJECTS_IMAGE, MINIO_* or S3_* settings', () => {
+    expect(env.get('OBJECT_STORE')).toBe('postgres');
+    for (const k of env.keys()) expect(k).not.toMatch(/^(OBJECTS_IMAGE|MINIO_|S3_)/);
+    expect(text).not.toMatch(/minio|objdata/i);
+  });
+
   it('lists each key once', () => {
     const keys = envFileKeys(text);
     expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([]);
@@ -62,7 +65,6 @@ describe('.env.example', () => {
       'POSTGRES_PASSWORD',
       'OWNER_DB_PASSWORD',
       'APP_DB_PASSWORD',
-      'MINIO_ROOT_PASSWORD',
       'AUTH_SECRET',
       'ANTHROPIC_API_KEY',
     ])

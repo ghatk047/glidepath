@@ -246,7 +246,7 @@ title: "Remove objects (MinIO) service from compose, .env.example and ops tests"
 epic: OPS
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: medium
@@ -265,6 +265,7 @@ acceptance:
 gates: [G14]
 size: S
 notes: "Follow-up to OPS-01 after the official MinIO image stopped being pullable (ADR-025)."
+merged_at: "2026-11-23"
 ```
 
 Drops the third-party object store image from the stack.

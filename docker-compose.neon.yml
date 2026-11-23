@@ -16,5 +16,4 @@ services:
     # The data network is internal (no internet), so migrate also joins egress to reach
     # the managed database. logic reaches it through edge, worker through egress.
     networks: !override [data, egress]
-    depends_on: !override
-      objects: { condition: service_healthy }
+    depends_on: !override {}

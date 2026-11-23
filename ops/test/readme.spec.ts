@@ -26,6 +26,11 @@ describe('README "Running locally"', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
   });
 
+  it('no longer mentions MinIO, the objects service or the objdata volume', () => {
+    expect(body).not.toMatch(/minio|objdata|\bobjects\b/i);
+    expect(body).not.toContain('MINIO_ROOT_PASSWORD');
+  });
+
   it('explains how to point at Neon instead of the local db', () => {
     expect(body).toContain('docker-compose.neon.yml');
     expect(body).toContain('sslmode=require');

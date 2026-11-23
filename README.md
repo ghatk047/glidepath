@@ -16,7 +16,7 @@ Needs Docker Desktop (Apple Silicon or Intel) with 4 CPUs and 8 GB RAM for Docke
    ```sh
    cp .env.example .env
    # generate every empty secret (letters and digits only: they go into the DB URLs)
-   perl -pi -e 's{^(POSTGRES_PASSWORD|OWNER_DB_PASSWORD|APP_DB_PASSWORD|MINIO_ROOT_PASSWORD|AUTH_SECRET)=$}{my $r = qx(openssl rand -hex 24); chomp $r; "$1=$r"}e' .env
+   perl -pi -e 's{^(POSTGRES_PASSWORD|OWNER_DB_PASSWORD|APP_DB_PASSWORD|AUTH_SECRET)=$}{my $r = qx(openssl rand -hex 24); chomp $r; "$1=$r"}e' .env
    ```
 
    Add `ANTHROPIC_API_KEY` if you want AI reconfiguration. Every other setting has a working default.
@@ -38,9 +38,9 @@ Needs Docker Desktop (Apple Silicon or Intel) with 4 CPUs and 8 GB RAM for Docke
 
    Magic-link emails land in mailpit at http://localhost:8025. Mailpit is in the `dev` profile, which `COMPOSE_PROFILES=dev` in `.env` turns on.
 
-Stop with `docker compose down`. Your data stays in the `pgdata` and `objdata` volumes. `docker compose down -v` also deletes the data, so the next `up` seeds from scratch.
+Stop with `docker compose down`. Your data stays in the `pgdata` volume. `docker compose down -v` also deletes the data, so the next `up` seeds from scratch.
 
-What runs where: `web` (tier 1) is only on the `edge` network. `db` and `objects` (tier 3) are only on the internal `data` network. `logic` joins both, and `worker` joins `data` and `egress` (for the Claude API). Only `web` (80/443) and mailpit (8025) publish ports. Both bind to 127.0.0.1, and `WEB_BIND_ADDRESS` changes this for web.
+What runs where: `web` (tier 1) is only on the `edge` network. `db` (tier 3) is only on the internal `data` network. `logic` joins both, and `worker` joins `data` and `egress` (for the Claude API). Only `web` (80/443) and mailpit (8025) publish ports. Both bind to 127.0.0.1, and `WEB_BIND_ADDRESS` changes this for web.
 
 ### Using Neon (or another managed Postgres) instead of the local db
 

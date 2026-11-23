@@ -5,7 +5,7 @@
 #
 # Networks (physical tier separation, G13):
 #   edge   web <-> logic (and mail in the dev profile)
-#   data   internal: true; logic, worker, migrate <-> db, objects. web is NOT on it.
+#   data   internal: true; logic, worker, migrate <-> db. web is NOT on it.
 #   egress outbound internet for the worker (Claude API)
 #
 # Configuration is environment only (12-factor, ADR-013). Compose reads .env for the ${...}
@@ -27,9 +27,7 @@ x-logic: &logic
 x-logic-env: &logic-env
   NODE_ENV: production
   LOG_LEVEL: ${LOG_LEVEL:-}
-  S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT in .env (see .env.example)}
-  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env (see .env.example)}
-  S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env (see .env.example)}
+  OBJECT_STORE: ${OBJECT_STORE:-postgres}
 
 networks:
   edge: {}
@@ -39,7 +37,6 @@ networks:
 
 volumes:
   pgdata: {}
-  objdata: {}
   caddydata: {}
 
 services:
@@ -68,31 +65,10 @@ services:
       retries: 12
       start_period: 30s
 
-  objects:
-    # MinIO-compatible object store. Upstream MinIO stopped publishing images in 2026
-    # (Docker Hub repo deleted, quay.io needs a login), so the default is Silo, the
-    # maintained MinIO fork with the same S3 API, MINIO_* settings and on-disk format.
-    # Override with OBJECTS_IMAGE (keep a pinned RELEASE tag or digest).
-    image: ${OBJECTS_IMAGE:-pgsty/silo:RELEASE.2026-11-09T00-00-00Z}
-    command: ["server", "/data", "--console-address", ":9001"]
-    restart: unless-stopped
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-glidepath}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env (see .env.example)}
-    volumes:
-      - objdata:/data
-    networks: [data]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live || mc ready local"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 10s
-
   # ---------------------------------------------------------------- tier 2
   migrate:
     <<: *logic
-    # One-shot: migrations, buckets, model defs and the AA seed; logic and worker wait for it.
+    # One-shot: migrations, model defs and the AA seed; logic and worker wait for it.
     command: ["node", "dist/migrate.js", "--seed", "aa"]
     restart: "no"
     environment:
@@ -103,7 +79,6 @@ services:
     networks: [data]
     depends_on:
       db: { condition: service_healthy }
-      objects: { condition: service_healthy }
 
   logic:
     <<: *logic

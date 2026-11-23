@@ -47,7 +47,7 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
   it('is the glidepath project with the services of 11 §1', () => {
     expect(c.name).toBe('glidepath');
     expect(Object.keys(c.services).sort()).toEqual(
-      ['db', 'logic', 'mail', 'migrate', 'objects', 'web', 'worker'].sort(),
+      ['db', 'logic', 'mail', 'migrate', 'web', 'worker'].sort(),
     );
   });
 
@@ -55,9 +55,9 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(svc('db').image).toMatch(/^postgres:16\.\d+(-[a-z0-9.]+)?$/);
   });
 
-  it('pins objects to a RELEASE tag of a MinIO-compatible image', () => {
-    expect(svc('objects').image).toMatch(/:RELEASE\.\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z$/);
-    expect(svc('objects').command).toEqual(['server', '/data', '--console-address', ':9001']);
+  it('has no objects service; tier 2 stores objects in Postgres (ADR-025)', () => {
+    expect(Object.keys(c.services)).not.toContain('objects');
+    for (const s of TIER2) expect(svc(s).environment.OBJECT_STORE, s).toBe('postgres');
   });
 
   it('pins mailpit and tags the glidepath images with TAG', () => {
@@ -85,11 +85,10 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(c.networks.egress!.internal).toBe(false);
   });
 
-  it('web on edge only; db and objects on data only; worker on data + egress; logic on edge + data', () => {
+  it('web on edge only; db on data only; worker on data + egress; logic on edge + data', () => {
     const nets = (name: string) => [...svc(name).networks].sort();
     expect(nets('web')).toEqual(['edge']);
     expect(nets('db')).toEqual(['data']);
-    expect(nets('objects')).toEqual(['data']);
     expect(nets('worker')).toEqual(['data', 'egress']);
     expect(nets('logic')).toEqual(['data', 'edge']);
     expect(nets('migrate')).toEqual(['data']);
@@ -99,14 +98,11 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
   it('publishes only web 80/443 and mailpit 8025, both on 127.0.0.1 by default', () => {
     expect(svc('web').ports.sort()).toEqual(['127.0.0.1:443:443', '127.0.0.1:80:80']);
     expect(svc('mail').ports).toEqual(['127.0.0.1:8025:8025']);
-    for (const s of ['db', 'objects', ...TIER2]) expect(svc(s).ports, s).toEqual([]);
+    for (const s of ['db', ...TIER2]) expect(svc(s).ports, s).toEqual([]);
   });
 
-  it('starts in order: db/objects healthy -> migrate done -> logic/worker -> web', () => {
-    expect(svc('migrate').depends_on).toEqual({
-      db: { condition: 'service_healthy' },
-      objects: { condition: 'service_healthy' },
-    });
+  it('starts in order: db healthy -> migrate done -> logic/worker -> web', () => {
+    expect(svc('migrate').depends_on).toEqual({ db: { condition: 'service_healthy' } });
     for (const s of ['logic', 'worker'])
       expect(svc(s).depends_on, s).toEqual({
         migrate: { condition: 'service_completed_successfully' },
@@ -114,8 +110,15 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(svc('web').depends_on).toEqual({ logic: { condition: 'service_healthy' } });
   });
 
-  it('keeps the volumes pgdata and objdata', () => {
-    expect(c.volumes).toEqual(expect.arrayContaining(['pgdata', 'objdata']));
+  it('keeps the volumes pgdata and caddydata, and has no objdata', () => {
+    expect(c.volumes).toEqual(expect.arrayContaining(['pgdata', 'caddydata']));
+    expect(c.volumes).not.toContain('objdata');
+  });
+
+  it('has no OBJECTS_IMAGE, MINIO_* or S3_* settings', () => {
+    for (const [name, s] of Object.entries(c.services))
+      for (const k of Object.keys(s.environment))
+        expect(k, `${name}: ${k}`).not.toMatch(/^(OBJECTS_IMAGE|MINIO_|S3_)/);
   });
 
   it('tier-2 services read the DB only from DATABASE_URL / DATABASE_URL_MIGRATE', () => {
@@ -145,7 +148,6 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
         .sort();
     expect(holders('POSTGRES_PASSWORD')).toEqual(['db']);
     expect(holders('APP_DB_PASSWORD')).toEqual(['db']);
-    expect(holders('MINIO_ROOT_PASSWORD')).toEqual(['objects']);
     expect(holders('ANTHROPIC_API_KEY')).toEqual(['worker']);
     expect(holders('AUTH_SECRET')).toEqual(['logic']);
     expect(Object.keys(svc('web').environment)).toEqual(['PUBLIC_BASE_URL']);
@@ -187,7 +189,7 @@ describe('docker-compose.neon.yml drops the local db (YAML)', () => {
   it('moves db out of the default profile and lets migrate reach the internet', () => {
     expect(neon.services.db!.profiles).toEqual(['local-db']);
     expect([...neon.services.migrate!.networks!].sort()).toEqual(['data', 'egress']);
-    expect(Object.keys(neon.services.migrate!.depends_on!)).toEqual(['objects']);
+    expect(neon.services.migrate!.depends_on).toEqual({});
   });
 });
 
