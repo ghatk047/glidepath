@@ -1,0 +1,80 @@
+import { rem } from '@glidepath/ui/shell';
+import { media } from '@glidepath/ui/tokens';
+
+/**
+ * VPs screen CSS (docs/ux/screens/vps-dark-1440.jpg, prototype `.vpcard`, `.bullet`, `.own`),
+ * token CSS vars only; metrics with no token are rem. The bullet geometry (fill and tick) is
+ * drawn by CSS from the net and bar tier 2 pushed (custom properties), like the gauge arc.
+ */
+const mono = 'var(--font-mono), ui-monospace, monospace';
+const line = `${rem(1)} solid var(--glass-line)`;
+const focus = `outline: ${rem(2)} solid var(--accent); outline-offset: ${rem(2)};`;
+const ease = 'var(--motion-flash) var(--motion-ease)';
+
+export const vpsCss = [
+  '/* web modules/vps: generated from tokens in src/modules/vps/styles.ts */',
+  `.gp-vps { display: flex; flex-direction: column; gap: var(--space-gap); }`,
+  `.gp-vps-controls { display: flex; align-items: center; gap: ${rem(24)}; flex-wrap: wrap; }`,
+  `.gp-vps-controls-item { display: flex; align-items: center; gap: ${rem(12)}; }`,
+  `.gp-vps-eyebrow { font: var(--type-xs-weight) var(--type-xs-size)/1.2 ${mono}; letter-spacing: var(--type-xs-tracking); text-transform: uppercase; color: var(--ink-3); margin: 0; }`,
+  `.gp-vps-note { margin-left: auto; color: var(--ink-3); font-size: var(--type-s-size); }`,
+  `.gp-vps-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-gap); }`,
+  `.gp-vps-card { display: flex; flex-direction: column; gap: ${rem(14)}; }`,
+  `.gp-vps-card-head { display: flex; align-items: center; gap: ${rem(10)}; min-height: ${rem(28)}; }`,
+  `.gp-vps-card-name { margin: 0; font-size: var(--type-m-size); font-weight: var(--type-m-weight); color: var(--ink); }`,
+  `.gp-vps-dot { width: ${rem(10)}; height: ${rem(10)}; border-radius: ${rem(3)}; background: var(--vp-colour); flex: none; }`,
+  `.gp-vps-ss { margin-left: auto; padding: ${rem(4)} ${rem(12)}; border-radius: var(--radius-pill); border: ${line}; background: var(--glass-2); color: var(--ink-2); font-size: var(--type-s-size); }`,
+  `.gp-vps-hero { font: var(--type-xl-weight) var(--type-xl-size)/1.1 var(--font-num), var(--font-ui), sans-serif; font-variant-numeric: var(--type-numerals); color: var(--ink); }`,
+  `.gp-vps-bullet { --tick: 0.87; position: relative; height: ${rem(12)}; border-radius: var(--radius-pill); background: var(--track); }`,
+  `.gp-vps-bullet-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--vp-colour); width: clamp(0%, calc(var(--net) / var(--bar) * var(--tick) * 100%), 100%); transition: width var(--motion-value) var(--motion-ease); }`,
+  `.gp-vps-bullet-tick { position: absolute; top: -${rem(4)}; bottom: -${rem(4)}; left: calc(var(--tick) * 100%); width: ${rem(2)}; background: var(--ink); }`,
+  `.gp-vps-pair { display: flex; justify-content: space-between; gap: ${rem(8)}; color: var(--ink-2); font-size: var(--type-m-size); }`,
+  `.gp-vps-pair strong { color: var(--ink); font-weight: 600; }`,
+  `.gp-vps-card-foot { display: grid; grid-template-columns: 1fr 1fr; gap: ${rem(14)}; padding-top: ${rem(14)}; border-top: ${line}; }`,
+  `.gp-vps-card-foot > div { display: flex; flex-direction: column; gap: ${rem(6)}; align-items: flex-start; }`,
+  `.gp-vps-card-foot > div + div { padding-left: ${rem(14)}; border-left: ${line}; }`,
+  `.gp-vps-sub { color: var(--ink-3); font-size: var(--type-s-size); }`,
+  `.gp-vps-target { font-size: var(--type-l-size); color: var(--ink); }`,
+  `.gp-vps-main { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-gap); align-items: start; }`,
+  `.gp-vps-side { display: flex; flex-direction: column; gap: var(--space-gap); }`,
+  `.gp-vps-legend { display: flex; flex-wrap: wrap; gap: ${rem(14)}; color: var(--ink-2); font-size: var(--type-s-size); }`,
+  `.gp-vps-legend span { display: inline-flex; align-items: center; gap: ${rem(6)}; }`,
+  `.gp-vps-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }`,
+  `.gp-vps-row { display: grid; grid-template-columns: minmax(0, 14rem) ${rem(80)} minmax(0, 1fr); align-items: center; gap: ${rem(12)}; padding: ${rem(8)} 0; border-bottom: ${line}; }`,
+  `.gp-vps-row:last-child { border-bottom: 0; }`,
+  `.gp-vps-row-name { color: var(--ink); font-size: var(--type-m-size); }`,
+  `.gp-vps-row-outlay { text-align: right; color: var(--ink-3); font-size: var(--type-s-size); font-variant-numeric: var(--type-numerals); }`,
+  `.gp-vps-row-msg { grid-column: 1 / -1; }`,
+  `.gp-vps-warn { margin: 0; padding: ${rem(6)} ${rem(10)}; border-radius: var(--radius-small); border: ${line}; color: var(--warn); font-size: var(--type-s-size); }`,
+  `.gp-vps-warn[data-severity="error"] { color: var(--neg); }`,
+  `.gp-vps-warns { display: flex; flex-direction: column; gap: ${rem(6)}; margin-bottom: ${rem(10)}; }`,
+  `.gp-vps-warns:empty { display: none; }`,
+  `.gp-vps-usage { display: flex; border-radius: var(--radius-control); overflow: hidden; min-height: ${rem(40)}; margin: ${rem(14)} 0; }`,
+  `.gp-vps-usage > span { display: grid; place-items: center; min-width: 0; background: var(--vp-colour); color: white; font-size: var(--type-s-size); font-weight: 600; box-shadow: inset -${rem(1)} 0 var(--glass-line); }`,
+  `.gp-vps-pools { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }`,
+  `.gp-vps-pool { display: flex; align-items: center; gap: ${rem(12)}; padding: ${rem(10)} ${rem(14)}; }`,
+  `.gp-vps-pool-name { margin-right: auto; color: var(--ink); }`,
+  `.gp-vps-pool-outlay { color: var(--ink-3); font-size: var(--type-s-size); }`,
+  `.gp-vps-overrides { display: grid; grid-template-columns: repeat(auto-fit, minmax(${rem(120)}, 1fr)); gap: ${rem(8)}; margin: 0 0 ${rem(10)}; padding: 0; list-style: none; }`,
+  `.gp-vps-overrides li { display: flex; justify-content: space-between; gap: ${rem(8)}; color: var(--ink-2); font-size: var(--type-s-size); }`,
+  `.gp-vps-switch { display: flex; align-items: center; gap: ${rem(10)}; color: var(--ink-2); margin-bottom: ${rem(8)}; }`,
+  `.gp-vps-result { margin: 0 0 ${rem(14)}; color: var(--ink-2); line-height: 1.5; }`,
+  `.gp-vps-result strong { color: var(--ink); }`,
+  `.gp-vps-coverage { margin: 0 0 ${rem(14)}; padding: 0; list-style: none; display: grid; gap: ${rem(4)}; color: var(--ink-2); font-size: var(--type-s-size); }`,
+  `.gp-vps-btn { display: inline-flex; align-items: center; gap: ${rem(8)}; min-height: ${rem(40)}; padding: 0 ${rem(16)}; border-radius: var(--radius-control); border: ${line}; background: var(--glass-2); color: var(--ink); font: inherit; cursor: pointer; }`,
+  `.gp-vps-btn:hover { background: var(--glass-3); }`,
+  `.gp-vps-btn:disabled { opacity: .55; cursor: default; }`,
+  `.gp-vps-btn:focus-visible { ${focus} }`,
+  `.gp-vps-actions { display: flex; gap: ${rem(10)}; flex-wrap: wrap; }`,
+  // changed numbers glow (IA: "glow on the changed numbers")
+  `[data-glow] { text-shadow: 0 0 ${rem(14)} var(--accent-glow); transition: text-shadow ${ease}; }`,
+  `@media ${media.tablet} { .gp-vps-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gp-vps-main { grid-template-columns: minmax(0, 1fr); } }`,
+  `@media ${media.phone} {`,
+  `  .gp-vps-cards { grid-template-columns: minmax(0, 1fr); }`,
+  `  .gp-vps-note { margin-left: 0; }`,
+  `  .gp-vps-row { grid-template-columns: minmax(0, 1fr) auto; }`,
+  `  .gp-vps-row > :last-child { grid-column: 1 / -1; }`,
+  `  .gp-vps-btn { min-height: ${rem(44)}; }`,
+  `}`,
+  `@media (prefers-reduced-motion: reduce) { .gp-vps-bullet-fill, [data-glow] { transition: none; } }`,
+].join('\n');
