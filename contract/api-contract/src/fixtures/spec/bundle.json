@@ -8068,5 +8068,8 @@
         "label"
       ]
     }
-  ]
+  ],
+  "solverDefaults": {
+    "gcc_hiring": 500
+  }
 }

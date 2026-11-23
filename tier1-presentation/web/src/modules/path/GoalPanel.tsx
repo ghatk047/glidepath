@@ -5,7 +5,8 @@ import { fmt } from '@glidepath/ui/format';
 import { GlassPanel } from '@glidepath/ui/glass';
 import { RadioCard, Toggle } from '@glidepath/ui/inputs/controls';
 import { EditPopover, parseNumber } from '@glidepath/ui/inputs/editable';
-import { useNode, useVariable } from '../../bind';
+import { useBindContext, useNode, useVariable } from '../../bind';
+import { useBundle } from '../../data';
 import {
   CAP_NODE,
   COPY,
@@ -139,6 +140,18 @@ function HoldInput({
 }
 
 /**
+ * The GCC hiring capacity to hold to (`gcc_hiring`): tier 2's default from the bundle's `solverDefaults`
+ * until the user types another one; `null` when the bundle has none (the row is then not shown).
+ */
+function useGccHold() {
+  const { tenant } = useBindContext();
+  const pushed = useBundle(tenant).data?.solverDefaults.gcc_hiring ?? null;
+  const [text, setText] = useState<string | null>(null);
+  const value = text === null ? pushed : parseNumber(text);
+  return { pushed, text, setText, value };
+}
+
+/**
  * The Goal panel's choices, lifted so the Result panel's empty state can ask the same question.
  * `choice` is `null` while a switched-on constraint has no readable value.
  */
@@ -150,7 +163,13 @@ export function usePathChoice() {
   const [capOn, setCapOn] = useState(false);
   const floor = useHoldValue(FLOOR_NODE);
   const cap = useHoldValue(CAP_NODE);
-  const invalid = (floorOn && floor.value === null) || (capOn && cap.value === null);
+  // Off by default: a what-if the user adds ("What if the GCC can't hire?").
+  const [gccOn, setGccOn] = useState(false);
+  const gcc = useGccHold();
+  const invalid =
+    (floorOn && floor.value === null) ||
+    (capOn && cap.value === null) ||
+    (gccOn && gcc.value === null);
   const choice: PathChoice | null = invalid
     ? null
     : {
@@ -158,6 +177,7 @@ export function usePathChoice() {
         perVp,
         usFloor: floorOn ? floor.value : null,
         oneTimeCap: capOn ? cap.value : null,
+        gccHiring: gccOn ? gcc.value : null,
       };
   return {
     objective,
@@ -170,6 +190,9 @@ export function usePathChoice() {
     setCapOn,
     floor,
     cap,
+    gccOn,
+    setGccOn,
+    gcc,
     choice,
   };
 }
@@ -213,6 +236,9 @@ export function GoalPanel({
     setCapOn,
     floor,
     cap,
+    gccOn,
+    setGccOn,
+    gcc,
     choice,
   } = state;
   const find = () => {
@@ -258,6 +284,24 @@ export function GoalPanel({
             format={(v) => fmt.money(v)}
           />
         </HoldRow>
+        {gcc.pushed !== null && (
+          <HoldRow
+            toggle={<Toggle label={COPY.gccHiringName} value={gccOn} onChange={setGccOn} />}
+          >
+            {COPY.gccHiring}{' '}
+            <input
+              type="text"
+              inputMode="decimal"
+              className="gp-path-hold-input"
+              aria-label={COPY.gccHiringName}
+              data-value={gcc.value ?? undefined}
+              aria-invalid={gcc.value === null || undefined}
+              value={gcc.text ?? fmt.fte(gcc.pushed)}
+              size={(gcc.text ?? fmt.fte(gcc.pushed)).length || 1}
+              onChange={(e) => gcc.setText(e.target.value)}
+            />
+          </HoldRow>
+        )}
         <HoldRow toggle={<Toggle label={`${COPY.stretch}, ${COPY.alwaysOn}`} value disabled />}>
           {COPY.stretch}
         </HoldRow>

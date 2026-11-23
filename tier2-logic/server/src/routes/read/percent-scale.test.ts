@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { specFixtures } from '@glidepath/api-contract/testing';
 import type { DimensionDefRow, ModelDefs } from '@glidepath/data-access';
 import { compileModel, findScenario, resolveInputs } from '@glidepath/engine';
+import { REFERENCE_SOLVER_DEFAULTS } from '@glidepath/spec';
 import { loadModelBundleFromDir, readTenantSeed } from '@glidepath/spec/node';
 import { repoRoot } from '@glidepath/testkit';
 import { describe, expect, it } from 'vitest';
@@ -87,6 +88,13 @@ describe('bundle percent scale (WEB-10)', async () => {
       nodes: typeof b.variables;
     }) => [...b.variables, ...b.nodes].map((d) => [d.id, d.percentScale]);
     expect(scales(specFixtures.bundle as never)).toEqual(scales(bundle));
+  });
+
+  it('MOD-11: the bundle carries the solver defaults generated from solvers.json, and the contract fixture agrees', () => {
+    expect(bundle.solverDefaults).toEqual({ gcc_hiring: REFERENCE_SOLVER_DEFAULTS.gcc_hiring });
+    expect(specFixtures.bundle.solverDefaults).toEqual(bundle.solverDefaults);
+    // a model version without generated defaults sends none (tier 1 then hides the constraint)
+    expect(buildBundle(defs, { ...spec, specVersion: `${spec.specVersion}-other` }).solverDefaults).toEqual({});
   });
 
   it('node scales agree with the engine: a fraction node stays a ratio (< 2), a points node exceeds 1 at some preset', async () => {

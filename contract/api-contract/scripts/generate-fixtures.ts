@@ -135,6 +135,28 @@ function nodeScale(n: SpecNode): 'fraction' | 'points' | null {
 // Generation
 // ---------------------------------------------------------------------------
 
+/**
+ * `solverDefaults.gcc_hiring` (MOD-11): the number in the prose of solvers.json `min_risk_mix.constraints`
+ * ("(default N in CYxx)"), read the way tier 2's `dump_solver_defaults.py` reads it. Nothing typed here.
+ */
+function gccHiringDefault(specDir: string): number {
+  const find = (x: unknown): Record<string, unknown> | null => {
+    if (typeof x !== 'object' || x === null) return null;
+    const o = x as Record<string, unknown>;
+    if (o['id'] === 'min_risk_mix' && typeof o['constraints'] === 'object') return o;
+    for (const v of Object.values(o)) {
+      const r = find(v);
+      if (r) return r;
+    }
+    return null;
+  };
+  const mix = find(readJson<unknown>(join(specDir, 'solvers.json')));
+  const text = (mix?.['constraints'] as Record<string, string> | undefined)?.['gcc_hiring (optional)'] ?? '';
+  const m = /\(default (\d+(?:\.\d+)?) in CY\d+\)/.exec(text);
+  if (!m) fail(`gcc_hiring default not found in solvers.json: ${text}`);
+  return Number(m![1]);
+}
+
 /** Generated file name → file content. Pure apart from reading `specDir`. */
 export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<string, string> {
   const registry = readJson<{ spec_version: string; variables: SpecVariable[] }>(
@@ -202,6 +224,7 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
         scope: d.scope,
         attributes: d.attributes,
       })) as z.input<typeof BundleResponse>['dimensions'],
+      solverDefaults: { gcc_hiring: gccHiringDefault(specDir) },
     },
     'bundle',
   );

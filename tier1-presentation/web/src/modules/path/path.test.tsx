@@ -610,6 +610,48 @@ describe('AC1: goal, objective and constraints map to solver params', () => {
   });
 });
 
+describe('MOD-11: GCC hiring-capacity constraint', () => {
+  it("a 'GCC' switch (prefilled from the bundle's solver default, editable) adds gcc_hiring to the run params and Find a path reruns with it", async () => {
+    const t = await mount();
+    const hold = within(goal()).getByRole('list', { name: 'Hold to' });
+    const sw = within(hold).getByRole('switch', { name: /GCC/ }) as HTMLInputElement;
+    expect(sw.checked).toBe(false);
+    const input = within(hold).getByRole('textbox', { name: /GCC/ }) as HTMLInputElement;
+    const capacity = bundle.solverDefaults.gcc_hiring!;
+    expect(input.dataset['value']).toBe(String(capacity));
+    expect(input.value).toBe(fmt.fte(capacity));
+
+    fireEvent.click(find());
+    await t.until(() => expect(t.starts).toHaveLength(1));
+    expect(JSON.stringify(t.starts[0]!.spec)).not.toContain('gcc_hiring');
+
+    fireEvent.click(sw);
+    expect(sw.checked).toBe(true);
+    await t.until(() => expect(find()).toHaveProperty('disabled', false));
+    fireEvent.click(find());
+    await t.until(() => expect(t.starts).toHaveLength(2));
+    expect(t.starts[1]!.spec).toMatchObject({
+      problem: 'min_risk_mix',
+      params: {
+        constraints: [
+          { id: 'total' },
+          { id: 'us_floor', value: cell('res.fte_us') },
+          { id: 'gcc_hiring', value: capacity },
+        ],
+      },
+    });
+
+    // the capacity is editable like every number
+    fireEvent.change(input, { target: { value: '120' } });
+    await t.until(() => expect(find()).toHaveProperty('disabled', false));
+    fireEvent.click(find());
+    await t.until(() => expect(t.starts).toHaveLength(3));
+    expect(t.starts[2]!.spec).toMatchObject({
+      params: { constraints: expect.arrayContaining([{ id: 'gcc_hiring', value: 120 }]) },
+    });
+  });
+});
+
 describe('AC2: Find a path runs the job and lands the moves', () => {
   it("'Find a path' starts min_risk_mix, shows job progress, then lands moves one by one with a 90 ms stagger in optimizer order", async () => {
     let finished = false;

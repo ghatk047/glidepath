@@ -28,6 +28,10 @@ export type {
 export { decisionBoundsFor } from './core/decision-bounds';
 export type { DecisionBounds } from './core/decision-bounds';
 export { REFERENCE_DECISION_BOUNDS } from './reference/decision-bounds';
+// MOD-11: constraint defaults the spec states in prose, generated from docs/spec/solvers.json.
+export { solverDefaultsFor } from './core/solver-defaults';
+export type { SolverDefaults } from './core/solver-defaults';
+export { REFERENCE_SOLVER_DEFAULTS } from './reference/solver-defaults';
 export { SpecValidationError, jsonPath } from './core/errors';
 export type { SpecIssue } from './core/errors';
 export type {

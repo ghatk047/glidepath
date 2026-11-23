@@ -32,8 +32,7 @@ import { expect, goldenOf, HEADLINE, test } from './fixtures';
  * Assertions that wait on another backlog item are `test.fixme` with the item id and state the final
  * behaviour (they are listed in the QA-05 report):
  *
- * - AI-07: the UA tile (Draft, from the cached rehearsal bundle) and the AS tile do not exist yet;
- * - MOD-06: the Path screen has no GCC hiring-capacity constraint to add ("What if the GCC can't hire?").
+ * - AI-07: the UA tile (Draft, from the cached rehearsal bundle) and the AS tile do not exist yet.
  */
 
 const TARGET = 'g.target_net';
@@ -562,9 +561,8 @@ test.describe('Demo storyline: ready for questions (QA-05, G10)', () => {
   });
 
   // "What if the GCC can't hire?": Path, add the GCC hiring-capacity constraint, rerun.
-  // The solver has the constraint (`gcc_hiring`); MOD-06 gives Goal only the VP, US headcount and
-  // one-time constraints, so there is nothing to add yet.
-  test.fixme('q_gcc_cannot_hire_adds_the_hiring_capacity_constraint [MOD-06]', async () => {
+  // The switch adds `gcc_hiring` with the capacity tier 2 sends in the bundle (MOD-11).
+  test('q_gcc_cannot_hire_adds_the_hiring_capacity_constraint', async () => {
     await open(page, presetC, 'path');
     const gcc = page.getByRole('switch', { name: /GCC/i });
     await expect(gcc).toBeVisible();

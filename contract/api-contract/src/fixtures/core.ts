@@ -124,6 +124,7 @@ export const coreRouteFixtures = {
         },
       ],
       dimensions: [{ id: 'vp', label: 'Org unit (VP)', scope: 'tenant', attributes: ['label'] }],
+      solverDefaults: { gcc_hiring: 500 },
     },
   },
   members: {

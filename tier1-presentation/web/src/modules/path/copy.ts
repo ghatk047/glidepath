@@ -112,6 +112,8 @@ export const COPY = {
   perVp: 'Every VP clears its own bar',
   usFloor: 'US headcount ≥',
   usFloorName: 'US headcount floor',
+  gccHiring: 'GCC hiring ≤',
+  gccHiringName: 'GCC hiring capacity, FTE',
   oneTimeCap: 'One-time in IT ≤',
   oneTimeCapName: 'One-time in IT cap, $M',
   stretch: 'No lever past full stretch',

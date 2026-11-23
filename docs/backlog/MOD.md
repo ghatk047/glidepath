@@ -364,7 +364,7 @@ title: "Path: GCC hiring-capacity constraint toggle (storyline 'What if the GCC 
 epic: MOD
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -382,4 +382,5 @@ acceptance:
 gates: [G1, G2, G3, G10, G12, G13]
 size: S
 notes: "From QA-05. If the constraint's default capacity is not in the bundle, report it rather than hard-coding."
+merged_at: "2026-11-23"
 ```

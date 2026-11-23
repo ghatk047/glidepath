@@ -9,13 +9,15 @@ import { METRIC, METHOD } from './copy';
 
 /**
  * What the Goal panel holds (the user's choices), before it becomes a solver spec.
- * `usFloor` / `oneTimeCap`: the value to hold to, or `null` when the toggle is off.
+ * `usFloor` / `oneTimeCap` / `gccHiring`: the value to hold to, or `null` when the toggle is off.
  */
 export interface PathChoice {
   objective: SolverObjective;
   perVp: boolean;
   usFloor: number | null;
   oneTimeCap: number | null;
+  /** GCC hiring capacity (FTE above `hc.gcc`), prefilled from the bundle's solver defaults; `null` = off. */
+  gccHiring: number | null;
 }
 
 /**
@@ -25,6 +27,7 @@ export interface PathChoice {
  * - Goal: `total` (`res.net ≥ res.bar`); the bar follows the net target the user edits.
  * - Every VP clears → `per_vp` (no `vps`: every VP). US headcount floor → `us_floor`.
  *   One-time cap → `one_time_cap`.
+ *   GCC hiring capacity → `gcc_hiring`.
  * - Stretch cap and estimates fixed have no parameter: tier 2 always applies them (`bounds` come
  *   from the decision sets, capped at full stretch; `estimate` variables never move), so their
  *   toggles are shown on and locked.
@@ -35,6 +38,7 @@ export function pathSpec(choice: PathChoice): SolverSpec {
   if (choice.usFloor !== null) constraints.push({ id: 'us_floor', value: choice.usFloor });
   if (choice.oneTimeCap !== null)
     constraints.push({ id: 'one_time_cap', value: choice.oneTimeCap });
+  if (choice.gccHiring !== null) constraints.push({ id: 'gcc_hiring', value: choice.gccHiring });
   return {
     problem: 'min_risk_mix',
     params: { objective: choice.objective, method: METHOD, constraints },

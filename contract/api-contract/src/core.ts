@@ -167,11 +167,20 @@ export const DimensionDef = z.object({
 });
 export type DimensionDef = z.infer<typeof DimensionDef>;
 
+/**
+ * Defaults of the solvers' optional constraints that the spec states in prose (MOD-11), so tier 1 prefills a
+ * constraint's value without a number of its own. `gcc_hiring`: the GCC hiring capacity (the contract's
+ * `gcc_hiring.value` stays required); absent when the pinned model version has no generated default.
+ */
+export const SolverDefaults = z.object({ gcc_hiring: z.number().optional() });
+export type SolverDefaults = z.infer<typeof SolverDefaults>;
+
 export const BundleResponse = z.object({
   modelVersion: z.object({ id: ModelVersionId, semver: z.string().min(1) }),
   variables: z.array(VariableDef),
   nodes: z.array(NodeDef),
   dimensions: z.array(DimensionDef),
+  solverDefaults: SolverDefaults,
 });
 export type BundleResponse = z.infer<typeof BundleResponse>;
 

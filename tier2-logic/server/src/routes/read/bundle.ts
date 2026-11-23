@@ -1,6 +1,6 @@
 import { BundleResponse } from '@glidepath/api-contract';
 import type { ModelDefs } from '@glidepath/data-access';
-import { nodePercentScale, variablePercentScale, type ModelBundle } from '@glidepath/spec';
+import { nodePercentScale, solverDefaultsFor, variablePercentScale, type ModelBundle } from '@glidepath/spec';
 
 /** The bundle cannot be built: the spec bundle lacks something the pinned model version defines. */
 export class BundleError extends Error {
@@ -93,11 +93,14 @@ export function buildBundle(defs: ModelDefs, spec: ModelBundle): BundleResponse 
     return { id: d.dim_key, label: s.label, scope: d.scope, attributes: [...d.attributes] };
   });
 
+  const defaults = solverDefaultsFor(spec.specVersion);
   const parsed = BundleResponse.safeParse({
     modelVersion: { id: defs.modelVersion.id, semver: defs.modelVersion.semver },
     variables,
     nodes,
     dimensions,
+    // The spec's own prose defaults (generated from solvers.json); none for a version without them.
+    solverDefaults: { ...(defaults ? { gcc_hiring: defaults.gcc_hiring } : {}) },
   });
   if (!parsed.success) {
     const first = parsed.error.issues[0];

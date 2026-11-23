@@ -206,6 +206,7 @@ describe('schemas.spec: bundle accepts the real model spec', () => {
         percentScale: scaleOf.get(n.id),
       })),
       dimensions: graph.dimensions,
+      solverDefaults: {},
     };
     const result = BundleResponse.safeParse(bundle);
     expect(result.success, JSON.stringify(result.error?.issues.slice(0, 3))).toBe(true);
