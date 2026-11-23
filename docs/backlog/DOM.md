@@ -21,7 +21,7 @@ title: "Changeset model, member keys, scenario resolution, ports"
 epic: DOM
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh

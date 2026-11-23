@@ -67,7 +67,7 @@ title: "Glass primitives, grid and aurora background"
 epic: UI
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
