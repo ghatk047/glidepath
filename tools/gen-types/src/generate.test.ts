@@ -42,7 +42,7 @@ describe('gen-types', () => {
     const tsc = join(REPO_ROOT, 'node_modules', 'typescript', 'bin', 'tsc');
     const project = join(REPO_ROOT, 'tier2-logic', 'spec', 'tsconfig.json');
     expect(() => execFileSync(process.execPath, [tsc, '--noEmit', '-p', project], { stdio: 'pipe' })).not.toThrow();
-  });
+  }, 60_000); // spawns a full tsc run; CI runners take ~6 s
 
   it('generated schemas accept the real spec JSON', () => {
     expect(generated.VariablesSchema.safeParse(variables).success).toBe(true);
