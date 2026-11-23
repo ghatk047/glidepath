@@ -123,7 +123,8 @@ jobs:
           sudo systemctl stop postgresql || true
           test -x /usr/lib/postgresql/16/bin/initdb
       - name: Unit tests with coverage (affected packages)
-        run: pnpm turbo run test --concurrency=2 --filter="...[$TURBO_BASE]"
+        # Shared CI runners are 3-6x slower than a dev machine (tsc spawns, pg-local clusters); per-test timeouts stay at the default locally.
+        run: pnpm turbo run test --concurrency=2 --filter="...[$TURBO_BASE]" -- --testTimeout=30000 --hookTimeout=60000
 
   G13:
     name: G13 Tier separation
