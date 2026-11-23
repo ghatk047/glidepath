@@ -219,7 +219,7 @@ title: "ops/backup.sh and ops/restore.sh"
 epic: OPS
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: medium
@@ -238,6 +238,7 @@ acceptance:
 gates: [G14]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Run before the freeze; also the first step of moving to Neon later.

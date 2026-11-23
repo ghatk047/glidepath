@@ -15,3 +15,4 @@ Tests and helpers for the repo-root operations files: `docker-compose.yml`,
 
 Set `OPS_COMPOSE_SOURCE=yaml` to force the YAML path. Run with
 `pnpm turbo run typecheck lint test --filter=@glidepath/ops`.
+- `backup.sh`, `restore.sh`, `pg-common.sh` (OPS-07): `pg_dump -Fc --no-owner --no-privileges` into `./backups/<timestamp>/` (dump, grants.sql, manifest.txt) and the matching restore; DB from `DATABASE_URL_BACKUP`/`DATABASE_URL_MIGRATE` or the compose `db` service; the role must bypass RLS. Tested in `test/backup.spec.ts` against pg-local with TLS.
