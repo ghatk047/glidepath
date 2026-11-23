@@ -1702,6 +1702,39 @@
     "merged_at": "2026-11-23"
   },
   {
+    "id": "DATA-14",
+    "title": "Scenarios list in seed order (Rates only first, as in the cockpit render)",
+    "epic": "DATA",
+    "milestone": "M4",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "A",
+    "model": "sonnet",
+    "effort": "medium",
+    "depends_on": [
+      "WEB-11"
+    ],
+    "tier": 3,
+    "package": "tier3-data/migrations, tier2-logic/data-access (repos/scenarios.ts), tier2-logic/worker/src/seed",
+    "contract": "listScenarios returns presets in the order of the tenant seed's scenarios.json (rates, A, B, C, D for AA), then user scenarios by created_at",
+    "inputs": [
+      "tier2-logic/data-access/src/repos/scenarios.ts listScenarios (orders by created_at then key collate C, so A..D come before rates)",
+      "docs/spec/seed/aa/scenarios.json (seed order)"
+    ],
+    "acceptance": [
+      "a new nullable integer column scenario.sort_order (migration, RLS unchanged) is set by the seeder from the position in scenarios.json; existing databases are backfilled by the migration for preset keys (test)",
+      "listScenarios orders by sort_order nulls last, created_at, key; repos.pg test proves rates, A, B, C, D order for AA, then a user scenario (test)",
+      "no tier 1 change; the scenario bar shows Rates only first through the existing read path (server read test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G4"
+    ],
+    "size": "S",
+    "notes": "From WEB-11 review. Order comes from seed data, not hard-coded keys."
+  },
+  {
     "id": "DOM-01",
     "title": "Changeset model, member keys, scenario resolution, ports",
     "epic": "DOM",
