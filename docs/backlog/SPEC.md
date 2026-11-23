@@ -53,7 +53,7 @@ title: "Spec loader, ModelBundle and members hash"
 epic: SPEC
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -74,6 +74,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The typed entry point every tier-2 package uses to read the model.
