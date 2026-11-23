@@ -267,3 +267,31 @@ merged_at: "2026-11-23"
 ```
 
 IO around the pure Excel package.
+
+```yaml
+id: XL-09
+title: "Unchanged re-import passes validation; storyline beat 10 runs"
+epic: XL
+milestone: M4
+priority: must
+status: in_progress
+stream: B
+model: sonnet
+effort: high
+depends_on: [QA-05, INT-04]
+tier: 2
+package: "tier2-logic/excel (validate), tier2-logic/worker/src/jobs/excel, e2e/tests/storyline.spec.ts (remove the XL-08 fixme only)"
+contract: "VR04 on an import cell whose value equals the scenario's current stored value is a warning (the domain's seed-origin policy), not an error; a changed out-of-range cell is still rejected"
+inputs:
+  - "e2e/tests/storyline.spec.ts beat_10 (fixme XL-08); QA-05 report: D's seed holds lever values above registry max, so re-importing an unchanged C+D export fails VR04"
+  - "memory: VR04 is a warning for seed/solver/market origins, clamp for UI, reject for import/API (domain policy)"
+  - "Excel screen preview names the file C-D but the download is C+D: make the preview use the same name tier 2 gives the file"
+acceptance:
+  - "unchanged re-import of the C+D export: zero errors, the out-of-range seed cells listed as warnings (test in excel and worker)"
+  - "a changed cell outside min/max is still an error (test)"
+  - "the export file-name preview equals the downloaded name (test)"
+  - "beat_10 fixme removed; `pnpm e2e:storyline -- --trace off` on a fresh stack passes beat 10 with its assertions unchanged except the VR01-VR10 line reading 'no errors' if the warnings are shown (test)"
+gates: [G1, G2, G6, G10]
+size: S
+notes: "From QA-05. The worker job-output fix from INT-04 is already on develop. Stack use under flock /tmp/glidepath-stack.lock."
+```

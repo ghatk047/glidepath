@@ -357,3 +357,29 @@ merged_at: "2026-11-23"
 ```
 
 AA is the first airline, not the only one.
+
+```yaml
+id: MOD-11
+title: "Path: GCC hiring-capacity constraint toggle (storyline 'What if the GCC can't hire?')"
+epic: MOD
+milestone: M4
+priority: must
+status: in_progress
+stream: C
+model: sonnet
+effort: high
+depends_on: [QA-05, SOL-13]
+tier: 1
+package: "tier1-presentation/web/src/modules/path, e2e/tests/storyline.spec.ts (remove the MOD-06 fixme only)"
+contract: "No new contract: min_risk_mix params already accept the gcc_hiring constraint (contract/api-contract/src/solvers.ts); the capacity value comes from tier 2/registry, not tier 1"
+inputs:
+  - "docs/ux/05_demo_storyline.md ('What if the GCC can't hire?' → Path → add the GCC hiring-capacity constraint → rerun)"
+  - "docs/spec/04_solvers_simulation.md and solvers.json gcc_hiring"
+  - "docs/ux/screens/ solver render (constraints list) — match its existing switch pattern; no new visual design"
+acceptance:
+  - "the Path constraints list has a 'GCC' hiring-capacity switch (role switch, accessible name contains GCC) that adds gcc_hiring to the run params; Find a path reruns with it (test)"
+  - "storyline q_gcc fixme removed and it passes on a fresh stack (test)"
+gates: [G1, G2, G3, G10, G12, G13]
+size: S
+notes: "From QA-05. If the constraint's default capacity is not in the bundle, report it rather than hard-coding."
+```

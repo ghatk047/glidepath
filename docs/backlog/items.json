@@ -3373,6 +3373,43 @@
     "merged_at": "2026-11-23"
   },
   {
+    "id": "XL-09",
+    "title": "Unchanged re-import passes validation; storyline beat 10 runs",
+    "epic": "XL",
+    "milestone": "M4",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "B",
+    "model": "sonnet",
+    "effort": "high",
+    "depends_on": [
+      "QA-05",
+      "INT-04"
+    ],
+    "tier": 2,
+    "package": "tier2-logic/excel (validate), tier2-logic/worker/src/jobs/excel, e2e/tests/storyline.spec.ts (remove the XL-08 fixme only)",
+    "contract": "VR04 on an import cell whose value equals the scenario's current stored value is a warning (the domain's seed-origin policy), not an error; a changed out-of-range cell is still rejected",
+    "inputs": [
+      "e2e/tests/storyline.spec.ts beat_10 (fixme XL-08); QA-05 report: D's seed holds lever values above registry max, so re-importing an unchanged C+D export fails VR04",
+      "memory: VR04 is a warning for seed/solver/market origins, clamp for UI, reject for import/API (domain policy)",
+      "Excel screen preview names the file C-D but the download is C+D: make the preview use the same name tier 2 gives the file"
+    ],
+    "acceptance": [
+      "unchanged re-import of the C+D export: zero errors, the out-of-range seed cells listed as warnings (test in excel and worker)",
+      "a changed cell outside min/max is still an error (test)",
+      "the export file-name preview equals the downloaded name (test)",
+      "beat_10 fixme removed; `pnpm e2e:storyline -- --trace off` on a fresh stack passes beat 10 with its assertions unchanged except the VR01-VR10 line reading 'no errors' if the warnings are shown (test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G6",
+      "G10"
+    ],
+    "size": "S",
+    "notes": "From QA-05. The worker job-output fix from INT-04 is already on develop. Stack use under flock /tmp/glidepath-stack.lock."
+  },
+  {
     "id": "AI-01",
     "title": "Claude client wrapper per 06 §2 API rules",
     "epic": "AI",
@@ -5091,6 +5128,43 @@
     "size": "M",
     "notes": "",
     "merged_at": "2026-11-23"
+  },
+  {
+    "id": "MOD-11",
+    "title": "Path: GCC hiring-capacity constraint toggle (storyline 'What if the GCC can't hire?')",
+    "epic": "MOD",
+    "milestone": "M4",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "C",
+    "model": "sonnet",
+    "effort": "high",
+    "depends_on": [
+      "QA-05",
+      "SOL-13"
+    ],
+    "tier": 1,
+    "package": "tier1-presentation/web/src/modules/path, e2e/tests/storyline.spec.ts (remove the MOD-06 fixme only)",
+    "contract": "No new contract: min_risk_mix params already accept the gcc_hiring constraint (contract/api-contract/src/solvers.ts); the capacity value comes from tier 2/registry, not tier 1",
+    "inputs": [
+      "docs/ux/05_demo_storyline.md ('What if the GCC can't hire?' → Path → add the GCC hiring-capacity constraint → rerun)",
+      "docs/spec/04_solvers_simulation.md and solvers.json gcc_hiring",
+      "docs/ux/screens/ solver render (constraints list) — match its existing switch pattern; no new visual design"
+    ],
+    "acceptance": [
+      "the Path constraints list has a 'GCC' hiring-capacity switch (role switch, accessible name contains GCC) that adds gcc_hiring to the run params; Find a path reruns with it (test)",
+      "storyline q_gcc fixme removed and it passes on a fresh stack (test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G3",
+      "G10",
+      "G12",
+      "G13"
+    ],
+    "size": "S",
+    "notes": "From QA-05. If the constraint's default capacity is not in the bundle, report it rather than hard-coding."
   },
   {
     "id": "QA-01",
