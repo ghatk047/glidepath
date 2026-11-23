@@ -57,7 +57,7 @@ title: "ESLint, Prettier and tier boundary rules"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: medium

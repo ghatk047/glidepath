@@ -23,7 +23,7 @@ title: "testkit: AA seed, golden accessors, DB harness, Excel fixtures"
 epic: QA
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: high
