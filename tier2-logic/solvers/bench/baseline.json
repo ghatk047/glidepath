@@ -1,5 +1,5 @@
 {
-  "$comment": "G8 (docs/architecture/03 \u00a73 and \u00a75, 04 \u00a76: goal seek < 1 s, breakeven < 2 s, stress < 1 s, Monte Carlo 2,000 runs < 10 s). `pnpm bench --filter=./tier2-logic/solvers` runs vitest bench and the engine's guard in check mode: a bench fails over its budget or more than tolerance (+30%) over baselineMs (the recorded median).",
+  "$comment": "G8 (docs/architecture/03 \u00a73 and \u00a75, 04 \u00a76: goal seek < 1 s, breakeven < 2 s, blend < 1 s, stress < 1 s, Monte Carlo 2,000 runs < 10 s). `pnpm bench --filter=./tier2-logic/solvers` runs vitest bench and the engine's guard in check mode: a bench fails over its budget or more than tolerance (+30%) over baselineMs (the recorded median).",
   "statistic": "median",
   "tolerance": 0.3,
   "runs": 1,
@@ -11,6 +11,10 @@
     "solvers.breakeven": {
       "budgetMs": 2000,
       "baselineMs": 40
+    },
+    "solvers.scenario_blend": {
+      "budgetMs": 1000,
+      "baselineMs": 25
     },
     "solvers.stress_presets": {
       "budgetMs": 1000,

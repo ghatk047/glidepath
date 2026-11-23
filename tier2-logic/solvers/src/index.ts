@@ -62,3 +62,8 @@ export type { SeekOptions, SeekReason, SeekResult, Seeker } from './problems/see
 export type { DistBasis, MonteCarloDist } from './types';
 export { MONTE_CARLO_DEFAULTS, drawMonteCarlo, monteCarlo, resolveDists, validateDist } from './problems/monte-carlo';
 export type { MonteCarloDefaults, MonteCarloDraws, ProbabilityDef } from './problems/monte-carlo';
+// SOL-03: scenario blend.
+export { blend } from './blend';
+export type { BlendEnd, BlendOptions } from './blend';
+export { BLEND_METRICS, BLEND_OUTPUT, BLEND_TARGET, blendCells, blendChanges } from './problems/blend';
+export type { BlendCell } from './problems/blend';

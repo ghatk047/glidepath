@@ -30,7 +30,7 @@ const pending =
 export const PROBLEMS: ProblemTable = {
   goal_seek: goalSeekProblem,
   breakeven: breakevenProblem,
-  scenario_blend: pending('scenario_blend'),
+  scenario_blend: async (run, params) => (await import('./blend')).scenarioBlendProblem(run, params),
   min_risk_mix: pending('min_risk_mix'),
   pareto: pending('pareto'),
   vp_feasible: pending('vp_feasible'),

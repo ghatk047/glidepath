@@ -24,6 +24,12 @@ SOL-06 Monte Carlo (`src/problems/monte-carlo/`, problem `monte_carlo`):
 - `monteCarlo` runs the draws through `evaluateBatch` in batches of `batchSize` lanes (cancel lands between batches; partial result = the draws so far) and returns P10/P50/P90 and histograms (`res.net`, `res.bar`, `res.gap`, `br.eps27`, `val.px[fy27it]`), P(net ≥ bar), P(net ≥ target), P(clear) per VP, Spearman contribution per lever and the seed (`diagnostics.seed`, `detail.seed`). Lanes the engine fails are left out and counted (`metrics.failed`).
 - Bench (G8): `pnpm --filter ./tier2-logic/solvers bench` (`solvers.mc.2000` < 10 s; the engine's guard in check mode against `bench/baseline.json`).
 
+SOL-03 scenario blend (`blend()` in `src/blend.ts`; problem in `src/problems/blend.ts`):
+
+- `blend(model, A, B, target = 0, { output = 'res.gap', ...runOptions })`: A and B are scenario ids of `model.scenarios` (resolved inputs the caller supplies) or resolved input maps. `x = A + λ (B − A)` over every cell of a `scenario_varies` variable, member by member; other inputs keep the start point's value.
+- λ is searched on [0, 1] with the SOL-02 seek (11-point scan in one batch, then Brent). Status `optimal` with `detail.lambda`, or `unreachable` with `detail.lambda` null and the closest scan λ in `metrics.lambda` and `changes`.
+- `metrics`: the output, target, residual, λ, `res.net`, `res.bar`, `res.risk`, `res.tot_ot_it`, `br.eps27`, `vp.gap[<vp>]`. Budget < 1 s asserted in `blend.spec.ts`.
+
 ```ts
 import { runSolver, type SolverModel } from '@glidepath/solvers';
 

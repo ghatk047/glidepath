@@ -27,4 +27,9 @@ export interface SolverModel {
    * spec data the caller supplies; the `stress_presets` problem has no list of its own.
    */
   readonly presets?: readonly StressPreset[];
+  /**
+   * Resolved inputs of the scenarios a `scenario_blend` may name as `from` / `to`, by scenario id
+   * (`v_inputs_resolved`). Tenant data the caller supplies; the solvers never read tier 3.
+   */
+  readonly scenarios?: ReadonlyMap<string, ReadonlyMap<CellKey, number>>;
 }
