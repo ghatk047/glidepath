@@ -264,7 +264,27 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
-  tier2-logic/worker: {}
+  tier2-logic/worker:
+    dependencies:
+      '@glidepath/data-access':
+        specifier: workspace:*
+        version: link:../data-access
+      '@glidepath/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@glidepath/spec':
+        specifier: workspace:*
+        version: link:../spec
+    devDependencies:
+      '@glidepath/pg-local':
+        specifier: workspace:*
+        version: link:../../tools/pg-local
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
 
   tier3-data/migrations/manual:
     devDependencies:

@@ -289,7 +289,7 @@ title: "migrate entry: model defs + AA seed through applyChangeset"
 epic: DATA
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: medium
@@ -311,6 +311,7 @@ acceptance:
 gates: [G1, G2, G3]
 size: M
 notes: "M0 exit 'AA seed loaded' is met at M0 by raw JSON in tests (SPEC-03) and in the DB here, early M1; recorded in plan.md."
+merged_at: "2026-11-23"
 ```
 
 Seeding uses the same validated write path as every other write.
