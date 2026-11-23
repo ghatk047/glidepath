@@ -327,7 +327,7 @@ title: "Dial, Toggle, Stepper, Segmented, Radio card, Prompt bar (#11, #12, #14,
 epic: UI
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: medium
