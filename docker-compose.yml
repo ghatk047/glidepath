@@ -76,6 +76,8 @@ services:
       DATABASE_URL_MIGRATE: ${DATABASE_URL_MIGRATE:?set DATABASE_URL_MIGRATE in .env (see .env.example)}
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
       DEMO_USER_EMAIL: ${DEMO_USER_EMAIL:-}
+      # 1 pre-runs the Cockpit odds and fastest-path solvers into the result cache after the seed (JOB-04).
+      WARM: ${WARM:-1}
     networks: [data]
     depends_on:
       db: { condition: service_healthy }
