@@ -30,10 +30,9 @@ The upgrade request runs through the app (request log, problem JSON). In order: 
 - `cancelPreview{seq}` voids queued previews and the scratch; `delta{seq}` carries the cells that go back to their committed value (empty when none), then `warnings{seq, []}` when warnings showed.
 - Any other frame first runs queued previews, so answers keep the order of requests.
 - `open{scenarioId}`: queued previews are void, the scenario is loaded (frames after it wait), the scratch dropped, subscriptions kept, `snapshot` of every subscribed cell; unknown or another tenant's → 404 `error`, the session stays.
-- `subscribeView` / `unsubscribeView` → 501 `error` until API-12 serves views.
+- `subscribeView{view, params}` / `unsubscribeView`: see Views (API-12) below.
 - Bad JSON, unknown `type` or `v`, malformed body → 400 `error` with the parser's detail. The socket stays open.
 
-Later item: views (API-12).
 
 ## Lifecycle (API-07)
 
@@ -44,9 +43,17 @@ Later item: views (API-12).
 - **Idle.** A session whose client sent no frame for `SESSION_IDLE_MIN` (ADR-022; `startServer` passes it as `idleMs`) is closed with `IDLE_CLOSE_CODE` 4000. Server pushes do not count as activity. The client reconnects; the handshake rebuilds the session from tier 3.
 - `scenarioChanged` (create, rename, lock, archive) sends nothing: no WS message carries the scenario list.
 
+## Views (API-12, ADR-021)
+
+`subscribeView{view, params}` → `view{view, params, seq: null, payload}` of what the client sees now (scratch while previews are live). Then, per subscribed view, only when its payload differs from the one last pushed to this client: `view{seq}` after the `delta{seq}` of every rerun and of `cancelPreview` (before `warnings`), `view{null}` after the `delta{null}` of a commit (with a scratch: only when the committed payload changed; the rebase then answers `view{S}` after `delta{S}`), and, on `open`, one `view{null}` per subscribed view after the `snapshot` (always). Payloads are DOM-06 `VIEWS` (`domain/src/views`) parsed with the contract's `viewSchemas[view].payload`. Subscriptions are keyed by view + params (key order ignored); `unsubscribeView` of an unknown one is a no-op; at most `MAX_SUBSCRIBED_VIEWS` per session (422 `error`).
+
+- `levers.scale` reads preset `D` (`SCALE_PRESET_KEY`), not the session's scenario: loaded once per compiled model through `ScenarioLoader.loadPreset(scope, 'D')` (DB loader: the tenant's `preset` scenario with that key; loaders without it get `load('D')`). No such preset → 404 `error`.
+- Unknown view or params never reach the session: the contract parser rejects them as 400 `error{problem}` (CON-02 words it so; `warnings` carries rule violations only). The session stays open.
+
 ## Tests and bench
 
 - `session.test.ts`: the session over the spec seed without a socket or DB (manual scheduler: a burst is exact). `model-cache.test.ts`: cache keys, order guard, LRU, shared evaluations, cell keys.
+- `views.test.ts` (no DB): bridge and baseline.groups after the snapshot, rerun, cancel, commit and rebase; independent params; every view; `open`; unknown view/params; missing scale preset.
 - `ws.pg.test.ts` (pg-local, the read routes' seed database, magic-link cookies): handshake and ModelCache key, golden C snapshot, 100 rapid previews, no SQL during previews (every pool client's statements recorded from its first connection), `open`. `start.pg.test.ts`: `startServer` wiring and shutdown.
 - `lifecycle.test.ts` (no DB, fake clock): warnings with the preview seq, broadcast to two sessions, rebase, fork-follow, scenario switch, rate cap. `lifecycle.pg.test.ts` (real sockets, `POST /changesets` through the app, fake clock): two clients hear a commit, rebase, fork, switch re-targets, idle close and reconnect with identical values.
 - `pnpm --filter @glidepath/server bench` (`session.bench.ts`, G8): `ws.preview` round trip at the contract's preview rate, printed as p95 against the 25 ms budget.

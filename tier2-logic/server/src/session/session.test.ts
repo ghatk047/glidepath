@@ -266,11 +266,6 @@ describe('rejected frames: error{problem}, state unchanged', () => {
     expect(session.counters).toMatchObject({ previews: 0, reruns: 0, rejected: 4 });
     expect(session.current).toBe(presetC.committed);
   });
-
-  it('view subscriptions are refused until views are served (API-12)', () => {
-    session.receive({ v, type: 'subscribeView', view: 'bridge', params: {} });
-    expectError(501, /bridge/);
-  });
 });
 
 describe('open{scenarioId}', () => {

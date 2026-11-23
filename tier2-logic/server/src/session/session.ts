@@ -20,6 +20,9 @@ import type { WireValue } from './cells';
 import { systemClock } from './clock';
 import type { Clock, Timer } from './clock';
 import type { ScenarioLoader, ScenarioState } from './loader';
+import type { CachedModel } from './model-cache';
+import { SCALE_PRESET_KEY, computeView, viewKey } from './views';
+import type { ViewSub } from './views';
 import { previewViolations, sameViolations } from './warnings';
 
 /**
@@ -53,11 +56,18 @@ import { previewViolations, sameViolations } from './warnings';
  *   the one last pushed;
  * - commits (`applyCommit`, from the hub once a write committed): `changeset{…}`, then `delta{null}`, then,
  *   with a scratch, the rebase answered `delta{S}` and `warnings{S}` (S the scratch's seq);
+ * Views (API-12, ADR-021): `subscribeView{view, params}` is answered by `view{seq: null}` with the payload of
+ * what the client sees now; then `view{seq}` follows the `delta` of every rerun, `cancelPreview`, commit
+ * (`seq: null`, then the rebase's `S`) and `open` (always, after the snapshot) whose payload differs from the
+ * one last pushed. An unknown view or params fail the parser: `error{problem}`, the session stays open.
  * - `lastActivity`: when the client last sent a frame (the hub closes idle sessions).
  */
 
 /** The cap on cells one session pushes: far above the input and node cells of a model, bounds a bad client. */
 export const MAX_SUBSCRIBED_CELLS = 20_000;
+
+/** The cap on views one session pushes: the contract has seven names, so this only bounds param variants. */
+export const MAX_SUBSCRIBED_VIEWS = 64;
 
 export interface SessionMembership {
   readonly tenantId: TenantId;
@@ -113,6 +123,8 @@ export interface SessionCounters {
   rebases: number;
   /** `warnings` messages pushed. */
   warnings: number;
+  /** `view` messages pushed. */
+  views: number;
 }
 
 interface QueuedPreview {
@@ -151,6 +163,7 @@ export class Session {
     commits: 0,
     rebases: 0,
     warnings: 0,
+    views: 0,
   };
 
   private state: ScenarioState;
@@ -166,6 +179,10 @@ export class Session {
   private readonly subscribed = new Map<WireCell, EngineCell>();
   /** Value last pushed for each subscribed cell. */
   private readonly sent = new Map<WireCell, WireValue>();
+  /** Subscribed views by `viewKey`. */
+  private readonly views = new Map<string, ViewSub>();
+  /** Evaluation of the scale preset per compiled model (`levers.scale`); the preset is locked. */
+  private readonly scaleEvals = new WeakMap<CachedModel, Evaluation>();
   private scratch: Scratch | null = null;
   private queue: QueuedPreview[] = [];
   private runQueued = false;
@@ -305,13 +322,12 @@ export class Session {
         }
         return;
       case 'subscribeView':
+        this.runQueue();
+        return this.subscribeView(m.view, m.params);
       case 'unsubscribeView':
-        // ADR-021 views are served from API-12 on; until then a view subscription is refused.
-        return this.reject({
-          status: 501,
-          title: 'Views not available',
-          detail: `View '${m.view}' is not served yet. Subscribe to its cells instead.`,
-        });
+        this.runQueue();
+        this.views.delete(viewKey(m.view, m.params));
+        return;
     }
   }
 
@@ -334,6 +350,66 @@ export class Session {
       values[c] = v;
     }
     this.send({ v: V, type: 'snapshot', scenarioId: this.state.scenarioId, version: this.state.version, cells: values });
+  }
+
+  /** `levers.scale` reads preset D: its evaluation, loaded once per compiled model; null when it is missing. */
+  private async scaleEval(state: ScenarioState): Promise<Evaluation | null> {
+    const cached = this.scaleEvals.get(state.model);
+    if (cached) return cached;
+    const scope = { tenantId: this.tenant.tenantId, userId: this.userId };
+    const preset = await (this.loader.loadPreset?.(scope, SCALE_PRESET_KEY) ?? this.loader.load(scope, SCALE_PRESET_KEY));
+    if (!preset) return null;
+    this.scaleEvals.set(state.model, preset.committed);
+    return preset.committed;
+  }
+
+  /** Loads the scale preset for `state` when a `levers.scale` view is subscribed (or `extra` is it). */
+  private async needScale(state: ScenarioState, extra?: string): Promise<Evaluation | null> {
+    const wanted = extra === 'levers.scale' || [...this.views.values()].some((s) => s.view === 'levers.scale');
+    return wanted ? this.scaleEval(state) : null;
+  }
+
+  private async subscribeView(view: ViewSub['view'], params: Record<string, unknown>): Promise<void> {
+    const key = viewKey(view, params);
+    if (!this.views.has(key) && this.views.size >= MAX_SUBSCRIBED_VIEWS) {
+      return this.reject({
+        status: 422,
+        title: 'Too many views',
+        detail: `A session pushes at most ${MAX_SUBSCRIBED_VIEWS} views. Unsubscribe the views you no longer show.`,
+      });
+    }
+    const state = this.state;
+    const scale = await this.needScale(state, view);
+    if (this.closed || this.state !== state) return; // moved on; `open` answers every subscribed view
+    if (view === 'levers.scale' && !scale) {
+      return this.reject({
+        status: 404,
+        title: 'Unknown scale preset',
+        detail: `Preset ${SCALE_PRESET_KEY} is not one of this tenant's scenarios, so levers.scale has nothing to scale to.`,
+      });
+    }
+    const sub: ViewSub = this.views.get(key) ?? { view, params, sent: null };
+    const text = computeView(sub, this.current, state.model.members, scale);
+    this.views.set(key, sub);
+    this.pushView(sub, null, text, true);
+  }
+
+  private pushView(sub: ViewSub, seq: number | null, text: string, always = false): void {
+    if (!always && sub.sent === text) return;
+    sub.sent = text;
+    this.counters.views += 1;
+    this.send({ v: V, type: 'view', view: sub.view, params: sub.params, seq, payload: JSON.parse(text) });
+  }
+
+  /** The payload text of `sub` on `at`, a state of `state`'s model. */
+  private viewText(sub: ViewSub, at: Evaluation, state: ScenarioState): string {
+    const scale = sub.view === 'levers.scale' ? (this.scaleEvals.get(state.model) ?? null) : null;
+    return computeView(sub, at, state.model.members, scale);
+  }
+
+  /** `view{seq}` for each subscribed view whose payload on `at` differs from the one last pushed. */
+  private pushViews(at: Evaluation, seq: number | null): void {
+    for (const sub of this.views.values()) this.pushView(sub, seq, this.viewText(sub, at, this.state));
   }
 
   private nextSeq(seq: number): boolean {
@@ -422,6 +498,7 @@ export class Session {
     this.scratch = { at, seq, cells: scratchCells };
     this.counters.reruns += 1;
     this.send({ v: V, type: 'delta', seq, cells: diffCells(at, this.subscribed, this.sent) });
+    this.pushViews(at, seq);
     this.queueWarnings();
   }
 
@@ -463,6 +540,7 @@ export class Session {
     this.queue = [];
     this.scratch = null;
     this.send({ v: V, type: 'delta', seq: m.seq, cells: diffCells(this.state.committed, this.subscribed, this.sent) });
+    this.pushViews(this.state.committed, m.seq);
     this.pushWarnings(m.seq, []);
   }
 
@@ -475,15 +553,24 @@ export class Session {
    * then shows the committed values). A state not newer than the session's (racing notices) only sends the
    * `changeset`.
    */
-  private adopt(update: CommitUpdate): void {
+  private async adopt(update: CommitUpdate): Promise<void> {
     if (this.closed || this.state.scenarioId !== update.on) return; // moved on (open) meanwhile
     this.runQueue();
     this.send(update.message);
     const next = update.state;
     if (!next || (next.scenarioId === this.state.scenarioId && next.version <= this.state.version)) return;
 
+    if (next.model !== this.state.model && this.views.size > 0) {
+      try {
+        await this.needScale(next);
+      } catch (err) {
+        this.log?.error('session scale preset not loaded', { err });
+      }
+      if (this.closed || this.state.scenarioId !== update.on) return;
+    }
     const before = this.state.committed;
     const now = next.committed;
+    const prev = this.state;
     this.state = next;
     this.counters.commits += 1;
     const scratch = this.scratch;
@@ -496,6 +583,13 @@ export class Session {
       }
     }
     this.send({ v: V, type: 'delta', seq: null, cells: committed });
+    const nowViews = new Map<ViewSub, string>();
+    for (const sub of this.views.values()) {
+      const text = this.viewText(sub, now, next);
+      nowViews.set(sub, text);
+      const changed = scratch ? this.viewText(sub, before, prev) !== text : sub.sent !== text;
+      if (changed) this.pushView(sub, null, text, true);
+    }
     if (!scratch) return;
 
     let at: Evaluation | null = null;
@@ -517,6 +611,10 @@ export class Session {
       }
     }
     this.send({ v: V, type: 'delta', seq: scratch.seq, cells: rebased });
+    for (const sub of this.views.values()) {
+      const text = this.viewText(sub, shown, next);
+      if ((at && text !== nowViews.get(sub)) || sub.sent !== text) this.pushView(sub, scratch.seq, text, true);
+    }
     if (at) this.queueWarnings();
     else this.pushWarnings(scratch.seq, []);
   }
@@ -555,6 +653,14 @@ export class Session {
       values[wire] = v;
     }
     this.send({ v: V, type: 'snapshot', scenarioId: next.scenarioId, version: next.version, cells: values });
+    if (this.views.size === 0) return;
+    try {
+      await this.needScale(next);
+    } catch (err) {
+      this.log?.error('session scale preset not loaded', { err });
+    }
+    if (this.closed || this.state !== next) return;
+    for (const sub of this.views.values()) this.pushView(sub, null, this.viewText(sub, next.committed, next), true);
   }
 
   /** A bug, not a bad frame: logged, and the client told without detail. */

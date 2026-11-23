@@ -1,5 +1,5 @@
 import type { ScenarioId, TenantId, UserId } from '@glidepath/api-contract';
-import { getScenario, getTenant, loadMembers, loadModelDefs, loadResolvedInputs } from '@glidepath/data-access';
+import { getScenario, getTenant, listScenarios, loadMembers, loadModelDefs, loadResolvedInputs } from '@glidepath/data-access';
 import type { ResolvedInputsRecord } from '@glidepath/data-access';
 import type { CellKey, Evaluation } from '@glidepath/engine';
 import type { ModelBundle } from '@glidepath/spec';
@@ -29,6 +29,11 @@ export interface SessionScope {
 export interface ScenarioLoader {
   /** The scenario's state, or null when it is not one of the tenant's (or not a valid id). */
   load(scope: SessionScope, scenarioId: string): Promise<ScenarioState | null>;
+  /**
+   * The state of the tenant's preset with scenario `key` (`D`), for views that read a preset (`levers.scale`).
+   * Loaders whose scenario ids are the preset keys can leave it out: the session then calls `load(key)`.
+   */
+  loadPreset?(scope: SessionScope, key: string): Promise<ScenarioState | null>;
 }
 
 /** The model version's bundle cannot be had: the pinned version changed meanwhile, or no spec answers for it. */
@@ -80,8 +85,14 @@ export function dbScenarioLoader(deps: DbScenarioLoaderDeps): ScenarioLoader & {
     return bundle;
   };
 
-  return {
+  const loader: ScenarioLoader & { readonly models: ModelCache } = {
     models,
+    async loadPreset(scope, key) {
+      const id = await deps.withTenant(scope.tenantId, scope.userId, async (tx) =>
+        (await listScenarios(tx)).find((s) => s.kind === 'preset' && s.key === key)?.id,
+      );
+      return id ? loader.load(scope, id) : null;
+    },
     async load(scope, scenarioId) {
       const read = await deps.withTenant(scope.tenantId, scope.userId, async (tx) => {
         const scenario = await getScenario(tx, scenarioId);
@@ -110,4 +121,5 @@ export function dbScenarioLoader(deps: DbScenarioLoaderDeps): ScenarioLoader & {
       };
     },
   };
+  return loader;
 }

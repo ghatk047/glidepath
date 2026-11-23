@@ -1,6 +1,8 @@
 export { createSessionHub, MAX_FRAME_BYTES, CLOSE_GRACE_MS, IDLE_CLOSE_CODE, IDLE_CLOSE_REASON } from './hub';
 export type { AppFetch, SessionHub, SessionHubDeps, UpgradeSource } from './hub';
-export { Session, MAX_SUBSCRIBED_CELLS } from './session';
+export { Session, MAX_SUBSCRIBED_CELLS, MAX_SUBSCRIBED_VIEWS } from './session';
+export { SCALE_PRESET_KEY, computeView, viewKey } from './views';
+export type { ViewSub } from './views';
 export type { ChangesetMessage, CommitUpdate, SessionCounters, SessionDeps, SessionMembership } from './session';
 export { broadcastChange } from './broadcast';
 export { systemClock } from './clock';
