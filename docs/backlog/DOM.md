@@ -158,7 +158,7 @@ title: "Post-commit recompute, calc_run, VR05 and VR08"
 epic: DOM
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -178,6 +178,7 @@ acceptance:
 gates: [G1, G2, G3]
 size: M
 notes: "Starts only after ENG-06 is green (ADR-020)."
+merged_at: "2026-11-23"
 ```
 
 Closes the write path with the engine.

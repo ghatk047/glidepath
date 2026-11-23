@@ -233,7 +233,7 @@ export interface RecomputeInput {
  */
 export type Recompute<R> = (input: RecomputeInput) => Promise<R>;
 
-/** The default Recompute hook until DOM-05: does nothing. */
+/** The default Recompute hook: does nothing. The server passes `recomputeHook` (DOM-05, ./recompute). */
 export const noRecompute: Recompute<undefined> = () => Promise.resolve(undefined);
 
 export interface ApplyOptions<R = undefined> {
@@ -249,7 +249,7 @@ export interface ApplyOptions<R = undefined> {
    * already applied a changeset under it, nothing is applied and that changeset's result returns.
    */
   readonly clientRequestId?: string;
-  /** Step 6; `noRecompute` by default. */
+  /** Step 6; `noRecompute` by default, `recomputeHook(...)` on the server. */
   readonly recompute?: Recompute<R>;
   /** Ids of new rows (changesets, forks); `crypto.randomUUID` by default. */
   readonly newId?: () => string;

@@ -2,7 +2,7 @@
 
 Changesets, VR01-VR10, scenario resolution/fork/undo, scenario operations, rebase, hashing. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients, `fetch`, `process` and dynamic `import()` in `src`). State is read and written through the ports in `src/ports.ts` (ADR-019).
 
-DOM-01 provides the vocabulary of every write. DOM-02 adds the input validation rules. DOM-03 adds `applyChangeset`, the single write path; the engine step (Recompute) follows in DOM-05. DOM-04 adds the scenario operations on top of it: `createScenario`, `patchScenario`, `revert` (undo and redo), `undoRedo` and `rebase`.
+DOM-01 provides the vocabulary of every write. DOM-02 adds the input validation rules. DOM-03 adds `applyChangeset`, the single write path. DOM-04 adds the scenario operations on top of it: `createScenario`, `patchScenario`, `revert` (undo and redo), `undoRedo` and `rebase`. DOM-05 adds the write path's engine step, `recomputeHook`, with `calc_run` caching and the output rules VR05 and VR08.
 
 ## Changesets (`src/changeset.ts`)
 
@@ -42,7 +42,7 @@ const result = await applyChangeset(store, draft, {
   actor: userId,              // changeset.created_by, audit_log.actor, a fork's created_by
   bundle,                     // the tenant's pinned model: variables, nodes, dimensions
   clientRequestId: 'rq-7f3a', // optional, the contract's idempotency key
-  recompute,                  // optional; noRecompute until DOM-05
+  recompute,                  // optional; noRecompute by default, recomputeHook(...) on the server
 });
 // { changesetId, scenarioId, version, editsCount, forkedFrom?, changeset, warnings, clamped, replayed, recomputed }
 ```
@@ -172,7 +172,39 @@ const entries = validateInputs({ bundle, members, values: resolveInputs(...).val
   So `corp.asm_g` needs fy26 and fy27 but not fy25, because fy25 takes the base-year case. A reference that cannot be indexed, such as a year without an `in` attribute, is also an entry.
 
   `src/validation/expr.ts` holds a port of the reference parser for this purpose. VR10 can move to the engine's dependency queries once ENG-03 exists.
-- **Not here.** VR05 and VR08 read engine outputs and follow in DOM-05.
+- **Output rules.** VR05 and VR08 read engine outputs; see `validateOutputs` below.
+
+### Output rules and previews (`src/validation/output-rules.ts`, DOM-05)
+
+`validateOutputs({ bundle, members, evaluation, upstream? })` runs the output rules on one engine evaluation (an `Evaluation` satisfies `OutputEvaluation`), in rule order. Cells are contract CellKeys.
+
+| Rule | Function | Checks |
+|---|---|---|
+| VR05 | `vr05ManagedServices` | `lv.ms0 >= 0` (contractor T&M cost cannot exceed the SI pool), one entry on `lv.ms0[]` |
+| VR08 | `vr08EngineSelfTest` | `lev.rr_check = 0` for every lever and `vp.check = 0`, one entry per node listing its failing cells |
+
+- Tolerance is `RULE_TOLERANCE`; NaN fails.
+- **Pins and VR08.** A pin replaces the engine's arithmetic for its cell, so a check it feeds no longer tests the engine. Pinning the SI pool (spec 01's own example, `base.pool_outlay[si_contingent]`) or `res.net` moves `vp.check` off 0 by design. So a pinned check cell is skipped, and so is a check a pin feeds when `upstream` (`CompiledModel.upstream`) is given. The Recompute hook always gives it.
+- `validatePreview(state)` is for what-if previews (API-07 pushes the result as `warnings{seq}`). `state` is a `ValidationState` plus, optionally, the session's `evaluation` and `upstream`. It returns the input rules' entries and, with an evaluation, the output rules' entries, merged in rule order, warnings and errors alike. It is pure and writes nothing.
+
+## Recompute (`src/recompute.ts`, DOM-05)
+
+Steps 6 and 7 of the write path: `recomputeHook(options)` is the `Recompute` hook the server passes to `applyChangeset`, `createScenario` and `revert`. It runs inside the transaction after the writes and the version bump, so a throw rolls everything back.
+
+```ts
+const recompute = recomputeHook({ tenantId, modelVersionId, bundle, cache }); // cache: the server's ModelCache
+const r = await applyChangeset(store, draft, { actor, bundle, recompute });
+r.recomputed; // { scenarioId, version, inputHash, outputs: { 'res.net[]': 119.28…, 'lev.iy[L01]': … }, cached, calcRunId }
+```
+
+1. **Compile.** `cache.getOrCompile(modelCacheKey(tenantId, modelVersionId, members), () => compile(bundle, members))`, with the post-change members. `compile` defaults to the engine's. A scenario that pins another model version is an error.
+2. **Hash.** The post-change resolved inputs and pins become engine maps (`engineValues`, `engineOverrides`: `var` for a scalar, `var[member_key]` otherwise). `inputHash = model.inputHash(values, overrides)`.
+3. **Cache.** `tx.findCalcRun(scenario, inputHash)`. A hit returns the stored outputs without evaluating, since its rules passed when it was stored. The row is re-stamped with the new `scenario_version` (`cached: true`). An undo, a redo or a no-op edit that comes back to known inputs is a hit.
+4. **Evaluate and check.** On a miss: `model.evaluate`, then `validateOutputs` with `upstream`. Any error throws `ChangesetRejectedError` with the entries, and nothing is persisted.
+5. **Store.** `tx.upsertCalcRun({ id, scenario_id, scenario_version, model_version_id, input_hash, ms, outputs, created_at })`, keyed `(scenario_id, input_hash)`.
+
+- **Outputs** are the headline nodes, every cell of every node with `output: true` (`headlineOutputs`), keyed by the contract's CellKey. These are calc_run's "output nodes only" and the contract's `ChangesetResult.outputs`.
+- **Tenant defaults** have no scenario. They are evaluated and checked, but store no calc_run (`scenarioId` and `calcRunId` null).
 
 ## Scenario operations (`src/scenario.ts`)
 

@@ -72,16 +72,34 @@ export {
   vr07RetiredApps,
   vr09LineItemKeys,
   vr10CorpInputYears,
+  // DOM-05: output rules on an evaluation, and the preview of a what-if session.
+  MANAGED_SERVICES_NODE,
+  OUTPUT_RULES,
+  OUTPUT_RULE_IDS,
+  SELF_TEST_NODES,
+  nodeMemberKeys,
+  validateOutputs,
+  validatePreview,
+  vr05ManagedServices,
+  vr08EngineSelfTest,
 } from './validation';
 export type {
   InputRule,
   InputRuleId,
+  OutputEvaluation,
+  OutputRule,
+  OutputRuleId,
+  OutputState,
+  PreviewState,
   RuleDef,
   RuleId,
   Severity,
   ValidationEntry,
   ValidationState,
 } from './validation';
+// DOM-05: the Recompute hook (steps 6-7 of the write path).
+export { engineOverrides, engineValues, headlineOutputs, recomputeHook } from './recompute';
+export type { CompileModel, Outputs, RecomputeOptions, RecomputeResult } from './recompute';
 export {
   BOUNDS_POLICY,
   FORK_KIND,
