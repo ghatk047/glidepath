@@ -266,7 +266,7 @@ title: "Batch mode (structure of arrays)"
 epic: ENG
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: opus
 effort: xhigh

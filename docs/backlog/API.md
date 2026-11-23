@@ -96,7 +96,7 @@ title: "Passkey login (WebAuthn)"
 epic: API
 milestone: M4
 priority: should
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
@@ -257,7 +257,7 @@ title: "Explain and search routes"
 epic: API
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
