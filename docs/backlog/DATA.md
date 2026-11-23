@@ -61,7 +61,7 @@ title: "RLS policies, roles and grants"
 epic: DATA
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: xhigh
@@ -155,7 +155,7 @@ title: "data-access: DB client config, Drizzle schema and migration runner"
 epic: DATA
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
