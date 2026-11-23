@@ -85,6 +85,40 @@ describe('manual migrations (ADR-023)', () => {
     }
   });
 
+  it('DATA-12: same-tenant references are composite (tenant_id, x) FKs, deferrable initially deferred, or restrictive same-tenant policies', async () => {
+    const fks = await db.query<{ name: string; cols: string; ref: string; deferrable: boolean; deferred: boolean }>(
+      `SELECT c.conname AS name, c.condeferrable AS deferrable, c.condeferred AS deferred, c.confrelid::regclass::text AS ref,
+              (SELECT string_agg(a.attname, ',' ORDER BY k.ord) FROM unnest(c.conkey) WITH ORDINALITY k(n, ord)
+                 JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.n) AS cols
+         FROM pg_constraint c WHERE c.contype = 'f' AND c.condeferrable ORDER BY 1`,
+    );
+    const byName = Object.fromEntries(fks.rows.map((r) => [r.name, r]));
+    const expected: [string, string, string][] = [
+      ['scenario_parent_id_fkey', 'tenant_id,parent_id', 'scenario'],
+      ['changeset_scenario_id_fkey', 'tenant_id,scenario_id', 'scenario'],
+      ['changeset_reverts_id_fkey', 'tenant_id,reverts_id', 'changeset'],
+      ['variable_value_changeset_id_fkey', 'tenant_id,changeset_id', 'changeset'],
+      ['scenario_value_scenario_id_fkey', 'tenant_id,scenario_id', 'scenario'],
+      ['scenario_value_changeset_id_fkey', 'tenant_id,changeset_id', 'changeset'],
+      ['node_override_scenario_id_fkey', 'tenant_id,scenario_id', 'scenario'],
+      ['market_snapshot_applied_changeset_id_fkey', 'tenant_id,applied_changeset_id', 'changeset'],
+      ['import_job_changeset_id_fkey', 'tenant_id,changeset_id', 'changeset'],
+      ['calc_run_scenario_id_fkey', 'tenant_id,scenario_id', 'scenario'],
+      ['solver_run_scenario_id_fkey', 'tenant_id,scenario_id', 'scenario'],
+      ['solver_run_result_scenario_id_fkey', 'tenant_id,result_scenario_id', 'scenario'],
+      ['ai_reconfig_job_changeset_id_fkey', 'tenant_id,changeset_id', 'changeset'],
+    ];
+    for (const [name, cols, ref] of expected) expect(byName[name], name).toMatchObject({ cols, ref, deferrable: true, deferred: true });
+    const keys = await db.query(`SELECT conname FROM pg_constraint WHERE contype = 'u' AND conname IN ('scenario_tenant_id_id_key', 'changeset_tenant_id_id_key')`);
+    expect(keys.rowCount).toBe(2);
+    const pol = await db.query<{ polname: string; permissive: boolean; cmd: string }>(
+      `SELECT polname, polpermissive AS permissive, polcmd::text AS cmd FROM pg_policy WHERE polname LIKE '%\\_same\\_tenant' ORDER BY 1`,
+    );
+    for (const name of ['variable_value_source_id_same_tenant', 'market_snapshot_source_id_same_tenant', 'import_job_export_job_id_same_tenant', 'export_job_scenario_ids_same_tenant']) {
+      expect(pol.rows.find((p) => p.polname === name), name).toMatchObject({ permissive: false, cmd: '*' });
+    }
+  });
+
   it('grep: each manual migration file names ADR-023 in a header comment', () => {
     expect(sqlFiles.length).toBeGreaterThanOrEqual(2);
     for (const f of sqlFiles) {

@@ -46,7 +46,11 @@ const overlayTable = (o: ManualOverlay, name: string) => o.tables.find((t) => t.
 
 describe('manual overlay (ADR-023) vs tier3-data/migrations/manual', () => {
   it('has overlay entries for every manual migration that changes the schema', () => {
-    const sources = new Set([...MANUAL_OVERLAY.addedColumns.map((a) => a.source), ...MANUAL_OVERLAY.tables.map((t) => t.source)]);
+    const sources = new Set([
+      ...MANUAL_OVERLAY.addedColumns.map((a) => a.source),
+      ...MANUAL_OVERLAY.tables.map((t) => t.source),
+      ...(MANUAL_OVERLAY.addedKeys ?? []).map((k) => k.source),
+    ]);
     expect([...sources].sort()).toEqual(manualFiles);
   });
 
@@ -108,6 +112,18 @@ describe('manual overlay (ADR-023) vs tier3-data/migrations/manual', () => {
       expect(tweak((o) => delete overlayTable(o, 'passkey').fks![0]!.onDelete).join('\n')).toMatch(/^passkey fk: /);
       expect(tweak((o) => (overlayTable(o, 'auth_session').indexes = [])).join('\n')).toMatch(/^auth_session indexes: /);
       expect(tweak((o) => delete overlayTable(o, 'stored_object').indexes![0]!.where).join('\n')).toMatch(/^stored_object indexes: /);
+    });
+
+    it('a same-tenant key added by SQL (DATA-12) is missing from the overlay, or differs', () => {
+      const keys = (o: ManualOverlay, table: string) => o.addedKeys!.find((k) => k.table === table)!;
+      const sr = (c: string): string => `solver_run_${c}_fkey (tenant_id, ${c}) -> scenario(tenant_id, id) delete a`;
+      const tenantFk = 'solver_run_tenant_id_fkey (tenant_id) -> tenant(id) delete a';
+      expect(tweak((o) => (keys(o, 'solver_run').fks = keys(o, 'solver_run').fks!.slice(1)))).toEqual([
+        `solver_run fk: model [${sr('result_scenario_id')}; ${tenantFk}], database [${sr('result_scenario_id')}; ${sr('scenario_id')}; ${tenantFk}]`,
+      ]);
+      expect(tweak((o) => (keys(o, 'calc_run').fks![0]!.columns = ['scenario_id', 'tenant_id'])).join('\n')).toMatch(/^calc_run fk: /);
+      expect(() => tweak((o) => (keys(o, 'scenario').uniques = []))).toThrow(/not a primary or unique key/);
+      expect(() => tweak((o) => (keys(o, 'node_override').fks![0]!.refTable = 'nowhere'))).toThrow(/unknown table "nowhere"/);
     });
 
     it('a tenant overlay table without FORCE RLS in the database', () => {

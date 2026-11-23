@@ -2,7 +2,7 @@ import { clientConfig } from '@glidepath/pg-local';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ANA, TENANT_A, TENANT_B } from '../../src/testing/minimal-seed';
-import { APP_ROLE, crossTenantForeignKeys, quoteIdent, rlsViolations, specTables, tenantTables } from './catalog';
+import { APP_ROLE, crossTenantForeignKeys, quoteIdent, rlsViolations, specTables, tenantReferences, tenantTables } from './catalog';
 import type { Query, TenantTable } from './catalog';
 import { openLeakDb } from './seed';
 import type { LeakDb } from './seed';
@@ -65,7 +65,7 @@ describe('G7 row-level security catalog check (pg-local, fully migrated)', () =>
     expect(await rlsViolations(db.adminQuery)).toEqual([]);
   });
 
-  it('the check fails a tenant table without RLS, FORCE or a tenant policy, a widening policy, TRUNCATE, an unguarded FK, a definer view or a matview, and a BYPASSRLS app role', async () => {
+  it('the check fails a tenant table without RLS, FORCE or a tenant policy, a widening policy, TRUNCATE, an unguarded FK or reference column, a definer view or a matview, and a BYPASSRLS app role', async () => {
     const owner = new pg.Client(clientConfig(db.owned.url));
     await owner.connect();
     const q: Query = (text, values) => owner.query(text, values);
@@ -76,7 +76,7 @@ describe('G7 row-level security catalog check (pg-local, fully migrated)', () =>
     try {
       await q('begin');
       // a tenant table as a careless manual migration would add it: found by its tenant_id column
-      await q(`create table leak_probe (tenant_id uuid not null, scenario_id uuid, note text)`);
+      await q(`create table leak_probe (tenant_id uuid not null, note text)`);
       await q(`grant select, insert, update, delete on leak_probe to ${APP_ROLE}`);
       expect(await probeTable()).toEqual([
         'leak_probe: row level security is not enabled',
@@ -105,6 +105,10 @@ describe('G7 row-level security catalog check (pg-local, fully migrated)', () =>
       expect(await probeTable()).toEqual([`leak_probe: ${APP_ROLE} has TRUNCATE (TRUNCATE ignores row level security)`]);
       await q(`revoke truncate on leak_probe from ${APP_ROLE}`);
 
+      // DATA-12: a reference column with no FK and no policy would carry any tenant's scenario id
+      await q('alter table leak_probe add column scenario_id uuid');
+      const unguarded = `leak_probe: column scenario_id references scenario with no composite (tenant_id, scenario_id) foreign key and no restrictive same-tenant policy (a row could carry another tenant's id)`;
+      expect(await probeTable()).toEqual([unguarded]);
       // scenario's primary key is (id): this FK would accept another tenant's scenario
       await q('alter table leak_probe add constraint leak_probe_scenario_id_fkey foreign key (scenario_id) references scenario (id)');
       const fk = 'leak_probe: foreign key leak_probe_scenario_id_fkey (scenario_id) -> scenario does not carry the tenant and has no restrictive same-tenant policy (FK checks bypass RLS)';
@@ -112,6 +116,24 @@ describe('G7 row-level security catalog check (pg-local, fully migrated)', () =>
       await q(`create policy leak_probe_scenario_id_same_tenant on leak_probe as restrictive for all to public using (true)
                  with check (leak_probe.scenario_id is null or exists (select 1 from scenario r where r.id = leak_probe.scenario_id and r.tenant_id = leak_probe.tenant_id))`);
       expect(await probeTable()).toEqual([]);
+      // without any FK, the policy alone guards the column
+      await q('alter table leak_probe drop constraint leak_probe_scenario_id_fkey');
+      expect(await probeTable()).toEqual([]);
+      // a guard on INSERT only would let an UPDATE write another tenant's id
+      await q('drop policy leak_probe_scenario_id_same_tenant on leak_probe');
+      await q(`create policy leak_probe_scenario_id_same_tenant on leak_probe as restrictive for insert to public
+                 with check (leak_probe.scenario_id is null or exists (select 1 from scenario r where r.id = leak_probe.scenario_id and r.tenant_id = leak_probe.tenant_id))`);
+      expect(await probeTable()).toEqual([unguarded]);
+      await q('drop policy leak_probe_scenario_id_same_tenant on leak_probe');
+      // the composite (tenant_id, scenario_id) FK of DATA-12 guards it as well
+      await q('alter table leak_probe add constraint leak_probe_scenario_id_fkey foreign key (tenant_id, scenario_id) references scenario (tenant_id, id)');
+      expect(await probeTable()).toEqual([]);
+      // a uuid column whose target cannot be told from its name or a foreign key
+      await q('alter table leak_probe add column widget_id uuid');
+      expect(await probeTable()).toEqual([
+        'leak_probe: uuid column widget_id references no known table (name it <table>_id or list it in REFERENCE_NAMES)',
+      ]);
+      await q('alter table leak_probe drop column widget_id');
 
       // views the app can read over tenant tables: only security_invoker views keep RLS
       await q(`create view leak_probe_v as select * from leak_probe`);
@@ -140,6 +162,87 @@ describe('G7 row-level security catalog check (pg-local, fully migrated)', () =>
       expect(await rlsViolations(db.adminQuery)).toEqual([`${APP_ROLE}: has BYPASSRLS`]);
     } finally {
       await db.adminQuery('rollback');
+    }
+  });
+
+  it('DATA-12 self-test: the check fails when a same-tenant guard of the migrations (composite FK or restrictive policy) is dropped', async () => {
+    const owner = new pg.Client(clientConfig(db.owned.url));
+    await owner.connect();
+    const q: Query = (text, values) => owner.query(text, values);
+    const unguarded = (t: string, c: string, ref: string): string =>
+      `${t}: column ${c} references ${ref} with no composite (tenant_id, ${c}) foreign key and no restrictive same-tenant policy (a row could carry another tenant's id)`;
+    try {
+      await q('begin');
+      expect(await rlsViolations(q)).toEqual([]);
+      await q('alter table solver_run drop constraint solver_run_scenario_id_fkey');
+      await q('alter table changeset drop constraint changeset_reverts_id_fkey');
+      await q('drop policy variable_value_source_id_same_tenant on variable_value');
+      await q('drop policy export_job_scenario_ids_same_tenant on export_job');
+      await q('drop policy import_job_export_job_id_same_tenant on import_job');
+      expect((await rlsViolations(q)).sort()).toEqual(
+        [
+          unguarded('solver_run', 'scenario_id', 'scenario'),
+          unguarded('changeset', 'reverts_id', 'changeset'),
+          unguarded('variable_value', 'source_id', 'source'),
+          unguarded('export_job', 'scenario_ids', 'scenario'),
+          unguarded('import_job', 'export_job_id', 'export_job'),
+        ].sort(),
+      );
+    } finally {
+      await q('rollback');
+      await owner.end();
+    }
+  });
+
+  it('DATA-12: every reference between tenant tables, as glidepath_app in tenant A: pointing a row of A at a row of tenant B is refused; at its own rows it is accepted', async () => {
+    const { references, unresolved } = await tenantReferences(db.adminQuery, tables);
+    expect(unresolved).toEqual([]);
+    const names = references.map((r) => `${r.table.name}.${r.column}`);
+    // the columns the DATA-10 leak suite found unguarded, among others
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'solver_run.scenario_id', 'solver_run.result_scenario_id', 'changeset.scenario_id', 'changeset.reverts_id', 'scenario.parent_id',
+        'scenario_value.scenario_id', 'scenario_value.changeset_id', 'variable_value.changeset_id', 'variable_value.source_id',
+        'node_override.scenario_id', 'calc_run.scenario_id', 'market_snapshot.source_id', 'market_snapshot.applied_changeset_id',
+        'import_job.export_job_id', 'import_job.changeset_id', 'ai_reconfig_job.changeset_id', 'export_job.scenario_ids',
+        'change.changeset_id', 'line_item.source_id',
+      ]),
+    );
+    const idOf = async (ref: TenantTable, tenantId: string): Promise<string> => {
+      const r = await db.adminQuery(`select id::text as id from ${ref.sql} where ${quoteIdent(ref.key)} = $1::uuid order by id limit 1`, [tenantId]);
+      expect(r.rows, `${ref.name}: the leak seed needs a row of ${tenantId}`).toHaveLength(1);
+      return String(r.rows[0]!.id);
+    };
+    const client = await db.app.pool.connect();
+    const q: Query = (text, values) => client.query(text, values);
+    try {
+      await q('begin');
+      await q(`select set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)`, [TENANT_A, ANA]);
+      // composite FKs are DEFERRABLE INITIALLY DEFERRED (checked at COMMIT): check each statement at once here
+      await q('set constraints all immediate');
+      for (const r of references) {
+        // one row of A (all of them could collide on a primary key that holds the column)
+        const set = (id: string): [string, unknown[]] => [`update ${r.table.sql} set ${quoteIdent(r.column)} = ${r.array ? 'array[$1::uuid]' : '$1::uuid'} where ctid = (select ctid from ${r.table.sql} where ${quoteIdent(r.table.key)} = $2::uuid limit 1)`, [id, TENANT_A]];
+        const what = `${r.table.name}.${r.column} -> ${r.ref.name}`;
+        const foreign = await probe(q, ...set(await idOf(r.ref, TENANT_B)));
+        expect(foreign, `${what} of tenant B`).toMatchObject({
+          error: expect.stringMatching(/violates foreign key constraint|new row violates row-level security policy/),
+        });
+        const own = await probe(q, ...set(await idOf(r.ref, TENANT_A)));
+        expect('rowCount' in own && Number(own.rowCount) > 0, `${what} of tenant A: ${JSON.stringify(own)}`).toBe(true);
+      }
+      await q('rollback');
+
+      // deferred: the same write is refused at COMMIT, and nothing of it stays
+      const before = await db.adminQuery(`select scenario_id::text as s from solver_run where tenant_id = $1::uuid order by id`, [TENANT_A]);
+      const scenarioB = await idOf(tables.find((t) => t.name === 'scenario')!, TENANT_B);
+      await q('begin');
+      await q(`select set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)`, [TENANT_A, ANA]);
+      await q('update solver_run set scenario_id = $1::uuid where tenant_id = $2::uuid', [scenarioB, TENANT_A]);
+      await expect(q('commit')).rejects.toThrow(/violates foreign key constraint "solver_run_scenario_id_fkey"/);
+      expect((await db.adminQuery(`select scenario_id::text as s from solver_run where tenant_id = $1::uuid order by id`, [TENANT_A])).rows).toEqual(before.rows);
+    } finally {
+      client.release();
     }
   });
 

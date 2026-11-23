@@ -219,7 +219,9 @@ export async function seedMinimal(owner: Db): Promise<void> {
         fixture.variable_value.map((v) => ({
           tenant_id: tenantId, var_key: v.var_key, member_key: v.member_key, value: String(v.value + offset),
           source_id: null, confidence: v.var_key === 'g.target_net' ? 'M' : 'H',
-          note: v.var_key === 'g.target_net' ? 'from the filing' : '', changeset_id: sid(CS.c4), updated_at: at('2026-10-01T09:00:00Z'),
+          note: v.var_key === 'g.target_net' ? 'from the filing' : '',
+          // B's history is its c1 only: a value names a changeset of its own tenant (DATA-12 composite FK)
+          changeset_id: tenantId === TENANT_A ? CS.c4 : sid(CS.c1), updated_at: at('2026-10-01T09:00:00Z'),
         })),
       );
       const created: Record<string, string> = {

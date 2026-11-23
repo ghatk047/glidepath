@@ -1635,7 +1635,7 @@
     "epic": "DATA",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "high",
@@ -1660,7 +1660,8 @@
       "G7"
     ],
     "size": "S",
-    "notes": "Found by DATA-10: references without FK accepted tenant B ids (nothing of B read or changed)."
+    "notes": "Found by DATA-10: references without FK accepted tenant B ids (nothing of B read or changed).",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DATA-13",

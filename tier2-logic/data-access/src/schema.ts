@@ -242,43 +242,10 @@ export const scenario = pgTable(
   (t) => [
     primaryKey({ name: 'scenario_pkey', columns: [t.id] }),
     unique('scenario_tenant_id_key_key').on(t.tenant_id, t.key),
+    unique('scenario_tenant_id_id_key').on(t.tenant_id, t.id),
     foreignKey({ name: 'scenario_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
     foreignKey({ name: 'scenario_model_version_id_fkey', columns: [t.model_version_id], foreignColumns: [model_version.id] }),
-  ],
-);
-
-export const variable_value = pgTable(
-  'variable_value',
-  {
-    tenant_id: uuid('tenant_id').notNull(),
-    var_key: text('var_key').notNull(),
-    member_key: text('member_key').notNull(),
-    value: numeric('value').notNull(),
-    source_id: uuid('source_id'),
-    confidence: char('confidence', { length: 1 }).notNull(),
-    note: text('note').notNull(),
-    changeset_id: uuid('changeset_id').notNull(),
-    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull(),
-  },
-  (t) => [
-    primaryKey({ name: 'variable_value_pkey', columns: [t.tenant_id, t.var_key, t.member_key] }),
-    foreignKey({ name: 'variable_value_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
-  ],
-);
-
-export const scenario_value = pgTable(
-  'scenario_value',
-  {
-    tenant_id: uuid('tenant_id').notNull(),
-    scenario_id: uuid('scenario_id').notNull(),
-    var_key: text('var_key').notNull(),
-    member_key: text('member_key').notNull(),
-    value: numeric('value').notNull(),
-    changeset_id: uuid('changeset_id').notNull(),
-  },
-  (t) => [
-    primaryKey({ name: 'scenario_value_pkey', columns: [t.tenant_id, t.scenario_id, t.var_key, t.member_key] }),
-    foreignKey({ name: 'scenario_value_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'scenario_parent_id_fkey', columns: [t.tenant_id, t.parent_id], foreignColumns: [t.tenant_id, t.id] }),
   ],
 );
 
@@ -295,6 +262,7 @@ export const node_override = pgTable(
   (t) => [
     primaryKey({ name: 'node_override_pkey', columns: [t.tenant_id, t.scenario_id, t.node_key, t.member_key] }),
     foreignKey({ name: 'node_override_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'node_override_scenario_id_fkey', columns: [t.tenant_id, t.scenario_id], foreignColumns: [scenario.tenant_id, scenario.id] }),
   ],
 );
 
@@ -366,22 +334,6 @@ export const line_item_lever = pgTable(
   ],
 );
 
-export const market_snapshot = pgTable(
-  'market_snapshot',
-  {
-    tenant_id: uuid('tenant_id').notNull(),
-    id: uuid('id').notNull(),
-    as_of: date('as_of', { mode: 'string' }).notNull(),
-    payload: jsonb('payload').notNull(),
-    source_id: uuid('source_id').notNull(),
-    applied_changeset_id: uuid('applied_changeset_id'),
-  },
-  (t) => [
-    primaryKey({ name: 'market_snapshot_pkey', columns: [t.id] }),
-    foreignKey({ name: 'market_snapshot_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
-  ],
-);
-
 export const changeset = pgTable(
   'changeset',
   {
@@ -398,7 +350,65 @@ export const changeset = pgTable(
   },
   (t) => [
     primaryKey({ name: 'changeset_pkey', columns: [t.id] }),
+    unique('changeset_tenant_id_id_key').on(t.tenant_id, t.id),
     foreignKey({ name: 'changeset_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'changeset_scenario_id_fkey', columns: [t.tenant_id, t.scenario_id], foreignColumns: [scenario.tenant_id, scenario.id] }),
+    foreignKey({ name: 'changeset_reverts_id_fkey', columns: [t.tenant_id, t.reverts_id], foreignColumns: [t.tenant_id, t.id] }),
+  ],
+);
+
+export const variable_value = pgTable(
+  'variable_value',
+  {
+    tenant_id: uuid('tenant_id').notNull(),
+    var_key: text('var_key').notNull(),
+    member_key: text('member_key').notNull(),
+    value: numeric('value').notNull(),
+    source_id: uuid('source_id'),
+    confidence: char('confidence', { length: 1 }).notNull(),
+    note: text('note').notNull(),
+    changeset_id: uuid('changeset_id').notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull(),
+  },
+  (t) => [
+    primaryKey({ name: 'variable_value_pkey', columns: [t.tenant_id, t.var_key, t.member_key] }),
+    foreignKey({ name: 'variable_value_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'variable_value_changeset_id_fkey', columns: [t.tenant_id, t.changeset_id], foreignColumns: [changeset.tenant_id, changeset.id] }),
+  ],
+);
+
+export const scenario_value = pgTable(
+  'scenario_value',
+  {
+    tenant_id: uuid('tenant_id').notNull(),
+    scenario_id: uuid('scenario_id').notNull(),
+    var_key: text('var_key').notNull(),
+    member_key: text('member_key').notNull(),
+    value: numeric('value').notNull(),
+    changeset_id: uuid('changeset_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ name: 'scenario_value_pkey', columns: [t.tenant_id, t.scenario_id, t.var_key, t.member_key] }),
+    foreignKey({ name: 'scenario_value_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'scenario_value_scenario_id_fkey', columns: [t.tenant_id, t.scenario_id], foreignColumns: [scenario.tenant_id, scenario.id] }),
+    foreignKey({ name: 'scenario_value_changeset_id_fkey', columns: [t.tenant_id, t.changeset_id], foreignColumns: [changeset.tenant_id, changeset.id] }),
+  ],
+);
+
+export const market_snapshot = pgTable(
+  'market_snapshot',
+  {
+    tenant_id: uuid('tenant_id').notNull(),
+    id: uuid('id').notNull(),
+    as_of: date('as_of', { mode: 'string' }).notNull(),
+    payload: jsonb('payload').notNull(),
+    source_id: uuid('source_id').notNull(),
+    applied_changeset_id: uuid('applied_changeset_id'),
+  },
+  (t) => [
+    primaryKey({ name: 'market_snapshot_pkey', columns: [t.id] }),
+    foreignKey({ name: 'market_snapshot_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'market_snapshot_applied_changeset_id_fkey', columns: [t.tenant_id, t.applied_changeset_id], foreignColumns: [changeset.tenant_id, changeset.id] }),
   ],
 );
 
@@ -459,6 +469,7 @@ export const import_job = pgTable(
   (t) => [
     primaryKey({ name: 'import_job_pkey', columns: [t.id] }),
     foreignKey({ name: 'import_job_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'import_job_changeset_id_fkey', columns: [t.tenant_id, t.changeset_id], foreignColumns: [changeset.tenant_id, changeset.id] }),
   ],
 );
 
@@ -478,6 +489,7 @@ export const calc_run = pgTable(
   (t) => [
     primaryKey({ name: 'calc_run_pkey', columns: [t.id] }),
     foreignKey({ name: 'calc_run_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'calc_run_scenario_id_fkey', columns: [t.tenant_id, t.scenario_id], foreignColumns: [scenario.tenant_id, scenario.id] }),
     uniqueIndex('calc_run_tenant_id_scenario_id_input_hash_key').on(t.tenant_id, t.scenario_id, t.input_hash),
   ],
 );
@@ -502,6 +514,8 @@ export const solver_run = pgTable(
   (t) => [
     primaryKey({ name: 'solver_run_pkey', columns: [t.id] }),
     foreignKey({ name: 'solver_run_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'solver_run_scenario_id_fkey', columns: [t.tenant_id, t.scenario_id], foreignColumns: [scenario.tenant_id, scenario.id] }),
+    foreignKey({ name: 'solver_run_result_scenario_id_fkey', columns: [t.tenant_id, t.result_scenario_id], foreignColumns: [scenario.tenant_id, scenario.id] }),
     index('solver_run_tenant_id_status_idx').on(t.tenant_id, t.status),
   ],
 );
@@ -519,6 +533,7 @@ export const ai_reconfig_job = pgTable(
   (t) => [
     primaryKey({ name: 'ai_reconfig_job_pkey', columns: [t.id] }),
     foreignKey({ name: 'ai_reconfig_job_tenant_id_fkey', columns: [t.tenant_id], foreignColumns: [tenant.id] }),
+    foreignKey({ name: 'ai_reconfig_job_changeset_id_fkey', columns: [t.tenant_id, t.changeset_id], foreignColumns: [changeset.tenant_id, changeset.id] }),
   ],
 );
 
@@ -633,14 +648,14 @@ export const tables = {
   tenant_membership,
   dimension_member,
   scenario,
-  variable_value,
-  scenario_value,
   node_override,
   source,
   line_item,
   line_item_lever,
-  market_snapshot,
   changeset,
+  variable_value,
+  scenario_value,
+  market_snapshot,
   change,
   export_job,
   import_job,

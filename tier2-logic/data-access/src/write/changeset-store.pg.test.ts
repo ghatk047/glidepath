@@ -11,7 +11,7 @@ import {
 } from '@glidepath/domain';
 import type { ModelBundle } from '@glidepath/spec';
 import { getTestDatabaseUrl } from '@glidepath/pg-local';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDb } from '../db';
 import type { DbHandle } from '../db';
@@ -60,6 +60,8 @@ let log: RecordedQuery[];
 
 const TENANT_C = '00000000-0000-4000-8000-0000000000c0';
 const PRESET_C = '00000000-0000-4000-8000-0000000000c1';
+/** The changeset that wrote tenant C's defaults (values name a changeset of their tenant: DATA-12 composite FK). */
+const SEED_CS_C = '00000000-0000-4000-8000-0000000000ce';
 const DAVE = '00000000-0000-4000-8000-0000000000e4';
 const at = (s: string): Date => new Date(s);
 
@@ -92,9 +94,13 @@ async function seedTenantC(): Promise<void> {
       tenant_id: TENANT_C, id: PRESET_C, key: 'rates', label: 'Rates', kind: 'preset', parent_id: null,
       model_version_id: MV1, version: 0, locked: true, created_by: ANA, created_at: at('2026-10-01T00:00:00Z'),
     });
+    await tx.insert(changeset).values({
+      tenant_id: TENANT_C, id: SEED_CS_C, origin: 'seed', scenario_id: null, base_scenario_version: 0, status: 'applied',
+      summary: {}, created_by: ANA, created_at: at('2026-10-01T00:00:00Z'), reverts_id: null,
+    });
     await tx.insert(variable_value).values([
-      { tenant_id: TENANT_C, var_key: 'g.target_net', member_key: '', value: '100', source_id: null, confidence: 'H', note: 'filing', changeset_id: PRESET_C, updated_at: at('2026-10-01T00:00:00Z') },
-      { tenant_id: TENANT_C, var_key: 'g.head_start', member_key: '', value: '1', source_id: null, confidence: 'L', note: '', changeset_id: PRESET_C, updated_at: at('2026-10-01T00:00:00Z') },
+      { tenant_id: TENANT_C, var_key: 'g.target_net', member_key: '', value: '100', source_id: null, confidence: 'H', note: 'filing', changeset_id: SEED_CS_C, updated_at: at('2026-10-01T00:00:00Z') },
+      { tenant_id: TENANT_C, var_key: 'g.head_start', member_key: '', value: '1', source_id: null, confidence: 'L', note: '', changeset_id: SEED_CS_C, updated_at: at('2026-10-01T00:00:00Z') },
     ]);
   });
 }
@@ -683,7 +689,7 @@ describe('applyChangeset (DOM-03) end to end on Postgres (tenant C)', () => {
       // a replay under the same key writes nothing and answers with the first result
       const again = await apply(store, draft({ scenario_id: r.scenarioId, base_scenario_version: 99 }), { clientRequestId: 'rq-fork' });
       expect(again).toMatchObject({ replayed: true, changesetId: r.changesetId, version: 1, editsCount: 1 });
-      expect((await tx.select().from(changeset).where(eq(changeset.tenant_id, TENANT_C))).length).toBe(1);
+      expect((await tx.select().from(changeset).where(and(eq(changeset.tenant_id, TENANT_C), ne(changeset.id, SEED_CS_C)))).length).toBe(1);
     });
   });
 
@@ -722,13 +728,14 @@ describe('applyChangeset (DOM-03) end to end on Postgres (tenant C)', () => {
         origin: 'ui', scenario_id: null, base_scenario_version: base,
         changes: [{ target: 'variable', key: 'g.head_start', member_key: '', op: 'set', new_value: value, note: `now ${value}` }],
       });
-      const one = await apply(store, d(0, 2));
-      expect(one).toMatchObject({ scenarioId: null, version: 1 });
+      // the seed changeset (SEED_CS_C) wrote the defaults: they start at version 1
+      const one = await apply(store, d(1, 2));
+      expect(one).toMatchObject({ scenarioId: null, version: 2 });
       const [vv] = await tx.select().from(variable_value).where(and(eq(variable_value.tenant_id, TENANT_C), eq(variable_value.var_key, 'g.head_start')));
       expect(vv).toMatchObject({ value: '2', note: 'now 2', confidence: 'L', changeset_id: one.changesetId });
       expect(one.changeset.changes[0]).toMatchObject({ old_value: 1, new_value: 2, messages: { note: 'now 2' } });
-      expect(await apply(store, d(1, 3))).toMatchObject({ version: 2 });
-      await expect(apply(store, d(1, 4))).rejects.toBeInstanceOf(ChangesetConflictError);
+      expect(await apply(store, d(2, 3))).toMatchObject({ version: 3 });
+      await expect(apply(store, d(2, 4))).rejects.toBeInstanceOf(ChangesetConflictError);
     });
   });
 

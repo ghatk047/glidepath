@@ -123,6 +123,8 @@ function harmless(p: PolicyRow, key: string): boolean {
  * - no other permissive policy the app gets lets rows of another tenant through (e.g. USING (true));
  * - a foreign key between tenant tables carries the tenant or has a restrictive same-tenant policy
  *   (FK checks bypass RLS, so a plain FK would accept another tenant's row);
+ * - every uuid reference column between tenant tables (tenantReferences) is a composite (tenant_id, x)
+ *   foreign key or has a restrictive same-tenant policy, and every uuid column resolves to a table (DATA-12);
  * - the app role owns no tenant table and has no TRUNCATE (bypasses RLS), REFERENCES or TRIGGER on one;
  * - glidepath_app exists, is not SUPERUSER, has no BYPASSRLS and is not a member of a role that has;
  * - every view or materialized view the app can read that (transitively) reads a tenant table is a
@@ -200,20 +202,23 @@ export async function rlsViolations(q: Query): Promise<string[]> {
   }
 
   // ---- foreign keys between tenant tables
+  const guardedBy = async (ref: { table: TenantTable; ref: TenantTable; columns: readonly string[] }): Promise<boolean> =>
+    (await sameTenantPolicies(q, ref.table)).some((w) => policyGuards(w, ref.table, ref.ref, ref.columns));
   for (const fk of await crossTenantForeignKeys(q, tables)) {
-    const guard = await q(
-      `select pg_get_expr(p.polwithcheck, p.polrelid) as with_check from pg_policy p
-        where p.polrelid = $1::regclass and not p.polpermissive and p.polcmd in ('*', 'a', 'w')
-          and (0 = any(p.polroles) or exists (select 1 from unnest(p.polroles) x where x <> 0 and pg_has_role($2, x, 'MEMBER')))`,
-      [fk.table.sql, APP_ROLE],
-    );
-    const t = fk.table.name;
-    const guarded = guard.rows.some((g) => {
-      const w = String(g.with_check ?? '');
-      return w.includes(`FROM ${fk.ref.name} `) && w.includes(`${t}.${fk.table.key}`) && fk.columns.every((col) => w.includes(`${t}.${col}`));
-    });
-    if (!guarded) {
-      out.push(`${t}: foreign key ${fk.name} (${fk.columns.join(', ')}) -> ${fk.ref.name} does not carry the tenant and has no restrictive same-tenant policy (FK checks bypass RLS)`);
+    if (!(await guardedBy(fk))) {
+      out.push(`${fk.table.name}: foreign key ${fk.name} (${fk.columns.join(', ')}) -> ${fk.ref.name} does not carry the tenant and has no restrictive same-tenant policy (FK checks bypass RLS)`);
+    }
+  }
+
+  // ---- reference columns between tenant tables that no foreign key covers (DATA-12)
+  const refs = await tenantReferences(q, tables);
+  for (const u of refs.unresolved) {
+    out.push(`${u.table.name}: uuid column ${u.column} references no known table (name it <table>_id or list it in REFERENCE_NAMES)`);
+  }
+  for (const r of refs.references) {
+    if (r.foreignKey) continue; // a composite FK carries the tenant; a plain one is checked above
+    if (!(await guardedBy({ table: r.table, ref: r.ref, columns: [r.column] }))) {
+      out.push(`${r.table.name}: column ${r.column} references ${r.ref.name} with no composite (${r.table.key}, ${r.column}) foreign key and no restrictive same-tenant policy (a row could carry another tenant's id)`);
     }
   }
 
@@ -300,6 +305,100 @@ export async function crossTenantForeignKeys(q: Query, tables: readonly TenantTa
     out.push({ name: String(fk.name), table, ref, columns, refColumns });
   }
   return out;
+}
+
+/**
+ * WITH CHECK of the restrictive policies on `table` that apply to the app role on INSERT and on UPDATE
+ * (a guard on one command only would let the other write through).
+ */
+async function sameTenantPolicies(q: Query, table: TenantTable): Promise<string[]> {
+  const res = await q(
+    `select p.polcmd::text as cmd, pg_get_expr(p.polwithcheck, p.polrelid) as with_check from pg_policy p
+      where p.polrelid = $1::regclass and not p.polpermissive and p.polcmd in ('*', 'a', 'w')
+        and (0 = any(p.polroles) or exists (select 1 from unnest(p.polroles) x where x <> 0 and pg_has_role($2, x, 'MEMBER')))`,
+    [table.sql, APP_ROLE],
+  );
+  const all = res.rows.filter((r) => r.cmd === '*').map((r) => String(r.with_check ?? ''));
+  const ins = res.rows.filter((r) => r.cmd === 'a').map((r) => String(r.with_check ?? ''));
+  const upd = new Set(res.rows.filter((r) => r.cmd === 'w').map((r) => String(r.with_check ?? '')));
+  return [...all, ...ins.filter((w) => upd.has(w))];
+}
+
+/** A same-tenant WITH CHECK: reads the referenced table and ties the row's tenant key and columns to it. */
+const policyGuards = (w: string, table: TenantTable, ref: TenantTable, columns: readonly string[]): boolean =>
+  w.includes(`FROM ${ref.name} `) && w.includes(`${table.name}.${table.key}`) && columns.every((col) => w.includes(`${table.name}.${col}`));
+
+/**
+ * uuid columns whose name does not say which table they reference (`<table>_id` does, also with a prefix:
+ * `result_scenario_id`, `applied_changeset_id`). `null` = the column's own table.
+ */
+export const REFERENCE_NAMES: Readonly<Record<string, string | null>> = {
+  parent_id: null,
+  reverts_id: null,
+  user_id: 'app_user',
+  created_by: 'app_user',
+  actor: 'app_user',
+};
+
+/** A uuid (or uuid[]) column of a tenant table that holds the id of a row of another (or the same) tenant table. */
+export interface TenantReference {
+  readonly table: TenantTable;
+  readonly column: string;
+  readonly ref: TenantTable;
+  /** Name of a foreign key on the column, when one exists (its tenant handling is crossTenantForeignKeys'). */
+  readonly foreignKey: string | null;
+  readonly array: boolean;
+}
+
+/**
+ * Every reference between tenant tables held in a uuid or uuid[] column (DATA-12), read from the catalog:
+ * the target is the column's foreign key when it has one, else its name (REFERENCE_NAMES, then the longest
+ * `_`-suffix of `<stem>_id(s)` that names a table). The tenant key and a single-column primary key are not
+ * references. A uuid column whose target cannot be told is `unresolved` (the catalog check fails it).
+ */
+export async function tenantReferences(
+  q: Query,
+  tables: readonly TenantTable[],
+): Promise<{ references: TenantReference[]; unresolved: { table: TenantTable; column: string }[] }> {
+  const all = await q(
+    `select c.relname as name from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relkind in ('r', 'p') and n.nspname = 'public'`,
+  );
+  const tableNames = new Set(all.rows.map((r) => String(r.name)));
+  const tenantByName = new Map(tables.filter((t) => t.schema === 'public').map((t) => [t.name, t]));
+  const references: TenantReference[] = [];
+  const unresolved: { table: TenantTable; column: string }[] = [];
+  for (const t of tables) {
+    const cols = await q(
+      `select a.attname::text as name, t.typname::text as type,
+              (select con.conname::text from pg_constraint con where con.conrelid = a.attrelid and con.contype = 'f' and a.attnum = any(con.conkey) order by con.conname limit 1) as fk,
+              (select con.confrelid::regclass::text from pg_constraint con where con.conrelid = a.attrelid and con.contype = 'f' and a.attnum = any(con.conkey) order by con.conname limit 1) as fk_ref,
+              exists (select 1 from pg_constraint con where con.conrelid = a.attrelid and con.contype = 'p' and con.conkey = array[a.attnum]) as sole_pk
+         from pg_attribute a join pg_type t on t.oid = a.atttypid
+        where a.attrelid = $1::regclass and a.attnum > 0 and not a.attisdropped and t.typname in ('uuid', '_uuid')
+        order by a.attnum`,
+      [t.sql],
+    );
+    for (const c of cols.rows) {
+      const column = String(c.name);
+      if (column === t.key || column === 'tenant_id' || c.sole_pk) continue;
+      let target: string | null | undefined;
+      if (c.fk_ref !== null && c.fk_ref !== undefined) target = String(c.fk_ref).replace(/^public\./, '');
+      else if (column in REFERENCE_NAMES) target = REFERENCE_NAMES[column] ?? t.name;
+      else {
+        const m = /^(.+)_ids?$/.exec(column);
+        const parts = m ? m[1]!.split('_') : [];
+        target = parts.map((_, i) => parts.slice(i).join('_')).find((n) => tableNames.has(n));
+      }
+      if (target === undefined || target === null) {
+        unresolved.push({ table: t, column });
+        continue;
+      }
+      const ref = tenantByName.get(target);
+      if (!ref) continue; // a global table (app_user, model_version, ...): shared by every tenant
+      references.push({ table: t, column, ref, foreignKey: c.fk === null ? null : String(c.fk), array: c.type === '_uuid' });
+    }
+  }
+  return { references, unresolved };
 }
 
 // -------------------------------------------------------------------------------------- row snapshots

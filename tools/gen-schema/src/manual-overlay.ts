@@ -71,14 +71,34 @@ export interface OverlayTable {
   indexes?: ModelIndex[];
 }
 
+/** Unique keys and foreign keys added to a table of schema.json (DATA-12 same-tenant references). */
+export interface OverlayAddedKeys {
+  table: string;
+  source: string;
+  uniques?: { name: string; columns: string[] }[];
+  /** Deferrability and ON DELETE NO ACTION are SQL-only (Drizzle does not model deferrable keys). */
+  fks?: OverlayFk[];
+}
+
 export interface ManualOverlay {
   addedColumns: OverlayAddedColumns[];
   tables: OverlayTable[];
+  /** Applied after `addedColumns` and `tables`, in order: a unique key must precede the FKs that target it. */
+  addedKeys?: OverlayAddedKeys[];
 }
 
 const M1 = 'manual/0001_solver_run_progress_scenario_archived.sql';
 const M2 = 'manual/0002_auth_tables.sql';
 const M3 = 'manual/0003_stored_object.sql';
+const M4 = 'manual/0004_same_tenant_references.sql';
+
+/** Composite (tenant_id, column) -> target (tenant_id, id): a tenant row can only reference its own tenant's rows. */
+const sameTenant = (table: string, column: string, refTable: string): OverlayFk => ({
+  name: `${table}_${column}_fkey`,
+  columns: ['tenant_id', column],
+  refTable,
+  refColumns: ['tenant_id', 'id'],
+});
 
 export const MANUAL_OVERLAY: ManualOverlay = {
   addedColumns: [
@@ -198,6 +218,36 @@ export const MANUAL_OVERLAY: ManualOverlay = {
       ],
     },
   ],
+  addedKeys: [
+    {
+      table: 'scenario',
+      source: M4,
+      uniques: [{ name: 'scenario_tenant_id_id_key', columns: ['tenant_id', 'id'] }],
+      fks: [sameTenant('scenario', 'parent_id', 'scenario')],
+    },
+    {
+      table: 'changeset',
+      source: M4,
+      uniques: [{ name: 'changeset_tenant_id_id_key', columns: ['tenant_id', 'id'] }],
+      fks: [sameTenant('changeset', 'scenario_id', 'scenario'), sameTenant('changeset', 'reverts_id', 'changeset')],
+    },
+    { table: 'variable_value', source: M4, fks: [sameTenant('variable_value', 'changeset_id', 'changeset')] },
+    {
+      table: 'scenario_value',
+      source: M4,
+      fks: [sameTenant('scenario_value', 'scenario_id', 'scenario'), sameTenant('scenario_value', 'changeset_id', 'changeset')],
+    },
+    { table: 'node_override', source: M4, fks: [sameTenant('node_override', 'scenario_id', 'scenario')] },
+    { table: 'market_snapshot', source: M4, fks: [sameTenant('market_snapshot', 'applied_changeset_id', 'changeset')] },
+    { table: 'import_job', source: M4, fks: [sameTenant('import_job', 'changeset_id', 'changeset')] },
+    { table: 'calc_run', source: M4, fks: [sameTenant('calc_run', 'scenario_id', 'scenario')] },
+    {
+      table: 'solver_run',
+      source: M4,
+      fks: [sameTenant('solver_run', 'scenario_id', 'scenario'), sameTenant('solver_run', 'result_scenario_id', 'scenario')],
+    },
+    { table: 'ai_reconfig_job', source: M4, fks: [sameTenant('ai_reconfig_job', 'changeset_id', 'changeset')] },
+  ],
 };
 
 const OVERLAY_DEFAULTS: readonly string[] = ['true', 'false', '0', 'now()', 'gen_random_uuid()'];
@@ -286,5 +336,48 @@ export function buildFullModel(schema: SpecSchema, overlay: ManualOverlay = MANU
     byName.set(t.name, t);
   }
 
-  return { ...base, tables };
+  for (const add of overlay.addedKeys ?? []) {
+    const t = byName.get(add.table);
+    if (!t) throw new Error(`overlay: keys added to unknown table "${add.table}"`);
+    const names = new Set([...t.uniques.map((u) => u.name), ...t.fks.map((f) => f.name), `${t.name}_pkey`]);
+    const claim = (name: string): void => {
+      if (names.has(name)) throw new Error(`overlay: ${t.name} already has a key named "${name}"`);
+      names.add(name);
+    };
+    for (const u of add.uniques ?? []) {
+      assertColumns(`overlay: ${t.name} unique ${u.name}`, t.columns, u.columns);
+      claim(u.name);
+      t.uniques = [...t.uniques, { name: u.name, columns: u.columns }];
+    }
+    for (const f of add.fks ?? []) {
+      assertColumns(`overlay: ${t.name} fk ${f.name}`, t.columns, f.columns);
+      const target = byName.get(f.refTable);
+      if (!target) throw new Error(`overlay: ${t.name} fk ${f.name} targets unknown table "${f.refTable}"`);
+      assertColumns(`overlay: ${t.name} fk ${f.name} target ${f.refTable}`, target.columns, f.refColumns);
+      const isKey = sameList(target.primaryKey, f.refColumns) || target.uniques.some((u) => sameList(u.columns, f.refColumns));
+      if (!isKey) throw new Error(`overlay: ${t.name} fk ${f.name} targets ${f.refTable}(${f.refColumns.join(', ')}), not a primary or unique key`);
+      claim(f.name);
+      const ref = { name: f.name, columns: f.columns, refTable: f.refTable, refColumns: f.refColumns };
+      t.fks = [...t.fks, f.onDelete ? { ...ref, onDelete: f.onDelete } : ref];
+    }
+  }
+
+  return { ...base, tables: dependencyOrder(tables) };
+}
+
+const sameList = (a: string[], b: string[]): boolean => a.length === b.length && a.every((x, i) => x === b[i]);
+
+/** Referenced tables first (self-references aside), otherwise the given order: the order schema.ts declares them in. */
+function dependencyOrder(tables: ModelTable[]): ModelTable[] {
+  const out: ModelTable[] = [];
+  const done = new Set<string>();
+  const remaining = [...tables];
+  while (remaining.length) {
+    const i = remaining.findIndex((t) => t.fks.every((f) => f.refTable === t.name || done.has(f.refTable)));
+    if (i < 0) throw new Error(`overlay: foreign key cycle among ${remaining.map((t) => t.name).join(', ')}`);
+    const [t] = remaining.splice(i, 1);
+    out.push(t!);
+    done.add(t!.name);
+  }
+  return out;
 }

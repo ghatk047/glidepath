@@ -17,6 +17,8 @@ const RESTORE = join(REPO_ROOT, 'ops/restore.sh');
 
 const TENANT = '00000000-0000-0000-0000-0000000000b1';
 const MODEL = '00000000-0000-0000-0000-0000000000a1';
+/** calc_run.scenario_id names a scenario of its tenant (DATA-12 composite FK). */
+const SCENARIO = '00000000-0000-0000-0000-0000000000c1';
 const OWNER_PW = 'ownerpw';
 const APP_PW = 'apppw';
 
@@ -93,14 +95,16 @@ describe.skipIf(!HAVE_PG)('ops/backup.sh and ops/restore.sh (OPS-07)', () => {
     ];
     for (const f of files) psqlFile(ownerUrl, f);
 
-    // seed: one tenant, one calc_run with outputs C, two stored objects (a workbook and an AI file)
+    // seed: one tenant, one scenario, one calc_run with outputs C, two stored objects (a workbook and an AI file)
     const seed = join(workDir, 'seed.sql');
     writeFileSync(
       seed,
       `insert into model_version values ('${MODEL}','1.0.0','published','n',now());
        insert into tenant values ('${TENANT}','t1','Tenant One','USD',2025,2027,'cal',null,'${MODEL}','active',now());
        select set_config('app.tenant_id','${TENANT}',false);
-       insert into calc_run values ('${TENANT}',gen_random_uuid(),gen_random_uuid(),1,'${MODEL}','h',5,'{"C":123456.789}',now());
+       insert into scenario (tenant_id,id,key,label,kind,parent_id,model_version_id,version,locked,created_by,created_at)
+         values ('${TENANT}','${SCENARIO}','s1','S1','user',null,'${MODEL}',1,false,gen_random_uuid(),now());
+       insert into calc_run values ('${TENANT}',gen_random_uuid(),'${SCENARIO}',1,'${MODEL}','h',5,'{"C":123456.789}',now());
        insert into stored_object(tenant_id,bucket,key,content_type,bytes,sha256,size) values
          ('${TENANT}','exports','wb1.xlsx','application/octet-stream','\\x504b0304',repeat('a',64),4),
          ('${TENANT}','ai','ctx1.json','application/json','\\x7b7d',repeat('b',64),2);`,

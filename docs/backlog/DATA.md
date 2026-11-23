@@ -389,7 +389,7 @@ title: "Same-tenant references: composite foreign keys"
 epic: DATA
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -407,6 +407,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: S
 notes: "Found by DATA-10: references without FK accepted tenant B ids (nothing of B read or changed)."
+merged_at: "2026-11-23"
 ```
 
 ## DATA-13 · Commit path speed and data-access tidy-ups
