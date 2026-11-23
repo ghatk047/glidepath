@@ -112,6 +112,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-python@v5
+        with:
+          # engine.py is the parity oracle; float sum() of mixed int/float differs across CPython minors.
+          python-version-file: .python-version
       - name: Postgres reachable (SELECT 1)
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT 1' && psql "$DATABASE_URL_MIGRATE" -v ON_ERROR_STOP=1 -c 'SELECT 1'
       - name: PostgreSQL 16 binaries for pg-local tests (initdb/pg_ctl)
@@ -205,6 +209,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-python@v5
+        with:
+          # engine.py is the parity oracle; float sum() of mixed int/float differs across CPython minors.
+          python-version-file: .python-version
       - name: Probe script parity:fuzz
         id: probe
         run: |
