@@ -26,6 +26,7 @@
     "tier-check": "tsx tools/tier-check/src/cli.ts",
     "int:m1": "pnpm --filter @glidepath/int run m1",
     "e2e": "pnpm --filter @glidepath/e2e run smoke",
+    "e2e:perf": "pnpm --filter @glidepath/e2e run perf",
     "e2e:storyline": "echo 'not implemented yet'",
     "bench": "turbo run bench"
   },

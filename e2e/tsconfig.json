@@ -1,8 +1,14 @@
 {
   "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
   "include": [
     "src",
     "tests",
+    "perf",
+    "playwright.perf.config.ts",
     "playwright.config.ts",
     "vitest.config.ts"
   ]

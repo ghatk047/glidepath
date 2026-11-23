@@ -242,7 +242,7 @@ title: "Performance monitors: drag fps, preview round trip, glass budget"
 epic: QA
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -261,6 +261,7 @@ acceptance:
 gates: [G8]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Measured feel, not guessed.
