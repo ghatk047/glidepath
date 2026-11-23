@@ -2981,6 +2981,43 @@
     "merged_at": "2026-11-23"
   },
   {
+    "id": "SOL-12",
+    "title": "Production solvers use the reference decision bounds (G5 on the live stack)",
+    "epic": "SOL",
+    "milestone": "M3",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "B",
+    "model": "opus",
+    "effort": "high",
+    "depends_on": [
+      "SOL-05",
+      "SOL-11",
+      "JOB-03",
+      "API-09",
+      "INT-03"
+    ],
+    "tier": 2,
+    "package": "tier2-logic/solvers, tier2-logic/spec, tier2-logic/worker/src/jobs/solver, tier2-logic/server/src/routes/solver",
+    "contract": "the SolverModel built for a tenant carries the same decision set and bounds as docs/spec/reference/solvers_demo.py",
+    "inputs": [
+      "tier2-logic/solvers/test/fixtures/dec.json (DEC/lo/hi dumped from solvers_demo.py; today only tests and the G5 gate read it)",
+      "INT-03 finding: Cockpit Fastest path shows risk exposure 42.5 on the live stack; reference min_risk_total_bar is 42.01"
+    ],
+    "acceptance": [
+      "the decision set and bounds the solvers use in production come from spec data generated from the reference (not a test fixture), with a check that the generated data matches solvers_demo.py (test)",
+      "worker job and server quick runs build the SolverModel with those bounds; min_risk_mix from C on the seeded AA tenant gives net 143.0 and risk exposure 42.0 at the G5 tolerances (pg test through the real handler)",
+      "pnpm test:solvers reads the same production data (no path into another package's test fixtures)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G5"
+    ],
+    "size": "S",
+    "notes": "From INT-03."
+  },
+  {
     "id": "XL-01",
     "title": "template.ts: sheet definitions from excel_template.json",
     "epic": "XL",
