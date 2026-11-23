@@ -12,7 +12,8 @@ export const MIN_SYMBOL_LENGTH = 5;
 /** Exported by every package as a skeleton marker; carries no tier 2 meaning. */
 // Generic words that collide with ordinary identifiers in any bundle (zod, React); 'schema' is data-access's Drizzle namespace.
 // 'parse' is the engine's expression parser, and also zod's `.parse()` and `JSON.parse` in every bundle.
-const IGNORED_NAMES: ReadonlySet<string> = new Set(['packageName', 'default', 'schema', 'parse']);
+// Generic names that also occur as plain words in UI copy (`" in scope"`), so a match says nothing about tier 2 code.
+const IGNORED_NAMES: ReadonlySet<string> = new Set(['packageName', 'default', 'schema', 'parse', 'scope']);
 
 export interface PackageInfo {
   /** Directory name under its tier directory, e.g. `engine`. */
