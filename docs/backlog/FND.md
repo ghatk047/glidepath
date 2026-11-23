@@ -153,7 +153,7 @@ title: "ADRs 001–024 in docs/adr"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: medium
@@ -183,6 +183,7 @@ acceptance:
 gates: [G1]
 size: M
 notes: "Docs only; can run in parallel with FND-01. ADRs 015–024 record the product-owner decisions and gaps found while writing the backlog."
+merged_at: "2026-11-23"
 ```
 
 Writes the ADRs that prompt 00 would have produced (prompt 00 was folded into this backlog).
