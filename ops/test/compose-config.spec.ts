@@ -1,0 +1,237 @@
+// OPS-01: services and networks of docs/architecture/11_docker_deployment.md §1–§2.
+// Runs against `docker compose config` when the Compose CLI is installed, and always
+// against the parsed YAML, so a daemon-less builder checks the same contract.
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
+import {
+  type ComposeModel,
+  type ComposeSource,
+  composeConfigFromDocker,
+  composeConfigFromYaml,
+  hasDockerCompose,
+  parseComposeYaml,
+  REPO_ROOT,
+  runComposeConfig,
+  writeTestEnvFile,
+} from '../src/index';
+
+const DOCKER = hasDockerCompose();
+const SOURCES: ComposeSource[] = DOCKER ? ['yaml', 'docker'] : ['yaml'];
+
+const TIER2 = ['migrate', 'logic', 'worker'] as const;
+const DB_URL_VARS = ['DATABASE_URL', 'DATABASE_URL_MIGRATE'];
+
+/** Split connection settings that would stop a Neon URL from being a drop-in. */
+const SPLIT_DB_VARS =
+  /\b(PGHOST|PGHOSTADDR|PGPORT|PGUSER|PGPASSWORD|PGPASSFILE|PGDATABASE|PGSSLMODE|PGSERVICE|DB_HOST|DB_PORT|DB_USER|DB_USERNAME|DB_PASS|DB_PASSWORD|DB_NAME|DB_SSL|DATABASE_HOST|DATABASE_PORT|DATABASE_USER|DATABASE_PASSWORD|DATABASE_NAME|POSTGRES_HOST|POSTGRES_PORT)\b/;
+
+function load(source: ComposeSource): ComposeModel {
+  const envFile = writeTestEnvFile();
+  return source === 'docker'
+    ? composeConfigFromDocker({ envFile, profiles: ['dev'] })
+    : composeConfigFromYaml({ envFile });
+}
+
+describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
+  let c: ComposeModel;
+  beforeAll(() => {
+    c = load(source);
+  });
+  const svc = (name: string) => {
+    const s = c.services[name];
+    if (!s) throw new Error(`service ${name} missing`);
+    return s;
+  };
+
+  it('is the glidepath project with the services of 11 §1', () => {
+    expect(c.name).toBe('glidepath');
+    expect(Object.keys(c.services).sort()).toEqual(
+      ['db', 'logic', 'mail', 'migrate', 'objects', 'web', 'worker'].sort(),
+    );
+  });
+
+  it('pins db to a postgres:16 minor', () => {
+    expect(svc('db').image).toMatch(/^postgres:16\.\d+(-[a-z0-9.]+)?$/);
+  });
+
+  it('pins objects to a RELEASE tag of a MinIO-compatible image', () => {
+    expect(svc('objects').image).toMatch(/:RELEASE\.\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z$/);
+    expect(svc('objects').command).toEqual(['server', '/data', '--console-address', ':9001']);
+  });
+
+  it('pins mailpit and tags the glidepath images with TAG', () => {
+    expect(svc('mail').image).toMatch(/^axllent\/mailpit:v\d+\.\d+\.\d+$/);
+    for (const s of TIER2) expect(svc(s).image).toBe('glidepath/logic:dev');
+    expect(svc('web').image).toBe('glidepath/web:dev');
+  });
+
+  it('runs the three tier-2 commands from one image', () => {
+    expect(svc('migrate').command).toEqual(['node', 'dist/migrate.js', '--seed', 'aa']);
+    expect(svc('logic').command).toEqual(['node', 'dist/server.js']);
+    expect(svc('worker').command).toEqual(['node', 'dist/worker.js']);
+  });
+
+  it('puts mail in the dev profile only and every other service in no profile', () => {
+    expect(svc('mail').profiles).toEqual(['dev']);
+    for (const [name, s] of Object.entries(c.services))
+      if (name !== 'mail') expect(s.profiles, name).toEqual([]);
+  });
+
+  it('defines networks edge, data (internal: true) and egress', () => {
+    expect(Object.keys(c.networks).sort()).toEqual(['data', 'edge', 'egress']);
+    expect(c.networks.data!.internal).toBe(true);
+    expect(c.networks.edge!.internal).toBe(false);
+    expect(c.networks.egress!.internal).toBe(false);
+  });
+
+  it('web on edge only; db and objects on data only; worker on data + egress; logic on edge + data', () => {
+    const nets = (name: string) => [...svc(name).networks].sort();
+    expect(nets('web')).toEqual(['edge']);
+    expect(nets('db')).toEqual(['data']);
+    expect(nets('objects')).toEqual(['data']);
+    expect(nets('worker')).toEqual(['data', 'egress']);
+    expect(nets('logic')).toEqual(['data', 'edge']);
+    expect(nets('migrate')).toEqual(['data']);
+    expect(nets('mail')).toEqual(['edge']);
+  });
+
+  it('publishes only web 80/443 and mailpit 8025, both on 127.0.0.1 by default', () => {
+    expect(svc('web').ports.sort()).toEqual(['127.0.0.1:443:443', '127.0.0.1:80:80']);
+    expect(svc('mail').ports).toEqual(['127.0.0.1:8025:8025']);
+    for (const s of ['db', 'objects', ...TIER2]) expect(svc(s).ports, s).toEqual([]);
+  });
+
+  it('starts in order: db/objects healthy -> migrate done -> logic/worker -> web', () => {
+    expect(svc('migrate').depends_on).toEqual({
+      db: { condition: 'service_healthy' },
+      objects: { condition: 'service_healthy' },
+    });
+    for (const s of ['logic', 'worker'])
+      expect(svc(s).depends_on, s).toEqual({
+        migrate: { condition: 'service_completed_successfully' },
+      });
+    expect(svc('web').depends_on).toEqual({ logic: { condition: 'service_healthy' } });
+  });
+
+  it('keeps the volumes pgdata and objdata', () => {
+    expect(c.volumes).toEqual(expect.arrayContaining(['pgdata', 'objdata']));
+  });
+
+  it('tier-2 services read the DB only from DATABASE_URL / DATABASE_URL_MIGRATE', () => {
+    for (const s of TIER2) {
+      const dbKeys = Object.keys(svc(s).environment).filter((k) =>
+        /^(PG|POSTGRES|DB_|DATABASE)/.test(k),
+      );
+      expect(
+        dbKeys.every((k) => DB_URL_VARS.includes(k)),
+        `${s}: ${dbKeys.join(',')}`,
+      ).toBe(true);
+    }
+    expect(Object.keys(svc('migrate').environment)).toEqual(expect.arrayContaining(DB_URL_VARS));
+    // Runtime services get the app role only; the owner URL is for migrate.
+    for (const s of ['logic', 'worker']) {
+      expect(svc(s).environment).toHaveProperty('DATABASE_URL');
+      expect(svc(s).environment).not.toHaveProperty('DATABASE_URL_MIGRATE');
+    }
+  });
+
+  it('hands each service only its own settings (no env_file, secrets where needed)', () => {
+    for (const [name, s] of Object.entries(c.services)) expect(s.hasEnvFile, name).toBe(false);
+    const holders = (key: string) =>
+      Object.entries(c.services)
+        .filter(([, s]) => key in s.environment)
+        .map(([n]) => n)
+        .sort();
+    expect(holders('POSTGRES_PASSWORD')).toEqual(['db']);
+    expect(holders('APP_DB_PASSWORD')).toEqual(['db']);
+    expect(holders('MINIO_ROOT_PASSWORD')).toEqual(['objects']);
+    expect(holders('ANTHROPIC_API_KEY')).toEqual(['worker']);
+    expect(holders('AUTH_SECRET')).toEqual(['logic']);
+    expect(Object.keys(svc('web').environment)).toEqual(['PUBLIC_BASE_URL']);
+  });
+
+  it('resolves the DB URLs from the role passwords in .env', () => {
+    expect(svc('logic').environment.DATABASE_URL).toBe(
+      'postgresql://glidepath_app:test-app_db_password@db:5432/glidepath?sslmode=disable',
+    );
+    expect(svc('migrate').environment.DATABASE_URL_MIGRATE).toBe(
+      'postgresql://glidepath_owner:test-owner_db_password@db:5432/glidepath?sslmode=disable',
+    );
+  });
+});
+
+describe('no split DB connection vars in compose (Neon drop-in)', () => {
+  const composeFiles = readdirSync(REPO_ROOT).filter((f) => /^docker-compose.*\.ya?ml$/.test(f));
+
+  it('the grep catches split vars when present', () => {
+    expect(SPLIT_DB_VARS.test('      PGHOST: db')).toBe(true);
+    expect(SPLIT_DB_VARS.test('      DB_PASSWORD: x')).toBe(true);
+    expect(SPLIT_DB_VARS.test('      DATABASE_URL: x')).toBe(false);
+  });
+
+  it.each(composeFiles)('%s has no PGHOST/PGUSER/DB_HOST-style vars', (file) => {
+    const text = readFileSync(join(REPO_ROOT, file), 'utf8');
+    const hits = text.split('\n').filter((l) => SPLIT_DB_VARS.test(l));
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('docker-compose.neon.yml drops the local db (YAML)', () => {
+  const neon = parseComposeYaml(
+    readFileSync(join(REPO_ROOT, 'docker-compose.neon.yml'), 'utf8'),
+  ) as {
+    services: Record<string, { profiles?: string[]; networks?: string[]; depends_on?: object }>;
+  };
+
+  it('moves db out of the default profile and lets migrate reach the internet', () => {
+    expect(neon.services.db!.profiles).toEqual(['local-db']);
+    expect([...neon.services.migrate!.networks!].sort()).toEqual(['data', 'egress']);
+    expect(Object.keys(neon.services.migrate!.depends_on!)).toEqual(['objects']);
+  });
+});
+
+describe.skipIf(!DOCKER)('docker compose config (Compose CLI)', () => {
+  it('fails fast, naming the variable, when .env.example is used with empty secrets', () => {
+    const r = runComposeConfig({ envFile: join(REPO_ROOT, '.env.example') });
+    expect(r.status).not.toBe(0);
+    expect(r.stderr).toMatch(/required variable [A-Z0-9_]+ is missing a value/);
+  });
+
+  it('starts mail only with the dev profile, which .env.example turns on', () => {
+    const off = composeConfigFromDocker({
+      envFile: writeTestEnvFile(REPO_ROOT, { COMPOSE_PROFILES: '' }),
+    });
+    expect(Object.keys(off.services)).not.toContain('mail');
+    // COMPOSE_PROFILES=dev in .env.example: a plain `docker compose up -d` includes mailpit.
+    const byDefault = composeConfigFromDocker({ envFile: writeTestEnvFile() });
+    expect(Object.keys(byDefault.services)).toContain('mail');
+  });
+
+  it('with docker-compose.neon.yml: no db, nothing depends on db, migrate on data + egress', () => {
+    const envFile = writeTestEnvFile(REPO_ROOT, {
+      DATABASE_URL:
+        'postgresql://glidepath_app:x@ep-pooler.example.neon.tech/glidepath?sslmode=require',
+      DATABASE_URL_MIGRATE:
+        'postgresql://glidepath_owner:x@ep.example.neon.tech/glidepath?sslmode=require',
+    });
+    const files = ['docker-compose.yml', 'docker-compose.neon.yml'];
+    const c = composeConfigFromDocker({ envFile, files, profiles: ['dev'] });
+    expect(Object.keys(c.services)).not.toContain('db');
+    for (const [name, s] of Object.entries(c.services))
+      expect(Object.keys(s.depends_on), name).not.toContain('db');
+    expect(c.services.migrate!.networks.sort()).toEqual(['data', 'egress']);
+    expect(c.services.logic!.environment.DATABASE_URL).toContain('sslmode=require');
+    expect(c.services.migrate!.environment.DATABASE_URL_MIGRATE).toContain('sslmode=require');
+    // Neon mode needs none of the local Postgres secrets.
+    const noPg = writeTestEnvFile(REPO_ROOT, {
+      POSTGRES_PASSWORD: '',
+      APP_DB_PASSWORD: '',
+      OWNER_DB_PASSWORD: '',
+    });
+    expect(runComposeConfig({ envFile: noPg, files }).status).toBe(0);
+    // The db service is still there for whoever asks for it explicitly.
+    const withDb = composeConfigFromDocker({ envFile, files, profiles: ['local-db'] });
+    expect(Object.keys(withDb.services)).toContain('db');
+  });
+});

@@ -22,7 +22,7 @@ title: "docker-compose.yml, networks and .env.example"
 epic: OPS
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -45,6 +45,7 @@ acceptance:
 gates: [G14]
 size: M
 notes: "If the builder has no Docker daemon, validate the YAML by test; INT-01 runs it on a daemon (CI or the Mac)."
+merged_at: "2026-11-23"
 ```
 
 The one compose file that runs all tiers on the Mac and later on any VM.

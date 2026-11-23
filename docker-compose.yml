@@ -1,0 +1,182 @@
+# Glidepath: all three tiers in one Compose project (docs/architecture/11_docker_deployment.md).
+#
+#   cp .env.example .env        # then fill the secrets (README "Running locally")
+#   docker compose up -d        # https://localhost
+#
+# Networks (physical tier separation, G13):
+#   edge   web <-> logic (and mail in the dev profile)
+#   data   internal: true; logic, worker, migrate <-> db, objects. web is NOT on it.
+#   egress outbound internet for the worker (Claude API)
+#
+# Configuration is environment only (12-factor, ADR-013). Compose reads .env for the ${...}
+# values below and hands each service only the settings it needs. Tier 2 gets the database
+# from DATABASE_URL / DATABASE_URL_MIGRATE and nothing else (ADR-015), so a managed Postgres
+# such as Neon is a URL change plus `-f docker-compose.neon.yml` (drops the db service).
+
+name: glidepath
+
+x-logic: &logic
+  image: glidepath/logic:${TAG:-dev}
+  build:
+    context: .
+    dockerfile: ops/docker/logic/Dockerfile
+  init: true
+  security_opt: ["no-new-privileges:true"]
+
+# Settings shared by every tier-2 process. The DB URLs are added per service.
+x-logic-env: &logic-env
+  NODE_ENV: production
+  LOG_LEVEL: ${LOG_LEVEL:-}
+  S3_ENDPOINT: ${S3_ENDPOINT:?set S3_ENDPOINT in .env (see .env.example)}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY in .env (see .env.example)}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY in .env (see .env.example)}
+
+networks:
+  edge: {}
+  data:
+    internal: true
+  egress: {}
+
+volumes:
+  pgdata: {}
+  objdata: {}
+  caddydata: {}
+
+services:
+  # ---------------------------------------------------------------- tier 3
+  db:
+    image: postgres:16.16-bookworm
+    restart: unless-stopped
+    environment:
+      # Bootstrap superuser of the local container only. Tier 2 never sees these.
+      POSTGRES_USER: postgres
+      POSTGRES_DB: glidepath
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      # Read by tier3-data/postgres/init to create glidepath_owner and glidepath_app.
+      OWNER_DB_PASSWORD: ${OWNER_DB_PASSWORD:-}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./tier3-data/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [data]
+    healthcheck:
+      # TCP on purpose: the entrypoint's temporary init server listens on the socket only,
+      # so this turns healthy after the init scripts have run.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "glidepath"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  objects:
+    # MinIO-compatible object store. Upstream MinIO stopped publishing images in 2026
+    # (Docker Hub repo deleted, quay.io needs a login), so the default is Silo, the
+    # maintained MinIO fork with the same S3 API, MINIO_* settings and on-disk format.
+    # Override with OBJECTS_IMAGE (keep a pinned RELEASE tag or digest).
+    image: ${OBJECTS_IMAGE:-pgsty/silo:RELEASE.2026-11-09T00-00-00Z}
+    command: ["server", "/data", "--console-address", ":9001"]
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-glidepath}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env (see .env.example)}
+    volumes:
+      - objdata:/data
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live || mc ready local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  # ---------------------------------------------------------------- tier 2
+  migrate:
+    <<: *logic
+    # One-shot: migrations, buckets, model defs and the AA seed; logic and worker wait for it.
+    command: ["node", "dist/migrate.js", "--seed", "aa"]
+    restart: "no"
+    environment:
+      <<: *logic-env
+      DATABASE_URL_MIGRATE: ${DATABASE_URL_MIGRATE:?set DATABASE_URL_MIGRATE in .env (see .env.example)}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
+      DEMO_USER_EMAIL: ${DEMO_USER_EMAIL:-}
+    networks: [data]
+    depends_on:
+      db: { condition: service_healthy }
+      objects: { condition: service_healthy }
+
+  logic:
+    <<: *logic
+    command: ["node", "dist/server.js"]
+    restart: unless-stopped
+    environment:
+      <<: *logic-env
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env (see .env.example)}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost}
+      SMTP_URL: ${SMTP_URL:-}
+      SESSION_IDLE_MIN: ${SESSION_IDLE_MIN:-}
+      AUTH_LINK_TTL_MIN: ${AUTH_LINK_TTL_MIN:-}
+    networks: [edge, data]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      # node is the only tool guaranteed in the slim image (no wget/curl).
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    <<: *logic
+    command: ["node", "dist/worker.js"]
+    restart: unless-stopped
+    environment:
+      <<: *logic-env
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
+      JOB_CONCURRENCY: ${JOB_CONCURRENCY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_MAX_TOKENS_PER_JOB: ${AI_MAX_TOKENS_PER_JOB:-}
+    networks: [data, egress]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  # ---------------------------------------------------------------- tier 1
+  web:
+    image: glidepath/web:${TAG:-dev}
+    build:
+      context: .
+      dockerfile: ops/docker/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://localhost}
+    ports:
+      # 127.0.0.1 by default so the laptop does not serve the LAN; set
+      # WEB_BIND_ADDRESS=0.0.0.0 on a cloud VM.
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:80:80"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:443:443"
+    volumes:
+      - caddydata:/data # Caddy's local CA and certificates survive `down`/`up`
+    networks: [edge]
+    depends_on:
+      logic: { condition: service_healthy }
+
+  # ---------------------------------------------------------------- dev only
+  mail:
+    # Catches magic-link emails: http://localhost:8025 (SMTP_URL=smtp://mail:1025).
+    image: axllent/mailpit:v1.33.1
+    profiles: [dev]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    networks: [edge]
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6

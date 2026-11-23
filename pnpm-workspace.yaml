@@ -4,3 +4,4 @@ packages:
   - "contract/*"
   - "tools/*"
   - "e2e"
+  - "ops"
