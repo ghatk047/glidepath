@@ -55,8 +55,8 @@ jobs:
           fi
           hit() { [ "$files" = "ALL" ] && return 0; echo "$files" | grep -Eq "$1" && return 0 || return 1; }
           out() { if hit "$2"; then echo "$1=true" >> "$GITHUB_OUTPUT"; else echo "$1=false" >> "$GITHUB_OUTPUT"; fi; }
-          out spec '^(docs/spec/|tier2-logic/spec/|tier2-logic/engine/|tier3-data/)'
-          out engine '^(docs/spec/|tier2-logic/engine/|tier2-logic/spec/)'
+          out spec '^(docs/spec/|tier2-logic/spec/|tier2-logic/engine/|tier3-data/|tools/parity/|package\.json$)'
+          out engine '^(docs/spec/|tier2-logic/engine/|tier2-logic/spec/|tools/parity/|package\.json$)'
           out solvers '^(tier2-logic/solvers/|tier2-logic/engine/)'
           out excel '^tier2-logic/excel/'
           out tenancy '^(tier2-logic/data-access/|tier2-logic/server/|tier3-data/)'

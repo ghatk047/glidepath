@@ -3,8 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { INPUT_RULE_IDS, INPUT_RULES, resolveInputs, validateInputs } from '@glidepath/domain';
 import type { InputValueRow, ValidationState } from '@glidepath/domain';
-import { compile, EngineError } from '@glidepath/engine';
-import { seedToTenantData } from '@glidepath/spec';
+import { compile } from '@glidepath/engine';
 import type { InputValue, ModelBundle, TenantSeed } from '@glidepath/spec';
 import { readTenantSeed } from '@glidepath/spec/node';
 import { aaSeed, aaSeedDir, specBundle } from './index';
@@ -13,7 +12,7 @@ import { zzSeed, zzSeedDir, zzTenantData } from '../seed/zz';
 /**
  * QA-02: the synthetic second tenant `zz` (tools/testkit/seed/zz). One group of tests per acceptance line:
  *  1. shape and completeness (readTenantSeed validates),
- *  2. VR01-VR04, VR06, VR07, VR09, VR10 and engine evaluation (skipped, with the reason, until ENG-05),
+ *  2. VR01-VR04, VR06, VR07, VR09, VR10 and engine evaluation,
  *  3. lint: no airline names or marks.
  */
 
@@ -176,24 +175,10 @@ describe('zz seed: passes VR01-VR04, VR06, VR07, VR09, VR10', () => {
   });
 });
 
-/** The engine is a stub until ENG-04/ENG-05; probe it once so the evaluation test switches on by itself. */
-async function engineEvaluates(): Promise<boolean> {
-  try {
-    const aa = await aaSeed();
-    const bundle = await specBundle();
-    const data = seedToTenantData(aa, 'C', bundle);
-    compile(bundle, data.members).evaluate(data.values, data.overrides);
-    return true;
-  } catch (e) {
-    if (e instanceof EngineError && e.code === 'NOT_IMPLEMENTED') return false;
-    throw e;
-  }
-}
-const engineReady = await engineEvaluates();
 
 describe('zz seed: evaluates with the engine', () => {
-  it.skipIf(!engineReady)(
-    'evaluates every scenario without error; VR05 and VR08 invariants hold (skipped until ENG-05: engine.evaluate is not implemented)',
+  it(
+    'evaluates every scenario without error; VR05 and VR08 invariants hold',
     async () => {
       const bundle = await specBundle();
       const seed = await zzSeed();
