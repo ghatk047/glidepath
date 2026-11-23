@@ -1,11 +1,13 @@
 import type { z } from 'zod';
 import type { ChangesetConflict } from './changeset';
 import {
+  BYTES_CONTENT_TYPE,
   ContractError,
   errorSchema,
   excerpt,
   isProblemContentType,
   parseOrThrow,
+  readBytes,
   readJson,
   routeDef,
   type FetchLike,
@@ -83,6 +85,8 @@ const queryString = (query: Record<string, unknown> | undefined): string => {
  * Typed client for every REST route of the contract (04 §3). Requests are checked against
  * the route's params / query / body schemas before sending, responses are zod-parsed:
  * a success body that does not match throws `ContractError`, a non-2xx answer throws `ApiError`.
+ * Byte routes (CON-03): `importCreate` sends its `body` bytes as `application/octet-stream`;
+ * `fileDownload` resolves to a `FileDownload` (bytes, content type, filename, size).
  *
  * `baseUrl` is the origin tier 1 reaches tier 2 on (`''` for same-origin `/api`).
  */
@@ -96,18 +100,29 @@ export function createClient(baseUrl: string, fetch: FetchLike): ApiClient {
     const body = def.body ? parseOrThrow(id, 'body', def.body, args.body) : undefined;
 
     const url = `${base}${fillPath(id, def.path, params)}${queryString(query)}`;
+    const bytesIn = def.requestType === 'bytes';
+    const bytesOut = def.responseType === 'bytes';
     const headers: Record<string, string> = {
-      accept: `application/json, ${PROBLEM_CONTENT_TYPE}`,
-      ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+      accept: bytesOut
+        ? `*/*, ${PROBLEM_CONTENT_TYPE}`
+        : `application/json, ${PROBLEM_CONTENT_TYPE}`,
+      ...(body !== undefined
+        ? { 'content-type': bytesIn ? BYTES_CONTENT_TYPE : 'application/json' }
+        : {}),
       ...args.headers,
     };
     const res = await fetch(url, {
       method: def.method,
       headers,
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined
+        ? { body: bytesIn ? (body as Uint8Array) : JSON.stringify(body) }
+        : {}),
       ...(args.signal ? { signal: args.signal } : {}),
     });
 
+    if (bytesOut && res.status === def.status) {
+      return parseOrThrow(id, 'response', def.response, await readBytes(id, res));
+    }
     const read = await readJson(res);
     if (res.status === def.status) {
       if (!read.ok) throw new ContractError(id, 'response', `not JSON: ${excerpt(read.text)}`);

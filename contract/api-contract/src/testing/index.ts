@@ -22,3 +22,12 @@ export {
   viewMessageFixtures,
   viewProblemFixture,
 } from '../fixtures/ws';
+export {
+  apiRouteFixtures,
+  deltaReportFixture,
+  jobRouteFixtures,
+  solverProblemFixtures,
+  solverRunFixtures,
+  type ApiRouteFixtures,
+  type JobRouteFixtures,
+} from '../fixtures/jobs';

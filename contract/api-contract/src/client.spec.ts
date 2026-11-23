@@ -8,12 +8,14 @@ import {
   apiRoutes,
   coreRoutes,
   createClient,
+  jobRoutes,
   isChangesetConflict,
   problemTypes,
   type ApiRouteId,
   type RouteDef,
 } from './index';
 import { coreRouteFixtures } from './fixtures/core';
+import { apiRouteFixtures, jobRouteFixtures } from './fixtures/jobs';
 
 const BASE = 'http://tier2.test';
 const server = setupServer();
@@ -30,11 +32,11 @@ interface Seen {
 }
 
 type LooseFixture = { params?: object; query?: object; body?: unknown; response: unknown };
-const fixtureOf = (id: ApiRouteId) => coreRouteFixtures[id] as LooseFixture;
+const fixtureOf = (id: ApiRouteId) => apiRouteFixtures[id] as LooseFixture;
 const defOf = (id: ApiRouteId) => apiRoutes[id] as RouteDef;
 type LooseCall = (args?: object) => Promise<unknown>;
 
-/** Serves `response` (default: the route's CON-01 fixture) on the route and records the request. */
+/** Serves `response` (default: the route's fixture) on the route and records the request. */
 function serve(id: ApiRouteId, response?: Response): Seen[] {
   const def = defOf(id);
   const seen: Seen[] = [];
@@ -75,17 +77,22 @@ const problem = (status: number, extra: object = {}) =>
     { status, headers: { 'content-type': PROBLEM_CONTENT_TYPE } },
   );
 
-describe('createClient(baseUrl, fetch) covers every CON-01 route with zod-validated responses (msw)', () => {
+describe('createClient(baseUrl, fetch) covers every route with zod-validated responses (msw)', () => {
   const routeIds = Object.keys(apiRoutes) as ApiRouteId[];
+  const jsonRouteIds = routeIds.filter((id) => {
+    const def = defOf(id);
+    return def.requestType !== 'bytes' && def.responseType !== 'bytes';
+  });
 
-  it('has one method per route of apiRoutes, and apiRoutes holds every CON-01 core route', () => {
+  it('has one method per route of apiRoutes, and apiRoutes holds every CON-01 and CON-03 route', () => {
     const client = createClient(BASE, fetch);
     expect(Object.keys(client).sort()).toEqual([...routeIds].sort());
     expect(Object.keys(coreRoutes).every((id) => id in apiRoutes)).toBe(true);
-    expect(Object.keys(coreRouteFixtures).sort()).toEqual([...routeIds].sort());
+    expect(Object.keys(jobRoutes).every((id) => id in apiRoutes)).toBe(true);
+    expect(Object.keys(apiRouteFixtures).sort()).toEqual([...routeIds].sort());
   });
 
-  it.each(routeIds)(
+  it.each(jsonRouteIds)(
     '%s: method, path, query and body on the wire; parsed response back',
     async (id) => {
       const def = defOf(id);
@@ -244,5 +251,75 @@ describe('createClient(baseUrl, fetch) covers every CON-01 route with zod-valida
     await expect(
       client.bundle({ params: { tenant: 'zz' }, signal: ac.signal }),
     ).rejects.toMatchObject({ name: 'AbortError' });
+  });
+  it('fileDownload: a byte stream comes back as FileDownload (bytes, content type, filename, size)', async () => {
+    const fx = jobRouteFixtures.fileDownload;
+    let accept: string | null = null;
+    server.use(
+      http.get(`${BASE}${defOf('fileDownload').path}`, ({ request }) => {
+        accept = request.headers.get('accept');
+        return new HttpResponse(fx.response.bytes, {
+          headers: {
+            'content-type': fx.response.contentType,
+            'content-disposition': `attachment; filename="${fx.response.filename}"`,
+          },
+        });
+      }),
+    );
+    const file = await createClient(BASE, fetch).fileDownload({ params: fx.params });
+    expect(file.bytes).toBeInstanceOf(Uint8Array);
+    expect([...file.bytes]).toEqual([...fx.response.bytes]);
+    expect(file).toMatchObject({
+      contentType: fx.response.contentType,
+      filename: fx.response.filename,
+      size: fx.response.size,
+    });
+    expect(accept).toContain(PROBLEM_CONTENT_TYPE);
+  });
+
+  it('fileDownload: a JSON body where bytes are due breaks the contract; a 404 is an ApiError', async () => {
+    const fx = jobRouteFixtures.fileDownload;
+    serve('fileDownload', HttpResponse.json({ url: 'https://elsewhere.test/file' }));
+    await expect(
+      createClient(BASE, fetch).fileDownload({ params: fx.params }),
+    ).rejects.toMatchObject({ name: 'ContractError', part: 'contentType' });
+    server.resetHandlers();
+    serve('fileDownload', problem(404));
+    const err = await createClient(BASE, fetch)
+      .fileDownload({ params: fx.params })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(404);
+  });
+
+  it('importCreate: uploads raw bytes as application/octet-stream with the filename in the query', async () => {
+    const fx = jobRouteFixtures.importCreate;
+    let seen: { type: string | null; search: string; bytes: number[] } | undefined;
+    server.use(
+      http.post(`${BASE}${defOf('importCreate').path}`, async ({ request }) => {
+        seen = {
+          type: request.headers.get('content-type'),
+          search: new URL(request.url).search,
+          bytes: [...new Uint8Array(await request.arrayBuffer())],
+        };
+        return HttpResponse.json(fx.response, { status: 201 });
+      }),
+    );
+    const job = await createClient(BASE, fetch).importCreate({
+      params: fx.params,
+      query: fx.query,
+      body: fx.body,
+    });
+    expect(job).toEqual(apiRoutes.importCreate.response.parse(fx.response));
+    expect(seen?.type).toBe('application/octet-stream');
+    expect(Object.fromEntries(new URLSearchParams(seen?.search))).toEqual(fx.query);
+    expect(seen?.bytes).toEqual([...fx.body]);
+    await expect(
+      createClient(BASE, fetch).importCreate({
+        params: fx.params,
+        query: fx.query,
+        body: 'not bytes' as unknown as Uint8Array,
+      }),
+    ).rejects.toMatchObject({ name: 'ContractError', part: 'body' });
   });
 });

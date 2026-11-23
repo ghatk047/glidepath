@@ -88,7 +88,7 @@ title: "Jobs, solver, Excel, AI and market schemas"
 epic: CON
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -110,6 +110,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: M
 notes: "Needed by M3 work; scheduled early so both tiers build against it."
+merged_at: "2026-11-23"
 ```
 
 Contract for the long-running and file-based features.

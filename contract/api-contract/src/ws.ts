@@ -340,13 +340,30 @@ export const Warnings = message('warnings', {
  * reason (the parsers' `detail`). The session stays open and its state is unchanged.
  */
 export const ErrorMessage = message('error', { problem: Problem });
-/** Background job progress (`solver_run`), at most every 250 ms. */
+/**
+ * Which background job a `job` message reports (CON-03): a solver run (`solver.*` queues),
+ * an import preview, or an AI reconfiguration (`ai.reconfig`). Absent means `solver`.
+ */
+export const JobKind = z.enum(['solver', 'import', 'ai.reconfig']);
+export type JobKind = z.infer<typeof JobKind>;
+
+/** Job progress fraction, 0..1 (`solver_run.progress`, DATA-11). */
+export const JobProgressFraction = z.number().min(0).max(1);
+
+/**
+ * Background job progress, at most every 250 ms. `progress` and `note` are `solver_run.progress`
+ * and `progress_note` (DATA-11), as the REST job resources carry them (`progress`,
+ * `progressNote`). `kind` and `cancelRequested` (CON-03) are optional; `cancelRequested` is
+ * true once a cancel was asked for and the job has not yet stopped (status still `running`).
+ */
 export const Job = message('job', {
   id: JobId,
   status: JobStatus,
   /** Fraction done, 0..1. */
-  progress: z.number().min(0).max(1),
+  progress: JobProgressFraction,
   note: OneLine.nullable(),
+  kind: JobKind.optional(),
+  cancelRequested: z.boolean().optional(),
 });
 /**
  * A changeset was applied to the session's scenario (by this or another user, or a job).

@@ -20,11 +20,14 @@ export interface ResponseLike {
   readonly statusText?: string;
   readonly headers: HeadersLike;
   text(): Promise<string>;
+  /** Needed only for byte-stream routes (`responseType: 'bytes'`, e.g. `fileDownload`). */
+  arrayBuffer?(): Promise<ArrayBuffer>;
 }
 export interface RequestInitLike {
   method: HttpMethod;
   headers: Record<string, string>;
-  body?: string;
+  /** JSON text, or raw bytes for upload routes (`requestType: 'bytes'`). */
+  body?: string | Uint8Array;
   signal?: AbortSignal;
 }
 export type FetchLike = (url: string, init: RequestInitLike) => Promise<ResponseLike>;
@@ -105,3 +108,55 @@ export const excerpt = (text: string, max = 200): string => {
   const one = text.replace(/\s+/g, ' ').trim();
   return one.length > max ? `${one.slice(0, max)}…` : one;
 };
+
+/** Media type of a raw upload body (`requestType: 'bytes'`). */
+export const BYTES_CONTENT_TYPE = 'application/octet-stream';
+
+/** The `filename` of a `content-disposition` header (RFC 6266; `filename*` preferred). */
+export const dispositionFilename = (header: string | null): string | null => {
+  if (!header) return null;
+  const star = /filename\*\s*=\s*(?:[\w!#$%&+^`{}~.-]*)'[^']*'([^;]+)/i.exec(header);
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1].trim());
+    } catch {
+      /* fall through to the plain parameter */
+    }
+  }
+  const plain = /filename\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^;]+))/i.exec(header);
+  const name = plain?.[1]?.replace(/\\(.)/g, '$1') ?? plain?.[2]?.trim();
+  return name ? name : null;
+};
+
+/**
+ * Reads a byte-stream success body (`responseType: 'bytes'`) into the `FileDownload` shape.
+ * A JSON or problem body, a missing content type or a response without `arrayBuffer()` breaks
+ * the contract.
+ */
+export async function readBytes(
+  route: string,
+  response: ResponseLike,
+): Promise<{ bytes: Uint8Array; contentType: string; filename: string | null; size: number }> {
+  const contentType = (response.headers.get('content-type') ?? '').trim();
+  if (
+    !contentType ||
+    isJsonContentType(response.headers) ||
+    isProblemContentType(response.headers)
+  ) {
+    throw new ContractError(
+      route,
+      'contentType',
+      `expected a file body, got ${contentType || 'no content-type'}`,
+    );
+  }
+  if (typeof response.arrayBuffer !== 'function') {
+    throw new ContractError(route, 'response', 'the response cannot be read as bytes');
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  return {
+    bytes,
+    contentType,
+    filename: dispositionFilename(response.headers.get('content-disposition')),
+    size: bytes.byteLength,
+  };
+}

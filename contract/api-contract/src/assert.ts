@@ -5,6 +5,7 @@ import {
   isJsonContentType,
   isProblemContentType,
   parseOrThrow,
+  readBytes,
   readJson,
   routeDef,
   type ResponseLike,
@@ -23,6 +24,9 @@ import type { ApiRoute, ApiRouteId } from './routes';
  * status, `application/problem+json`, a body that parses with the route's error schema for it
  * (`ChangesetConflict` for 409 on the changeset routes) or `Problem`, and `body.status` equal
  * to the HTTP status. Throws `ContractError` naming the route and the broken part.
+ *
+ * A byte-stream route (`fileDownload`) succeeds with a non-JSON body that carries a content
+ * type; it comes back as a `FileDownload`.
  */
 export async function assertContract<Id extends ApiRouteId>(
   route: Id,
@@ -40,6 +44,9 @@ export async function assertContract(
 ): Promise<unknown> {
   const def = routeDef(route);
   const expected = status ?? def.status;
+  if (def.responseType === 'bytes' && expected === def.status && response.status === expected) {
+    return parseOrThrow(route, 'response', def.response, await readBytes(route, response));
+  }
   const read = await readJson(response);
 
   if (response.status !== expected) {

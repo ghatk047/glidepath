@@ -7,7 +7,7 @@ import type { coreRoutes, CoreRouteId } from '../routes';
  * "Fixture Air" are fictional; no airline marks. Numbers here are test data only.
  */
 type Part<R, K extends string> = R extends Record<K, z.ZodType> ? z.input<R[K]> : never;
-type RouteFixture<R> = {
+export type RouteFixture<R> = {
   [
     K in 'params' | 'query' | 'body' | 'response' as R extends Record<K, z.ZodType> ? K : never
   ]: Part<R, K>;

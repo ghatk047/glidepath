@@ -9,8 +9,10 @@ import {
   type BundleResponse,
   type ChangesetConflict,
   type Problem,
+  type RouteDef,
 } from './index';
 import { coreRouteFixtures } from './fixtures/core';
+import { apiRouteFixtures, jobRouteFixtures } from './fixtures/jobs';
 
 /** What a tier-2 route test holds: the `Response` of Hono's `app.request()`. */
 const json = (body: unknown, status = 200, type = 'application/json; charset=UTF-8') =>
@@ -27,15 +29,16 @@ const conflict = {
 };
 
 describe('assertContract(route, response) helper used by tier-2 route tests', () => {
-  it.each(Object.keys(apiRoutes) as ApiRouteId[])(
-    '%s: the CON-01 fixture response passes and comes back parsed',
-    async (id) => {
-      const def = apiRoutes[id];
-      const fx = coreRouteFixtures[id] as { response: unknown };
-      const body = await assertContract(id, json(fx.response, def.status));
-      expect(body).toEqual(def.response.parse(fx.response));
-    },
-  );
+  it.each(
+    (Object.keys(apiRoutes) as ApiRouteId[]).filter(
+      (id) => (apiRoutes[id] as RouteDef).responseType !== 'bytes',
+    ),
+  )('%s: the fixture response passes and comes back parsed', async (id) => {
+    const def = apiRoutes[id];
+    const fx = apiRouteFixtures[id] as { response: unknown };
+    const body = await assertContract(id, json(fx.response, def.status));
+    expect(body).toEqual(def.response.parse(fx.response));
+  });
 
   it('returns the typed success body', async () => {
     const body = await assertContract('bundle', json(coreRouteFixtures.bundle.response));
@@ -122,5 +125,32 @@ describe('assertContract(route, response) helper used by tier-2 route tests', ()
   it('given the success status explicitly, behaves like the 2-argument form', async () => {
     const body = await assertContract('me', json(coreRouteFixtures.me.response), 200);
     expect(body.user.email).toBe('owner@example.com');
+  });
+  it('fileDownload: a byte stream with a content type passes as FileDownload; JSON fails', async () => {
+    const fx = jobRouteFixtures.fileDownload.response;
+    const file = await assertContract(
+      'fileDownload',
+      new Response(fx.bytes, {
+        headers: {
+          'content-type': fx.contentType,
+          'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fx.filename)}`,
+        },
+      }),
+    );
+    expect([...file.bytes]).toEqual([...fx.bytes]);
+    expect(file.filename).toBe(fx.filename);
+    expect(file.size).toBe(fx.size);
+    await expect(assertContract('fileDownload', json({ bytes: [1, 2] }))).rejects.toMatchObject({
+      part: 'contentType',
+    });
+    await expect(
+      assertContract('fileDownload', new Response(fx.bytes, { headers: {} })),
+    ).rejects.toMatchObject({ part: 'contentType' });
+    const p = await assertContract(
+      'fileDownload',
+      problemJson({ title: 'Not found', status: 404, detail: 'No such file.' }, 404),
+      404,
+    );
+    expect(p.detail).toBe('No such file.');
   });
 });

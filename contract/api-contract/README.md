@@ -8,7 +8,7 @@ It imports `zod` and nothing else (G13; enforced by `eslint.config.js` and `src/
 - `coreRoutes` (`src/routes.ts`): method, path, success status, and `params` / `query` / `body` /
   `response` schemas for the core routes of `docs/architecture/04_data_and_api.md` §3
   (me, tenants, bundle, members, scenarios GET/POST/PATCH, inputs, changesets POST / revert /
-  history, calc, explain, search). Solver, export, import, AI and market routes come with CON-03.
+  history, calc, explain, search). Solver, export, import, AI and market routes: `jobRoutes` (CON-03).
 - Errors are RFC 9457 `Problem` (`application/problem+json`): `type`, `title`, `status`,
   one-line `detail` for the UI error chip, optional `violations[{rule VR01–VR10, cells, severity, message}]`.
   The changeset routes answer 409 with `ChangesetConflict` (a problem plus `serverVersion`, `changesSince[]`).
@@ -65,6 +65,39 @@ walk-through; `ws-protocol.spec.ts` checks them.
 - Rejected frames get `error{problem}`; `warnings` carry rule results only.
 - `ChangesetRequest.clientRequestId` (idempotency key), `Scenario.editsCount`, strict
   `NodeDef` (an `expr` / `cases` key fails the bundle).
+
+## Jobs, solver, Excel, AI and market (CON-03)
+
+`jobRoutes` (`src/routes.ts`), spread into `apiRoutes`. A job start answers 201 with the job
+resource; progress then arrives as WS `job` messages (now with optional `kind`
+solver | import | ai.reconfig and `cancelRequested`) and from the `GET` route.
+
+- **Solver runs** (`src/solvers.ts`): `POST /solver-runs` (worker job), `POST /solver-runs/quick`
+  (≤ 2 s in `logic`: goal_seek, breakeven, scenario_blend, sensitivity except sobol,
+  stress_presets: `quickProblems`), `GET` / `DELETE /solver-runs/:id` (status / cancel).
+  Body `{scenarioId, spec: SolverSpec, save?}`; `SolverSpec` = `{problem, params}` for every
+  `solvers.json` problem id, names verbatim (objectives, constraint ids, decision sets,
+  methods). Optional params are tier 2's defaults. Answer: `SolverRun` with the DATA-11 job
+  state (`status`, `progress` 0..1, `progressNote`, `cancelRequested`), `result: SolverResult`
+  (03 §3, plus optional `detail` display series per problem) and `resultScenarioId`.
+- **Excel** (`src/excel.ts`): `POST /exports` → `ExportResult` with a `FileRef`;
+  `POST /imports` is a raw upload (`requestType: 'bytes'`, `?filename=`) → `ImportJob`;
+  `GET /imports/:id` → `ImportJob` with `report: DeltaReport`; `POST /imports/:id/apply`
+  (`accept`, per-row `decisions`) → one changeset. `DeltaReport` is `excel_template.json`
+  `delta_report_schema` field for field, keys verbatim (snake_case, strict).
+- **Files**: `GET /api/t/:tenant/files/:id` is a byte stream (`responseType: 'bytes'`); the
+  client and `assertContract` return a `FileDownload {bytes, contentType, filename, size}`.
+  No schema names a bucket, storage key or URL (`jobs.spec.ts` greps every JSON schema); the
+  only URL is the public web page an AI research source cites.
+- **AI reconfiguration** (`src/ai.ts`): `POST /api/ai/reconfig` (`dryRun` answers `estimated`
+  with plan and cost estimate before anything runs), `GET /api/ai/reconfig/:id` (plan, sources,
+  facts, draft changeset summaries, validation, calibration report, open questions, cost
+  estimate and usage), `POST /api/ai/reconfig/:id/apply {drafts: seed | lever_tuning}`.
+- **Market** (`src/market.ts`): `POST /market/refresh` `{source: feed}` or
+  `{source: manual, asOf, values[{var, member, value}]}` → snapshot and changeset.
+
+Fixtures: `jobRouteFixtures`, `solverProblemFixtures` / `solverRunFixtures` (one per problem
+id), `deltaReportFixture`, and `apiRouteFixtures` (every route) on the testing entry.
 
 ## Typed client, contract fixtures and mock session (CON-04)
 
