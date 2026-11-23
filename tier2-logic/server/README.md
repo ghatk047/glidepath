@@ -51,3 +51,13 @@ WebAuthn via `@simplewebauthn/server`; the magic link stays the fallback. RP id 
 ## API-09: solver routes and server composition
 
 `POST solver-runs/quick` (the short solvers on the session model, 2 s, else 202 and a job), `POST` / `GET` / `DELETE solver-runs`: `src/routes/solver/README.md`. `start.ts` also wires the pg-boss client, the JOB-02 relay and API-10's Excel jobs on the queue: `src/compose/README.md`. New settings: `IMPORT_MAX_BYTES`, `JOB_QUEUE_SCHEMA`, `JOB_RELAY_POLL_MS`.
+
+## QA-03: route-level cross-tenant leak test (`test/leak`)
+
+`pnpm --filter @glidepath/server test:leak` (part of the root `pnpm test:leak`, the G7 gate): three tenants on one migrated database — `aa` (tenant A), `zz` and a copy of `aa` under another slug, all seeded the way the compose `migrate` step seeds a tenant — and the real composition (`startServer` as `glidepath_app`, RLS on) on a loopback port with real cookie sign-in. `ana` owns tenant A, `bob` the second tenant, `cleo` the copy, and `max` is a member of tenant A **and** of the copy, so a user scope is never mistaken for a tenant scope.
+
+- Every tenant first uses the routes on its own data (edits, a pin, a member relabel, an undo, a copy, solver runs, an export, an upload and its apply), so every tenant table holds rows of all three.
+- Then every route of the composed router, and the WS session, is called as tenant A: on its own data (it must work), and aimed at the other tenants' rows — their ids under tenant A's path, and their own paths by a non-member — which must be refused with the same 404 as an id or tenant that does not exist (the body is compared with an unknown-id twin, so a refusal tells nothing about what exists).
+- Every answer and WS frame is searched for values only the other tenants hold (uuids, labels, numbers; a downloaded workbook cell by cell), and after every call their rows must be unchanged (count + md5 per tenant table, read by a superuser). Tenant tables and marker sets come from the live catalog, in both directions.
+- `test/leak/leak.routes.spec.ts` reads the route list from `server.app.routes`: a new route without a case in `CASES` fails the test. `ci-job.spec.ts` keeps the G7 job enabled for server and data-access changes.
+- The oracle has its own control: tenant B's own answer, judged as if tenant A had received it, must be flagged, and so must a write to tenant B's rows. `LEAK_LOG_LEVEL=error` prints the server's log while a failure is looked into.

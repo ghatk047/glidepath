@@ -7,8 +7,9 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "eslint src test",
     "test": "vitest run",
+    "test:leak": "vitest run test/leak",
     "bench": "vitest bench --run",
     "build": "esbuild src/app/server.ts --bundle --platform=node --target=node22 --format=esm --external:pg-native --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\" --outfile=dist/server.js",
     "start": "node dist/server.js"

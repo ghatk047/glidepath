@@ -88,7 +88,7 @@ title: "Route-level cross-tenant leak test (3 tenants)"
 epic: QA
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: D
 model: opus
 effort: xhigh
@@ -107,6 +107,7 @@ acceptance:
 gates: [G1, G2, G7]
 size: M
 notes: "Re-run by INT-05 after API-11 lands."
+merged_at: "2026-11-23"
 ```
 
 Second half of G7.

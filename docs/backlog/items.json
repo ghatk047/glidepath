@@ -5096,7 +5096,7 @@
     "epic": "QA",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "opus",
     "effort": "xhigh",
@@ -5125,7 +5125,8 @@
       "G7"
     ],
     "size": "M",
-    "notes": "Re-run by INT-05 after API-11 lands."
+    "notes": "Re-run by INT-05 after API-11 lands.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "QA-04",

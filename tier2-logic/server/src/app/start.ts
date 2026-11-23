@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import type { ServerType } from '@hono/node-server';
+import type { Hono } from 'hono';
 import { PostgresObjectStore, createDb, dbOptionsFromEnv } from '@glidepath/data-access';
 import { authFromConfig } from '../auth/auth';
 import { allowedOrigin } from '../auth/guard';
@@ -20,6 +21,7 @@ import type { Config } from './config';
 import { createLogger, secretsFrom } from './logger';
 import type { Logger } from './logger';
 import { bindWithTenant } from './tenant';
+import type { AppEnv } from './tenant';
 
 export interface RunningServer {
   config: Config;
@@ -28,6 +30,8 @@ export interface RunningServer {
   port: number;
   /** The what-if sessions open on `WS /ws/session`. */
   sessions: SessionHub;
+  /** The composed app: its router (`app.routes`) is the server's route list (the QA-03 leak test reads it). */
+  app: Hono<AppEnv>;
   close(): Promise<void>;
 }
 
@@ -123,6 +127,7 @@ export async function startServer(
     logger,
     port,
     sessions,
+    app,
     async close() {
       await relay.stop();
       await sessions.close();
