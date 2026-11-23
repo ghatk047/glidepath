@@ -233,7 +233,7 @@ title: "Path II: savings vs risk, odds, tornado"
 epic: MOD
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: opus
 effort: high
@@ -332,7 +332,7 @@ title: "Airlines module"
 epic: MOD
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high

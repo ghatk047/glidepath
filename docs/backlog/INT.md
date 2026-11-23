@@ -86,7 +86,7 @@ title: "M2 integration: walking skeleton on Cockpit"
 epic: INT
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: opus
 effort: high

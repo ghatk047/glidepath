@@ -242,7 +242,7 @@ title: "Performance monitors: drag fps, preview round trip, glass budget"
 epic: QA
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: high
