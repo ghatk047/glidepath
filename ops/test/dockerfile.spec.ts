@@ -88,11 +88,16 @@ describe('Dockerfile', () => {
   describe('spec bundle for the read routes (SPEC_DIR)', () => {
     // The files loadModelBundleFromDir reads, taken from its source so the two cannot drift.
     const loaderSource = readFileSync(join(REPO_ROOT, 'tier2-logic/spec/src/node/index.ts'), 'utf8');
-    const specFiles = [...loaderSource.matchAll(/read\('([\w.]+\.json)'\)/g)].map((m) => m[1]!);
+    const loaderFiles = [...loaderSource.matchAll(/read\('([\w.]+\.json)'\)/g)].map((m) => m[1]!);
+    // XL-08: the worker's Excel jobs also read the template from SPEC_DIR.
+    const excelDeps = readFileSync(join(REPO_ROOT, 'tier2-logic/worker/src/jobs/excel/deps.ts'), 'utf8');
+    const excelFiles = [...excelDeps.matchAll(/join\(specDir\(\), '([\w.]+\.json)'\)/g)].map((m) => m[1]!);
+    const specFiles = [...new Set([...loaderFiles, ...excelFiles])];
     const runtimeInstructions = ins.slice(ins.lastIndexOf(ins.filter((i) => i.startsWith('FROM ')).at(-1)!));
 
-    it('the loader reads exactly variables.json and formula_graph.json', () => {
-      expect(specFiles.sort()).toEqual(['formula_graph.json', 'variables.json']);
+    it('the loader reads exactly variables.json and formula_graph.json; the Excel jobs add excel_template.json', () => {
+      expect(loaderFiles.sort()).toEqual(['formula_graph.json', 'variables.json']);
+      expect(excelFiles).toEqual(['excel_template.json']);
       for (const f of specFiles) expect(existsSync(join(REPO_ROOT, 'docs/spec', f)), f).toBe(true);
     });
 
@@ -112,7 +117,7 @@ describe('Dockerfile', () => {
       expect(runtimeInstructions.indexOf('ENV SPEC_DIR=/app/spec')).toBeLessThan(user); // set before the CMD, as an image default
     });
 
-    it('the Dockerfile ignore file lets exactly those two files of docs/ into the build context', () => {
+    it('the Dockerfile ignore file lets exactly those files of docs/ into the build context', () => {
       const lines = read('Dockerfile.dockerignore')
         .split(/\r?\n/)
         .map((l) => l.trim())

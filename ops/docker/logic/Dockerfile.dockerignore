@@ -25,6 +25,7 @@ coverage
 docs
 !docs/spec/variables.json
 !docs/spec/formula_graph.json
+!docs/spec/excel_template.json
 
 # Tests and fixtures
 e2e
