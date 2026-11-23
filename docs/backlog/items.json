@@ -2440,7 +2440,7 @@
     "epic": "SOL",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -2468,7 +2468,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": "Starts after the parity gate (needs ENG-07/08)."
+    "notes": "Starts after the parity gate (needs ENG-07/08).",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "SOL-02",

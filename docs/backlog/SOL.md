@@ -26,7 +26,7 @@ title: "Solver framework: results, decision sets, abort and progress"
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -47,6 +47,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "Starts after the parity gate (needs ENG-07/08)."
+merged_at: "2026-11-23"
 ```
 
 Shared plumbing so each solver is only its method.
