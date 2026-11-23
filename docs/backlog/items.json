@@ -873,7 +873,7 @@
     "epic": "ENG",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -900,7 +900,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-03",
@@ -908,7 +909,7 @@
     "epic": "ENG",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -936,7 +937,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-04",
@@ -944,7 +946,7 @@
     "epic": "ENG",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -971,7 +973,8 @@
       "G8"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-05",
@@ -979,7 +982,7 @@
     "epic": "ENG",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -1009,7 +1012,8 @@
       "G8"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-06",
@@ -1017,7 +1021,7 @@
     "epic": "ENG",
     "milestone": "M1",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "xhigh",
@@ -1046,7 +1050,8 @@
       "G3"
     ],
     "size": "M",
-    "notes": "HARD GATE (ADR-020): no DOM/SOL/API item that consumes engine numbers starts before this merges green."
+    "notes": "HARD GATE (ADR-020): no DOM/SOL/API item that consumes engine numbers starts before this merges green.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "ENG-07",

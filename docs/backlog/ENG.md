@@ -61,7 +61,7 @@ title: "Tokenizer and Pratt parser"
 epic: ENG
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -82,6 +82,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Line-by-line port of the ~100-line reference parser.
@@ -94,7 +95,7 @@ title: "Expander: cells, cases, implicit indexing, where-filters, deps"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -115,6 +116,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The part of the port with the subtle semantics; parity at dependency level before any numbers.
@@ -127,7 +129,7 @@ title: "Topological sort, lowering to a flat program, CSR adjacency"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -147,6 +149,7 @@ acceptance:
 gates: [G1, G2, G8]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Turns the expanded graph into the fast program all modes share.
@@ -159,7 +162,7 @@ title: "Full evaluation with overrides and inputHash"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -182,6 +185,7 @@ acceptance:
 gates: [G1, G2, G8]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Scalar evaluation, the basis of parity, plus the input hash used for calc_run caching.
@@ -194,7 +198,7 @@ title: "PARITY GATE: golden 760/760 and parity replay 245/245"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -216,6 +220,7 @@ acceptance:
 gates: [G1, G2, G3]
 size: M
 notes: "HARD GATE (ADR-020): no DOM/SOL/API item that consumes engine numbers starts before this merges green."
+merged_at: "2026-11-23"
 ```
 
 The first hard gate after foundations. Everything numeric downstream trusts this.
