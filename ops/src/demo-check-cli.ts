@@ -3,8 +3,9 @@
 //
 //   node demo-check.mjs [--web URL] [--mail URL] [--web-socket PATH] [--mail-socket PATH]
 //                       [--email ADDR] [--ref-dir DIR] [--golden FILE] [--solver FILE] [--mail-timeout SECONDS]
+//                       [--ai-enabled 0|1]
 //
-// Prints `PASS <check>: <detail>` / `FAIL <check>: <reason>` per check, then a last line
+// Prints `PASS <check>: <detail>` / `FAIL <check>: <reason>` / `SKIP <check>: <why>` per check, then a last line
 // `demo-check: PASS ...` or `demo-check: FAIL: <first reason>`. Exit 0 all passed, 1 a check failed, 2 usage.
 import { resolve } from 'node:path';
 import { runChecks } from './demo-check';
@@ -33,8 +34,10 @@ try {
     goldenFile: get('golden', `${refDir}/golden_results.json`),
     solverFile: get('solver', `${refDir}/solver_demo_results.json`),
     mailTimeoutMs: Number(get('mail-timeout', '15')) * 1000,
+    aiEnabled: get('ai-enabled', '1') !== '0',
   });
-  for (const r of results) (r.ok ? console.log : console.error)(`${r.ok ? 'PASS' : 'FAIL'} ${r.name}: ${r.detail}`);
+  for (const r of results)
+    (r.ok ? console.log : console.error)(`${r.skipped ? 'SKIP' : r.ok ? 'PASS' : 'FAIL'} ${r.name}: ${r.detail}`);
   const first = results.find((r) => !r.ok);
   if (first) {
     console.error(`demo-check: FAIL: ${first.detail}`);

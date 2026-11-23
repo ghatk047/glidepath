@@ -93,7 +93,10 @@ describe('ops/demo-pin.sh', () => {
     const c = composeConfigFromYaml({ envFile: r.envFile });
     expect(c.services.logic!.image).toBe(`glidepath/logic:demo-2026-12-04@sha256:${hex('a')}`);
     expect(c.services.web!.image).toBe(`glidepath/web:demo-2026-12-04@sha256:${hex('b')}`);
-    for (const [name, s] of Object.entries(c.services)) expect(s.image, name).toMatch(/@sha256:[0-9a-f]{64}$/);
+    // Services of the demo stack (no profile, or demo); the opt-in tunnel profile is pinned by hand (OPS-09).
+    for (const [name, s] of Object.entries(c.services))
+      if (s.profiles.length === 0 || s.profiles.includes('demo')) expect(s.image, name).toMatch(/@sha256:[0-9a-f]{64}$/);
+    expect(c.services.tunnel!.profiles).toEqual(['tunnel']);
   });
 
   it('--from-tag retags existing images instead of building', () => {

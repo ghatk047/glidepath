@@ -119,6 +119,12 @@ export interface HarnessOptions {
   /** false leaves SMTP_URL unset. */
   smtp?: boolean;
   mailer?: Mailer | null;
+  /** Extra environment for loadConfig (e.g. the CF_ACCESS_* / ACCESS_* settings of OPS-09). */
+  env?: Record<string, string>;
+  /** Replaces the Cloudflare Access certs URL (a local fake of `https://<team>/cdn-cgi/access/certs`). */
+  accessCertsUrl?: string;
+  /** Extra rows, written as the owner role after the fixture (FORCE RLS: set app.tenant_id yourself). */
+  seed?: (db: TestDatabase) => Promise<void>;
   /** Extra routes, mounted before the first request (Hono builds its router then). */
   routes?: (app: Hono<AppEnv>) => void;
 }
@@ -163,7 +169,12 @@ export function cookiesOf(res: Response): Map<string, { value: string; attrs: st
 }
 
 export async function startAuthHarness(opts: HarnessOptions = {}): Promise<AuthHarness> {
-  const test = await withTestDatabase({ seed: seedAuthFixture });
+  const test = await withTestDatabase({
+    seed: async (t) => {
+      await seedAuthFixture(t);
+      await opts.seed?.(t);
+    },
+  });
   const sink = await startSmtpSink();
   const db = createDb(appRoleUrl(test));
   const publicBaseUrl = opts.publicBaseUrl === undefined ? PUBLIC_BASE_URL : opts.publicBaseUrl;
@@ -173,6 +184,7 @@ export async function startAuthHarness(opts: HarnessOptions = {}): Promise<AuthH
     ...(publicBaseUrl ? { PUBLIC_BASE_URL: publicBaseUrl } : {}),
     ...(opts.smtp === false ? {} : { SMTP_URL: sink.url }),
     ...(opts.linkTtlMin ? { AUTH_LINK_TTL_MIN: String(opts.linkTtlMin) } : {}),
+    ...opts.env,
   });
   let fixed: Date | null = null;
   const clock = { set: (d: Date | null) => void (fixed = d), now: () => fixed ?? new Date() };
@@ -180,6 +192,7 @@ export async function startAuthHarness(opts: HarnessOptions = {}): Promise<AuthH
     db: db.db,
     now: clock.now,
     ...(opts.mailer !== undefined ? { mailer: opts.mailer } : {}),
+    ...(opts.accessCertsUrl ? { accessCertsUrl: opts.accessCertsUrl } : {}),
   });
   const { logger, lines } = captureLogger([AUTH_SECRET, appRoleUrl(test)]);
   const app = createApp({ logger, db, auth });

@@ -50,8 +50,10 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
 
   it('is the glidepath project with the services of 11 §1', () => {
     expect(c.name).toBe('glidepath');
+    // The YAML path keeps every profile's services; `docker compose config --profile dev` leaves tunnel out (OPS-09).
+    const optional = source === 'yaml' ? ['tunnel'] : [];
     expect(Object.keys(c.services).sort()).toEqual(
-      ['db', 'logic', 'mail', 'migrate', 'web', 'worker'].sort(),
+      ['db', 'logic', 'mail', 'migrate', 'web', 'worker', ...optional].sort(),
     );
   });
 
@@ -80,10 +82,11 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(svc('worker').command).toEqual(['node', 'dist/worker.js']);
   });
 
-  it('puts mail in the dev and demo profiles only and every other service in no profile', () => {
+  it('puts mail in the dev and demo profiles, tunnel in the tunnel profile, every other service in no profile', () => {
     expect(svc('mail').profiles).toEqual(['dev', 'demo']);
+    if (c.services.tunnel) expect(svc('tunnel').profiles).toEqual(['tunnel']);
     for (const [name, s] of Object.entries(c.services))
-      if (name !== 'mail') expect(s.profiles, name).toEqual([]);
+      if (name !== 'mail' && name !== 'tunnel') expect(s.profiles, name).toEqual([]);
   });
 
   it('defines networks edge, data (internal: true) and egress', () => {
@@ -93,12 +96,12 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(c.networks.egress!.internal).toBe(false);
   });
 
-  it('web on edge only; db on data only; worker on data + egress; logic on edge + data', () => {
+  it('web on edge only; db on data only; worker on data + egress; logic on edge + data + egress (OPS-09 certs)', () => {
     const nets = (name: string) => [...svc(name).networks].sort();
     expect(nets('web')).toEqual(['edge']);
     expect(nets('db')).toEqual(['data']);
     expect(nets('worker')).toEqual(['data', 'egress']);
-    expect(nets('logic')).toEqual(['data', 'edge']);
+    expect(nets('logic')).toEqual(['data', 'edge', 'egress']);
     expect(nets('migrate')).toEqual(['data']);
     expect(nets('mail')).toEqual(['edge']);
   });
@@ -107,6 +110,7 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(svc('web').ports.sort()).toEqual(['127.0.0.1:443:443', '127.0.0.1:80:80']);
     expect(svc('mail').ports).toEqual(['127.0.0.1:8025:8025']);
     for (const s of ['db', ...TIER2]) expect(svc(s).ports, s).toEqual([]);
+    if (c.services.tunnel) expect(svc('tunnel').ports).toEqual([]);
   });
 
   it('starts in order: db healthy -> migrate done -> logic/worker -> web', () => {
@@ -158,6 +162,8 @@ describe.each(SOURCES)('docker-compose.yml (%s)', (source) => {
     expect(holders('APP_DB_PASSWORD')).toEqual(['db']);
     expect(holders('ANTHROPIC_API_KEY')).toEqual(['worker']);
     expect(holders('AUTH_SECRET')).toEqual(['logic']);
+    expect(holders('CF_ACCESS_AUD')).toEqual(['logic']);
+    if (c.services.tunnel) expect(holders('TUNNEL_TOKEN')).toEqual(['tunnel']);
     expect(Object.keys(svc('web').environment)).toEqual(['PUBLIC_BASE_URL']);
   });
 
@@ -255,8 +261,10 @@ const PINS = {
   DB_IMAGE_PIN: SHA('c'),
   MAIL_IMAGE_PIN: SHA('d'),
 };
+/** The optional tunnel profile's pin (set by hand, OPS-09); the YAML path keeps the tunnel service. */
+const TUNNEL_PIN = { TUNNEL_IMAGE_PIN: SHA('e') };
 const demoEnv = (extra: Record<string, string> = {}) =>
-  writeTestEnvFile(REPO_ROOT, { COMPOSE_PROFILES: 'demo', TAG: DEMO_TAG, ...PINS, ...extra });
+  writeTestEnvFile(REPO_ROOT, { COMPOSE_PROFILES: 'demo', TAG: DEMO_TAG, ...PINS, ...TUNNEL_PIN, ...extra });
 
 describe.each(SOURCES)('demo profile (%s)', (source) => {
   const load = (envFile: string, profiles = ['demo']): ComposeModel =>
@@ -297,9 +305,9 @@ describe('demo pins in the repo', () => {
     for (const k of Object.keys(PINS)) expect(env.get(k), k).toMatch(/^@sha256:[0-9a-f]{64}$/);
   });
 
-  it('.env.example lists the four pins, empty', () => {
+  it('.env.example lists the four pins and the optional tunnel pin, empty', () => {
     const env = parseEnvFile(readEnvExample());
-    for (const k of Object.keys(PINS)) expect(env.get(k), k).toBe('');
+    for (const k of [...Object.keys(PINS), ...Object.keys(TUNNEL_PIN)]) expect(env.get(k), k).toBe('');
   });
 });
 
@@ -339,5 +347,73 @@ describe('migrate command in the compose file (OPS-06 --parity / --ai-cache)', (
     expect(argsFor(['parity/golden-report.json', 'parity/replay-report.json', 'ai-cache/ua/manifest.json'])).toBe(
       '--seed aa --parity <seed>/parity --ai-cache <seed>/ai-cache/ua',
     );
+  });
+});
+
+// ------------------------------------------------------------------ OPS-09: tunnel profile
+const CLOUDFLARED = 'cloudflare/cloudflared:2026.11.2';
+
+describe.each(SOURCES)('tunnel profile (%s)', (source) => {
+  const load = (): ComposeModel => {
+    const envFile = writeTestEnvFile(REPO_ROOT, { COMPOSE_PROFILES: 'demo,tunnel', TUNNEL_TOKEN: 'test-tunnel-token' });
+    return source === 'docker'
+      ? composeConfigFromDocker({ envFile, profiles: ['demo', 'tunnel'] })
+      : composeConfigFromYaml({ envFile });
+  };
+  let c: ComposeModel;
+  beforeAll(() => {
+    c = load();
+  });
+
+  it('runs cloudflared pinned by version: tunnel --no-autoupdate run, token from TUNNEL_TOKEN only', () => {
+    const t = c.services.tunnel!;
+    expect(t.image).toBe(CLOUDFLARED);
+    expect(t.profiles).toEqual(['tunnel']);
+    expect(t.command![0]).toBe('tunnel');
+    expect(t.command).toContain('--no-autoupdate');
+    expect(t.command!.at(-1)).toBe('run');
+    expect(t.environment).toEqual({ TUNNEL_TOKEN: 'test-tunnel-token' });
+    expect(t.hasEnvFile).toBe(false);
+    expect(t.bindMounts).toEqual([]);
+  });
+
+  it('is on the edge network only (reaches web, never db: G13), publishes nothing, starts after web', () => {
+    const t = c.services.tunnel!;
+    expect(t.networks).toEqual(['edge']);
+    expect(c.services.db!.networks).toEqual(['data']);
+    expect(t.ports).toEqual([]);
+    expect(Object.keys(t.depends_on)).toEqual(['web']);
+  });
+
+  it('leaves web/db isolation as it was: web on edge only, data internal; logic gets egress for the Access certs', () => {
+    expect(c.services.web!.networks).toEqual(['edge']);
+    expect(c.networks.data!.internal).toBe(true);
+    expect([...c.services.logic!.networks].sort()).toEqual(['data', 'edge', 'egress']);
+    for (const k of ['CF_ACCESS_TEAM_DOMAIN', 'CF_ACCESS_AUD', 'ACCESS_AUTO_TENANTS', 'ACCESS_AUTO_ROLE', 'ACCESS_ALLOWED_DOMAINS'])
+      expect(c.services.logic!.environment, k).toHaveProperty(k);
+  });
+});
+
+describe.skipIf(!DOCKER)('tunnel profile is opt-in (Compose CLI)', () => {
+  it('a plain demo stack has no tunnel service', () => {
+    const c = composeConfigFromDocker({ envFile: writeTestEnvFile(REPO_ROOT, { COMPOSE_PROFILES: 'demo' }), profiles: ['demo'] });
+    expect(Object.keys(c.services)).not.toContain('tunnel');
+  });
+});
+
+describe('.env.example documents the public demo (OPS-09)', () => {
+  const text = readEnvExample();
+  const env = parseEnvFile(text);
+  it('lists TUNNEL_TOKEN, CF_ACCESS_* and ACCESS_* empty (secrets live only in the Mac\'s .env)', () => {
+    for (const k of ['TUNNEL_TOKEN', 'CF_ACCESS_TEAM_DOMAIN', 'CF_ACCESS_AUD', 'ACCESS_AUTO_TENANTS', 'ACCESS_AUTO_ROLE', 'ACCESS_ALLOWED_DOMAINS'])
+      expect(env.get(k), k).toBe('');
+  });
+  it('says the public hostname points at https://web:443 with origin server name = the PUBLIC_BASE_URL host and no TLS verify', () => {
+    expect(text).toContain('https://web:443');
+    expect(text).toMatch(/Origin Server Name\s*=\s*(#\s*)?the PUBLIC_BASE_URL host/);
+    expect(text).toMatch(/No TLS Verify = on/);
+  });
+  it('turns AI off by default (AI_ENABLED=0)', () => {
+    expect(env.get('AI_ENABLED')).toBe('0');
   });
 });

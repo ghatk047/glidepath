@@ -2,12 +2,13 @@
 // The fixture's numbers are read from docs/spec/reference, as the checker's are; nothing here is a business number.
 // The real-stack run (every container healthy, the actual numbers) is the manual gate in ops/README.md.
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { GOLDEN_HEADLINES, UA_DRAFT_REASON, assertLoopback, minRiskMisses, runChecks } from '../src/demo-check';
+import { AI_OFF_DETAIL, GOLDEN_HEADLINES, UA_DRAFT_REASON, assertLoopback, minRiskMisses, runChecks } from '../src/demo-check';
 import { REPO_ROOT } from '../src/index';
 
 vi.setConfig({ testTimeout: 120_000 });
@@ -97,7 +98,8 @@ function startFixture(state: Fixture): Promise<{ url: string; close: () => Promi
 function runScript(url: string, extra: string[] = [], env: Record<string, string> = {}) {
   return new Promise<{ code: number; out: string; err: string }>((resolve) => {
     const args = ['--skip-containers', '--web', url, '--mail', url, '--email', EMAIL, '--mail-timeout', '3', ...extra];
-    const child = spawn(SCRIPT, args, { cwd: REPO_ROOT, env: { ...process.env, ...env } });
+    // AI_ENABLED=1 unless a test says otherwise, so a developer's .env (AI_ENABLED=0, OPS-09) does not change the run.
+    const child = spawn(SCRIPT, args, { cwd: REPO_ROOT, env: { ...process.env, AI_ENABLED: '1', ...env } });
     let out = '';
     let err = '';
     child.stdout.on('data', (d: Buffer) => (out += d.toString()));
@@ -140,6 +142,25 @@ describe('ops/demo-check.sh against a fixture stack', () => {
     const r = await runScript(fx.url);
     expect(r.code).toBe(1);
     expect(r.err.trim().split('\n')).toEqual([`FAIL cached UA reconfig draft: ${UA_DRAFT_REASON}`, `demo-check: FAIL: ${UA_DRAFT_REASON}`]);
+  });
+
+  it('skips the UA draft check when AI_ENABLED=0 and says "skipped (AI off)" (OPS-09: AI-07 dropped)', async () => {
+    reset({ ua: false });
+    const r = await runScript(fx.url, [], { AI_ENABLED: '0' });
+    expect(r.err).toBe('');
+    expect(r.code).toBe(0);
+    expect(r.out).toContain(`SKIP cached UA reconfig draft: ${AI_OFF_DETAIL}`);
+    expect(AI_OFF_DETAIL).toBe('skipped (AI off)');
+    expect(r.out).toMatch(/demo-check: PASS/);
+  });
+
+  it('reads AI_ENABLED=0 from the env file when the environment does not set it', async () => {
+    reset({ ua: false });
+    const envFile = join(mkdtempSync(join(tmpdir(), 'demo-check-env-')), '.env');
+    writeFileSync(envFile, 'AI_ENABLED=0\n');
+    const r = await runScript(fx.url, ['--env-file', envFile], { AI_ENABLED: '' });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain(`SKIP cached UA reconfig draft: ${AI_OFF_DETAIL}`);
   });
 
   it('fails when calc C is off the golden values by more than 1e-6 relative', async () => {
@@ -203,6 +224,34 @@ describe('ops/demo-check.sh against a fixture stack', () => {
     });
     expect(results.filter((r) => !r.ok)).toEqual([]);
     expect(results).toHaveLength(8);
+  });
+
+  it('runChecks with aiEnabled false: the UA check is skipped, not failed, even without a draft', async () => {
+    reset({ ua: false });
+    const results = await runChecks({
+      web: { url: fx.url },
+      mail: { url: fx.url },
+      email: EMAIL,
+      goldenFile: join(REF, 'golden_results.json'),
+      solverFile: join(REF, 'solver_demo_results.json'),
+      mailTimeoutMs: 3000,
+      aiEnabled: false,
+    });
+    expect(results.filter((r) => !r.ok)).toEqual([]);
+    expect(results.find((r) => r.name === 'cached UA reconfig draft')).toEqual({
+      name: 'cached UA reconfig draft',
+      ok: true,
+      skipped: true,
+      detail: AI_OFF_DETAIL,
+    });
+  });
+});
+
+describe('storyline beat 11 (OPS-09: AI-07 dropped by the owner)', () => {
+  it('the UA/AS tiles beat stays test.fixme with its item id', () => {
+    const story = readFileSync(join(REPO_ROOT, 'e2e/tests/storyline.spec.ts'), 'utf8');
+    expect(story).toContain("test.fixme('beat_11_ua_and_as_tiles [AI-07]'");
+    expect(story).not.toMatch(/\btest\('beat_11_ua_and_as_tiles/);
   });
 });
 

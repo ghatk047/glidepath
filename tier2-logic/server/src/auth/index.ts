@@ -28,3 +28,12 @@ export { PASSKEY_CHALLENGE_TTL_MIN, RP_NAME, MAX_PASSKEY_LABEL } from './passkey
 export { PASSKEY_CHALLENGE_COOKIE, passkeyCookieName } from './cookies';
 export { MAX_LIVE_LINKS_PER_ADDRESS } from './service';
 export type { ActiveSession } from './service';
+export {
+  ACCESS_JWT_HEADER,
+  ACCESS_CERTS_PATH,
+  AccessTokenError,
+  accessSettingsFrom,
+  createAccessVerifier,
+  domainAllowed,
+} from './access';
+export type { AccessSettings, AccessVerifier } from './access';

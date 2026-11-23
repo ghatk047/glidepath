@@ -538,7 +538,7 @@
     "epic": "OPS",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "high",
@@ -569,7 +569,8 @@
       "G14"
     ],
     "size": "M",
-    "notes": "From the owner's 2026-11-23 request. No secrets in git: TUNNEL_TOKEN and the AUD live only in the Mac's .env."
+    "notes": "From the owner's 2026-11-23 request. No secrets in git: TUNNEL_TOKEN and the AUD live only in the Mac's .env.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "CON-01",

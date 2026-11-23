@@ -282,7 +282,7 @@ title: "Public demo through Cloudflare Tunnel, with Cloudflare Access as the sig
 epic: OPS
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -304,4 +304,5 @@ acceptance:
 gates: [G1, G2, G7, G13, G14]
 size: M
 notes: "From the owner's 2026-11-23 request. No secrets in git: TUNNEL_TOKEN and the AUD live only in the Mac's .env."
+merged_at: "2026-11-23"
 ```

@@ -33,7 +33,7 @@ const REQUIRED = [
 ];
 
 /** Secrets: must be empty, or a ${REF} to another (empty) secret. */
-const isSecretKey = (k: string) => /PASSWORD|SECRET|API_KEY|ACCESS_KEY/.test(k);
+const isSecretKey = (k: string) => /PASSWORD|SECRET|API_KEY|ACCESS_KEY|_TOKEN$|_AUD$/.test(k);
 const REF = /^\$\{[A-Z0-9_]+\}$/;
 /** postgresql://<role>:${REF}@<host>/<db>?sslmode=<mode> */
 const DB_URL =

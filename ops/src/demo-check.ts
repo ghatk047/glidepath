@@ -10,6 +10,8 @@ import https from 'node:https';
 import { SOLVER_TOLERANCES, goldenClose, pyRound } from '@glidepath/parity';
 
 export const UA_DRAFT_REASON = 'UA reconfig draft not cached (run pnpm ai:rehearse --tenant ua)';
+/** Detail of the UA draft check when the deployment runs without AI (AI_ENABLED=0, OPS-09: AI-07 dropped). */
+export const AI_OFF_DETAIL = 'skipped (AI off)';
 /** The four headline cells of Cockpit C that docs/spec/reference/golden_results.json pins (spec ids verbatim). */
 export const GOLDEN_HEADLINES = ['res.net', 'res.gap', 'res.risk', 'br.eps27'] as const;
 export const TENANT = 'aa';
@@ -29,6 +31,8 @@ export interface CheckConfig {
   readonly solverFile: string;
   /** How long to wait for the sign-in mail, ms. */
   readonly mailTimeoutMs?: number;
+  /** false (AI_ENABLED=0): the UA draft check is skipped, not failed. Default true. */
+  readonly aiEnabled?: boolean;
 }
 
 export interface CheckResult {
@@ -36,6 +40,8 @@ export interface CheckResult {
   readonly ok: boolean;
   /** One line: what held, or why it did not. */
   readonly detail: string;
+  /** The check did not run (it does not apply to this deployment); `ok` is true. */
+  readonly skipped?: boolean;
 }
 
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
@@ -205,7 +211,7 @@ export function minRiskMisses(metrics: Record<string, number>, ref: Record<strin
 
 const round = (n: number): number => Math.round(n * 1e6) / 1e6;
 
-type Check = [name: string, run: () => Promise<string>];
+type Check = [name: string, run: () => Promise<string>, skip?: string | undefined];
 
 /** Runs every check and returns one result each; a check that throws is a failure with the message as reason. */
 export async function runChecks(cfg: CheckConfig): Promise<CheckResult[]> {
@@ -303,10 +309,15 @@ export async function runChecks(cfg: CheckConfig): Promise<CheckResult[]> {
         if (!job) throw new CheckError(UA_DRAFT_REASON);
         return `${job.drafts.length} draft(s) in review`;
       },
+      cfg.aiEnabled === false ? AI_OFF_DETAIL : undefined,
     ],
   ];
 
-  for (const [name, run] of checks) {
+  for (const [name, run, skip] of checks) {
+    if (skip !== undefined) {
+      results.push({ name, ok: true, skipped: true, detail: skip });
+      continue;
+    }
     try {
       results.push({ name, ok: true, detail: await run() });
     } catch (e) {

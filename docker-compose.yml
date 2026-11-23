@@ -6,12 +6,16 @@
 # Networks (physical tier separation, G13):
 #   edge   web <-> logic (and mail in the dev and demo profiles)
 #   data   internal: true; logic, worker, migrate <-> db. web is NOT on it.
-#   egress outbound internet for the worker (Claude API)
+#   egress outbound internet for the worker (Claude API) and logic (Cloudflare Access signing keys, OPS-09)
 #
 # Demo (docs/architecture/02_repo_and_conventions.md section 4): `docker compose --profile demo up -d` runs the
 # images tagged demo-2026-12-04, each pinned by digest, plus the local mail sink so magic links work offline.
 # `ops/demo-pin.sh` builds or tags the images and writes TAG, COMPOSE_PROFILES=demo and the four *_IMAGE_PIN
 # digests into .env (ops/README.md "Demo profile"); then `ops/demo-check.sh` verifies the stack.
+#
+# Public demo (OPS-09, ops/README.md "Public demo (Cloudflare)"): `docker compose --profile demo --profile tunnel up -d`
+# adds `tunnel`, a cloudflared connector (TUNNEL_TOKEN) that serves web at PUBLIC_BASE_URL through a Cloudflare
+# Tunnel; Cloudflare Access signs visitors in and logic verifies its JWT (CF_ACCESS_TEAM_DOMAIN, CF_ACCESS_AUD).
 #
 # Configuration is environment only (12-factor, ADR-013). Compose reads .env for the ${...}
 # values below and hands each service only the settings it needs. Tier 2 gets the database
@@ -112,7 +116,14 @@ services:
       SMTP_URL: ${SMTP_URL:-}
       SESSION_IDLE_MIN: ${SESSION_IDLE_MIN:-}
       AUTH_LINK_TTL_MIN: ${AUTH_LINK_TTL_MIN:-}
-    networks: [edge, data]
+      # Cloudflare Access sign-in (OPS-09); both empty = off.
+      CF_ACCESS_TEAM_DOMAIN: ${CF_ACCESS_TEAM_DOMAIN:-}
+      CF_ACCESS_AUD: ${CF_ACCESS_AUD:-}
+      ACCESS_AUTO_TENANTS: ${ACCESS_AUTO_TENANTS:-}
+      ACCESS_AUTO_ROLE: ${ACCESS_AUTO_ROLE:-}
+      ACCESS_ALLOWED_DOMAINS: ${ACCESS_ALLOWED_DOMAINS:-}
+    # egress: only for https://<team>.cloudflareaccess.com/cdn-cgi/access/certs (OPS-09). web is still not on data.
+    networks: [edge, data, egress]
     depends_on:
       migrate: { condition: service_completed_successfully }
     healthcheck:
@@ -176,3 +187,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
+
+  # ---------------------------------------------------------------- public demo (OPS-09)
+  tunnel:
+    # Cloudflare Tunnel connector: outbound only, nothing published. The public hostname is set in the Cloudflare
+    # dashboard (Zero Trust > Networks > Tunnels > the tunnel > Public hostname): service https://web:443, origin
+    # server name = the PUBLIC_BASE_URL host (Caddy's site address), No TLS Verify on (Caddy's `tls internal`
+    # certificate). Edge network only: it reaches web, never db (G13).
+    image: cloudflare/cloudflared:2026.11.2${TUNNEL_IMAGE_PIN:-}
+    profiles: [tunnel]
+    command: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:20241", "run"]
+    restart: unless-stopped
+    environment:
+      # cloudflared reads the tunnel token from TUNNEL_TOKEN (dashboard: the tunnel's install command).
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge]
+    depends_on:
+      web: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:20241", "ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s

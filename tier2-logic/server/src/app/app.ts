@@ -118,6 +118,8 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   });
 
   if (deps.auth) {
+    // Cloudflare Access (OPS-09): a verified Access JWT on a read opens the cookie session, before the guard.
+    if (deps.auth.access) app.use('/api/*', deps.auth.access);
     // Before every /api route: state-changing requests must be same-origin and carry the session's CSRF token.
     app.use('/api/*', deps.auth.guard);
     app.route('/', deps.auth.routes);

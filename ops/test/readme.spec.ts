@@ -36,3 +36,35 @@ describe('README "Running locally"', () => {
     expect(body).toContain('sslmode=require');
   });
 });
+
+describe('ops/README "Public demo (Cloudflare)" (OPS-09)', () => {
+  const body = section(readFileSync(join(REPO_ROOT, 'ops/README.md'), 'utf8'), 'Public demo (Cloudflare)');
+
+  it('exists', () => {
+    expect(body).toBeDefined();
+  });
+
+  it('gives the dashboard steps: origin https://web:443, origin server name = the public host, no TLS verify, Access', () => {
+    expect(body).toContain('`https://web:443`');
+    expect(body).toMatch(/Origin Server Name = the `PUBLIC_BASE_URL` host/);
+    expect(body).toMatch(/No TLS Verify = on/);
+    expect(body).toMatch(/AUD tag/);
+    expect(body).toContain('icy-recipe-ffdf.cloudflareaccess.com');
+  });
+
+  it('lists the .env keys', () => {
+    for (const k of ['PUBLIC_BASE_URL', 'CF_ACCESS_TEAM_DOMAIN', 'CF_ACCESS_AUD', 'TUNNEL_TOKEN', 'ACCESS_AUTO_TENANTS', 'ACCESS_AUTO_ROLE', 'ACCESS_ALLOWED_DOMAINS', 'AI_ENABLED'])
+      expect(body, k).toContain(`\`${k}\``);
+  });
+
+  it('gives the start and stop commands for the compose profile and the locally managed tunnel', () => {
+    expect(body).toContain('docker compose --profile demo --profile tunnel up -d');
+    expect(body).toMatch(/docker compose --profile demo --profile tunnel down/);
+    expect(body).toContain('glidepath-tunnel');
+    expect(body).toContain('docker stop glidepath-tunnel');
+  });
+
+  it('names no AUD tag or token value', () => {
+    expect(body).not.toMatch(/[A-Za-z0-9+/=_-]{40,}/);
+  });
+});

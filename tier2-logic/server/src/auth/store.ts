@@ -226,3 +226,36 @@ export async function usePasskey(
   );
   return r.rows[0]?.user_id ?? null;
 }
+
+// ---- Cloudflare Access (OPS-09) -----------------------------------------------------------------
+
+/**
+ * The app_user of an address Cloudflare Access verified, created when new (name = the address). Goes through the
+ * SECURITY DEFINER function of manual migration 0006: the app role has no INSERT on app_user.
+ */
+export async function provisionAccessUser(ex: Executor, email: string): Promise<string> {
+  const r = await ex.execute<{ id: string }>(
+    sql`select access_provision_user(${email}::citext, ${email}) as id`,
+  );
+  const id = r.rows[0]?.id;
+  if (!id) throw new Error('access_provision_user returned no id');
+  return id;
+}
+
+/**
+ * Inside `withTenant` (RLS: only the tenant of `app.tenant_id` is visible or writable): adds the user to that
+ * tenant with `role` unless they are a member already. False when the tenant row is not there or has another slug.
+ */
+export async function joinTenant(
+  ex: Executor,
+  m: { slug: string; userId: string; role: string },
+): Promise<boolean> {
+  const t = await ex.execute<{ slug: string }>(sql`select slug from tenant`);
+  if (t.rows.length !== 1 || t.rows[0]!.slug !== m.slug) return false;
+  await ex.execute(
+    sql`insert into tenant_membership (tenant_id, user_id, role)
+        values (nullif(current_setting('app.tenant_id', true), '')::uuid, ${m.userId}, ${m.role}::tenant_membership_role)
+        on conflict (tenant_id, user_id) do nothing`,
+  );
+  return true;
+}

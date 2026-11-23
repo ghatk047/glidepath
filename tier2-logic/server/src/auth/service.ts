@@ -194,11 +194,14 @@ export function createAuthCore(deps: AuthDeps): AuthCore {
       return user;
     });
     if (userId === null) return false;
+    const csrf = csrfTokenFor(keys, secret);
     await setSessionCookies(c, settings, keys, {
       secret,
-      csrf: csrfTokenFor(keys, secret),
+      csrf,
       maxAgeSec: Math.floor(settings.sessionTtlMs / MS_PER_SECOND),
     });
+    // The rest of this request sees the new session (OPS-09: an Access sign-in answers the same request signed in).
+    sessions.set(c.req.raw, Promise.resolve({ id, userId: userId as UserId, csrf }));
     return true;
   }
 

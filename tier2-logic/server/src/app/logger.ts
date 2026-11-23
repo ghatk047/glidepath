@@ -130,6 +130,9 @@ export function requestSecrets(headers: { get(name: string): string | null }): s
   }
   const auth = headers.get('authorization');
   if (auth) out.push(auth, auth.replace(/^\w+\s+/, ''));
+  // Cloudflare Access JWT (OPS-09): a bearer credential like the cookie.
+  const access = headers.get('cf-access-jwt-assertion');
+  if (access) out.push(access);
   return out;
 }
 

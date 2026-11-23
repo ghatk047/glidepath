@@ -30,7 +30,8 @@
 #                solver_demo_results.json min_risk_total_bar within the G5 tolerances of @glidepath/parity
 #                (a cache warmed before SOL-12 shows risk 42.5, not 42.0, and fails here)
 #   parity       the Airlines tile's parity record is there and complete
-#   UA draft     the rehearsed UA reconfiguration is cached, in review, with its drafts (AI-07)
+#   UA draft     the rehearsed UA reconfiguration is cached, in review, with its drafts (AI-07); with AI_ENABLED=0
+#                (environment, else the env file; .env.example's default) it prints "SKIP ...: skipped (AI off)"
 #
 # The checks talk to localhost only (127.0.0.1 by address, no DNS), so Wi-Fi can be off.
 #
@@ -90,6 +91,9 @@ cd "$ROOT" || die "cannot enter $ROOT"
 env_value() { [ -f "$ENV_FILE" ] && grep "^$1=" "$ENV_FILE" | tail -n 1 | cut -d= -f2-; }
 [ -n "$EMAIL" ] || EMAIL="$(env_value DEMO_USER_EMAIL)"
 [ -n "$EMAIL" ] || EMAIL="demo@example.com"
+AI_ENABLED="${AI_ENABLED:-$(env_value AI_ENABLED)}"
+AI_ARGS=""
+[ -z "$AI_ENABLED" ] || AI_ARGS="--ai-enabled $AI_ENABLED"
 if [ -z "$WEB" ]; then
   WEB="$(env_value PUBLIC_BASE_URL)"
   case "$WEB" in https://localhost* | http://localhost* | https://127.0.0.1* | http://127.0.0.1*) ;; *) WEB="https://localhost" ;; esac
@@ -166,13 +170,15 @@ if [ "$ISOLATED" = 1 ]; then
   [ -S "$TMP/sock/web.sock" ] || die "the socket relay did not start: $(head -n 1 "$TMP/relay.log")" 1
   chmod 0777 "$TMP/sock/web.sock" "$TMP/sock/mail.sock"
   echo "isolated: checker container on --network none, ports through unix sockets"
+  # shellcheck disable=SC2086 # AI_ARGS is empty or two words
   docker run --rm --network none --user 1000:1000 --read-only \
     -v "$TMP:/check:ro" -v "$TMP/sock:/sock" -v "$ROOT/docs/spec/reference:/ref:ro" \
     --entrypoint node "$IMAGE" /check/demo-check.mjs \
     --web "$WEB" --mail "$MAIL" --web-socket /sock/web.sock --mail-socket /sock/mail.sock \
-    --email "$EMAIL" --mail-timeout "$MAIL_TIMEOUT" --ref-dir /ref
+    --email "$EMAIL" --mail-timeout "$MAIL_TIMEOUT" --ref-dir /ref $AI_ARGS
   exit $?
 fi
 
-node "$BUNDLE" --web "$WEB" --mail "$MAIL" --email "$EMAIL" --mail-timeout "$MAIL_TIMEOUT" --ref-dir "$ROOT/docs/spec/reference"
+# shellcheck disable=SC2086 # AI_ARGS is empty or two words
+node "$BUNDLE" --web "$WEB" --mail "$MAIL" --email "$EMAIL" --mail-timeout "$MAIL_TIMEOUT" --ref-dir "$ROOT/docs/spec/reference" $AI_ARGS
 exit $?
