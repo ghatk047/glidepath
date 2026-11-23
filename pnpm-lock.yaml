@@ -81,7 +81,39 @@ importers:
 
   tier2-logic/excel: {}
 
-  tier2-logic/server: {}
+  tier2-logic/server:
+    dependencies:
+      '@glidepath/api-contract':
+        specifier: workspace:*
+        version: link:../../contract/api-contract
+      '@glidepath/data-access':
+        specifier: workspace:*
+        version: link:../data-access
+      '@hono/node-server':
+        specifier: ^2.1.11
+        version: 2.1.11(hono@4.13.20)
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
+      hono:
+        specifier: ^4.13.20
+        version: 4.13.20
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@glidepath/pg-local':
+        specifier: workspace:*
+        version: link:../../tools/pg-local
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
 
   tier2-logic/solvers: {}
 
@@ -308,6 +340,12 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@hono/node-server@2.1.11':
+    resolution: {integrity: sha512-KzKz9vl4vvr1vgLHamj+g5uonbrj5NwAdO3yzOS6cd2HjALVeOgTgeZOyAzNxejbkfOOPIcvuf/Tg8l1pEFLog==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -904,6 +942,10 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
+  hono@4.13.20:
+    resolution: {integrity: sha512-xo6gecEJQ+CjTtOUUbcLHE8CdRKMeF4qITe+DT+OhFnSUmZR/ZBa9XavAfiGh4HlukmlaHFdaK4dz5tkTYFNmA==}
+    engines: {node: '>=16.9.0'}
+
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
@@ -1428,6 +1470,10 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
+  '@hono/node-server@2.1.11(hono@4.13.20)':
+    dependencies:
+      hono: 4.13.20
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -1925,6 +1971,8 @@ snapshots:
   globals@14.0.0: {}
 
   has-flag@4.0.0: {}
+
+  hono@4.13.20: {}
 
   ignore@5.3.2: {}
 

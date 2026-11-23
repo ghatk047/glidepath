@@ -27,7 +27,7 @@ title: "Server skeleton: Hono app, config, healthz, problem JSON, tenant middlew
 epic: API
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -49,6 +49,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The logic container's shell.

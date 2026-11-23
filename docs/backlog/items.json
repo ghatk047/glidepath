@@ -1782,7 +1782,7 @@
     "epic": "API",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -1811,7 +1811,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "API-02",

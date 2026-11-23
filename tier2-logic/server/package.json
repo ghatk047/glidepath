@@ -8,6 +8,22 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "esbuild src/app/server.ts --bundle --platform=node --target=node22 --format=esm --external:pg-native --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\" --outfile=dist/server.js",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@glidepath/api-contract": "workspace:*",
+    "@glidepath/data-access": "workspace:*",
+    "@hono/node-server": "^2.1.11",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.20",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@glidepath/pg-local": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "esbuild": "^0.28.2"
   }
 }
