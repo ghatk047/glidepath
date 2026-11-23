@@ -33,7 +33,7 @@ title: "Tokens to CSS variables, Cruise and Daylight themes"
 epic: UI
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: medium
