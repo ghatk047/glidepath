@@ -140,7 +140,10 @@ describe('AI-06 API key', () => {
     for (const [name, lines] of services) {
       if (name === 'worker') continue;
       expect(lines.join('\n'), `${name} must not hold the API key`).not.toContain('ANTHROPIC_API_KEY');
-      expect(networksOf(lines), `${name} must not be on the egress network`).not.toContain('egress');
+      // OPS-09 (owner-approved 2026-11-23): logic also reaches the internet, only for the Cloudflare Access signing
+      // keys; it holds no API key (checked above). Every other service stays off egress.
+      if (name === 'logic') expect(networksOf(lines)).toEqual(['edge', 'data', 'egress']);
+      else expect(networksOf(lines), `${name} must not be on the egress network`).not.toContain('egress');
     }
     // The egress network is the only one with outbound internet; the data network is internal.
     const text = readFileSync(join(repoRoot, 'docker-compose.yml'), 'utf8');

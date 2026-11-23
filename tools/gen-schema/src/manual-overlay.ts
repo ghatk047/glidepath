@@ -85,6 +85,11 @@ export interface ManualOverlay {
   tables: OverlayTable[];
   /** Applied after `addedColumns` and `tables`, in order: a unique key must precede the FKs that target it. */
   addedKeys?: OverlayAddedKeys[];
+  /**
+   * Manual migrations that change no table, column or key (only functions and their grants), named so every manual
+   * file is still accounted for; the catalog diff covers tables, so these need no model entry.
+   */
+  routinesOnly?: { source: string; routines: string[] }[];
 }
 
 const M1 = 'manual/0001_solver_run_progress_scenario_archived.sql';
@@ -92,6 +97,7 @@ const M2 = 'manual/0002_auth_tables.sql';
 const M3 = 'manual/0003_stored_object.sql';
 const M4 = 'manual/0004_same_tenant_references.sql';
 const M5 = 'manual/0005_scenario_sort_order.sql';
+const M6 = 'manual/0006_access_provision_user.sql';
 const M7 = 'manual/0007_scenario_is_default.sql';
 
 /** Composite (tenant_id, column) -> target (tenant_id, id): a tenant row can only reference its own tenant's rows. */
@@ -260,6 +266,7 @@ export const MANUAL_OVERLAY: ManualOverlay = {
     },
     { table: 'ai_reconfig_job', source: M4, fks: [sameTenant('ai_reconfig_job', 'changeset_id', 'changeset')] },
   ],
+  routinesOnly: [{ source: M6, routines: ['access_provision_user(citext, text)'] }],
 };
 
 const OVERLAY_DEFAULTS: readonly string[] = ['true', 'false', '0', 'now()', 'gen_random_uuid()'];

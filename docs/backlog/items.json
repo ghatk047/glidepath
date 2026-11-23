@@ -573,6 +573,38 @@
     "merged_at": "2026-11-23"
   },
   {
+    "id": "OPS-10",
+    "title": "Guard checks follow the Cloudflare Access sign-in (OPS-09)",
+    "epic": "OPS",
+    "milestone": "M4",
+    "priority": "must",
+    "status": "done",
+    "stream": "B",
+    "model": "opus",
+    "effort": "medium",
+    "depends_on": [
+      "OPS-09"
+    ],
+    "tier": "ops",
+    "package": "tier2-logic/worker (AI-06 compose check), tools/gen-schema (manual overlay, DATA-02 rls check)",
+    "contract": "No contract change.",
+    "inputs": [
+      "Owner decision 2026-11-23: update the 3 checks OPS-09 turned red, allowing only what the sign-in needs"
+    ],
+    "acceptance": [
+      "AI-06 compose check: logic may be on egress (exactly edge, data, egress) and holds no API key; every other non-worker service stays off egress (test)",
+      "manual overlay accounts for 0006 as routines only (access_provision_user); every manual file is still listed (test)",
+      "DATA-02: migrations still never revoke a role membership; REVOKE ... ON <object> FROM PUBLIC is allowed (test)"
+    ],
+    "gates": [
+      "G2",
+      "G7"
+    ],
+    "size": "S",
+    "notes": "The rules are narrowed to OPS-09's needs, not removed.",
+    "merged_at": "2026-11-23"
+  },
+  {
     "id": "CON-01",
     "title": "REST core schemas and problem JSON",
     "epic": "CON",

@@ -315,7 +315,9 @@ describe('DATA-02 acceptance', () => {
       const sql = readFileSync(resolve(migrationsDir, f), 'utf8');
       // statements (line starts), not comments or messages
       expect(sql, f).not.toMatch(/^\s*(CREATE|ALTER|DROP)\s+(ROLE|USER|GROUP)\b/im);
-      expect(sql, f).not.toMatch(/^\s*REVOKE\b/im);
+      // no role membership revoke (`REVOKE role FROM x`). Revoking a privilege on an object (`REVOKE ... ON ...
+      // FROM PUBLIC`, OPS-09's SECURITY DEFINER function, owner-approved 2026-11-23) changes no role or membership.
+      expect(sql, f).not.toMatch(/^\s*REVOKE\s+(?![^;]*\bON\b)[^;]*\bFROM\b/im);
       expect(sql, f).not.toMatch(/^\s*GRANT\s+[a-z_]+\s+TO\b/im); // role membership grant
     }
     const rlsSql = readFileSync(resolve(migrationsDir, RLS_MIGRATION), 'utf8');

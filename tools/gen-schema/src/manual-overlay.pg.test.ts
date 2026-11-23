@@ -50,6 +50,7 @@ describe('manual overlay (ADR-023) vs tier3-data/migrations/manual', () => {
       ...MANUAL_OVERLAY.addedColumns.map((a) => a.source),
       ...MANUAL_OVERLAY.tables.map((t) => t.source),
       ...(MANUAL_OVERLAY.addedKeys ?? []).map((k) => k.source),
+      ...(MANUAL_OVERLAY.routinesOnly ?? []).map((r) => r.source),
     ]);
     expect([...sources].sort()).toEqual(manualFiles);
   });
