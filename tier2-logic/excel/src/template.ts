@@ -292,6 +292,7 @@ function varRow(
     key: def.id,
     member,
     varId: def.id,
+    dims: def.dims,
     bind,
     group: group ?? def.group ?? '',
     label: def.label,
@@ -304,6 +305,20 @@ function varRow(
     confidence: def.confidence,
     scenarioVaries: def.scenario_varies,
     listRef,
+  };
+}
+
+/** Facts of a variable that a column of its own carries (see `ColumnDef.dims`). */
+function columnFacts(ctx: Ctx, def: VariableDef): Partial<ColumnDef> {
+  return {
+    varId: def.id,
+    dims: def.dims,
+    unit: def.unit,
+    type: def.type,
+    min: def.min,
+    max: def.max,
+    numberFormat: numberFormatFor(def.unit, ctx.template.cell_rules.number_formats),
+    listRef: def.type === 'bool' ? LIST_BOOL : def.type === 'enum' ? enumListId(def.id) : undefined,
   };
 }
 
@@ -379,7 +394,7 @@ function leverTimingSheet(ctx: Ctx, s: TemplateSheet): SheetDef {
         perScenario: s.per_scenario === true,
         mapsTo: 'scenario_value',
         blankMeans: columnOf(ctx, 'scenario').blankMeans,
-        varId: def.id,
+        ...columnFacts(ctx, def),
       }),
     ),
     columnOf(ctx, 'hash'),
@@ -495,7 +510,7 @@ function lineItemsSheet(ctx: Ctx, s: TemplateSheet): SheetDef {
     const def = ctx.varById.get(token);
     if (def !== undefined) {
       return valueColumn(ctx, token, def.label, 'field', {
-        varId: def.id,
+        ...columnFacts(ctx, def),
         mapsTo: 'variable_value',
         blankMeans: undefined,
       });

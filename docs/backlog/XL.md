@@ -56,7 +56,7 @@ title: "build.ts: workbook, formatting and export snapshot"
 epic: XL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -74,6 +74,7 @@ acceptance:
 gates: [G1, G2, G6]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Export side of the round trip.

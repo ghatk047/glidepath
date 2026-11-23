@@ -84,6 +84,16 @@ export interface ColumnDef {
   readonly listRef?: string;
   /** Fixed choices, when the column is a dropdown without a validation list (action column). */
   readonly choices?: readonly string[];
+  /**
+   * Facts of the variable of a column that names one (`varId`: Lever_Timing blocks, Line_Items numbers), so that
+   * `build.ts` can format and validate its cells and form their member keys without the model bundle.
+   */
+  readonly dims?: readonly DimId[];
+  readonly unit?: string;
+  readonly type?: ValueType;
+  readonly min?: number | null;
+  readonly max?: number | null;
+  readonly numberFormat?: string;
   readonly width?: number;
   readonly note?: string;
 }
@@ -102,6 +112,8 @@ export interface RowDef {
   /** Text of the hidden `member` column: the row's own member ids, comma-joined in the variable's dims order. */
   readonly member: string;
   readonly varId?: VarId;
+  /** Dimensions of the row's variable, in order (the order of its member key). */
+  readonly dims?: readonly DimId[];
   readonly bind: Readonly<Record<DimId, MemberId>>;
   readonly group: string;
   readonly label: string;

@@ -2,7 +2,7 @@
 
 Template, build, parse, diff, delta report. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients and `@glidepath/spec/node` in `src`). Callers load spec data with the `@glidepath/spec` loaders and pass it in.
 
-Implemented so far: `template.ts` (XL-01). `build`, `parse`, `validate`, `diff`, `report` and `toChangeset` follow in XL-02 to XL-08.
+Implemented so far: `template.ts` (XL-01), `build.ts` (XL-02). `parse`, `validate`, `diff`, `report` and `toChangeset` follow in XL-03 to XL-08. Dependency: `exceljs` (works on buffers, no IO).
 
 ## template.ts
 
@@ -29,3 +29,18 @@ Which variable goes on which sheet (`placeVariables`), all driven by the templat
 Variables with role `simulation` get no cell. An input that no sheet carries throws `TemplateError`.
 
 Tenant shape: VPs become Org_Map columns, labor groups Corporate rows, levers Levers groups and Lever_Timing rows, lines Line_Items rows. `cellRef(bundle, row, col)` gives the variable id and member key of a cell (row binding plus column binding).
+
+## build.ts
+
+```ts
+import { buildWorkbook, writeWorkbook } from '@glidepath/excel';
+
+const { workbook, snapshot, fileName } = buildWorkbook(sheets, values, meta);
+const bytes: Uint8Array = await writeWorkbook(workbook); // in memory; the worker stores file and snapshot
+```
+
+- `sheets`: `buildTemplate(...)`. `values` (`ExportValues`): tenant `defaults` (`variable_value` rows), `scenarios` in column order (`id`, `label`, own `scenario_value` rows, optional `overrides` and `outputs`), optional `notes`. A scenario cell with no row is blank (= inherit default). `meta` (`ExportMeta`): the `_meta` fields, `templateVersion`, `exportedAt` (the caller passes the clock), optional `fileNamePattern` and `newRowSlots`.
+- `perScenario` columns repeat once per scenario: column id `scenarioColumnId(col.id, scenario.id)` (`scenario@C`, `lev.start@C`), header `columnHeader(col, scenario)`.
+- Snapshot (`ExportSnapshot`): `cells[snapshotKey(sheet, key, member, column)]` = value as `parse.ts` will read it (percent as decimal, dropdown label as code, blank as `null`), `rowHashes[rowKey(sheet, key, member)]` = `hashRow([columnId, value][])` over the row's editable cells (the hidden `_hash`), `checksum` = sha256 of the row hashes (`workbook_checksum` of `_meta`). Outputs, README, `_lists` and `_meta` are not in the snapshot.
+- Formatting follows `cell_rules`: yellow editable cells (`EDITABLE_FILL`), every sheet protected without a password (sorting, filtering and column width stay allowed), validation from min/max (decimal, whole), dropdowns from `_lists` (enum lists show labels, others codes), the template's number formats (`0.00x` is written as `0.00"x"`), frozen header row, hidden `key` / `member` / `_hash`, `_lists` and `_meta` hidden. Table sheets get `NEW_ROW_SLOTS` spare unlocked rows. Org_Map rows get a `SUM` row check, shaded when it is not the rule's target.
+- The Overrides sheet has no scenario column: it lists the pins of the first scenario.
