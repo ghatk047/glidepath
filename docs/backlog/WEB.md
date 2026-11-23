@@ -23,7 +23,7 @@ title: "App scaffold: Vite, router, view store, code splitting"
 epic: WEB
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high

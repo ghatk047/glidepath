@@ -123,7 +123,7 @@ title: "GitHub Actions CI with gate jobs"
 epic: FND
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: D
 model: sonnet
 effort: medium

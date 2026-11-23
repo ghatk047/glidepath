@@ -122,7 +122,7 @@ title: "Typed client, contract fixtures and mock session"
 epic: CON
 milestone: M1
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: opus
 effort: high
