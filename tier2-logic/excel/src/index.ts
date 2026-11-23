@@ -80,3 +80,28 @@ export type {
   ValidationCode,
   ValidationEntry,
 } from './validate';
+export {
+  DiffError,
+  EXPORT_PRECISION_DIGITS,
+  cellStatus,
+  diff,
+  sameValue,
+  toDeltaEntry,
+  toDiffValue,
+} from './diff';
+export type {
+  CellDiff,
+  CellStatus,
+  CellTarget,
+  CurrentSnapshot,
+  DeltaEntry,
+  DeltaEntryStatus,
+  DiffMode,
+  DiffOptions,
+  DiffResult,
+  DiffValue,
+  RowDiff,
+  RowStatus,
+  UnmatchedDiff,
+  UnmatchedReason,
+} from './diff';

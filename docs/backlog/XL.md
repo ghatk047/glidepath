@@ -149,7 +149,7 @@ title: "diff.ts: three-way and foreign two-way diff"
 epic: XL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -169,6 +169,7 @@ acceptance:
 gates: [G1, G2, G6]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 The heart of safe re-import.

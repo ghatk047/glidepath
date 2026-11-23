@@ -2,7 +2,7 @@
 
 Template, build, parse, diff, delta report. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients and `@glidepath/spec/node` in `src`). Callers load spec data with the `@glidepath/spec` loaders and pass it in.
 
-Implemented so far: `template.ts` (XL-01), `build.ts` (XL-02), `parse.ts` (XL-03). `validate`, `diff`, `report` and `toChangeset` follow in XL-04 to XL-08. Dependency: `exceljs` (works on buffers, no IO).
+Implemented so far: `template.ts` (XL-01), `build.ts` (XL-02), `parse.ts` (XL-03), `validate.ts` (XL-04), `diff.ts` (XL-05). `report` and `toChangeset` follow in XL-06. Dependency: `exceljs` (works on buffers, no IO).
 
 ## template.ts
 
@@ -86,3 +86,23 @@ const entries = validateParsed(parsed, { sheets, model: bundle, members, current
 
 - Across rows, `validateInputs` of `@glidepath/domain` runs on the state the workbook would produce: once for the default layer (Default, Value, year and VP columns on top of `current.defaults`) and once per scenario (defaults, then the scenario's own values, then its columns; a blank scenario cell drops the scenario's own value). Entries of `CROSS_ROW_RULES` (VR01 ownership sums, VR02 one shared-services VP, VR03 usage keys, VR06, VR07) are kept when they involve a cell that the layer's columns set. Cells and messages are the domain's; a scenario's message ends with `(scenario <label>)`.
 - Not here: VR04 is checked per cell (it needs the file position); VR09 and VR10 need member attributes and complete corporate inputs and run in `applyChangeset`; VR05 and VR08 read engine outputs.
+## diff.ts
+
+```ts
+import { diff, toDeltaEntry } from '@glidepath/excel';
+
+const E = exportJob.snapshot; // ExportSnapshot of the export, or null for a foreign workbook
+const W = await parseWorkbook(bytes, sheets, { scenarios }); // scenarios of the export (foreign: of the tenant)
+const D = buildWorkbook(sheets, currentValues, meta).snapshot; // the app now: same scenarios, same form as E
+const result = diff(E, W, D, sheets); // DiffResult
+```
+
+- Contract `diff(E, W, D)`, plus `sheets` (`buildTemplate(...)` of the tenant now, the ones W was parsed with): they name each cell's variable and member key and say which cells are editable. `mode` is `three_way` with E, `foreign` without.
+- Per editable cell (the cells the row `_hash` covers; locked columns are `validate.ts`'s), `cellStatus(E, W, D)` is the table of `import_pipeline[3]`: W=E → `unchanged`; W≠E, D=E → `changed_in_excel`; W=E, D≠E → `changed_in_app`; W≠E, D≠E, W≠D → `conflict`; W≠E, W=D → `already_applied`. Foreign: W vs D by key columns, equal → `unchanged`, else `changed_in_excel`. A row or cell the export lacks counts as blank in E (a typed value that differs from the app is a conflict, never a silent overwrite); a row the app no longer has counts as blank in D.
+- `cells`: a `CellDiff` for every cell that is not `unchanged`, in workbook order. Its delta-report keys mirror `delta_report_schema.changes[]` verbatim (`sheet`, `key` = variable id, `member` = member key, `scenario` = scenario id or `null`, `export`, `workbook`, `current`, `status`, `messages`): `DeltaChange` of CON-03, mirrored, not imported; a test holds the keys to `excel_template.json`, and `toDeltaEntry()` picks exactly them. Plus `column` (snapshot column id), `rowNumber` and `target` (`value` → `variable_value` / `scenario_value`, `note`, `attr` of a Line_Items member, `override` field of a pin of the first scenario).
+- `rows`: `RowDiff` `new_row` (table sheet, blank key; a new pin on Overrides), `deleted_row` (`DELETE`; `inApp: false` = already deleted in the app), `missing_row` (in the export and still in the app, or foreign: in the app, but not in the sheet): a warning with the app's values, never a delete. Missing sheets and sheets without their key column have no missing rows.
+- `unmatched`: what cannot be placed and is never applied: `unknown_row` (key in neither E nor D, or not a row of the registry), `unknown_cell` (a scenario column of an unknown scenario, a cell the app lacks), `duplicate_row` (a key's second row; the first is read).
+- Numbers are equal to `EXPORT_PRECISION_DIGITS` (15) significant digits (`sameValue`): Excel keeps 15 and LibreOffice writes 15, so a re-save changes nothing. Text compares with line ends normalised.
+- Fast path: a row whose parsed `hash` equals the snapshot's row hash (and D's) counts as `unchanged` without a cell compare (`stats.rowsSkipped`; `{ fastPath: false }` turns it off). A row whose hidden `_hash` is not the snapshot's gets a message (moved without its key?).
+- `counts` per cell and row status (unchanged cells are counted, not listed). `DiffError` when W names another export than E.
+- Fixtures: `fixtures/precision_export.xlsx` (an export with 17-digit values) and `fixtures/precision_export_libreoffice.xlsx` (the same file saved by LibreOffice headless); `npx tsx fixtures/make_fixtures.ts` regenerates both (needs `soffice`).
