@@ -158,3 +158,41 @@ export { revert, undoRedo } from './history';
 export type { UndoRedo } from './history';
 export { rebase } from './rebase';
 export type { RebaseConflict, RebaseResult, TheirChange } from './rebase';
+// DOM-06: display view-models for derived series (ADR-021).
+export {
+  BASELINE_CELLS,
+  BASELINE_GROUP_BY,
+  BRIDGE_NODES,
+  LEVER_CELLS,
+  LEVER_DIM,
+  LEVER_FAMILY_ATTRIBUTE,
+  MONTHS_IN_YEAR,
+  VIEWS,
+  VIEW_NAMES,
+  baselineGroups,
+  baselineSummary,
+  bridge,
+  domShareKey,
+  engineCell,
+  leversFamilies,
+  leversMonthly,
+  leversScale,
+  rampWeights,
+  vpsDomainOutlay,
+} from './views';
+export type {
+  BaselineGroupBy,
+  BaselineGroupsView,
+  BaselineSummaryView,
+  BridgeStep,
+  BridgeView,
+  LeversFamiliesView,
+  LeversMonthlyView,
+  LeversScaleView,
+  ViewEvaluation,
+  ViewFn,
+  ViewName,
+  ViewParamsOf,
+  ViewPayloads,
+  VpsDomainOutlayView,
+} from './views';

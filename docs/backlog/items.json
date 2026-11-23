@@ -1812,7 +1812,7 @@
     "epic": "DOM",
     "milestone": "M2",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "opus",
     "effort": "high",
@@ -1843,7 +1843,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": "Rubric deviation: opus/high (not xhigh) — derived display numbers, guarded by sum invariants."
+    "notes": "Rubric deviation: opus/high (not xhigh) — derived display numbers, guarded by sum invariants.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "API-01",

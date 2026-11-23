@@ -190,7 +190,7 @@ title: "Display view-models for derived series (ADR-021)"
 epic: DOM
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: high
@@ -214,6 +214,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "Rubric deviation: opus/high (not xhigh) — derived display numbers, guarded by sum invariants."
+merged_at: "2026-11-23"
 ```
 
 Keeps every number on screen in tier 2, including series the formula graph does not name.

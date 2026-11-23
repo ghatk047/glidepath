@@ -253,6 +253,40 @@ The key never changes, because it names the scenario in URLs. A locked user scen
 - `ScenarioStore` is a `ChangesetStore` whose transactions are `ScenarioTx`: a `ChangesetTx` plus `updateScenario(id, { label?, locked?, archived? })` for `patchScenario`. It is a separate port, so a ChangesetStore needs nothing more; data-access implements it for the PATCH route.
 - `ModelCache<TModel>.getOrCompile(key, compile)` is keyed by `ModelCacheKey` `(tenant_id, model_version_id, members_hash)`. `modelCacheKey()` builds the key with `membersHash` from `@glidepath/spec`.
 
+## View-models (`src/views/`)
+
+DOM-06 (ADR-021): display series that have no formula node, computed from an engine evaluation and the tenant's members, so tier 1 does no arithmetic. API-12 pushes them as the contract's `view` messages.
+
+```ts
+const view = baselineGroups(evaluation, members, 'vp'); // { total, groups: [{ key, label, value, lines }] }
+VIEWS['levers.monthly'](evaluation, members, {});      // every view by its contract name
+```
+
+- **Inputs.** `ViewEvaluation` is `{ get, has }` over engine CellKeys (`base.total`, `lev.iy[L01]`); an engine `Evaluation` satisfies it. A cell the evaluation lacks reads as 0. Members are the `TenantMembers` the model was compiled with.
+- **Shapes.** `src/views/types.ts` mirrors the contract payloads in `contract/api-contract/src/ws.ts` field for field. Domain may not import the contract (02 §1), so the server validates each payload with `viewSchemas[name].payload`. A test reads ws.ts as text and checks the view names, `MONTHS_IN_YEAR` and the `BaselineGroupBy` values.
+
+| View | Function | Derivation |
+|---|---|---|
+| `bridge` | `bridge(ev)` | Steps `base.total`, `+base.headwinds`, `−res.tot_iy`, `+res.tot_ot_it`, then `res.cy27_outlay`. Each step's `from`/`to` continues from the previous one, and `cell` is the contract CellKey (`base.total[]`). `targetOutlay = base.total − res.target`; `gap = res.cy27_outlay − targetOutlay`. |
+| `baseline.groups` | `baselineGroups(ev, members, by)` | Group → line, `total = base.total`. **pool**: lines by `line.pool`, group value `base.pool_outlay[pool]`. **domain**: lines by `line.domain`, group value Σ lines. **vp**: see below. |
+| `baseline.summary` | `baselineSummary(members)` | Count of `line` members, and of those with `in_scope` set. |
+| `levers.families` | `leversFamilies(ev, members)` | Σ `lev.iy` per lever `category`, `total = res.tot_iy`. Families come in order of their first lever (`order`); the label is the category. |
+| `levers.monthly` | `leversMonthly(ev, members)` | 12 values per lever, family series summed month by month (see below). |
+| `levers.scale` | `leversScale(evD, members)` | `max` of `lev.iy` over the levers. The caller passes the evaluation of preset D, the scale of the lever bars. |
+| `vps.domain_outlay` | `vpsDomainOutlay(ev, members)` | Σ `base.line_outlay` per `line.domain`, in domain order. `out_of_scope_memo` is left out because no VP can own it (VR01). |
+
+**VP grouping.** Each line is split across VPs by its domain's ownership shares:
+
+```
+line value (v, l)  = base.line_outlay[l] × org.dom_share[l.domain, v]       (lines with share 0 are left out)
+group value (v)    = vp.outlay[v] = Σ_pool vp.pool_usd[v, pool]
+                   = Σ_l base.line_outlay[l] × org.dom_share[l.domain, v]
+```
+
+So the treemap's VP groups always agree with the VP cards. When every domain's shares sum to 1 (VR01), the groups sum to `base.total`, apart from memo lines in `out_of_scope_memo` (shares 0, outlay 0 in the seed).
+
+**Monthly curve.** This uses the formula graph's linear ramp. With `s = lev.eff_start` and `r = lev.ramp`, month m's weight is `w_m = clamp((m − s + 1) / r, 0, 1)`; when r ≤ 0 the weight is a step at s. Then `Σ_m w_m / 12 = lev.ramp_factor`, which is `IF(13 − s <= r, (13 − s)(14 − s)/2r, (r + 1)/2 + (13 − s − r)) / 12`, and month m is `lev.iy × w_m / Σ w`, which equals `lev.rr × lev.realize × w_m / 12`. The months sum to `lev.iy` even when `lev.iy` is pinned.
+
 ## Tests
 
 Run `pnpm turbo run typecheck lint test --filter=@glidepath/domain...`. `vitest run` enforces at least 90% line coverage (G2).
