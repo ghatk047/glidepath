@@ -188,7 +188,7 @@ title: "Global layer I: rail, scenario bar, flight strip, tray, theme, states"
 epic: WEB
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: C
 model: opus
 effort: high
@@ -209,6 +209,7 @@ acceptance:
 gates: [G1, G2, G12, G13]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Everything that is on every screen, part 1.
