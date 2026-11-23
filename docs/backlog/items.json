@@ -40,7 +40,7 @@
     "epic": "FND",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "sonnet",
     "effort": "medium",
@@ -68,7 +68,8 @@
       "G13"
     ],
     "size": "M",
-    "notes": "Rubric: lint rules are haiku/low, raised to sonnet/medium because the boundary config is load-bearing for G13."
+    "notes": "Rubric: lint rules are haiku/low, raised to sonnet/medium because the boundary config is load-bearing for G13.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "FND-03",

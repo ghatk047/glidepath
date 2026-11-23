@@ -1,8 +1,5 @@
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
+// Shared lint config lives in tools/eslint-config (FND-02). Packages pick this file up
+// automatically (ESLint searches upward), so they need no config of their own.
+import config from './tools/eslint-config/src/index.js';
 
-export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/.turbo/**', '**/fixtures/**'] },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-);
+export default config;

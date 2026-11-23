@@ -57,7 +57,7 @@ title: "ESLint, Prettier and tier boundary rules"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: medium
@@ -79,6 +79,7 @@ acceptance:
 gates: [G1, G13]
 size: M
 notes: "Rubric: lint rules are haiku/low, raised to sonnet/medium because the boundary config is load-bearing for G13."
+merged_at: "2026-11-23"
 ```
 
 Turns the tier rules into lint errors so reviewers do not have to catch them by eye.
