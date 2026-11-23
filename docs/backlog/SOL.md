@@ -222,7 +222,7 @@ title: "Tornado sensitivity"
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -241,6 +241,7 @@ acceptance:
 gates: [G1, G2, G5]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Path 'What moves net most'.

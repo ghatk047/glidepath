@@ -215,6 +215,10 @@ export interface SolverDetailMap {
     readonly output: CellKey;
     readonly rows: readonly {
       readonly cell: CellKey;
+      /** tornado / elasticity: colour class from the registry (SOL-07); not yet in the contract. */
+      readonly category?: 'policy' | 'timing' | 'lever';
+      /** tornado / elasticity: |high.output − low.output|, the sort key; not yet in the contract. */
+      readonly swing?: number;
       readonly low: { readonly input: number; readonly output: number } | null;
       readonly high: { readonly input: number; readonly output: number } | null;
       readonly elasticity: number | null;

@@ -33,6 +33,6 @@ export const PROBLEMS: ProblemTable = {
   pareto: pending('pareto'),
   vp_feasible: pending('vp_feasible'),
   monte_carlo: pending('monte_carlo'),
-  sensitivity: pending('sensitivity'),
+  sensitivity: async (run, params) => (await import('./sensitivity')).sensitivity(run, params),
   stress_presets: pending('stress_presets'),
 };

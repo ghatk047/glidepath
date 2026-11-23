@@ -48,3 +48,6 @@ export type { RankOptions } from './ranked';
 export { SolverCancelled, SolverError } from './errors';
 export type { SolverErrorCode } from './errors';
 export { PENDING_PROBLEMS, PROBLEMS } from './problems';
+// SOL-07 tornado sensitivity.
+export { TORNADO_CATEGORIES, defaultTornadoCategory, tornado } from './tornado';
+export type { Tornado, TornadoCategory, TornadoItem, TornadoModel, TornadoOptions, TornadoPoint } from './tornado';

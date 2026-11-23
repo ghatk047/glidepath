@@ -202,7 +202,9 @@ describe('SOL-01 runSolver: result assembly and move rules', () => {
   });
 
   it('every problem without its item rejects with NOT_IMPLEMENTED naming the item', async () => {
-    for (const [problem, item] of Object.entries(PENDING_PROBLEMS)) {
+    // Problems whose item has landed (their own specs cover them).
+    const implemented = new Set<string>(['sensitivity']);
+    for (const [problem, item] of Object.entries(PENDING_PROBLEMS).filter(([p]) => !implemented.has(p))) {
       await expect(runSolver(model, { problem, params: {} } as never)).rejects.toMatchObject({
         code: 'NOT_IMPLEMENTED',
         message: expect.stringContaining(item),
