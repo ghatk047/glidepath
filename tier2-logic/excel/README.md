@@ -61,3 +61,28 @@ const who = identifyWorkbook(parsed, { tenantId, templateVersion }); // tenant a
 - `ParsedRow.cells[columnId]` is normalised like the snapshot: `35%` and `0.35` are 0.35, TRUE/FALSE are 1/0, dropdown labels (enum, pool, domain, ...) are codes, blank is `null` (= inherit the default), numbers typed in text cells (`1,234.5`) are numbers. A value that does not fit its type stays as typed (text, or a boolean in a numeric cell) for `validate.ts` to flag.
 - Row status inputs for diff: `isNew` (table sheet, blank key), `action` (`DELETE`), `exportedHash` (the `_hash` cell) and `hash` (`hashRow` of the editable cells as parsed): they are equal when the row is unchanged.
 - `_meta`: `ParsedWorkbook.meta`; `mode` is `export` when `tenant_id`, `template_version` and `export_job_id` are there, else `foreign` (two-way diff against the database).
+
+## validate.ts
+
+```ts
+import { validateParsed } from '@glidepath/excel';
+
+const entries = validateParsed(parsed, { sheets, model: bundle, members, current }); // ValidationEntry[]
+```
+
+- `bundle` (`ValidationBundle`): `sheets` (`buildTemplate(...)`, for column and row facts and dropdown lists), `model` (the pinned `variables` and `nodes`), the tenant's `members`, and optionally `current` (`defaults` and per-scenario `scenarios` value rows as stored). With `current`, a workbook with some sheets only is checked against the rest, and a blank cell leaves the stored value. Without it the cross-row rules see only what the workbook carries (an absent cell counts as 0).
+- An entry (`ValidationEntry`): `code`, `rule` (VR id, when there is one), `severity`, `message` (cause and fix), `cells` (contract CellKeys `id[member_key]`), `locations` (sheet, 1-based file row, key, member, column id, scenario) and, for cross-row entries of a scenario, `scenarioId`. Empty list = valid.
+- Per cell, one entry each (`ValidationCode`):
+
+  | Code           | When                                                                                                                                                                                                                                                    | Severity                          |
+  | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+  | `unknown_key`  | key (and member) not in the template; Overrides: node not in the model. A blank key on Line_Items is an insert, not unknown                                                                                                                             | error                             |
+  | `type`         | text, boolean or a fraction (whole-number types) where a number belongs: the cells `parse.ts` leaves as typed                                                                                                                                           | error                             |
+  | `out_of_range` | VR04: below `min` or above `max` (a null bound is open; DOM-02's tolerance)                                                                                                                                                                             | warning (`VALIDATION_RULES.VR04`) |
+  | `not_in_list`  | value is not a code of the cell's list (enum, bool, pool, domain, addr_tag, scale driver) or of the action column                                                                                                                                       | error                             |
+  | `locked_edit`  | Group, Input, Unit, Min, Max, Source or Confidence differ from the template (warning: nothing is applied from them); a value in a locked cell: a scenario cell of an input that does not vary by scenario, a matrix cell the row does not carry (error) | warning / error                   |
+
+  A cell that fails `type` or `not_in_list` is not given to the cross-row rules.
+
+- Across rows, `validateInputs` of `@glidepath/domain` runs on the state the workbook would produce: once for the default layer (Default, Value, year and VP columns on top of `current.defaults`) and once per scenario (defaults, then the scenario's own values, then its columns; a blank scenario cell drops the scenario's own value). Entries of `CROSS_ROW_RULES` (VR01 ownership sums, VR02 one shared-services VP, VR03 usage keys, VR06, VR07) are kept when they involve a cell that the layer's columns set. Cells and messages are the domain's; a scenario's message ends with `(scenario <label>)`.
+- Not here: VR04 is checked per cell (it needs the file position); VR09 and VR10 need member attributes and complete corporate inputs and run in `applyChangeset`; VR05 and VR08 read engine outputs.

@@ -71,3 +71,12 @@ export type {
   ParsedWorkbook,
   UnknownColumn,
 } from './parse';
+
+export { CROSS_ROW_RULES, validateParsed } from './validate';
+export type {
+  CellLocation,
+  CurrentValues,
+  ValidationBundle,
+  ValidationCode,
+  ValidationEntry,
+} from './validate';

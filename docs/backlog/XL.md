@@ -119,7 +119,7 @@ title: "validate.ts: per-cell and cross-row validation"
 epic: XL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -136,6 +136,7 @@ acceptance:
 gates: [G1, G2, G6]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Nothing invalid reaches a changeset.
