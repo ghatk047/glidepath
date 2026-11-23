@@ -59,8 +59,10 @@ function run(args: string[], opts: { scenario?: string; env?: Record<string, str
   return { code: r.status ?? -1, out: r.stdout, err: r.stderr, calls: read('calls.log'), order: read('order.log') };
 }
 
-const check = (scenario: string, extra: string[] = []) =>
-  run(['--no-build', '--settle', '0', '--env-file', ENV_FILE, '--project', 'ops-test', ...extra], { scenario });
+const check = (scenario: string, extra: string[] = [], env: Record<string, string> = {}) =>
+  run(['--no-build', '--settle', '0', '--env-file', ENV_FILE, '--project', 'ops-test', ...extra], { scenario, env });
+/** The stub-reporting path, with strict mode off explicitly (the repo's Dockerfile now defaults it on). */
+const lax = { COMPOSE_CHECK_STRICT: '0' };
 /** The contract: the verdict is the last line, on stdout for PASS and stderr otherwise. */
 const verdict = (r: Run) => (r.code === 0 ? r.out : r.err).trimEnd().split('\n').pop()!;
 
@@ -208,7 +210,7 @@ describe('ops/compose-check.sh', () => {
 
   describe('stubbed services (OPS-02 entries not built) are reported, never green', () => {
     it('stubbed migrate: exit 4 PENDING, listed as STUB(78), dependents NOT STARTED, network test still ran', () => {
-      const r = check('stub');
+      const r = check('stub', [], lax);
       expect(r.code).toBe(4);
       expect(r.out).toMatch(/migrate\s+2\s+STUB\(78\)/);
       expect(r.out).toMatch(/logic\s+2\s+NOT STARTED/);
@@ -220,7 +222,7 @@ describe('ops/compose-check.sh', () => {
     });
 
     it('a stubbed worker (running, restarting) is also PENDING', () => {
-      const r = check('worker-stub');
+      const r = check('worker-stub', [], lax);
       expect(r.code).toBe(4);
       expect(r.out).toMatch(/worker\s+2\s+STUB\(78\)/);
     });
@@ -234,6 +236,13 @@ describe('ops/compose-check.sh', () => {
         env: { COMPOSE_CHECK_STRICT: '1' },
       });
       expect(b.code).toBe(1);
+    });
+
+    it('the logic Dockerfile defaulting STRICT_ENTRYPOINTS=1 makes a stub a FAIL with no flag', () => {
+      const r = run(['--no-build', '--settle', '0', '--env-file', ENV_FILE, '--project', 'ops-test'], { scenario: 'stub' });
+      expect(readFileSync(join(REPO_ROOT, 'ops/docker/logic/Dockerfile'), 'utf8')).toMatch(/^ARG STRICT_ENTRYPOINTS=1$/m);
+      expect(r.code).toBe(1);
+      expect(verdict(r)).toMatch(/^compose-check: FAIL: stubbed services in strict mode .*: migrate/);
     });
   });
 
@@ -296,7 +305,7 @@ describe('ops/compose-check.sh', () => {
     });
 
     it('stubbed migrate: the data-tier check is reported as not run (PENDING), the token check still runs', () => {
-      const r = check('stub');
+      const r = check('stub', [], lax);
       expect(r.code).toBe(4);
       expect(r.out).toMatch(/data tier: not checked, migrate did not complete \(stub\)/);
       expect(r.order).not.toContain('exec db psql');

@@ -14,7 +14,8 @@
 #   --budget SECONDS   start-up budget (default 180, the G14 figure; env COMPOSE_CHECK_BUDGET)
 #   --settle SECONDS   how long services without a healthcheck must stay up (default 5)
 #   --strict           a stubbed service is a FAIL, not PENDING (env COMPOSE_CHECK_STRICT=1; also
-#                      implied when ops/docker/logic/Dockerfile defaults STRICT_ENTRYPOINTS=1)
+#                      implied when ops/docker/logic/Dockerfile defaults STRICT_ENTRYPOINTS=1,
+#                      unless COMPOSE_CHECK_STRICT is set explicitly)
 #   --keep             leave the stack running afterwards (default: `down -v`)
 #   -h, --help         this text
 #
@@ -105,7 +106,8 @@ env_val() { # env_val NAME: last NAME=value in the env file (no quote handling, 
 TAG="$(env_val TAG)"
 TAG="${TAG:-dev}"
 # Once the image build is strict by default no stub can exist; one that shows up is a bug.
-if [ "$(sed -n 's/^ARG STRICT_ENTRYPOINTS=//p' ops/docker/logic/Dockerfile 2>/dev/null | head -n 1)" = 1 ]; then STRICT=1; fi
+# An explicit COMPOSE_CHECK_STRICT (0 or 1) wins over the Dockerfile default.
+if [ -z "${COMPOSE_CHECK_STRICT+x}" ] && [ "$(sed -n 's/^ARG STRICT_ENTRYPOINTS=//p' ops/docker/logic/Dockerfile 2>/dev/null | head -n 1)" = 1 ]; then STRICT=1; fi
 
 dc() { docker compose -p "$PROJECT" --env-file "$ENV_FILE" -f "$ROOT/docker-compose.yml" "$@"; }
 
