@@ -22,10 +22,15 @@ import { specFixtures, type SnapshotMessageIn } from './specFixtures';
  *   (`null` for a cell it has no value for, as tier 2 does for an unset cell);
  * - `subscribeView` → the matching `views` fixture, if the test configured one;
  * - `cancelPreview{seq}` → `delta{seq}` with the committed values of the subscribed cells;
+ * - `open{scenarioId}` → `snapshot` of the subscribed cells on that scenario, then the
+ *   configured `views` fixtures of the subscribed views; an unknown scenario → `error` (404);
  * - `preview` → nothing, unless a `respond.preview` responder scripts the answer;
- * - a frame that fails `parseClientMessage` → `warnings{seq: null, problem}`, like tier 2.
+ * - a frame that fails `parseClientMessage` → `error{problem}`, like tier 2.
  * Committed values follow what the test emits: a `snapshot`, or a `delta` with `seq: null`
- * (a commit), replaces the cells it carries; a preview `delta` does not.
+ * (a commit), replaces the cells it carries; a preview `delta` does not. An emitted
+ * `changeset{forkedFrom}` whose `forkedFrom` is the open scenario moves the session to the
+ * fork (the test emits it only for a commit this session caused), starting from the
+ * preset's committed values.
  */
 
 type ServerIn = z.input<typeof ServerMessage>;
@@ -64,7 +69,7 @@ export interface MockSocket {
 
 /** What a responder sees besides the message. */
 export interface MockSessionContext {
-  /** Scenario of the current connection. */
+  /** Scenario the current connection is on (follows `open` and forks). */
   readonly scenarioId: string;
   /** Cells the current connection subscribes to. */
   readonly subscribed: ReadonlySet<string>;
@@ -98,6 +103,8 @@ export interface MockSession {
   readonly connections: number;
   /** Query of the latest accepted connection. */
   readonly query: SessionQuery | null;
+  /** Scenario the current connection is on now (the query's, then `open` / fork). */
+  readonly scenarioId: string | null;
   /** Every client frame that parsed, in order, across connections. */
   readonly sent: readonly ClientMessage[];
   /** One-line reasons for client frames that did not parse. */
@@ -130,6 +137,12 @@ interface ScenarioState {
 
 const canonical = (params: Record<string, unknown>): string =>
   JSON.stringify(params, Object.keys(params).sort());
+
+const frameError = (type: string, title: string, status: number, detail: string): ServerIn => ({
+  v: WS_PROTOCOL_VERSION,
+  type: 'error',
+  problem: { type, title, status, detail },
+});
 
 /** Creates a mock `WS /ws/session` (see the module comment for what it answers). */
 export function createMockSession(options: MockSessionOptions = {}): MockSession {
@@ -167,6 +180,7 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
   let socket: MockSocketImpl | null = null;
   let connections = 0;
   let query: SessionQuery | null = null;
+  let current: string | null = null;
   const sent: ClientMessage[] = [];
   const rejected: string[] = [];
   const refused: string[] = [];
@@ -174,7 +188,7 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
   let viewSubs: { view: string; params: Record<string, unknown> }[] = [];
 
   const state = (): ScenarioState => {
-    const s = query && scenarios.get(query.scenario);
+    const s = current && scenarios.get(current);
     if (!s) throw new Error('mock session: no open scenario');
     return s;
   };
@@ -186,8 +200,8 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
   };
   const context: MockSessionContext = {
     get scenarioId() {
-      if (!query) throw new Error('mock session: no open scenario');
-      return query.scenario;
+      if (!current) throw new Error('mock session: no open scenario');
+      return current;
     },
     get subscribed() {
       return subscribed;
@@ -202,10 +216,17 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
       s.version = m.version;
       for (const [k, v] of Object.entries(m.cells)) s.cells.set(k, v);
       scenarios.set(m.scenarioId, s);
-    } else if (m.type === 'delta' && m.seq === null && query) {
-      const s = scenarios.get(query.scenario);
+    } else if (m.type === 'delta' && m.seq === null && current) {
+      const s = scenarios.get(current);
       if (s) for (const [k, v] of Object.entries(m.cells)) s.cells.set(k, v);
     } else if (m.type === 'changeset') {
+      if (m.forkedFrom !== undefined && m.forkedFrom === current) {
+        const from = scenarios.get(m.forkedFrom);
+        if (!scenarios.has(m.scenarioId)) {
+          scenarios.set(m.scenarioId, { version: m.version, cells: new Map(from?.cells) });
+        }
+        current = m.scenarioId;
+      }
       const s = scenarios.get(m.scenarioId);
       if (s) s.version = m.version;
     }
@@ -240,30 +261,43 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
     cancelPreview: (m, ctx) => [
       { v: WS_PROTOCOL_VERSION, type: 'delta', seq: m.seq, cells: ctx.committed(ctx.subscribed) },
     ],
+    open: (m, ctx) => {
+      if (ctx.scenarioId !== m.scenarioId) {
+        return [
+          frameError(
+            problemTypes.notFound,
+            'Unknown scenario',
+            404,
+            `Scenario ${m.scenarioId} does not exist. Pick one from the scenario bar.`,
+          ),
+        ];
+      }
+      const snapshot: ServerIn = {
+        v: WS_PROTOCOL_VERSION,
+        type: 'snapshot',
+        scenarioId: m.scenarioId,
+        version: state().version,
+        cells: ctx.committed(ctx.subscribed),
+      };
+      const resent = viewSubs.flatMap((sub) =>
+        views.filter((v) => v.view === sub.view && canonical(v.params) === canonical(sub.params)),
+      );
+      return [snapshot, ...resent];
+    },
   };
 
   const receive = (target: MockSocketImpl, data: unknown) => {
     const parsed = parseClientMessage(data);
     if (!parsed.ok) {
       rejected.push(parsed.detail);
-      send(target, {
-        v: WS_PROTOCOL_VERSION,
-        type: 'warnings',
-        seq: null,
-        violations: [],
-        problem: {
-          type: problemTypes.badRequest,
-          title: 'Bad frame',
-          status: 400,
-          detail: parsed.detail,
-        },
-      });
+      send(target, frameError(problemTypes.badRequest, 'Bad frame', 400, parsed.detail));
       return;
     }
     const m = parsed.message;
     sent.push(m);
     if (m.type === 'subscribe') for (const c of m.cells) subscribed.add(c);
     if (m.type === 'unsubscribe') for (const c of m.cells) subscribed.delete(c);
+    if (m.type === 'open' && scenarios.has(m.scenarioId)) current = m.scenarioId;
     if (m.type === 'subscribeView') viewSubs.push({ view: m.view, params: m.params });
     if (m.type === 'unsubscribeView') {
       const key = canonical(m.params);
@@ -336,6 +370,7 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
     subscribed = new Set();
     viewSubs = [];
     query = null;
+    current = null;
 
     const u = new URL(url, 'ws://mock.session');
     if (u.pathname !== WS_SESSION_PATH) {
@@ -349,6 +384,7 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
       refuse(s, `no snapshot for scenario ${q.data.scenario}`);
     } else {
       query = q.data;
+      current = q.data.scenario;
       enqueue(() => {
         if (s.readyState !== MOCK_SOCKET_STATE.CONNECTING) return;
         s.readyState = MOCK_SOCKET_STATE.OPEN;
@@ -377,6 +413,9 @@ export function createMockSession(options: MockSessionOptions = {}): MockSession
     },
     get query() {
       return query;
+    },
+    get scenarioId() {
+      return current;
     },
     sent,
     rejected,

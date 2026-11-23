@@ -1,7 +1,23 @@
 import { z } from 'zod';
-import { CellKey, JobId, MemberKey, OneLine, ScenarioId, TenantSlug, VarKey, Version } from './ids';
+import {
+  CellKey,
+  ChangesetId,
+  JobId,
+  MemberKey,
+  OneLine,
+  ScenarioId,
+  TenantSlug,
+  VarKey,
+  Version,
+} from './ids';
 import { Problem, Violation } from './problem';
-import { ChangesetResult } from './changeset';
+import {
+  ChangesetAuthor,
+  ChangesetConflict,
+  ChangesetOrigin,
+  ChangesetRequest,
+  ChangesetResult,
+} from './changeset';
 
 /**
  * `WS /ws/session?tenant&scenario`: the what-if session (03 §2, ADR-004).
@@ -9,7 +25,8 @@ import { ChangesetResult } from './changeset';
  * Every frame is one JSON object with `type` (the message kind) and `v` (protocol version).
  * Parsers reject frames whose `type` is unknown for that direction or whose `v` differs.
  * Previews travel here; commits go over REST (`POST /changesets`) and come back as
- * `changeset` + `delta` on every session open on the scenario.
+ * `changeset` + `delta` on every session open on the scenario (see `SessionStep` for the
+ * scratch lifecycle around a commit). `open{scenarioId}` switches the session's scenario.
  */
 export const WS_SESSION_PATH = '/ws/session';
 
@@ -17,24 +34,34 @@ export const WS_SESSION_PATH = '/ws/session';
 export const WS_PROTOCOL_VERSION = 1;
 const V = z.literal(WS_PROTOCOL_VERSION);
 
-/** Query of the upgrade request: tenant slug and the scenario the session opens on. */
+/**
+ * Query of the upgrade request: tenant slug and the scenario the session opens on first.
+ * Later switches go through the `open` message on the same connection.
+ */
 export const SessionQuery = z.object({ tenant: TenantSlug, scenario: ScenarioId });
 export type SessionQuery = z.infer<typeof SessionQuery>;
 
 /**
- * Preview coalescing contract (ADR-004, 07 §3, 03 §2):
+ * Preview rate and coalescing contract (ADR-004, 07 §3, 03 §2):
  *
- * - The client sends at most `PREVIEW_MAX_PER_SECOND` previews per second per input cell
- *   (`var[member]`), i.e. one per `PREVIEW_MIN_INTERVAL_MS`, always the latest drag value.
+ * - Rate: the client sends at most `PREVIEW_MAX_PER_SECOND` `preview` messages per second
+ *   **per connection** (one per `PREVIEW_MIN_INTERVAL_MS`, across all cells), always with the
+ *   latest values. Cells that move together (e.g. two `org.dom_share` cells of one domain
+ *   row) go in one `preview` with several `changes`, never in several previews.
+ *   `cancelPreview` and `open` are not rate-limited. Tier 2 does not reject a faster client;
+ *   coalescing absorbs the excess.
  * - `seq` comes from one counter per connection, strictly increasing across `preview` and
  *   `cancelPreview`.
- * - The server queues previews while a rerun is busy and keeps only the latest `seq` per
- *   cell; superseded previews are dropped and never answered. The next rerun applies the
- *   kept previews on the session's scratch copy and answers once, with the highest `seq` it
- *   applied: `delta{seq}` (subscribed cells that changed), `view{seq}` for changed views and,
- *   when rules flag the scratch state, `warnings{seq}`.
+ * - The server queues previews while a rerun is busy. The next rerun applies every queued
+ *   preview in `seq` order on the session's scratch copy, so for each cell the value of the
+ *   latest `seq` wins; all cells of one preview are applied in the same rerun (atomic). A
+ *   preview whose cells are all overwritten by later queued previews is superseded: dropped
+ *   and never answered. The rerun answers once, with the highest `seq` it applied:
+ *   `delta{seq}` (subscribed cells that changed), `view{seq}` for changed views and, when
+ *   rules flag the scratch state, `warnings{seq}`.
  * - The client ignores a `delta` / `view` / `warnings` whose `seq` is lower than the last it
- *   applied. Messages with `seq: null` come from commits or jobs and always apply.
+ *   applied (an equal `seq` applies: a rebase answers with the scratch's `seq` again).
+ *   Messages with `seq: null` come from commits, `open` or jobs and always apply.
  */
 export const PREVIEW_MAX_PER_SECOND = 30;
 export const PREVIEW_MIN_INTERVAL_MS = 1000 / PREVIEW_MAX_PER_SECOND;
@@ -215,22 +242,46 @@ export const Unsubscribe = message('unsubscribe', { cells: z.array(CellKey).min(
 export const SubscribeView = viewSubscription('subscribeView');
 /** Stop pushing a view (same `view` + `params` as subscribed). */
 export const UnsubscribeView = viewSubscription('unsubscribeView');
+/** One input cell a preview sets: `var[member]` = `value`. */
+export const PreviewChange = z.object({ var: VarKey, member: MemberKey, value: z.number() });
+export type PreviewChange = z.infer<typeof PreviewChange>;
+
 /**
- * Try a value for input cell `var[member]` on the session's scratch copy; nothing is written.
- * Rate and `seq` rules: see `PREVIEW_MAX_PER_SECOND`.
+ * Try values for 1..n input cells on the session's scratch copy; nothing is written. The
+ * cells of one preview are applied atomically (same rerun), e.g. the two `org.dom_share`
+ * cells a VP ownership drag moves. A cell appears at most once per preview.
+ * Rate and `seq` rules: see `PREVIEW_MAX_PER_SECOND`; lifecycle: see `SessionStep`.
+ *
+ * The CON-02 single-cell form `{var, member, value, seq}` is not part of the schema;
+ * `parseClientMessage` still accepts it on the wire and normalises it to `changes: [cell]`.
  */
 export const Preview = message('preview', {
-  var: VarKey,
-  member: MemberKey,
-  value: z.number(),
   seq: Seq,
+  changes: z
+    .array(PreviewChange)
+    .min(1)
+    .refine(
+      (cells) => new Set(cells.map((c) => `${c.var}[${c.member}]`)).size === cells.length,
+      'each cell at most once per preview',
+    ),
 });
 /**
- * Drop the scratch copy (Escape / cancelled drag): every preview with a lower `seq` is void.
- * `seq` is a fresh value from the same counter; the server answers `delta{seq}` with the
- * subscribed cells that change back to committed values.
+ * Drop the scratch copy (Escape / cancelled drag, or the commit settled): every preview with
+ * a lower `seq` is void. `seq` is a fresh value from the same counter; the server answers
+ * `delta{seq}` with the subscribed cells whose value goes back to the committed one (empty
+ * when nothing differs, e.g. after a commit of exactly the previewed values) and, when the
+ * scratch had warnings, `warnings{seq, violations: []}` to clear them.
  */
 export const CancelPreview = message('cancelPreview', { seq: Seq });
+/**
+ * Switch the session to another scenario of the same tenant (scenario bar). Tier 2 drops the
+ * scratch copy (pending previews are void), keeps every cell and view subscription, and
+ * answers `snapshot{scenarioId}` with all subscribed cells, then one `view{seq: null}` per
+ * subscribed view. Until that `snapshot` arrives the client ignores `delta` / `view` /
+ * `warnings` (they belong to the old scenario). An unknown or forbidden scenario is answered
+ * with `error{problem}` and the session stays where it was.
+ */
+export const Open = message('open', { scenarioId: ScenarioId });
 
 export const ClientMessage = z.discriminatedUnion('type', [
   Subscribe,
@@ -239,6 +290,7 @@ export const ClientMessage = z.discriminatedUnion('type', [
   UnsubscribeView,
   Preview,
   CancelPreview,
+  Open,
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 export type ClientMessageType = ClientMessage['type'];
@@ -249,13 +301,14 @@ export const clientMessageTypes = [
   'unsubscribeView',
   'preview',
   'cancelPreview',
+  'open',
 ] as const satisfies readonly ClientMessageType[];
 
 // ---------------------------------------------------------------------------
 // Server → client
 // ---------------------------------------------------------------------------
 
-/** Full values of the subscribed cells on `scenarioId` at `version` (on subscribe, reconnect, switch). */
+/** Full values of the subscribed cells on `scenarioId` at `version` (on subscribe, reconnect, `open`). */
 export const Snapshot = message('snapshot', {
   scenarioId: ScenarioId,
   version: Version,
@@ -275,14 +328,18 @@ export const View = z.discriminatedUnion('view', [
 ]);
 /**
  * Rule results for preview `seq` in tier 2's words (an empty list clears earlier warnings).
- * With `seq: null` and a `problem`, a rejected client message (unknown view or params, bad
- * frame); the session stays open.
+ * Warnings are about model state only; a rejected frame is answered with `error`, never here.
  */
 export const Warnings = message('warnings', {
   seq: AnswerSeq,
   violations: z.array(Violation),
-  problem: Problem.optional(),
 });
+/**
+ * A client frame was rejected: not JSON, unknown `type` or `v`, malformed body, unknown view
+ * or params, unknown or forbidden scenario on `open`. `problem.detail` is the one-line
+ * reason (the parsers' `detail`). The session stays open and its state is unchanged.
+ */
+export const ErrorMessage = message('error', { problem: Problem });
 /** Background job progress (`solver_run`), at most every 250 ms. */
 export const Job = message('job', {
   id: JobId,
@@ -291,12 +348,26 @@ export const Job = message('job', {
   progress: z.number().min(0).max(1),
   note: OneLine.nullable(),
 });
-/** A changeset was applied to the session's scenario (by this or another user). */
-export const ChangesetApplied = message(
-  'changeset',
-  ChangesetResult.pick({ scenarioId: true, version: true, editsCount: true, forkedFrom: true })
+/**
+ * A changeset was applied to the session's scenario (by this or another user, or a job).
+ * It always precedes the `delta{seq: null}` that carries its values (see `SessionStep`).
+ * `changesetId`, `origin` and `author` let tier 1 match its own POST and name who changed
+ * what; `author` is `null` for system changesets (seed, scheduled market refresh).
+ *
+ * Fork: when the commit forked a locked preset, `scenarioId` is the new scenario and
+ * `forkedFrom` the preset. The sessions that caused it, i.e. the author's sessions open on
+ * the preset, follow the fork: from this message on their scenario is `scenarioId` (the
+ * `delta{seq: null}` after it is relative to the preset's values, and later commits,
+ * rebases and `cancelPreview` act on the fork). Other sessions on the preset are not moved
+ * and get no message (the preset did not change). Any other switch is an explicit `open`.
+ */
+export const ChangesetApplied = message('changeset', {
+  ...ChangesetResult.pick({ scenarioId: true, version: true, editsCount: true, forkedFrom: true })
     .shape,
-);
+  changesetId: ChangesetId.optional(),
+  origin: ChangesetOrigin.optional(),
+  author: ChangesetAuthor.nullable().optional(),
+});
 
 export const ServerMessage = z.discriminatedUnion('type', [
   Snapshot,
@@ -305,6 +376,7 @@ export const ServerMessage = z.discriminatedUnion('type', [
   Warnings,
   Job,
   ChangesetApplied,
+  ErrorMessage,
 ]);
 export type ServerMessage = z.infer<typeof ServerMessage>;
 export type ServerMessageType = ServerMessage['type'];
@@ -315,17 +387,65 @@ export const serverMessageTypes = [
   'warnings',
   'job',
   'changeset',
+  'error',
 ] as const satisfies readonly ServerMessageType[];
+
+// ---------------------------------------------------------------------------
+// Scratch lifecycle around a commit (03 §2, 04 §4)
+// ---------------------------------------------------------------------------
+
+/**
+ * One step of a session timeline: a WS frame either way, or tier 1's `POST /changesets`
+ * and how it settled. Typed so fixtures (and tier 1 / tier 2 tests) can spell out a whole
+ * exchange and have it checked.
+ *
+ * Scratch lifecycle. The session holds its scenario's committed state and, while previews
+ * are live, a scratch copy = committed state + the latest previewed value of every cell
+ * previewed since the last `cancelPreview` / `open`.
+ *
+ * 1. Preview: `preview{seq, changes}` updates the scratch; answers carry that `seq`.
+ * 2. Commit: on release or typed entry tier 1 sends `POST /changesets` (optionally with a
+ *    `clientRequestId`). The scratch stays while the request is in flight, so the numbers
+ *    do not snap back.
+ * 3. Broadcast: tier 2 tells the sessions before it answers the POST. Every session on the
+ *    scenario gets, in this order: `changeset{…}`, then `delta{seq: null}` with the
+ *    subscribed cells whose committed value changed, then `view{seq: null}` for changed views.
+ * 4. Rebase: a session with a scratch re-applies the scratch cells onto the new committed
+ *    state and reruns, then answers `delta{seq: S}` (cells where scratch ≠ committed, may be
+ *    empty), `view{seq: S}` and `warnings{seq: S}` as for a preview, S being the highest
+ *    `seq` in the scratch. Previews are therefore always rebased onto each commit, whoever
+ *    made it.
+ * 5. Close: tier 1 sends `cancelPreview{seq}` once its POST has settled: resolved (2xx) or
+ *    failed (409, 422, network). On 409 it first re-sends its edits on `serverVersion` and
+ *    cancels when that re-send settles. Because of step 3, the `cancelPreview` always
+ *    reaches the session after the commit it follows.
+ * Fork: see `ChangesetApplied`; the author's sessions follow `changeset{forkedFrom}`.
+ */
+export const SessionStep = z.discriminatedUnion('by', [
+  /** Tier 1 → tier 2 over the socket. */
+  z.object({ by: z.literal('client'), message: ClientMessage }),
+  /** Tier 2 → tier 1 over the socket. */
+  z.object({ by: z.literal('server'), message: ServerMessage }),
+  /** Tier 1 sends `POST /api/t/:tenant/changesets`. */
+  z.object({ by: z.literal('post'), request: ChangesetRequest }),
+  /** That POST resolved. */
+  z.object({ by: z.literal('postResolved'), result: ChangesetResult }),
+  /** That POST failed (a 409 carries `serverVersion` and `changesSince`). */
+  z.object({ by: z.literal('postFailed'), problem: z.union([ChangesetConflict, Problem]) }),
+]);
+export type SessionStep = z.infer<typeof SessionStep>;
+export const SessionTimeline = z.array(SessionStep).min(1);
+export type SessionTimeline = z.infer<typeof SessionTimeline>;
 
 // ---------------------------------------------------------------------------
 // Parsing
 // ---------------------------------------------------------------------------
 
-/** Parse outcome; `detail` is one line, fit for a `warnings.problem.detail`. */
+/** Parse outcome; `detail` is one line, fit for an `error.problem.detail`. */
 export type ParseResult<T> = { ok: true; message: T } | { ok: false; detail: string };
 
 const parseWith =
-  <T>(schema: z.ZodType<T>) =>
+  <T>(schema: z.ZodType<T>, normalise: (data: unknown) => unknown = (d) => d) =>
   (frame: unknown): ParseResult<T> => {
     let data = frame;
     if (typeof frame === 'string') {
@@ -335,7 +455,7 @@ const parseWith =
         return { ok: false, detail: 'Frame is not JSON. Send one JSON object per frame.' };
       }
     }
-    const result = schema.safeParse(data);
+    const result = schema.safeParse(normalise(data));
     if (result.success) return { ok: true, message: result.data };
     const issue = result.error.issues[0];
     const path = issue?.path.length ? issue.path.join('.') : 'message';
@@ -343,7 +463,22 @@ const parseWith =
     return { ok: false, detail: `Invalid ${path}: ${why}` };
   };
 
-/** Parse a client frame (JSON text or decoded object). Unknown `type` or other `v` fail. */
-export const parseClientMessage = parseWith(ClientMessage);
+/**
+ * Wire compatibility: a CON-02 single-cell `preview{var, member, value, seq}` becomes
+ * `preview{seq, changes: [{var, member, value}]}`. Anything else passes through unchanged.
+ */
+export const normaliseClientFrame = (data: unknown): unknown => {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return data;
+  const frame = data as Record<string, unknown>;
+  if (frame.type !== 'preview' || 'changes' in frame || !('var' in frame)) return data;
+  const { var: key, member, value, ...rest } = frame;
+  return { ...rest, changes: [{ var: key, member, value }] };
+};
+
+/**
+ * Parse a client frame (JSON text or decoded object). Unknown `type` or other `v` fail.
+ * A single-cell `preview` is normalised first (see `normaliseClientFrame`).
+ */
+export const parseClientMessage = parseWith(ClientMessage, normaliseClientFrame);
 /** Parse a server frame (JSON text or decoded object). Unknown `type` or other `v` fail. */
 export const parseServerMessage = parseWith(ServerMessage);

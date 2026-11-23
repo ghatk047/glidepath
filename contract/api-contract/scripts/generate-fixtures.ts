@@ -209,6 +209,7 @@ export function generateSpecFixtures(specDir: string = defaultSpecDir): Map<stri
         parentId: null,
         modelVersionId: modelVersion.id,
         version: 0,
+        editsCount: 0,
         locked: true,
         archived: false,
         createdBy: null,

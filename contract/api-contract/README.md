@@ -12,7 +12,7 @@ It imports `zod` and nothing else (G13; enforced by `eslint.config.js` and `src/
 - Errors are RFC 9457 `Problem` (`application/problem+json`): `type`, `title`, `status`,
   one-line `detail` for the UI error chip, optional `violations[{rule VR01–VR10, cells, severity, message}]`.
   The changeset routes answer 409 with `ChangesetConflict` (a problem plus `serverVersion`, `changesSince[]`).
-- `ChangesetRequest {scenarioId, baseVersion, changes[{target, key, member, value, note?}]}` →
+- `ChangesetRequest {scenarioId, baseVersion, changes[{target, key, member, value, note?}], clientRequestId?}` →
   `ChangesetResult {changesetId, scenarioId, version, editsCount, inputHash, outputs, warnings, forkedFrom?}`.
 - Ids are plain branded strings (`ScenarioId`, `ChangesetId`, `VarKey`, `NodeKey`, …). Cells are
   `CellKey` = `id[member]` as in the engine (`res.net[]`, `hc.rate[pilots,fy27]`); `toCellKey()` formats one.
@@ -28,14 +28,18 @@ with `type` and protocol `v` (`WS_PROTOCOL_VERSION` = 1). `parseClientMessage` /
 malformed body with a one-line `detail`.
 
 - Client → server: `subscribe{cells}`, `unsubscribe{cells}`, `subscribeView{view, params}`,
-  `unsubscribeView{view, params}`, `preview{var, member, value, seq}`, `cancelPreview{seq}`.
+  `unsubscribeView{view, params}`, `preview{seq, changes[{var, member, value}]}`,
+  `cancelPreview{seq}`, `open{scenarioId}`.
 - Server → client: `snapshot{scenarioId, version, cells}`, `delta{seq, cells}`,
-  `view{view, params, seq, payload}`, `warnings{seq, violations, problem?}`,
-  `job{id, status, progress, note}`, `changeset{scenarioId, version, editsCount, forkedFrom?}`.
-- Coalescing (documented on `PREVIEW_MAX_PER_SECOND`): the client sends ≤ 30 previews/s per
-  input cell; `seq` is one increasing counter per connection; the server keeps the latest `seq`
-  per cell, drops superseded previews unanswered and answers each rerun with the highest `seq`
-  it applied. `seq: null` on `delta` / `view` / `warnings` means a commit or job, not a preview.
+  `view{view, params, seq, payload}`, `warnings{seq, violations}`,
+  `job{id, status, progress, note}`,
+  `changeset{scenarioId, version, editsCount, forkedFrom?, changesetId?, origin?, author?}`,
+  `error{problem}`.
+- Coalescing (documented on `PREVIEW_MAX_PER_SECOND`): the client sends ≤ 30 previews/s **per
+  connection**; `seq` is one increasing counter per connection; the server keeps the latest
+  value per cell, applies the cells of one preview atomically, drops superseded previews
+  unanswered and answers each rerun with the highest `seq` it applied. `seq: null` on
+  `delta` / `view` / `warnings` means a commit, `open` or job, not a preview.
   `cancelPreview` carries a fresh `seq` and voids the scratch copy.
 - Views (ADR-021, `viewSchemas`): `bridge`, `baseline.groups` (`by` pool | domain | vp),
   `baseline.summary`, `levers.families`, `levers.monthly`, `levers.scale`, `vps.domain_outlay`;
@@ -44,6 +48,23 @@ malformed body with a one-line `detail`.
 
 `src/fixtures/ws.ts` holds one fixture per message type and per view, plus the coalescing
 walk-through; `ws-protocol.spec.ts` checks them.
+
+### Review fixes (CON-05)
+
+- `open{scenarioId}` switches the session (scenario bar): tier 2 drops the scratch, keeps the
+  subscriptions and answers `snapshot` of every subscribed cell, then each subscribed `view`
+  (`seq: null`); an unknown scenario gets `error`. The author's sessions on a locked preset
+  **follow** `changeset{forkedFrom}` onto the fork their commit created; other sessions stay.
+- `preview{seq, changes}` carries 1..n cells applied atomically (e.g. two `org.dom_share`
+  cells). `parseClientMessage` still normalises the CON-02 single-cell frame on the wire.
+- Scratch lifecycle (`SessionStep` / `SessionTimeline`, typed timelines in
+  `scratchLifecycleFixtures`): the scratch stays while the POST is in flight; every commit
+  reaches the session as `changeset` then `delta{seq: null}` (before the POST answers), then
+  the scratch is rebased (`delta{seq: S}`); tier 1 sends `cancelPreview` once its POST
+  settled (after a 409 it first re-sends its edits on `serverVersion`).
+- Rejected frames get `error{problem}`; `warnings` carry rule results only.
+- `ChangesetRequest.clientRequestId` (idempotency key), `Scenario.editsCount`, strict
+  `NodeDef` (an `expr` / `cases` key fails the bundle).
 
 ## Typed client, contract fixtures and mock session (CON-04)
 
@@ -77,7 +98,10 @@ app bundles never carry fixture JSON):
   `WS /ws/session`. It replays and never calculates: `subscribe` → `snapshot` of those cells
   from the preset snapshot (`null` if absent), `subscribeView` → a configured `views`
   fixture, `cancelPreview` → `delta{seq}` with the committed values of the subscribed cells,
-  a bad frame → `warnings{problem}`; `preview` gets no answer unless a `respond.preview`
-  responder scripts one. Tests push `snapshot` / `delta` / `view` / `job` / `changeset` with
+  `open` → `snapshot` + subscribed views, a bad frame → `error{problem}`; `preview` gets no
+  answer unless a `respond.preview` responder scripts one. An emitted
+  `changeset{forkedFrom}` of the open scenario moves the mock onto the fork (`scenarioId`). Tests push `snapshot` / `delta` / `view` / `job` / `changeset` with
   `emit()` / `replay()`, simulate drops with `drop()`, and read `sent`, `subscribed`, `views`.
-- The hand-written CON-01 / CON-02 fixtures (`coreRouteFixtures`, `serverMessageFixtures`, …).
+- The hand-written CON-01 / CON-02 / CON-05 fixtures (`coreRouteFixtures`,
+  `changesetConflictFixture`, `serverMessageFixtures`, `openFixture`,
+  `scratchLifecycleFixtures`, …).

@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { ChangesetResult } from '../changeset';
+import type { ChangesetConflict, ChangesetResult } from '../changeset';
 import type { coreRoutes, CoreRouteId } from '../routes';
 
 /**
@@ -25,6 +25,7 @@ const scenarioC = {
   parentId: null,
   modelVersionId: 'mv-1',
   version: 3,
+  editsCount: 0,
   locked: true,
   archived: false,
   createdBy: null,
@@ -338,3 +339,28 @@ export const coreRouteFixtures = {
     },
   },
 } satisfies CoreRouteFixtures;
+
+/**
+ * 409 of `POST /changesets` (and revert): nothing was applied; tier 1 re-sends its pending
+ * edits on `serverVersion` (04 §4). The `detail` says so in the UI's words.
+ */
+export const changesetConflictFixture = {
+  type: '/problems/version-conflict',
+  title: 'Scenario changed',
+  status: 409,
+  detail:
+    'Someone else changed this scenario first. Your edits are being re-sent on the new version.',
+  serverVersion: 9,
+  changesSince: [
+    {
+      changesetId: 'cs-8',
+      seq: 0,
+      target: 'variable',
+      key: 'hc.us',
+      member: '',
+      op: 'update',
+      oldValue: 9000,
+      newValue: 9100,
+    },
+  ],
+} satisfies z.input<typeof ChangesetConflict>;

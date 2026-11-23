@@ -113,7 +113,13 @@ describe('createMockSession() replays snapshot/delta/view/job messages for tier-
     send(plain.socket, { type: 'preview', var: 'g.target_net', member: '', value: 150, seq: 1 });
     await plain.session.flush();
     expect(plain.received).toEqual([]);
-    expect(plain.session.sentOf('preview')[0]).toMatchObject({ value: 150, seq: 1 });
+    // The CON-02 single-cell form is normalised to changes[1], as tier 2's parser does.
+    expect(plain.session.sentOf('preview')[0]).toEqual({
+      v: 1,
+      type: 'preview',
+      seq: 1,
+      changes: [{ var: 'g.target_net', member: '', value: 150 }],
+    });
 
     // A test scripts the tier-2 answer, here a value from another golden preset.
     const scripted = await open(C.scenarioId, {
@@ -123,7 +129,11 @@ describe('createMockSession() replays snapshot/delta/view/job messages for tier-
         ],
       },
     });
-    send(scripted.socket, { type: 'preview', var: 'g.target_net', member: '', value: 150, seq: 7 });
+    send(scripted.socket, {
+      type: 'preview',
+      seq: 7,
+      changes: [{ var: 'g.target_net', member: '', value: 150 }],
+    });
     await scripted.session.flush();
     expect(scripted.received).toEqual([
       { v: 1, type: 'delta', seq: 7, cells: { 'res.net[]': D.cells['res.net[]'] } },
@@ -158,22 +168,81 @@ describe('createMockSession() replays snapshot/delta/view/job messages for tier-
     });
   });
 
-  it('answers a bad frame with warnings{problem}, like tier 2, and keeps the session open', async () => {
+  it('answers a bad frame with error{problem}, like tier 2, and keeps the session open', async () => {
     const { session, socket, received } = await open();
     socket.send('not json');
     send(socket, { type: 'subscribeView', view: 'levers.weekly', params: {} });
     await session.flush();
     expect(received).toHaveLength(2);
     for (const m of received) {
-      expect(m).toMatchObject({
-        type: 'warnings',
-        seq: null,
-        violations: [],
-        problem: { status: 400 },
-      });
+      expect(m).toMatchObject({ type: 'error', problem: { status: 400 } });
     }
     expect(session.rejected).toHaveLength(2);
     expect(socket.readyState).toBe(socket.OPEN);
+  });
+
+  it('open{scenarioId} switches scenario: snapshot of the subscribed cells, then the subscribed views', async () => {
+    const view = viewMessageFixtures.bridge;
+    const { session, socket, received } = await open(C.scenarioId, { views: [view] });
+    send(socket, { type: 'subscribe', cells: ['res.net[]'] });
+    send(socket, { type: 'subscribeView', view: 'bridge', params: {} });
+    await session.flush();
+    received.length = 0;
+    send(socket, { type: 'open', scenarioId: D.scenarioId });
+    await session.flush();
+    expect(received).toEqual([
+      {
+        v: 1,
+        type: 'snapshot',
+        scenarioId: D.scenarioId,
+        version: D.version,
+        cells: { 'res.net[]': D.cells['res.net[]'] },
+      },
+      view,
+    ]);
+    expect(session.scenarioId).toBe(D.scenarioId);
+    expect(session.query?.scenario).toBe(C.scenarioId);
+
+    send(socket, { type: 'open', scenarioId: 'sc-nope' });
+    await session.flush();
+    expect(received.at(-1)).toMatchObject({ type: 'error', problem: { status: 404 } });
+    expect(session.scenarioId).toBe(D.scenarioId);
+  });
+
+  it('follows changeset{forkedFrom} of its own commit onto the fork', async () => {
+    const { session, socket, received } = await open();
+    send(socket, { type: 'subscribe', cells: ['res.net[]', 'res.gap[]'] });
+    await session.replay([
+      {
+        v: 1,
+        type: 'changeset',
+        scenarioId: 'sc-custom-1',
+        version: 1,
+        editsCount: 1,
+        forkedFrom: C.scenarioId,
+        changesetId: 'cs-1',
+        origin: 'ui',
+        author: { id: 'u-1', name: 'Pat Owner' },
+      },
+      { v: 1, type: 'delta', seq: null, cells: { 'res.net[]': D.cells['res.net[]']! } },
+    ]);
+    expect(session.scenarioId).toBe('sc-custom-1');
+    send(socket, { type: 'cancelPreview', seq: 2 });
+    await session.flush();
+    expect(received.at(-1)).toEqual({
+      v: 1,
+      type: 'delta',
+      seq: 2,
+      cells: { 'res.net[]': D.cells['res.net[]'], 'res.gap[]': C.cells['res.gap[]'] },
+    });
+    // The preset keeps its own values.
+    send(socket, { type: 'open', scenarioId: C.scenarioId });
+    await session.flush();
+    expect(received.at(-1)).toMatchObject({
+      type: 'snapshot',
+      scenarioId: C.scenarioId,
+      cells: { 'res.net[]': C.cells['res.net[]'] },
+    });
   });
 
   it('refuses a wrong path, tenant or unknown scenario like a failed upgrade (error, 1006)', async () => {

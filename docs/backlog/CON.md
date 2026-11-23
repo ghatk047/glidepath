@@ -155,7 +155,7 @@ title: "WS/REST contract review fixes: open{scenarioId}, batched preview, scratc
 epic: CON
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -179,6 +179,7 @@ acceptance:
 gates: [G1, G2, G13]
 size: M
 notes: "From the opus review of CON-01/CON-02 (2026-11-23). Contract change: WEB-03 and API-06/07 consume it."
+merged_at: "2026-11-23"
 ```
 
 Fixes the blocking contract findings before the session manager and WS client depend on them.

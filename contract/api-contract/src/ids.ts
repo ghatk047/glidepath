@@ -26,6 +26,13 @@ export type ChangesetId = z.infer<typeof ChangesetId>;
 export const ModelVersionId = id<'ModelVersionId'>();
 export type ModelVersionId = z.infer<typeof ModelVersionId>;
 
+/**
+ * Idempotency key of one commit attempt, chosen by tier 1 (e.g. a UUID). Opaque to tier 2;
+ * at most 128 characters.
+ */
+export const ClientRequestId = z.string().min(1).max(128).brand<'ClientRequestId'>();
+export type ClientRequestId = z.infer<typeof ClientRequestId>;
+
 /** A background job (`solver_run.id`), as reported in WS `job` messages. */
 export const JobId = id<'JobId'>();
 export type JobId = z.infer<typeof JobId>;

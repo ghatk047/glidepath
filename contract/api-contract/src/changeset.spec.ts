@@ -1,12 +1,19 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  BundleResponse,
   ChangesetConflict,
   ChangesetRequest,
   ChangesetResult,
+  NodeDef,
   Problem,
+  Scenario,
+  ScenariosResponse,
   coreRoutes,
   problemTypes,
 } from './index';
+import { changesetConflictFixture, coreRouteFixtures } from './fixtures/core';
 
 const omit = (o: object, k: string): Record<string, unknown> => {
   const copy: Record<string, unknown> = { ...o };
@@ -44,25 +51,8 @@ const result = {
   ],
 };
 
-const conflict = {
-  type: problemTypes.versionConflict,
-  title: 'Scenario changed',
-  status: 409,
-  detail: 'Someone else changed this scenario. Your edits were re-applied.',
-  serverVersion: 9,
-  changesSince: [
-    {
-      changesetId: 'cs-8',
-      seq: 0,
-      target: 'variable',
-      key: 'hc.us',
-      member: '',
-      op: 'update',
-      oldValue: 9000,
-      newValue: 9100,
-    },
-  ],
-};
+const conflict = changesetConflictFixture;
+const coreSource = readFileSync(fileURLToPath(new URL('./core.ts', import.meta.url)), 'utf8');
 
 describe('changeset: request {baseVersion, changes[]}', () => {
   it('parses variable, override and structural changes', () => {
@@ -157,5 +147,74 @@ describe('changeset: 409 body {serverVersion, changesSince[]}', () => {
   it('is declared as the 409 of the changeset routes', () => {
     expect(coreRoutes.changesetApply.errors[409]).toBe(ChangesetConflict);
     expect(coreRoutes.changesetRevert.errors[409]).toBe(ChangesetConflict);
+  });
+});
+
+describe('changeset: request clientRequestId (idempotency)', () => {
+  it('is optional and passes through when given', () => {
+    expect(ChangesetRequest.parse(request)).not.toHaveProperty('clientRequestId');
+    const keyed = { ...request, clientRequestId: 'rq-7f3a' };
+    expect(ChangesetRequest.parse(keyed).clientRequestId).toBe('rq-7f3a');
+  });
+
+  it('is a non-empty string of at most 128 characters', () => {
+    for (const bad of ['', 7, 'x'.repeat(129)]) {
+      expect(ChangesetRequest.safeParse({ ...request, clientRequestId: bad }).success).toBe(false);
+    }
+    expect(
+      ChangesetRequest.safeParse({ ...request, clientRequestId: 'x'.repeat(128) }).success,
+    ).toBe(true);
+  });
+});
+
+describe('changeset: 409 fixture says tier 1 re-sends its edits', () => {
+  it('detail tells the user the edits are re-sent, never re-applied or re-based by the server', () => {
+    expect(conflict.type).toBe(problemTypes.versionConflict);
+    expect(conflict.detail).toMatch(/re-sent/);
+    expect(conflict.detail).not.toMatch(/re-applied|re-based/);
+  });
+});
+
+describe('core: Scenario gains editsCount; its doc does not say a child inherits overrides', () => {
+  const scenario = coreRouteFixtures.scenarios.response.scenarios[0]!;
+
+  it('editsCount is a required non-negative integer', () => {
+    expect(Scenario.parse(scenario).editsCount).toBe(0);
+    const { editsCount: _drop, ...without } = scenario;
+    void _drop;
+    expect(Scenario.safeParse(without).success).toBe(false);
+    for (const bad of [-1, 1.5, '3']) {
+      expect(Scenario.safeParse({ ...scenario, editsCount: bad }).success).toBe(false);
+    }
+    expect(ScenariosResponse.safeParse(coreRouteFixtures.scenarios.response).success).toBe(true);
+  });
+
+  it('documents that node overrides are not inherited from the parent', () => {
+    const scenarioDocs = coreSource.slice(
+      coreSource.indexOf('// Scenarios: GET list'),
+      coreSource.indexOf('// GET /api/t/:tenant/scenarios/:id/inputs'),
+    );
+    expect(scenarioDocs).toMatch(/Node overrides \(pins\) are not inherited/);
+    expect(scenarioDocs).not.toMatch(/inherits (everything|all|its parent's overrides)/i);
+    expect(scenarioDocs).not.toMatch(/inherits[^.]*overrides/i);
+  });
+});
+
+describe('core: NodeDef is strict, so expr / cases never reach tier 1', () => {
+  const node = coreRouteFixtures.bundle.response.nodes[0]!;
+
+  it('a node with only the published keys parses', () => {
+    expect(NodeDef.parse(node)).toEqual(node);
+  });
+
+  it.each([
+    ['expr', 'base.total * (1 + g.growth)'],
+    ['cases', [{ when: 'x', expr: 'y' }]],
+    ['note', 'anything else'],
+  ])('fails on an extra key %s, also inside a bundle', (key, value) => {
+    expect(NodeDef.safeParse({ ...node, [key]: value }).success).toBe(false);
+    const bundle = coreRouteFixtures.bundle.response;
+    const leaky = { ...bundle, nodes: [{ ...node, [key]: value }] };
+    expect(BundleResponse.safeParse(leaky).success).toBe(false);
   });
 });

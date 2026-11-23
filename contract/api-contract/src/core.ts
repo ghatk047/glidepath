@@ -132,8 +132,11 @@ export const VariableDef = z.object({
 });
 export type VariableDef = z.infer<typeof VariableDef>;
 
-/** A formula node as tier 1 needs it: label, unit, dims. The expression stays in tier 2. */
-export const NodeDef = z.object({
+/**
+ * A formula node as tier 1 needs it: label, unit, dims. Strict: the expression (`expr`,
+ * `cases`) and any other key stay in tier 2, and a bundle that carries one fails to parse.
+ */
+export const NodeDef = z.strictObject({
   id: NodeKey,
   label: z.string(),
   unit: z.string(),
@@ -187,6 +190,13 @@ export type MembersResponse = z.infer<typeof MembersResponse>;
 export const ScenarioKind = z.enum(['preset', 'user', 'solver', 'blend']);
 export type ScenarioKind = z.infer<typeof ScenarioKind>;
 
+/**
+ * A scenario. `parentId`: the scenario inherits the input values it does not set itself
+ * (`v_inputs_resolved`: registry → tenant default → parent → this scenario, last one wins).
+ * Node overrides (pins) are not inherited; each scenario has only its own.
+ * `editsCount` is the scenario's edits counter, as `ChangesetResult.editsCount` reports it
+ * after a commit (0 for a preset), so the scenario bar shows it without a commit.
+ */
 export const Scenario = z.object({
   id: ScenarioId,
   key: z.string().min(1),
@@ -195,6 +205,7 @@ export const Scenario = z.object({
   parentId: ScenarioId.nullable(),
   modelVersionId: ModelVersionId,
   version: Version,
+  editsCount: z.number().int().nonnegative(),
   locked: z.boolean(),
   archived: z.boolean(),
   createdBy: UserId.nullable(),
@@ -207,7 +218,10 @@ export const ScenariosResponse = z.object({
 });
 export type ScenariosResponse = z.infer<typeof ScenariosResponse>;
 
-/** Create by copy, blend, or empty child (inherits everything from its parent). */
+/**
+ * Create by copy, blend, or empty child. A child starts with no values of its own and
+ * resolves its inputs through its parent (see `Scenario`); it has no node overrides.
+ */
 export const CreateScenarioRequest = z.discriminatedUnion('mode', [
   z.object({
     mode: z.literal('copy'),

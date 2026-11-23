@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   CellKey,
   ChangesetId,
+  ClientRequestId,
   DimKey,
   InputHash,
   MemberKey,
@@ -80,11 +81,20 @@ export const Change = z.discriminatedUnion('target', [
 ]);
 export type Change = z.infer<typeof Change>;
 
-/** `POST /api/t/:tenant/changesets`: a batch of UI edits against the version the client saw. */
+/**
+ * `POST /api/t/:tenant/changesets`: a batch of UI edits against the version the client saw.
+ *
+ * `clientRequestId` makes the POST idempotent: tier 2 stores it with the changeset, and a
+ * request whose id it already applied (for the same tenant and user) is not applied again;
+ * it answers 200 with that changeset's result. Tier 1 reuses an id only to retry the same
+ * request after a network failure; a re-send after 409 carries a new `baseVersion` and a
+ * new id. Without the field every POST is a new commit.
+ */
 export const ChangesetRequest = z.object({
   scenarioId: ScenarioId,
   baseVersion: Version,
   changes: z.array(Change).min(1),
+  clientRequestId: ClientRequestId.optional(),
 });
 export type ChangesetRequest = z.infer<typeof ChangesetRequest>;
 
@@ -119,6 +129,13 @@ export const RevertResult = ChangesetResult.extend({
 });
 export type RevertResult = z.infer<typeof RevertResult>;
 
+/** Who made a changeset, as shown on the WS `changeset` message (toast, history). */
+export const ChangesetAuthor = z.object({
+  id: UserId,
+  name: z.string(),
+});
+export type ChangesetAuthor = z.infer<typeof ChangesetAuthor>;
+
 /** One stored change, as shown in history and in a 409 body. */
 export const ChangeRecord = z.object({
   seq: z.number().int().nonnegative(),
@@ -139,8 +156,9 @@ export const ConflictChange = ChangeRecord.extend({
 export type ConflictChange = z.infer<typeof ConflictChange>;
 
 /**
- * 409 body: a problem with the server's version and the changes made since `baseVersion`,
- * so tier 1 can re-send its pending edits on `serverVersion` (04 §4).
+ * 409 body: a problem with the server's version and the changes made since `baseVersion`.
+ * Nothing of the request was applied: tier 1 re-sends its pending edits on `serverVersion`
+ * (04 §4); tier 2 never re-applies them on its own.
  */
 export const ChangesetConflict = Problem.extend({
   status: z.literal(409),

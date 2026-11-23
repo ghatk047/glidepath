@@ -4,10 +4,19 @@
  */
 export * from './specFixtures';
 export * from './mockSession';
-export { coreRouteFixtures, type CoreRouteFixtures } from '../fixtures/core';
+export {
+  changesetConflictFixture,
+  coreRouteFixtures,
+  type CoreRouteFixtures,
+} from '../fixtures/core';
 export {
   clientMessageFixtures,
   coalescingFixture,
+  frameErrorFixture,
+  legacyPreviewFixture,
+  normalisedLegacyPreviewFixture,
+  openFixture,
+  scratchLifecycleFixtures,
   serverMessageFixtures,
   sessionQueryFixture,
   viewMessageFixtures,
