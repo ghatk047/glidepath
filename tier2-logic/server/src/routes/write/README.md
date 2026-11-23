@@ -16,8 +16,8 @@
 - **Fork**: the first edit of a locked preset answers the new scenario's id in `scenarioId` and the preset in `forkedFrom`, `version` is the fork's.
 - **409**: `serverVersion` and `changesSince` (every change row committed since `baseVersion`, with its changeset id). Also for a stale `old_value`, then with no `changesSince`. Revert checks the client's `baseVersion` against the scenario's version first (it locks the row), then calls the domain `revert`.
 - **Replay** (`clientRequestId` already applied): 200 with the first result's version and counters; `outputs` / `inputHash` are the scenario's current calc_run (nothing is recalculated), `warnings` the ones recorded on the changeset.
-- **calc**: `stale` when the run's scenario version is older than the scenario's, or its model version is not the tenant's pinned one. The route picks the run with the highest `scenario_version`, then the newest: a recompute that finds its inputs already calculated (an undo) re-stamps the old row's version but not its `created_at`, so data-access `getLatestCalcRun` (newest `created_at` first) would answer the superseded run after an undo. Follow-up for DATA: order that function the same way.
-- PATCH needs `ScenarioTx.updateScenario`, which data-access does not have yet: `support.ts` `scenarioStore` adds it over the request transaction with a tenant-scoped `update scenario` (data-access `sql`, as the auth store does). Move it into data-access when convenient.
+- **calc**: `stale` when the run's scenario version is older than the scenario's, or its model version is not the tenant's pinned one. The run is data-access `getLatestCalcRun`: the highest `scenario_version`, then the newest (a recompute that finds its inputs already calculated, an undo, re-stamps the old row's version but not its `created_at`).
+- PATCH runs `patchScenario` on data-access's ChangesetStore over the request transaction, whose transactions implement `ScenarioTx.updateScenario` (DATA-13).
 
 ## Session hub
 

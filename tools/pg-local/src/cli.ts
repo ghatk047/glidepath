@@ -8,7 +8,8 @@ function flag(name: string): string | undefined {
 }
 
 if (cmd === 'start') {
-  const inst = await start({ ssl: rest.includes('--ssl'), init: flag('--init'), database: flag('--db') });
+  // The cluster outlives this command: `pg:local stop` ends it.
+  const inst = await start({ ssl: rest.includes('--ssl'), init: flag('--init'), database: flag('--db'), stopOnExit: false });
   console.log(`DATABASE_URL=${inst.url}`);
 } else if (cmd === 'stop') {
   console.log(stop() ? 'pg-local: stopped' : 'pg-local: not running');

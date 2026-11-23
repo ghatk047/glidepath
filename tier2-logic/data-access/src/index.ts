@@ -21,7 +21,9 @@ export * from './repos';
 export { DEFAULT_HISTORY_LIMIT, MAX_HISTORY_LIMIT, InvalidCursorError } from './repos/changesets';
 export type { ChangesetPage, ChangesetRecord, HistoryOptions } from './repos/changesets';
 export type { ResolvedFrom, ResolvedInputRecord, ResolvedInputsRecord } from './repos/inputs';
-export type { DimensionMemberRow, MembersSnapshot } from './repos/members';
+export type { DimensionMemberRow, MembersCacheStats, MembersSnapshot } from './repos/members';
+// The process's members cache (DATA-13): bookkeeping only, no tenant data.
+export { clearMembersCache, invalidateMembersCache, membersCacheStats } from './repos/members';
 export type {
   AppUserRow,
   MembershipRole,

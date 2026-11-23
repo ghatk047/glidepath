@@ -1,11 +1,12 @@
 import { resolveInputs, resolveScenarioChain } from '@glidepath/domain';
 import { getTestDatabaseUrl } from '@glidepath/pg-local';
 import { membersHash } from '@glidepath/spec';
-import { sql } from 'drizzle-orm';
+import { TransactionRollbackError, and, eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDb } from '../db';
 import type { DbHandle } from '../db';
 import { migrate } from '../migrate';
+import { calc_run } from '../schema';
 import { TenantScopeError } from '../scope';
 import { withTenant, withUser } from '../tenant';
 import type { TenantTx } from '../tenant';
@@ -258,6 +259,38 @@ describe('read repos: model bundle defs (global tables), members via v_dimension
     expect(await asA((tx) => getLatestCalcRun(tx, SCN.root!))).toBeNull();
     expect(await asA((tx) => getLatestCalcRun(tx, twinB(SCN.grandchild!)))).toBeNull();
     expect((await asB((tx) => getLatestCalcRun(tx, twinB(SCN.grandchild!))))?.input_hash).toBe('h9-b');
+  });
+
+  /** `fn` as tenant A in a transaction that is rolled back afterwards; what `fn` returned. */
+  async function asARolledBack<T>(fn: (tx: TenantTx) => Promise<T>): Promise<T> {
+    const box: { value?: T } = {};
+    await withTenant(app.db, TENANT_A, ANA, async (tx) => {
+      box.value = await fn(tx);
+      tx.rollback();
+    }).catch((e: unknown) => {
+      if (!(e instanceof TransactionRollbackError)) throw e;
+    });
+    return box.value as T;
+  }
+  const restamp = (tx: TenantTx, version: number) =>
+    tx.update(calc_run).set({ scenario_version: version }).where(and(eq(calc_run.tenant_id, TENANT_A), eq(calc_run.id, RUN.r1)));
+
+  it('getLatestCalcRun orders by scenario_version desc, then created_at desc: an undo re-stamps an older run (DATA-13)', async () => {
+    // An undo back to the inputs of r1 finds that run already calculated and re-stamps it with the new
+    // scenario version (5), keeping its older created_at: it is the scenario's current run, not r2.
+    const undone = await asARolledBack(async (tx) => {
+      await restamp(tx, 5);
+      return getLatestCalcRun(tx, SCN.grandchild!);
+    });
+    expect(undone).toMatchObject({ id: RUN.r1, scenario_version: 5, input_hash: 'h1', created_at: '2026-11-01T12:00:00.000Z' });
+    // Same version: the newer created_at wins.
+    const tie = await asARolledBack(async (tx) => {
+      await restamp(tx, 4);
+      return getLatestCalcRun(tx, SCN.grandchild!);
+    });
+    expect(tie?.id).toBe(RUN.r2);
+    // rolled back: the seed's current run is r2 again
+    expect((await asA((tx) => getLatestCalcRun(tx, SCN.grandchild!)))?.id).toBe(RUN.r2);
   });
 
   it('memberships: the user\'s tenants and roles before a tenant is chosen; the tenant, its members and the user inside it', async () => {

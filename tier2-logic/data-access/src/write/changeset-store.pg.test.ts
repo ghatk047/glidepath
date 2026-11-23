@@ -8,6 +8,7 @@ import {
   type Changeset,
   type ChangesetDraft,
   type ChangesetTx,
+  type ScenarioTx,
 } from '@glidepath/domain';
 import type { ModelBundle } from '@glidepath/spec';
 import { getTestDatabaseUrl } from '@glidepath/pg-local';
@@ -115,7 +116,7 @@ class Rollback extends Error {
 async function scratch<T>(
   tenantId: string,
   userId: string,
-  fn: (s: ChangesetTx, tx: TenantTx) => Promise<T>,
+  fn: (s: ScenarioTx, tx: TenantTx) => Promise<T>,
 ): Promise<T> {
   try {
     await withTenant(app.db, tenantId, userId, async (tx) => {
@@ -127,7 +128,7 @@ async function scratch<T>(
   }
   throw new Error('unreachable');
 }
-const asA = <T>(fn: (s: ChangesetTx, tx: TenantTx) => Promise<T>) => scratch(TENANT_A, ANA, fn);
+const asA = <T>(fn: (s: ScenarioTx, tx: TenantTx) => Promise<T>) => scratch(TENANT_A, ANA, fn);
 
 const GC = SCN.grandchild!;
 const GC_B = twinB(GC);
@@ -521,6 +522,23 @@ describe('ChangesetStore over Postgres (DATA-06): locks, reads, writes, bumpVers
       // the app role cannot edit or remove its audit trail
       await expect(tx.delete(audit_log)).rejects.toThrow();
     });
+  });
+
+  it('updateScenario (ScenarioTx, DATA-13): sets the label, locked and archived it names, never the version; another tenant\'s scenario is not found', async () => {
+    await asA(async (s, tx) => {
+      const before = (await tx.select().from(scenario).where(eq(scenario.id, GC)))[0]!;
+      await s.loadScenarioForUpdate(GC);
+      await s.updateScenario(GC, { label: 'Renamed' });
+      let row = (await tx.select().from(scenario).where(eq(scenario.id, GC)))[0]!;
+      expect(row).toEqual({ ...before, label: 'Renamed' });
+      await s.updateScenario(GC, { locked: true, archived: true });
+      await s.updateScenario(GC, {}); // nothing named, nothing written
+      row = (await tx.select().from(scenario).where(eq(scenario.id, GC)))[0]!;
+      expect(row).toEqual({ ...before, label: 'Renamed', locked: true, archived: true });
+      await expect(s.updateScenario(GC_B, { label: 'hijacked' })).rejects.toThrow(/no scenario/);
+      await expect(s.updateScenario('not-a-uuid', { label: 'x' })).rejects.toThrow(/no scenario/);
+    });
+    expect((await scratch(TENANT_B, BOB, (_s, tx) => tx.select().from(scenario).where(eq(scenario.id, GC_B))))[0]?.label).toBe('B grandchild');
   });
 });
 

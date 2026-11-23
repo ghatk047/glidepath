@@ -114,6 +114,7 @@ const PORT_CASES: Record<string, Case<ChangesetTx>> = {
   bumpVersion: write([GC_A, 4], [[GC_B, 4]]),
   findCalcRun: read([GC_A, 'h2'], [[GC_B, 'h9-b']]),
   upsertCalcRun: write([calcRun({})], [[calcRun({ id: twinB(RUN.r2), scenario_id: GC_B, input_hash: 'h9-b' })]]),
+  updateScenario: write([GC_A, { label: 'leak renamed' }], [[GC_B, { label: 'hijacked' }], [GC_B, { locked: true, archived: true }]]),
   appendAudit: write([{ actor: ANA, action: 'leak.test', entity: 'scenario', entity_key: GC_A, before: null, after: null, at: NOW }]),
 };
 
@@ -217,6 +218,9 @@ const NOT_REPOSITORIES: Record<string, string> = {
   assertKey: 'pure helper of the object store port',
   resolveExpiry: 'pure helper of the object store port',
   MemoryObjectStore: 'the in-memory twin of the object store: no database',
+  clearMembersCache: 'process-local cache bookkeeping (DATA-13): reads no data',
+  invalidateMembersCache: 'process-local cache bookkeeping (DATA-13): reads no data',
+  membersCacheStats: 'process-local cache counters (DATA-13): reads no data',
 };
 
 /** Does `fn`'s source call a scope guard or open a scope (other than in its own name)? */

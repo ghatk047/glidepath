@@ -11,7 +11,7 @@ import {
   TenantSlug,
 } from '@glidepath/api-contract';
 import type { Change as ContractChange } from '@glidepath/api-contract';
-import { getScenario } from '@glidepath/data-access';
+import { getLatestCalcRun, getScenario } from '@glidepath/data-access';
 import {
   ChangesetConflictError,
   applyChangeset,
@@ -37,7 +37,7 @@ import { guarded } from './errors';
 import { afterCommit, noSessionHub } from './hub';
 import type { SessionHub } from './hub';
 import { LruModelCache } from './model-cache';
-import { authorOf, latestCalcRun, loadScenario, pinnedModel, scenarioStore, toChangesetResult, writeContext } from './support';
+import { authorOf, loadScenario, pinnedModel, scenarioStore, toChangesetResult, writeContext } from './support';
 
 export interface WriteRoutesDeps {
   /** The spec bundle of the pinned model version: the registry bounds, rules and the engine's formulas. */
@@ -220,7 +220,7 @@ export function registerWriteRoutes(app: Hono<AppEnv>, deps: WriteRoutesDeps): v
     const { tx, tenantId } = c.get('tenant');
     const scenario = await getScenario(tx, id);
     if (!scenario) throw noSuchScenario();
-    const run = await latestCalcRun(tx, scenario.id);
+    const run = await getLatestCalcRun(tx, scenario.id);
     if (!run) throw ApiError.notFound('This scenario has no calculation yet. Make an edit to calculate it.');
     const pin = await pinnedModel(tx, tenantId);
     const body = checked('calc', CalcResponse, {

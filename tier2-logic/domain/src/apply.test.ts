@@ -499,6 +499,34 @@ describe('input rules run on the post-change resolved state; any error → nothi
     expect(store.tables.lineItems.get('it_999')).toMatchObject({ pool_id: 'software' });
   });
 
+  it('without a structural change the rules and Recompute get the stored members object itself; with one, the post-change members (DATA-13)', async () => {
+    const store = aaStore(fx.seed);
+    // The store hands out one members object, as data-access does from its members cache.
+    const stored = store.members();
+    const seen: unknown[] = [];
+    const sharing = {
+      transaction: <T>(fn: Parameters<typeof store.transaction<T>>[0]) =>
+        store.transaction((tx) => fn({ ...tx, loadMembers: async () => stored })),
+    };
+    const recompute = async (input: RecomputeInput) => {
+      seen.push(input.state.members);
+    };
+    const options = opts({ recompute });
+    const value = await applyChangeset(sharing, draft('ui', CUSTOM.id, 0, set('g.target_net', '', 70)), options);
+    expect(seen[0]).toBe(stored);
+    const line: Change = {
+      target: 'structural',
+      key: 'line',
+      member_key: 'it_999',
+      op: 'insert',
+      new_value: { name: 'New line', pool_id: 'software', domain_key: 'commercial_applications', active: true },
+    };
+    await applyChangeset(sharing, draft('ui', CUSTOM.id, value.version, line), options);
+    expect(seen[1]).not.toBe(stored);
+    expect((seen[1] as typeof stored).line?.some((m) => m.id === 'it_999')).toBe(true);
+    expect(stored.line?.some((m) => m.id === 'it_999')).toBe(false);
+  });
+
   it('VR09 checks the vendor key of a line as the database serves it (vendor = vendor_key)', async () => {
     // A copy of a seed line as a line_item row: vendor_text keeps the seed's free text.
     const line = (vendor_key: string): Change => ({

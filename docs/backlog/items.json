@@ -1669,7 +1669,7 @@
     "epic": "DATA",
     "milestone": "M2",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "opus",
     "effort": "high",
@@ -1698,7 +1698,8 @@
       "G8"
     ],
     "size": "M",
-    "notes": "Follow-ups from API-05/API-06 reviews."
+    "notes": "Follow-ups from API-05/API-06 reviews.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "DOM-01",

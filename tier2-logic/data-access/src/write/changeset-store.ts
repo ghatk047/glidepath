@@ -12,8 +12,6 @@ import {
   type Changeset,
   type ChangesetId,
   type ChangesetStatus,
-  type ChangesetStore,
-  type ChangesetTx,
   type InputState,
   type JsonObject,
   type JsonValue,
@@ -21,7 +19,10 @@ import {
   type NodeOverrideRow,
   type ScenarioId,
   type ScenarioLevel,
+  type ScenarioPatch,
   type ScenarioRow,
+  type ScenarioStore,
+  type ScenarioTx,
   type UserId,
   type ValueWrite,
 } from '@glidepath/domain';
@@ -30,7 +31,7 @@ import { and, asc, eq, getTableColumns, gte, inArray, sql } from 'drizzle-orm';
 import type { AnyColumn, SQL } from 'drizzle-orm';
 import type { Db } from '../db';
 import { changeRows } from '../repos/changesets';
-import { loadMembers } from '../repos/members';
+import { invalidateMembersCache, loadMembers } from '../repos/members';
 import { isUuid, iso, jsonb, num, numeric, toDate } from '../repos/rows';
 import {
   audit_log,
@@ -149,7 +150,7 @@ function memberValues(row: JsonObject): Partial<typeof dimension_member.$inferIn
  * The port's transaction view over `tx`, the transaction of a running `withTenant` (or a savepoint
  * opened from it). It adds nothing of its own: commit and rollback are the caller's.
  */
-export function changesetTx(tx: TenantTx, options: ChangesetStoreOptions = {}): ChangesetTx {
+export function changesetTx(tx: TenantTx, options: ChangesetStoreOptions = {}): ScenarioTx {
   const confidence = options.newValueConfidence ?? DEFAULT_NEW_VALUE_CONFIDENCE;
   if (confidence.length !== 1) {
     throw new RangeError('data-access: newValueConfidence must be one character (H, M or L)');
@@ -306,6 +307,8 @@ export function changesetTx(tx: TenantTx, options: ChangesetStoreOptions = {}): 
 
   async function writeMember(w: MemberWrite): Promise<void> {
     const tenantId = scope('writeMember');
+    // A structural write: no cached members snapshot of the tenant is used again (DATA-13).
+    invalidateMembersCache(tenantId);
     if ((w.target === 'line_item') !== (w.dim_key === LINE_DIM)) {
       throw new Error(`data-access: ${w.target} does not hold dimension ${w.dim_key}`);
     }
@@ -451,7 +454,8 @@ export function changesetTx(tx: TenantTx, options: ChangesetStoreOptions = {}): 
 
     async loadMembers(): Promise<TenantMembers> {
       scope('loadMembers');
-      // v_dimension_members; `members` holds the active ones, in the spec's member order.
+      // v_dimension_members; `members` holds the active ones, in the spec's member order. Cached per
+      // (tenant, members version): a changeset that changes no member neither reads nor hashes them.
       return (await loadMembers(tx)).members;
     },
 
@@ -656,6 +660,25 @@ export function changesetTx(tx: TenantTx, options: ChangesetStoreOptions = {}): 
         });
     },
 
+    async updateScenario(scenarioId: ScenarioId, patch: ScenarioPatch): Promise<void> {
+      const tenantId = scope('updateScenario');
+      // Metadata only (rename, lock, archive): the version and every other column stay as they are.
+      const set = {
+        ...(patch.label === undefined ? {} : { label: patch.label }),
+        ...(patch.locked === undefined ? {} : { locked: patch.locked }),
+        ...(patch.archived === undefined ? {} : { archived: patch.archived }),
+      };
+      if (Object.keys(set).length === 0) return;
+      const done = isUuid(scenarioId)
+        ? await tx
+            .update(scenario)
+            .set(set)
+            .where(and(eq(scenario.tenant_id, tenantId), eq(scenario.id, scenarioId)))
+            .returning({ id: scenario.id })
+        : [];
+      if (done.length === 0) throw new Error(`data-access: no scenario ${scenarioId} in this tenant`);
+    },
+
     async appendAudit(entry: AuditEntry): Promise<void> {
       const tenantId = scope('appendAudit');
       await tx.insert(audit_log).values({
@@ -679,7 +702,7 @@ export function changesetTx(tx: TenantTx, options: ChangesetStoreOptions = {}): 
  * `fn` in a savepoint of it, so a throw undoes what `fn` wrote and leaves the caller's transaction
  * usable, and a commit is the caller's. Throws TenantScopeError for any other transaction.
  */
-export function createChangesetStore(tx: TenantTx, options: ChangesetStoreOptions = {}): ChangesetStore {
+export function createChangesetStore(tx: TenantTx, options: ChangesetStoreOptions = {}): ScenarioStore {
   tenantScope(tx, 'createChangesetStore');
   return {
     transaction: (fn) => tx.transaction((sp) => fn(changesetTx(sp as TenantTx, options))),
@@ -695,7 +718,7 @@ export function createTenantChangesetStore(
   tenantId: string,
   userId: string,
   options: ChangesetStoreOptions = {},
-): ChangesetStore {
+): ScenarioStore {
   return {
     transaction: (fn) => withTenant(db, tenantId, userId, (tx) => fn(changesetTx(tx, options))),
   };

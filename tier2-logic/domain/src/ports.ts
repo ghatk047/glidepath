@@ -259,8 +259,40 @@ export function modelCacheKey(
   return {
     tenant_id: tenantId,
     model_version_id: modelVersionId,
-    members_hash: membersHash(members),
+    members_hash: membersHashOf(members),
   };
+}
+
+/** Hashes of deeply frozen members objects: they cannot change, so their hash cannot either. */
+const FROZEN_HASHES = new WeakMap<TenantMembers, string>();
+
+const isFrozenValue = (v: unknown): boolean =>
+  !Array.isArray(v) || (Object.isFrozen(v) && v.every(isFrozenValue));
+
+/** Is `members` frozen all the way down (the object, each list, each member, each array attribute)? */
+function isDeepFrozen(members: TenantMembers): boolean {
+  if (!Object.isFrozen(members)) return false;
+  for (const list of Object.values(members)) {
+    if (!Object.isFrozen(list)) return false;
+    for (const m of list) {
+      if (!Object.isFrozen(m) || !Object.values(m).every(isFrozenValue)) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * `membersHash(members)` (@glidepath/spec), computed once per deeply frozen members object: the
+ * members snapshot data-access caches per (tenant, members version) is frozen, so every commit that
+ * changes no member reuses its hash instead of hashing again (DATA-13). Members that are not frozen
+ * are hashed on every call.
+ */
+export function membersHashOf(members: TenantMembers): string {
+  const known = FROZEN_HASHES.get(members);
+  if (known !== undefined) return known;
+  const hash = membersHash(members);
+  if (isDeepFrozen(members)) FROZEN_HASHES.set(members, hash);
+  return hash;
 }
 
 /**

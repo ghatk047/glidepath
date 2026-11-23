@@ -2,6 +2,13 @@
 
 Repositories over tier 3: Drizzle schema, queries, RLS session, object store client. The only tier-2 package that opens database connections.
 
+## DATA-13: commit path speed
+
+- **Members cache.** `loadMembers(tx)` (and `ChangesetTx.loadMembers`) answer a snapshot cached per (tenant, members version), process wide. The members version is one small query: the tenant's pinned model version plus, per table `loadMembers` reads (dimension_member, line_item, line_item_lever, source, canonical_pool, addr_tag, dimension_def of the pin), the row count and the sum of row `xmin`s, so any insert, update or delete changes it, and MVCC makes it exact per transaction (a transaction that wrote a member sees its own version). Only a version not seen before reads v_dimension_members and hashes the members. `ChangesetTx.writeMember` also drops the tenant's snapshots (`invalidateMembersCache`), so a structural changeset never reuses one. The snapshot is deeply frozen and shared: never change it. Its `members` object carries its hash for the domain's `membersHashOf`, so the ModelCache key of a commit without structural changes costs no hashing either. The cache is used only when the connection's RLS tenant (`app.tenant_id`) is the scope's tenant; otherwise the view is read uncached. `membersCacheStats()` / `clearMembersCache()` are for tests and diagnostics. `src/repos/members-cache.pg.test.ts` covers it.
+- **getLatestCalcRun** orders by `scenario_version` desc, then `created_at` desc, then id: an undo re-stamps an older run with the new version and keeps its `created_at`.
+- **ScenarioTx.updateScenario.** `changesetTx` and the stores implement the domain's `ScenarioTx`: `updateScenario(id, patch)` sets the label, locked and archived the patch names (nothing else, never the version) on a scenario of the tenant, and throws when the tenant has no such scenario. The server's PATCH uses it.
+- **Bench** (`tier2-logic/server` `bench api.commit`, seeded AA database, warm model, 40 commits): p50 about 45 ms, p95 60-85 ms on a shared dev machine, from p50 125-145 ms and p95 180-300 ms before (members read about 25 ms and two members hashes about 25 ms per commit).
+
 ## DATA-10: G7 leak tests (`pnpm test:leak`)
 
 `test/leak/` (also part of `pnpm test`), on a migrated pg-local database with two tenants (`seed.ts`: the DATA-05 minimal seed plus rows of A and B in every tenant table it leaves empty), as `glidepath_app`:

@@ -841,7 +841,9 @@ async function planChanges<R>(
       },
     };
   }
-  const postMembers: TenantMembers = Object.fromEntries(members);
+  // Without a structural change the post-change members are the stored ones, as loaded: the same object
+  // keeps its members hash (`membersHashOf`) and the ModelCache key without hashing again.
+  const postMembers: TenantMembers = structural.length === 0 ? stored : Object.fromEntries(members);
   const idsOf = new Map<DimId, Set<MemberId>>();
   const hasMember = (dim: DimId, id: MemberId): boolean => {
     let ids = idsOf.get(dim);

@@ -5,6 +5,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { TENANT_COLUMN } from './changeset';
 import {
   SCENARIO_KINDS,
+  membersHashOf,
   modelCacheKey,
   type AuditEntry,
   type CalcRunRow,
@@ -119,5 +120,43 @@ describe('ports.ts declares ChangesetStore and ModelCache interfaces', () => {
     );
     expect(b).toBe(a);
     expect(compiles).toBe(1);
+  });
+
+  it('membersHashOf hashes a deeply frozen members object once; anything else on every call (DATA-13)', () => {
+    const frozen = (m: Record<string, { id: string; label: string; lever_ids?: string[] }[]>) =>
+      Object.freeze(
+        Object.fromEntries(
+          Object.entries(m).map(([d, l]) => [
+            d,
+            Object.freeze(
+              l.map((x) =>
+                Object.freeze(
+                  x.lever_ids === undefined ? x : { ...x, lever_ids: Object.freeze([...x.lever_ids]) },
+                ),
+              ),
+            ),
+          ]),
+        ),
+      );
+    const snapshot = frozen({ vp: [{ id: 'vp_a', label: 'A' }], line: [{ id: 'l1', label: 'L', lever_ids: ['x'] }] });
+    const hash = membersHash(snapshot);
+    expect(membersHashOf(snapshot)).toBe(hash);
+    expect(modelCacheKey('t1', 'mv1', snapshot).members_hash).toBe(hash);
+
+    // a mutable object is never remembered: a change to it changes its hash
+    const open: Record<string, { id: string; label: string }[]> = { vp: [{ id: 'vp_a', label: 'A' }] };
+    const before = membersHashOf(open);
+    open.vp!.push({ id: 'vp_b', label: 'B' });
+    expect(membersHashOf(open)).not.toBe(before);
+    expect(membersHashOf(open)).toBe(membersHash(open));
+    // nor is one frozen only on the outside, or with a mutable array attribute
+    const shallow = Object.freeze({ vp: [{ id: 'vp_a', label: 'A' }] });
+    const first = membersHashOf(shallow);
+    shallow.vp[0]!.label = 'changed';
+    expect(membersHashOf(shallow)).not.toBe(first);
+    const lever = Object.freeze({ line: Object.freeze([Object.freeze({ id: 'l1', label: 'L', lever_ids: ['x'] })]) });
+    const leverHash = membersHashOf(lever);
+    lever.line[0]!.lever_ids.push('y');
+    expect(membersHashOf(lever)).not.toBe(leverHash);
   });
 });

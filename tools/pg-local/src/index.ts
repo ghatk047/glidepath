@@ -27,6 +27,12 @@ export interface StartOptions {
   pgBin?: string;
   /** Where the state file lives; defaults to <tmp>/glidepath-pg-local.json. */
   stateFile?: string;
+  /**
+   * Stop the cluster and delete its directory when this process exits (normally, or on SIGINT, SIGTERM
+   * or SIGHUP); a cluster whose process died without that (SIGKILL) is swept by the next `start`.
+   * Default true; the CLI passes false, since its cluster outlives `pg:local start`.
+   */
+  stopOnExit?: boolean;
 }
 
 export interface PgLocalInstance {
@@ -134,14 +140,101 @@ export async function runSqlDir(url: string, dir: string): Promise<string[]> {
   return files;
 }
 
+// ---------------------------------------------------------------------------------- cleanup on exit
+
+/** Prefix of every cluster directory under the OS temp dir. */
+const DIR_PREFIX = 'glidepath-pg-';
+/** In a cluster directory: the pid of the process that stops it on exit (absent for the CLI's). */
+const OWNER_FILE = 'owner.json';
+const EXIT_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
+
+/** Clusters this process started with `stopOnExit`, by directory, with their state files. */
+const owned = new Map<string, { instance: PgLocalInstance; stateFile: string }>();
+let exitHooked = false;
+
+/** Stops every cluster this process still owns (synchronous: it runs in the 'exit' handler). */
+export function stopOwned(): number {
+  let n = 0;
+  for (const { instance, stateFile } of [...owned.values()]) {
+    stop({ instance, stateFile });
+    n += 1;
+  }
+  return n;
+}
+
+function onSignal(signal: NodeJS.Signals): void {
+  stopOwned();
+  // Only listener: do what the signal would have done without us (exit by that signal).
+  if (process.listenerCount(signal) === 1) {
+    for (const s of EXIT_SIGNALS) process.removeListener(s, onSignal);
+    process.kill(process.pid, signal);
+  }
+}
+
+function hookExit(): void {
+  if (exitHooked) return;
+  exitHooked = true;
+  process.on('exit', () => {
+    stopOwned();
+  });
+  for (const s of EXIT_SIGNALS) process.on(s, onSignal);
+}
+
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+/**
+ * Stops and deletes the clusters whose owning process is gone (it died by SIGKILL or a crash before its
+ * exit handler ran). Clusters without an owner file (the CLI's) and those of live processes stay.
+ * Returns the directories removed. `start` runs it first.
+ */
+export function sweepOrphans(opts: { pgBin?: string } = {}): string[] {
+  const removed: string[] = [];
+  const base = tmpdir();
+  let names: string[];
+  try {
+    names = readdirSync(base).filter((n) => n.startsWith(DIR_PREFIX));
+  } catch {
+    return removed;
+  }
+  for (const name of names) {
+    const dir = join(base, name);
+    let owner: { pid: number; instance: PgLocalInstance; stateFile: string };
+    try {
+      owner = JSON.parse(readFileSync(join(dir, OWNER_FILE), 'utf8')) as typeof owner;
+    } catch {
+      continue; // no owner file: not ours to stop
+    }
+    if (owner.pid === process.pid || alive(owner.pid)) continue;
+    stop({ instance: { ...owner.instance, pgBin: opts.pgBin ?? owner.instance.pgBin }, stateFile: owner.stateFile });
+    removed.push(dir);
+  }
+  return removed;
+}
+
 export async function start(opts: StartOptions = {}): Promise<PgLocalInstance> {
   const stateFile = stateFilePath(opts);
   if (existsSync(stateFile)) {
     throw new Error(`pg-local already started (state file ${stateFile}); run stop first`);
   }
   const bin = pgBinDir(opts);
+  const stopOnExit = opts.stopOnExit !== false;
+  if (stopOnExit) sweepOrphans();
   const drop = isRoot() ? lookupIds(ROOT_DROP_USER) : null;
-  const dir = mkdtempSync(join(tmpdir(), 'glidepath-pg-'));
+  const dir = mkdtempSync(join(tmpdir(), DIR_PREFIX));
+  if (stopOnExit) {
+    // Owned from the start: an exit during initdb or pg_ctl start still stops and deletes it.
+    const pending: PgLocalInstance = { url: '', port: 0, dir, ssl: false, owner: drop ? ROOT_DROP_USER : null, pgBin: bin };
+    owned.set(dir, { instance: pending, stateFile });
+    writeFileSync(join(dir, OWNER_FILE), JSON.stringify({ pid: process.pid, instance: pending, stateFile }));
+    hookExit();
+  }
   const dataDir = join(dir, 'data');
   const sockDir = join(dir, 'sock');
   mkdirSync(dataDir, { mode: 0o700 });
@@ -181,8 +274,13 @@ export async function start(opts: StartOptions = {}): Promise<PgLocalInstance> {
     if (opts.init) await runSqlDir(url, opts.init);
     const inst: PgLocalInstance = { url, port, dir, ssl, owner: drop ? ROOT_DROP_USER : null, pgBin: bin };
     writeFileSync(stateFile, JSON.stringify(inst));
+    if (stopOnExit) {
+      owned.set(dir, { instance: inst, stateFile });
+      writeFileSync(join(dir, OWNER_FILE), JSON.stringify({ pid: process.pid, instance: inst, stateFile }));
+    }
     return inst;
   } catch (err) {
+    owned.delete(dir);
     try {
       runPg(join(bin, 'pg_ctl'), ['-D', dataDir, '-m', 'immediate', 'stop'], drop);
     } catch {
@@ -209,6 +307,7 @@ export function stop(opts: { stateFile?: string; instance?: PgLocalInstance } = 
   }
   rmSync(inst.dir, { recursive: true, force: true });
   rmSync(stateFile, { force: true });
+  owned.delete(inst.dir);
   return true;
 }
 
@@ -246,15 +345,11 @@ async function startTestcontainer(): Promise<string> {
 }
 
 let cached: Promise<string> | undefined;
-let localInstance: PgLocalInstance | undefined;
 
 async function startLocalForTests(): Promise<string> {
   const stateFile = join(tmpdir(), `glidepath-pg-local-test-${process.pid}.json`);
+  // stopOnExit (the default): stopped and deleted when this process exits.
   const inst = await start({ stateFile });
-  localInstance = inst;
-  process.once('exit', () => {
-    if (localInstance) stop({ instance: localInstance, stateFile });
-  });
   return inst.url;
 }
 

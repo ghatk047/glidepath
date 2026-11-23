@@ -133,7 +133,7 @@ export {
 } from './apply-errors';
 export type { StaleChange } from './apply-errors';
 export { LINE_ITEM_ATTRIBUTES, LINE_ITEM_JOINED_ATTRIBUTES, memberOfRow } from './member-rows';
-export { SCENARIO_KINDS, modelCacheKey } from './ports';
+export { SCENARIO_KINDS, membersHashOf, modelCacheKey } from './ports';
 export type {
   AuditEntry,
   CalcRunRow,

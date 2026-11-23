@@ -6,4 +6,5 @@ Throwaway Postgres 16 for tests, no Docker needed (ADR-016).
 - `--init <dir>` runs `*.sql` files (sorted) as the bootstrap superuser `postgres`.
 - `--ssl` generates a self-signed cert; the URL ends `?sslmode=require`. node-postgres treats that as verify-full, so use `clientConfig(url)` from this package.
 - Running as root: initdb refuses root, so the data dir is chowned to the OS user `postgres` and initdb/pg_ctl run as that user (uid/gid drop). The user must exist.
+- `start()` from code stops its cluster and deletes its directory when the process exits: normally, or on SIGINT, SIGTERM or SIGHUP (`stopOnExit`, default true; the CLI's `start` passes false, its cluster lives until `pg:local stop`). Such a cluster records its process in `owner.json`; one whose process died without cleaning up (SIGKILL, a crash) is stopped and deleted by the next `start` (`sweepOrphans()`), so test runs leak no clusters.
 - `getTestDatabaseUrl()`: `TEST_DATABASE_URL`, else Testcontainers if `TESTCONTAINERS=1` and `docker info` answers (needs `testcontainers` installed; not a dependency), else a pg-local cluster stopped at process exit.

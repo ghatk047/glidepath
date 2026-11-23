@@ -418,7 +418,7 @@ title: "Commit path speed and data-access tidy-ups"
 epic: DATA
 milestone: M2
 priority: must
-status: in_progress
+status: done
 stream: B
 model: opus
 effort: high
@@ -438,4 +438,5 @@ acceptance:
 gates: [G1, G2, G7, G8]
 size: M
 notes: "Follow-ups from API-05/API-06 reviews."
+merged_at: "2026-11-23"
 ```

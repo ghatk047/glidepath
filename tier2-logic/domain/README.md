@@ -283,7 +283,7 @@ The key never changes, because it names the scenario in URLs. A locked user scen
 
   `loadInputs(scenario).chain` ends with a level for the scenario itself, which may have no rows. `src/test-support/memory-store.ts` is the in-memory implementation the tests use.
 - `ScenarioStore` is a `ChangesetStore` whose transactions are `ScenarioTx`: a `ChangesetTx` plus `updateScenario(id, { label?, locked?, archived? })` for `patchScenario`. It is a separate port, so a ChangesetStore needs nothing more; data-access implements it for the PATCH route.
-- `ModelCache<TModel>.getOrCompile(key, compile)` is keyed by `ModelCacheKey` `(tenant_id, model_version_id, members_hash)`. `modelCacheKey()` builds the key with `membersHash` from `@glidepath/spec`.
+- `ModelCache<TModel>.getOrCompile(key, compile)` is keyed by `ModelCacheKey` `(tenant_id, model_version_id, members_hash)`. `modelCacheKey()` builds the key with `membersHash` from `@glidepath/spec`. It takes the hash through `membersHashOf(members)`, which remembers the hash of a deeply frozen members object (DATA-13: data-access hands out a frozen, cached snapshot, and a changeset without structural changes passes that same object on as the post-change members), so a commit that changes no member hashes nothing.
 
 ## View-models (`src/views/`)
 
