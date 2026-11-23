@@ -210,14 +210,29 @@ export function runCells(
     }
   } catch (e) {
     if (!(e instanceof Fault)) throw e;
-    const key = p.cellKeys[t]!;
-    const source = sources[t] ?? '';
-    const pos = p.positions[e.instr]!;
-    throw new EngineError(
-      e.code,
-      `while computing ${key}: ${e.message} (at ${pos} in '${source}')`,
-      key,
-      { pos, source },
-    );
+    throw cellError(p, sources, t, e.code, e.message, e.instr);
   }
+}
+
+/**
+ * The error of cell `t` (topological index) faulting at instruction `instr`: names the cell and the
+ * position of the construct in its expression (D2). Scalar and batch evaluation both build it here.
+ */
+export function cellError(
+  p: Program,
+  sources: readonly string[],
+  t: number,
+  code: EngineErrorCode,
+  message: string,
+  instr: number,
+): EngineError {
+  const key = p.cellKeys[t]!;
+  const source = sources[t] ?? '';
+  const pos = p.positions[instr]!;
+  return new EngineError(
+    code,
+    `while computing ${key}: ${message} (at ${pos} in '${source}')`,
+    key,
+    { pos, source },
+  );
 }

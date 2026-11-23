@@ -3,7 +3,7 @@
  * The result replaces engine.py's `Model` object: immutable, pure, shareable across sessions.
  */
 import type { ModelBundle, TenantMembers } from '@glidepath/spec';
-import { notImplemented } from '../errors';
+import { evaluateBatch, type BatchEvaluation } from '../batch';
 import {
   evaluate,
   inputHash,
@@ -15,24 +15,14 @@ import {
 import { expand, symbolDims, type Cell } from '../expand';
 import { downstream, explainCell, upstream } from '../explain';
 import type { ParseCache } from '../parse';
-import type {
-  BatchInput,
-  BatchResult,
-  CellKey,
-  Change,
-  CompiledModel,
-  Evaluation,
-  Explanation,
-} from '../types';
+import type { BatchInput, CellKey, Change, CompiledModel, Evaluation, Explanation } from '../types';
 import { buildAdjacency, type Adjacency } from './csr';
 import { lower } from './lower';
 import type { Program } from './program';
 import { topoSort } from './toposort';
 
-/** Which backlog item builds each `CompiledModel` method that is not built yet. */
-export const PENDING_METHODS = {
-  evaluateBatch: 'ENG-08',
-} as const satisfies Partial<Record<keyof CompiledModel, string>>;
+/** Which backlog item builds each `CompiledModel` method that is not built yet: none left (ENG-08). */
+export const PENDING_METHODS = {} as const satisfies Partial<Record<keyof CompiledModel, string>>;
 
 /** What compile found that is not an error. */
 export interface CompileDiagnostics {
@@ -90,10 +80,12 @@ export class EngineModel implements CompiledModel {
     return rerun(this, prev, changes);
   }
 
-  evaluateBatch(base: Evaluation, vectors: BatchInput): BatchResult {
-    void base;
-    void vectors;
-    throw notImplemented('CompiledModel.evaluateBatch', PENDING_METHODS.evaluateBatch);
+  /**
+   * N input vectors at once, structure of arrays (src/batch, ENG-08): only the downstream closure of
+   * the varied inputs runs, one Float64Array(N) per slot, IF as a per-lane select, errors per lane.
+   */
+  evaluateBatch(base: Evaluation, vectors: BatchInput): BatchEvaluation {
+    return evaluateBatch(this, base, vectors);
   }
 
   /** Expression, inputs, words; values and drivers with an evaluation (src/explain, ENG-09). */

@@ -42,17 +42,18 @@ describe('03 §1 interfaces and stubs (index.test.ts)', () => {
     }
   });
 
-  it('every CompiledModel method not built yet throws "not implemented" naming its item', () => {
-    const model = compile(bundleOf({ nodes: [{ id: 'n', expr: '1' }] }), {});
-    const methods = Object.keys(PENDING_METHODS) as (keyof typeof PENDING_METHODS)[];
-    expect(methods.length).toBeGreaterThan(0);
-    for (const m of methods) {
-      const fn = (model[m] as (...args: unknown[]) => unknown).bind(model);
-      expect(() => fn(), m).toThrow(EngineError);
-      expect(() => fn(), m).toThrow(
-        new RegExp(`not implemented: CompiledModel\\.${m} \\(${PENDING_METHODS[m]}\\)`),
-      );
-    }
+  it('every CompiledModel method is built: none is pending or throws "not implemented"', () => {
+    expect(Object.keys(PENDING_METHODS)).toEqual([]);
+    const model = compile(
+      bundleOf({ variables: [{ id: 'x' }], nodes: [{ id: 'n', expr: 'x + 1' }] }),
+      {},
+    );
+    const base = model.evaluate(new Map([['x', 1]]));
+    const batch = model.evaluateBatch(base, {
+      size: 1,
+      values: new Map([['x', Float64Array.of(2)]]),
+    });
+    expect(batch.values.get('n')).toEqual(Float64Array.of(3));
   });
 
   it('types match 03 §1 (checked by the typecheck gate)', () => {

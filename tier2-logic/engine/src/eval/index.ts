@@ -16,5 +16,5 @@ export {
   type VariableDims,
 } from './inputs';
 export { pyDiv, pyMax, pyMin, pyPow, pySum, pyTruthy } from './pyops';
-export { runCells } from './run';
+export { cellError, runCells } from './run';
 export { rerun, type IncrementalModel, type RerunDiagnostics, type RerunEvaluation } from './rerun';

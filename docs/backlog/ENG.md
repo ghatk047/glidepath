@@ -266,7 +266,7 @@ title: "Batch mode (structure of arrays)"
 epic: ENG
 milestone: M1
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -286,6 +286,7 @@ acceptance:
 gates: [G1, G2, G8]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Monte Carlo, tornado and gradients run on this.

@@ -1,9 +1,17 @@
 /**
  * Engine perf budgets (docs/architecture/03 §5; gate G8): `pnpm --filter ./tier2-logic/engine bench`.
- * Budgets on the seed model: compile < 150 ms, full evaluate < 50 ms, one lever slider rerun < 10 ms.
+ * Budgets on the seed model: compile < 150 ms, full evaluate < 50 ms, one lever slider rerun < 10 ms,
+ * a batch of 2,000 vectors over every lever realisation input < 10 s single-threaded.
  */
 import { bench, describe } from 'vitest';
-import { compile, findScenario, resolveInputs, type Change, type Evaluation } from '../src';
+import {
+  compile,
+  findScenario,
+  resolveInputs,
+  type BatchInput,
+  type Change,
+  type Evaluation,
+} from '../src';
 import { loadSeedModel } from '../test/helpers';
 
 const { bundle, seed } = await loadSeedModel();
@@ -37,6 +45,39 @@ function heaviestLeverSlider(): { cell: string; positions: readonly [number, num
 }
 
 const lever = heaviestLeverSlider();
+
+/** Monte Carlo draws (04 §4): 2,000 iterations. */
+const BATCH_LANES = 2000;
+const BATCH_SEED = 20261204;
+
+/**
+ * 2,000 vectors over every lever realisation input (`lev.realize[L..]`, 04 §4), drawn uniformly within
+ * the registry bounds with a seeded PRNG (mulberry32).
+ */
+function realisationBatch(): BatchInput {
+  const def = bundle.variables.find((v) => v.id === 'lev.realize');
+  if (def === undefined || def.min === null || def.max === null) {
+    throw new Error('lev.realize needs registry bounds');
+  }
+  let a = BATCH_SEED;
+  const rng = () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const values = new Map<string, Float64Array>();
+  for (const cell of base.values.keys()) {
+    if (!cell.startsWith(`${def.id}[`)) continue;
+    const lanes = new Float64Array(BATCH_LANES);
+    for (let i = 0; i < BATCH_LANES; i++) lanes[i] = def.min + (def.max - def.min) * rng();
+    values.set(cell, lanes);
+  }
+  return { size: BATCH_LANES, values };
+}
+
+const realisations = realisationBatch();
 let dragged: Evaluation = base;
 let tick = 0;
 
@@ -58,5 +99,10 @@ describe('engine', () => {
     tick ^= 1;
     const change: Change = { target: 'variable', cell: lever.cell, value: lever.positions[tick]! };
     dragged = model.rerun(dragged, [change]);
+  });
+
+  // Monte Carlo / finite differences: 2,000 lanes over every lever realisation input (03 §5 Batch).
+  bench('engine.batch.2000', () => {
+    model.evaluateBatch(base, realisations);
   });
 });

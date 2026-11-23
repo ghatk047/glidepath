@@ -4,6 +4,7 @@
  * Explanation) are defined here as the narrowest shape the spec implies; PORTING.md §4 records each choice.
  */
 import type { ModelBundle, TenantMembers } from '@glidepath/spec';
+import type { EngineError } from './errors';
 
 /**
  * A cell: `node_id` or `var_id` for a scalar, `id[m1,m2]` for a dimensioned one (comma, no spaces;
@@ -46,21 +47,35 @@ export type Change =
   /** Pin a node cell (`value` a number) or remove its pin (`value` null). */
   | { readonly target: 'override'; readonly cell: CellKey; readonly value: number | null };
 
-/** N input vectors in structure-of-arrays form (03 §1 Modes, Batch). */
+/**
+ * N input vectors in structure-of-arrays form (03 §1 Modes, Batch). Lane `i` is the base evaluation's
+ * inputs and pins with input `key` set to `values.get(key)[i]` for every listed key.
+ */
 export interface BatchInput {
   /** Number of lanes N. */
   readonly size: number;
-  /** Varied input cells, each with N lane values. Unlisted inputs keep the base evaluation's value. */
+  /**
+   * Varied input cells, each with N lane values (a node cell is BAD_INPUT: pin it in the base; a key
+   * the model does not read moves nothing). Unlisted inputs keep the base evaluation's value.
+   */
   readonly values: ReadonlyMap<CellKey, Float64Array>;
 }
 
-/** Batch output: only the downstream closure of the varied inputs is computed. */
+/**
+ * Batch output: only the downstream closure of the varied inputs is computed. Lane `i` equals
+ * `evaluate` of lane `i`'s inputs and pins, bitwise, or raises what that evaluate raises.
+ */
 export interface BatchResult {
   readonly size: number;
-  /** Cells in the downstream closure → N lane values. Every other cell equals the base evaluation. */
+  /**
+   * Node cells in the downstream closure (pinned cells and what only they feed excluded), in
+   * topological order → N lane values. Every other cell equals the base evaluation in every lane.
+   */
   readonly values: ReadonlyMap<CellKey, Float64Array>;
   /** 1 for a lane that raised (e.g. '/' by zero in a taken branch); that lane's values are NaN. */
   readonly failed: Uint8Array;
+  /** Failed lane → the error a scalar `evaluate` of that lane throws (same code, cell, message, pos). */
+  readonly errors: ReadonlyMap<number, EngineError>;
 }
 
 /** A cell an explanation names: what it is (spec id, label, unit) and, with an evaluation, its value. */

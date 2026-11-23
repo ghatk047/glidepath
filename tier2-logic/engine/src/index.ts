@@ -49,6 +49,11 @@ export type { EvaluationDiagnostics, ExtraInputs, ResolvedInputs, ScenarioInputs
 export { rerun } from './eval';
 export type { RerunDiagnostics, RerunEvaluation } from './eval';
 
+// Batch (ENG-08): `evaluateBatch(base, vectors)`, N lanes in structure-of-arrays form over the
+// downstream closure of the varied inputs; IF as a per-lane select; errors per lane.
+export { evaluateBatch, LANE_BLOCK } from './batch';
+export type { BatchDiagnostics, BatchEvaluation } from './batch';
+
 // Explain (ENG-09): `explain(cell, at?)`, formula in words, drivers by local sensitivity (rerun);
 // `upstream`/`downstream` are read-only views over the CSR.
 export { FD_STEP, formulaInWords, localSensitivities } from './explain';
