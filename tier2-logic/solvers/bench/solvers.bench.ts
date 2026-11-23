@@ -6,9 +6,11 @@
 import { bench, describe } from 'vitest';
 import { decisionSet } from '../src/decision-sets';
 import { breakeven, goalSeek } from '../src/goal-seek';
-import { seedModel } from '../test/helpers';
+import { parseStressPresets } from '../src/problems/stress';
+import { runSolver } from '../src/run';
+import { readRepoJson, seedModel } from '../test/helpers';
 
-const model = await seedModel('C');
+const model = { ...(await seedModel('C')), presets: parseStressPresets(readRepoJson('docs/spec/solvers.json')) };
 const lever = decisionSet(model, 'lever_intensity').find((d) => d.cell === 'lev.L10.rcut')!;
 /** A range wide enough for this lever alone to close the C gap (the registry range does not). */
 const WIDEN = 4;
@@ -21,5 +23,8 @@ describe('solvers', () => {
   });
   bench('solvers.breakeven', async () => {
     await breakeven(model, {}, { yield: noYield });
+  });
+  bench('solvers.stress_presets', async () => {
+    await runSolver(model, { problem: 'stress_presets', params: { presets: [] } }, { yield: noYield });
   });
 });

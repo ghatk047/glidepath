@@ -1,3 +1,4 @@
+import type { StressPreset } from './problems/stress';
 import type { CellKey, CompiledModel, Evaluation, ModelBundle, TenantMembers } from '@glidepath/engine';
 
 /**
@@ -21,4 +22,9 @@ export interface SolverModel {
   readonly stretch?: readonly ReadonlyMap<CellKey, number>[];
   /** User-widened caps per cell (04 §1: "The user can widen it"); replace the stretch-capped upper bound. */
   readonly caps?: ReadonlyMap<CellKey, number>;
+  /**
+   * Named shocks of `solvers.json` `problems[stress_presets].examples` (`parseStressPresets`). Tenant and
+   * spec data the caller supplies; the `stress_presets` problem has no list of its own.
+   */
+  readonly presets?: readonly StressPreset[];
 }

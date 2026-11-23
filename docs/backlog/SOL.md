@@ -255,7 +255,7 @@ title: "Stress presets"
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -273,6 +273,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: "Rubric deviation: sonnet/high — simple application of named change sets."
+merged_at: "2026-11-23"
 ```
 
 Market and Q&A 'what if' shocks.
