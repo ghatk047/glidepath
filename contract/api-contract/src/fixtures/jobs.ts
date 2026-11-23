@@ -412,6 +412,15 @@ const reconfigJob = {
       blocking: false,
     },
   ],
+  onboarding: {
+    steps: [
+      { id: 'tenant_record', state: 'done' },
+      { id: 'baseline_lines', state: 'review' },
+      { id: 'sources', state: 'todo' },
+    ],
+    done: 1,
+    total: 3,
+  },
   costEstimate: {
     model: 'claude-opus-5-5',
     inputTokens: 400000,
@@ -547,6 +556,12 @@ export const jobRouteFixtures = {
       openQuestions: [],
       usage: null,
       updatedAt: at,
+    },
+  },
+  aiReconfigList: {
+    response: {
+      jobs: [reconfigJob],
+      parity: [{ tenant: 'zz', passed: 1005, total: 1005, recordedAt: at }],
     },
   },
   aiReconfigGet: {

@@ -103,7 +103,11 @@ solver | import | ai.reconfig and `cancelRequested`) and from the `GET` route.
 - **AI reconfiguration** (`src/ai.ts`): `POST /api/ai/reconfig` (`dryRun` answers `estimated`
   with plan and cost estimate before anything runs), `GET /api/ai/reconfig/:id` (plan, sources,
   facts, draft changeset summaries, validation, calibration report, open questions, cost
-  estimate and usage), `POST /api/ai/reconfig/:id/apply {drafts: seed | lever_tuning}`.
+  estimate and usage, and `onboarding`: the per-step done / review / todo state and the `done` /
+  `total` count, judged by tier 2), `POST /api/ai/reconfig/:id/apply {drafts: seed | lever_tuning}`,
+  and `GET /api/ai/reconfig` (API-14): `{jobs, parity}`, the caller's jobs newest first (the cached
+  rehearsal included, dry-run estimates not) and the latest recorded parity `{tenant, passed, total,
+  recordedAt}` of the caller's tenants (a tenant with none has no entry).
 - **Market** (`src/market.ts`): `POST /market/refresh` `{source: feed}` or
   `{source: manual, asOf, values[{var, member, value}]}` → snapshot and changeset.
 

@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import {
   ReconfigApplyRequest,
+  ReconfigList,
   ReconfigApplyResult,
   ReconfigParams,
   ReconfigRequest,
   UserId,
 } from '@glidepath/api-contract';
-import type { MembershipRole, TenantId } from '@glidepath/api-contract';
+import type { MembershipRole, ReconfigJob, TenantId, TenantParity } from '@glidepath/api-contract';
 import { createAiReconfigJob, getAiReconfigJob, listAiReconfigJobs } from '@glidepath/data-access';
 import type { AiReconfigJobRecord } from '@glidepath/data-access';
 import type { Context, Hono } from 'hono';
@@ -14,6 +15,7 @@ import { ApiError } from '../../app/problem';
 import type { AppEnv, Authenticator, WithTenant } from '../../app/tenant';
 import { checked } from '../read/mappers';
 import type { AiRoutesDeps, AiWho } from './jobs';
+import { PARITY_KEY, parityOf } from './parity';
 import { cacheOf, hasBlockingQuestion, hasWorkerState, oneLine, reviewOf, toReconfigJob } from './map';
 import type { JobHost, JobTimes } from './map';
 
@@ -206,6 +208,28 @@ export function registerAiRoutes(app: Hono<AppEnv>, deps: AiRoutesContext): void
     const row = await readJob(host, userId, jobId);
     if (row === null) throw notReadable();
     return c.json(await present(host, userId, row), 201);
+  });
+
+  /** The newest first: `createdAt` (the cached rehearsal: its rehearsal time), the id breaking a tie. */
+  const newestFirst = (a: ReconfigJob, b: ReconfigJob): number => (a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : a.createdAt < b.createdAt ? 1 : -1);
+
+  // Declared with the other `/api/ai/reconfig` routes; `:id` does not match the bare path.
+  app.get('/api/ai/reconfig', async (c) => {
+    const userId = await userOf(c);
+    const jobs: ReconfigJob[] = [];
+    const parity: TenantParity[] = [];
+    for (const m of await deps.memberships(userId)) {
+      // A dry run (`estimated`) only priced a request: nothing was queued, so it is not a job to continue.
+      const rows = await deps.withTenant(m.tenantId, userId, (tx) => listAiReconfigJobs(tx));
+      for (const row of rows) if (row.status !== 'estimated') jobs.push(await present(m, userId, row));
+      const stored = await deps.objects(whoOf(m, userId)).get('ai', PARITY_KEY);
+      const found = stored === null ? null : parityOf(stored.bytes, m.slug);
+      if (found !== null) parity.push(found);
+    }
+    jobs.sort(newestFirst);
+    parity.sort((a, b) => (a.tenant < b.tenant ? -1 : a.tenant > b.tenant ? 1 : 0));
+    c.header('cache-control', 'private, no-store');
+    return c.json(checked('reconfig list', ReconfigList, { jobs, parity }), 200);
   });
 
   app.get('/api/ai/reconfig/:id', async (c) => {

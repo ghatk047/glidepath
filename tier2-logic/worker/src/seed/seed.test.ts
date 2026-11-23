@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { optionsFromEnv, parseArgs } from './args';
@@ -6,6 +7,7 @@ import { GLOBAL_SEED_FILES, TENANT_SEED_FILES, findTier3Data, readSeedInputs } f
 import { uuidV5, seedIds } from './ids';
 import { cellsOf, missingDefaults, presetChanges, splitCellKey, cellId } from './drafts';
 import { parseDemoEmail } from './tenant';
+import { ParityReportError, readParityReports } from './parity';
 
 const tier3Data = findTier3Data();
 const repoRoot = resolve(tier3Data, '..');
@@ -39,6 +41,8 @@ describe('command line', () => {
     expect(parseArgs(['--seed=aa'])).toEqual({ seed: 'aa' });
     expect(parseArgs([])).toEqual({ seed: undefined });
     expect(parseArgs(['--seed', 'aa', '--ai-cache', 'dir', '--ai-cache-tenant=aa'])).toEqual({ seed: 'aa', aiCache: 'dir', aiCacheTenant: 'aa' });
+    expect(parseArgs(['--seed', 'aa', '--parity', 'out', '--parity-tenant=aa'])).toEqual({ seed: 'aa', parity: 'out', parityTenant: 'aa' });
+    expect(() => parseArgs(['--parity'])).toThrow(/needs a report folder/);
     expect(() => parseArgs(['--ai-cache'])).toThrow(/needs a bundle folder/);
     expect(() => parseArgs(['--seed'])).toThrow(/needs a tenant slug/);
     expect(() => parseArgs(['--seed', '--tenant'])).toThrow(/needs a tenant slug/);
@@ -90,5 +94,45 @@ describe('ids and diffs', () => {
     expect(splitCellKey('res.net')).toEqual({ key: 'res.net', member_key: '' });
     expect(splitCellKey('lev.on[L05]')).toEqual({ key: 'lev.on', member_key: 'L05' });
     expect(splitCellKey('vp.t[a,b]')).toEqual({ key: 'vp.t', member_key: 'a,b' });
+  });
+});
+
+describe('parity reports (API-14)', () => {
+  const folder = (golden: unknown, replay: unknown): string => {
+    const dir = mkdtempSync(join(tmpdir(), 'gp-parity-'));
+    writeFileSync(join(dir, 'golden-report.json'), JSON.stringify(golden));
+    writeFileSync(join(dir, 'replay-report.json'), JSON.stringify(replay));
+    return dir;
+  };
+
+  it('takes the replay tally of pnpm parity:golden as the parity and keeps the golden tally beside it', () => {
+    const dir = folder({ summary: { total: 10, passed: 9, failed: 1 }, rows: [] }, { summary: { total: 4, passed: 4, failed: 0 }, rows: [] });
+    try {
+      expect(readParityReports(dir, 'aa', new Date('2026-11-23T10:00:00Z'))).toEqual({
+        format: 'glidepath.parity/1',
+        tenant: 'aa',
+        recordedAt: '2026-11-23T10:00:00.000Z',
+        passed: 4,
+        total: 4,
+        golden: { passed: 9, total: 10 },
+        replay: { passed: 4, total: 4 },
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a missing, unreadable or inconsistent report instead of recording a made-up count', () => {
+    const ok = { summary: { total: 1, passed: 1 } };
+    const missing = mkdtempSync(join(tmpdir(), 'gp-parity-'));
+    const bad = folder({ summary: { total: 1, passed: 2 } }, ok);
+    const empty = folder(ok, {});
+    try {
+      expect(() => readParityReports(missing, 'aa')).toThrow(ParityReportError);
+      expect(() => readParityReports(bad, 'aa')).toThrow(/golden-report.json has no summary/);
+      expect(() => readParityReports(empty, 'aa')).toThrow(/replay-report.json has no summary/);
+    } finally {
+      for (const d of [missing, bad, empty]) rmSync(d, { recursive: true, force: true });
+    }
   });
 });

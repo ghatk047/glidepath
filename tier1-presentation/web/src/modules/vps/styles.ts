@@ -60,6 +60,8 @@ export const vpsCss = [
   `.gp-vps-switch { display: flex; align-items: center; gap: ${rem(10)}; color: var(--ink-2); margin-bottom: ${rem(8)}; }`,
   `.gp-vps-result { margin: 0 0 ${rem(14)}; color: var(--ink-2); line-height: 1.5; }`,
   `.gp-vps-result strong { color: var(--ink); }`,
+  `.gp-vps-result[data-current="false"] { opacity: .6; }`,
+  `.gp-vps-stale { margin: 0 0 ${rem(14)}; color: var(--ink-3); font-size: var(--type-s-size); }`,
   `.gp-vps-coverage { margin: 0 0 ${rem(14)}; padding: 0; list-style: none; display: grid; gap: ${rem(4)}; color: var(--ink-2); font-size: var(--type-s-size); }`,
   `.gp-vps-btn { display: inline-flex; align-items: center; gap: ${rem(8)}; min-height: ${rem(40)}; padding: 0 ${rem(16)}; border-radius: var(--radius-control); border: ${line}; background: var(--glass-2); color: var(--ink); font: inherit; cursor: pointer; }`,
   `.gp-vps-btn:hover { background: var(--glass-3); }`,

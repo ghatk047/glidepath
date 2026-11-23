@@ -25,7 +25,9 @@ import {
   QuickSolverRunRequest,
   ReconfigApplyRequest,
   ReconfigJob,
+  ReconfigList,
   ReconfigRequest,
+  TenantParity,
   SensitivityMethod,
   SolverConstraintId,
   SolverLookup,
@@ -117,6 +119,7 @@ describe('jobs.spec: CON-03 routes (04 §3, 04 §5)', () => {
         'GET /api/t/:tenant/imports/:id',
         'POST /api/t/:tenant/imports/:id/apply',
         'POST /api/ai/reconfig',
+        'GET /api/ai/reconfig',
         'GET /api/ai/reconfig/:id',
         'POST /api/ai/reconfig/:id/apply',
         'POST /api/t/:tenant/market/refresh',
@@ -371,6 +374,33 @@ describe('jobs.spec: exports, imports and the delta report (05, excel_template.j
     expect(ok(ExportRequest, { scenarioIds: [] })).toBe(false);
     expect(ExportResult.shape.file).toBe(FileRef);
     expect(shapeKeys(FileRef)).toEqual(['contentType', 'expiresAt', 'filename', 'id', 'size']);
+  });
+});
+
+describe('jobs.spec: AI job list, tenant parity, onboarding states (API-14)', () => {
+  it('GET /api/ai/reconfig lists jobs with the latest parity per tenant; every job carries tier 2 onboarding states', () => {
+    const { aiReconfigList } = jobRoutes;
+    expect([aiReconfigList.method, aiReconfigList.path, aiReconfigList.response]).toEqual([
+      'GET',
+      '/api/ai/reconfig',
+      ReconfigList,
+    ]);
+    const list = jobRouteFixtures.aiReconfigList.response;
+    expectParses(ReconfigList, list, 'reconfig list');
+    expect(ok(ReconfigList, { ...list, parity: undefined })).toBe(false);
+    expect(ok(ReconfigList, { jobs: [], parity: [] })).toBe(true);
+    expect(ok(TenantParity, { ...list.parity[0], passed: -1 })).toBe(false);
+
+    const job = jobRouteFixtures.aiReconfigGet.response;
+    expect(job.onboarding.steps.map((s) => s.state)).toEqual(['done', 'review', 'todo']);
+    expect(job.onboarding).toMatchObject({ done: 1, total: 3 });
+    expect(ok(ReconfigJob, { ...job, onboarding: undefined })).toBe(false);
+    expect(
+      ok(ReconfigJob, {
+        ...job,
+        onboarding: { steps: [{ id: 'org', state: 'started' }], done: 0, total: 1 },
+      }),
+    ).toBe(false);
   });
 });
 

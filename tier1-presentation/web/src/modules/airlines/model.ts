@@ -1,10 +1,10 @@
 import { ReconfigStep, type ReconfigJob, type Tenant } from '@glidepath/api-contract';
-import { CHECKLIST, type ChecklistId, type PipelineId, type StepState } from './copy';
+import type { PipelineId } from './copy';
 
 /**
  * Display mapping only. Nothing here is a business rule: which pipeline step tier 2 reports
- * decides which of the four visible steps is active; which facts tier 2 attached to a checklist
- * item decide its state. No value is computed.
+ * decides which of the four visible steps is active. Onboarding step states and counts are tier 2's
+ * (`job.onboarding`); parity is tier 2's `{passed, total}`. No value is computed.
  */
 const order = ReconfigStep.options;
 const at = (s: ReconfigStep) => order.indexOf(s);
@@ -27,21 +27,6 @@ export function pipelineStates(
     return ids.map((_, i) => (i < 2 ? 'done' : i === 2 ? 'active' : 'todo'));
   const g = pipelineGroup(job.step);
   return ids.map((_, i) => (i < g ? 'done' : i === g ? 'active' : 'todo'));
-}
-
-/** Done / in review / to do of one onboarding step, from the facts and questions tier 2 sent. */
-export function checklistStates(job: ReconfigJob | null): Record<ChecklistId, StepState> {
-  const out = {} as Record<ChecklistId, StepState>;
-  for (const step of CHECKLIST) {
-    const facts = job?.facts.filter((f) => f.item === step.id) ?? [];
-    const questions = job?.openQuestions.filter((q) => q.item === step.id) ?? [];
-    if (!job || (facts.length === 0 && questions.length === 0)) out[step.id] = 'todo';
-    else if (job.status === 'applied') out[step.id] = 'done';
-    else if (questions.length > 0 || facts.some((f) => f.sourceId === null || f.confidence === 'L'))
-      out[step.id] = 'review';
-    else out[step.id] = 'done';
-  }
-  return out;
 }
 
 export type TileKind = 'live' | 'draft' | 'new' | 'add';

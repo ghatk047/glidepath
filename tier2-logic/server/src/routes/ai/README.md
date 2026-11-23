@@ -5,6 +5,7 @@
 | Route | Answer (`@glidepath/api-contract`) |
 |---|---|
 | `POST /api/ai/reconfig` | 201 `ReconfigJob`: id and `costEstimate`; `dryRun` runs step 1 only and answers `estimated` with plan and estimate |
+| `GET /api/ai/reconfig` | `ReconfigList` (API-14): `jobs` of every tenant the caller belongs to, newest first, and `parity` per tenant |
 | `GET /api/ai/reconfig/:id` | `ReconfigJob`: plan, sources, facts, draft summaries, validation, calibration, open questions, usage, error |
 | `POST /api/ai/reconfig/:id/apply` | `ReconfigApplyResult`; owner only; 403, 404, 409 (not in review), 422 (no such draft, new tenant without seed, blocking question) |
 | `POST /api/t/:tenant/market/refresh` | 201 `MarketRefreshResult`; 501 for `source: "feed"`; 422 for a non-market variable or a repeated cell |
@@ -21,6 +22,12 @@
 - **Apply.** Needs status `review` (a repeat of an applied job answers the stored result). Every changeset is written by the worker through `applyChangeset` (`ai_reconfig`; presets copied unchanged are `seed`).
 - **Market origin.** The domain and contract origin is `market_refresh` (the item text says "origin=market"). The snapshot is one changeset on the tenant defaults; the registry bounds policy for this origin is warn (VR04 stays a warning). Values equal to the tenant default write no changeset (`changesetId: null`, the snapshot row is still stored). A `clientRequestId` already applied answers its snapshot. Allowed variables: `corp.price_now`, `corp.brent`, `corp.crack`, `corp.jet_direct`.
 - The `market_snapshot` and `source` (kind `market`) rows are the record of the typed payload, not inputs, so they are written beside the changeset in the request transaction.
+
+## Job list, tenant parity, onboarding states (API-14)
+
+- **List.** `GET /api/ai/reconfig` walks the caller's memberships (RLS shows nothing else), reads each tenant's `ai_reconfig_job` rows and presents each as `GET :id` does (cached rehearsal included). Dry-run rows (`estimated`) are left out: they only priced a request. Order: `createdAt` descending (the rehearsal counts at its rehearsal time), then id. Any member may read; no sign-in is 401. The Airlines screen picks the job from here (a running one, else the newest in review) and keeps no id in the browser.
+- **Parity.** The latest parity of a tenant is one object of its own store, bucket `ai`, key `parity/latest.json` (format `glidepath.parity/1`: `passed`/`total` of the parity replay, the golden tally beside it, `recordedAt`). `migrate --parity <report dir> [--parity-tenant <slug>]` (worker `seed/parity.ts`) writes it from the `golden-report.json` and `replay-report.json` of `pnpm parity:golden`, replacing the earlier one; nothing invents a count. Object store rows have RLS (`stored_object`), so no new table; the list reads it per tenant and answers `parity: [{tenant, passed, total, recordedAt}]`. A tenant without a readable record has no entry. `passed`/`total` are the replay's (the "parity 245/245" of docs/ux/03_screens.md).
+- **Onboarding.** `ReconfigJob.onboarding` = `{steps: [{id, state}], done, total}`. The steps are the plan's `checklist` (the AI package's step ids, in order); state per step: `todo` (no fact or open question names it), `review` (an open question, or a fact with no source or confidence `L`), else `done`; an applied job settles every step that has something behind it. Empty while the plan is unknown and for a tuning-only plan.
 
 ## Tests
 

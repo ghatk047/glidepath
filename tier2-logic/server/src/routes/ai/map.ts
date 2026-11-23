@@ -233,6 +233,31 @@ function questionsOf(review: Rec): unknown[] {
   return out;
 }
 
+/**
+ * The onboarding checklist (07 section 2) of a job: the steps its plan covers, in the plan's order, each `done`,
+ * `review` or `todo` by the facts and open questions that name it (`item` = the step id). An open question, or a fact
+ * with no source or confidence `L`, puts a step in review; facts that are all sourced settle it; a step nothing names
+ * is to do. An applied job has every step with something behind it done. The screen prints these and counts nothing.
+ */
+export function onboardingOf(
+  checklist: readonly string[],
+  facts: readonly { readonly item: string; readonly sourceId: string | null; readonly confidence: string }[],
+  questions: readonly { readonly item: string | null }[],
+  status: string,
+): { steps: { id: string; state: 'done' | 'review' | 'todo' }[]; done: number; total: number } {
+  const steps = checklist.map((id) => {
+    const own = facts.filter((f) => f.item === id);
+    const asked = questions.filter((q) => q.item === id);
+    let state: 'done' | 'review' | 'todo';
+    if (own.length === 0 && asked.length === 0) state = 'todo';
+    else if (status === 'applied') state = 'done';
+    else if (asked.length > 0 || own.some((f) => f.sourceId === null || f.confidence === 'L')) state = 'review';
+    else state = 'done';
+    return { id, state };
+  });
+  return { steps, done: steps.filter((x) => x.state === 'done').length, total: steps.length };
+}
+
 const STATUSES: ReadonlySet<string> = new Set<ReconfigStatus>(['estimated', 'queued', 'running', 'review', 'applied', 'failed', 'budget_exceeded', 'cancelled']);
 
 function errorOf(stored: Rec, status: string): Problem | null {
@@ -262,21 +287,30 @@ export function toReconfigJob(row: JobRow, host: JobHost, times: JobTimes, reque
   const estimate = rec(stored.estimate);
   const tune = aiPlan.intent === 'tune';
   const lastReported = num(aiPlan.lastReportedYear);
+  const mapped = { facts: factsOf(review, idOfUrl), questions: questionsOf(review) };
+  const checklist = [...new Set(arr(aiPlan.checklist).filter((c): c is string => typeof c === 'string' && c !== ''))];
+  const status = STATUSES.has(row.status) ? row.status : 'failed';
   return checked('reconfig job', ReconfigJob, {
     id: row.id,
     prompt: row.prompt,
     tenant: requestedTenant ?? (tune ? host.slug : null),
-    status: STATUSES.has(row.status) ? row.status : 'failed',
+    status,
     step: known ? str(stored.step) : null,
     progress: known ? Math.min(1, Math.max(0, num(stored.progress) ?? 0)) : 0,
     progressNote: known ? oneLine(str(stored.note) ?? '', '') || null : null,
     plan: planOf(aiPlan, review, host),
     sources,
-    facts: factsOf(review, idOfUrl),
+    facts: mapped.facts,
     drafts: (['seed', 'lever_tuning'] as const).flatMap((k) => (drafts[k] === null || drafts[k] === undefined ? [] : [draftOf(k, drafts[k])])),
     validation: violationsOf(arr(rec(review.validation).entries)),
     calibration: calibrationOf(rec(review.calibration), lastReported),
-    openQuestions: questionsOf(review),
+    openQuestions: mapped.questions,
+    onboarding: onboardingOf(
+      checklist,
+      mapped.facts as readonly { item: string; sourceId: string | null; confidence: string }[],
+      mapped.questions as readonly { item: string | null }[],
+      status,
+    ),
     costEstimate: known && Object.keys(estimate).length > 0 ? estimate : PENDING_ESTIMATE,
     usage: Object.keys(usage).length === 0 ? null : { inputTokens: num(usage.inputTokens) ?? 0, outputTokens: num(usage.outputTokens) ?? 0, usd: num(usage.usd) ?? 0 },
     error: errorOf(stored, row.status),

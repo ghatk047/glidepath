@@ -84,11 +84,18 @@ afterAll(() => server.close());
 interface Served {
   posts: ChangesetRequest[];
   solverStarts: unknown[];
+  /** Query strings of `GET /solver-runs/lookup`. */
+  lookups: URLSearchParams[];
 }
 
-function serve(solverRun: object = solverRunFixtures.vp_feasible): Served {
+/** What `GET /solver-runs/lookup` answers: tier 2's stored run for the scenario, if any. */
+type Lookup = { run: object | null; current: boolean; trials: null };
+const NO_RUN: Lookup = { run: null, current: false, trials: null };
+
+function serve(solverRun: object = solverRunFixtures.vp_feasible, lookup: Lookup = NO_RUN): Served {
   const posts: ChangesetRequest[] = [];
   const solverStarts: unknown[] = [];
+  const lookups: URLSearchParams[] = [];
   const preset = specFixtures.scenarios.scenarios;
   server.use(
     http.get(`${BASE}${apiRoutes.me.path}`, () => HttpResponse.json(fx.me.response)),
@@ -122,6 +129,10 @@ function serve(solverRun: object = solverRunFixtures.vp_feasible): Served {
         forkedFrom: undefined,
       });
     }),
+    http.get(`${BASE}${apiRoutes.solverRunLookup.path}`, ({ request }) => {
+      lookups.push(new URL(request.url).searchParams);
+      return HttpResponse.json(lookup);
+    }),
     http.post(`${BASE}${apiRoutes.solverRunStart.path}`, async ({ request }) => {
       solverStarts.push(await request.json());
       return HttpResponse.json(solverRun, { status: 201 });
@@ -130,7 +141,7 @@ function serve(solverRun: object = solverRunFixtures.vp_feasible): Served {
       HttpResponse.json(solverRunFixtures.vp_feasible),
     ),
   );
-  return { posts, solverStarts };
+  return { posts, solverStarts, lookups };
 }
 
 let queueRef: CommitQueue | null = null;
@@ -142,8 +153,8 @@ function GrabQueue() {
   return null;
 }
 
-async function mount(solverRun?: object) {
-  const served = serve(solverRun);
+async function mount(solverRun?: object, lookup?: Lookup) {
+  const served = serve(solverRun, lookup);
   const mock = createMockSession({ views: [domainView] });
   const frames: (() => void)[] = [];
   const session = createSessionClient({
@@ -411,6 +422,57 @@ describe('AC4: chargeback and Every VP clears?', () => {
       `${members['vp']!.find((m) => m.key === binding)!.label} binding`,
     );
     expect(within(panel).getByRole('button', { name: 'Open in Path' })).toBeTruthy();
+  });
+});
+
+describe('API-14: Every VP clears? reads tier 2 first', () => {
+  const binding = vpKeys[1]!;
+  const stored = {
+    ...solverRunFixtures.vp_feasible,
+    result: {
+      ...solverRunFixtures.vp_feasible.result!,
+      binding: [{ constraint: `per_vp[${binding}]`, shadowPrice: 1 }],
+    },
+  };
+
+  it('uses the solver lookup instead of POSTing to discover a run: the stored result shows with no click', async () => {
+    const t = await mount(solverRunFixtures.vp_feasible, { run: stored, current: true, trials: null });
+    const panel = screen.getByRole('region', { name: 'Every VP clears?' });
+    await waitFor(() => expect(within(panel).getByTestId('feasible-result')).toBeTruthy());
+    expect(t.lookups).toHaveLength(1);
+    expect(Object.fromEntries(t.lookups[0]!)).toEqual({
+      scenarioId: PRESET_C,
+      problem: 'vp_feasible',
+      params: JSON.stringify({ constraints: [{ id: 'per_vp' }] }),
+    });
+    // nothing was started to find it
+    expect(t.solverStarts).toEqual([]);
+    const out = within(panel).getByTestId('feasible-result');
+    const net = stored.result!.metrics['res.net[]']!;
+    expect(out.textContent).toContain(fmt.money(net));
+    expect(out.textContent).toContain(
+      `${members['vp']!.find((m) => m.key === binding)!.label} binding`,
+    );
+    expect(out.dataset['current']).toBe('true');
+    expect(within(panel).queryByTestId('feasible-stale')).toBeNull();
+  });
+
+  it('shows a run of earlier inputs dimmed, with a line saying so, and starts nothing', async () => {
+    const t = await mount(stored, { run: stored, current: false, trials: null });
+    const panel = screen.getByRole('region', { name: 'Every VP clears?' });
+    await waitFor(() => expect(within(panel).getByTestId('feasible-result')).toBeTruthy());
+    expect(within(panel).getByTestId('feasible-result').dataset['current']).toBe('false');
+    expect(within(panel).getByTestId('feasible-stale').textContent).toContain('earlier inputs');
+    expect(t.solverStarts).toEqual([]);
+  });
+
+  it('keeps the empty state with its run action when tier 2 holds no run', async () => {
+    const t = await mount();
+    const panel = screen.getByRole('region', { name: 'Every VP clears?' });
+    await waitFor(() => expect(t.lookups).toHaveLength(1));
+    expect(within(panel).queryByTestId('feasible-result')).toBeNull();
+    expect(within(panel).getByRole('button', { name: /Find a plan/ })).toBeTruthy();
+    expect(t.solverStarts).toEqual([]);
   });
 });
 

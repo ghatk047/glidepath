@@ -18,6 +18,7 @@ import {
   apiRoutes,
   type ReconfigApplyRequest,
   type ReconfigJob,
+  type ReconfigList,
   type ReconfigRequest,
 } from '@glidepath/api-contract';
 import {
@@ -31,7 +32,7 @@ import { fmt } from '@glidepath/ui/format';
 import { DataProvider, createDataClient, createServerState } from '../../data';
 import { GlobalLayout } from '../../global/shell';
 import { createSessionClient } from '../../session';
-import { CHECKLIST, PIPELINE } from './copy';
+import { PIPELINE, stepLabel } from './copy';
 import Airlines from './index';
 import { POLL_MS } from './useReconfig';
 
@@ -59,6 +60,23 @@ const fact = (id: string, item: string, sourceId: string | null, confidence: 'H'
   asOf: null,
   confidence,
 });
+/** What tier 2 sends: nine steps of 07 section 2, four done, one in review (ids as the AI package names them). */
+const STEP_IDS = [
+  'tenant_record',
+  'baseline_lines',
+  'org',
+  'workforce',
+  'vendors',
+  'corporate_drivers',
+  'target',
+  'scenarios',
+  'sources',
+] as const;
+const onboarding = (states: ('done' | 'review' | 'todo')[]) => ({
+  steps: STEP_IDS.map((id, i) => ({ id, state: states[i] ?? 'todo' })),
+  done: states.filter((x) => x === 'done').length,
+  total: STEP_IDS.length,
+});
 const uaJob = {
   ...base,
   id: 'ai-ua',
@@ -70,9 +88,10 @@ const uaJob = {
     ...base.plan,
     tenant: { name: 'Fixture United', slug: 'ua', monogram: 'UA', ticker: null, currency: 'USD' },
   },
+  onboarding: onboarding(['done', 'done', 'done', 'done', 'review']),
   facts: [
-    fact('f1', 'tenant', 'src-1', 'H'),
-    fact('f2', 'baseline', 'src-1', 'M'),
+    fact('f1', 'tenant_record', 'src-1', 'H'),
+    fact('f2', 'baseline_lines', 'src-1', 'M'),
     fact('f3', 'org', 'src-1', 'M'),
     fact('f4', 'workforce', 'src-1', 'M'),
     fact('f5', 'vendors', 'src-1', 'M'),
@@ -104,6 +123,7 @@ const estimated = {
   drafts: [],
   facts: [],
   openQuestions: [],
+  onboarding: onboarding([]),
   calibration: null,
 } as unknown as ReconfigJob;
 
@@ -124,10 +144,21 @@ interface Served {
   applies: ReconfigApplyRequest[];
   /** What `GET /api/ai/reconfig/:id` answers; the test changes it. */
   current: { job: ReconfigJob | null };
+  /** What `GET /api/ai/reconfig` answers (tier 2's list of the caller's jobs and tenant parity). */
+  list: ReconfigList;
+  lists: number;
 }
 
-function serve(initial: ReconfigJob | null = null): Served {
-  const served: Served = { starts: [], applies: [], current: { job: initial } };
+const PARITY = [{ tenant: aa, passed: 12, total: 14, recordedAt: '2026-11-23T10:00:00.000Z' }];
+
+function serve(initial: ReconfigJob | null = null, parity: ReconfigList['parity'] = []): Served {
+  const served: Served = {
+    starts: [],
+    applies: [],
+    current: { job: initial },
+    list: { jobs: initial ? [initial] : [], parity },
+    lists: 0,
+  };
   server.use(
     http.get(`${BASE}${apiRoutes.me.path}`, () => HttpResponse.json(fx.me.response)),
     http.get(`${BASE}${apiRoutes.tenants.path}`, () => HttpResponse.json({ tenants })),
@@ -155,6 +186,10 @@ function serve(initial: ReconfigJob | null = null): Served {
       served.starts.push(body);
       return HttpResponse.json(body.dryRun ? estimated : running, { status: 201 });
     }),
+    http.get(`${BASE}${apiRoutes.aiReconfigList.path}`, () => {
+      served.lists += 1;
+      return HttpResponse.json(served.list);
+    }),
     http.get(`${BASE}${apiRoutes.aiReconfigGet.path}`, () =>
       served.current.job
         ? HttpResponse.json(served.current.job)
@@ -165,7 +200,11 @@ function serve(initial: ReconfigJob | null = null): Served {
     ),
     http.post(`${BASE}${apiRoutes.aiReconfigApply.path}`, async ({ request }) => {
       served.applies.push((await request.json()) as ReconfigApplyRequest);
-      served.current.job = { ...uaJob, status: 'applied' } as ReconfigJob;
+      served.current.job = {
+        ...uaJob,
+        status: 'applied',
+        onboarding: onboarding(['done', 'done', 'done', 'done', 'done']),
+      } as ReconfigJob;
       return HttpResponse.json({
         jobId: 'ai-ua',
         tenantId: 't-ua',
@@ -236,7 +275,6 @@ async function draftAndStart(prompt: string) {
 
 describe('AC1: tenant tiles', () => {
   it('shows the live tenant with counts from tier 2, UA draft, AS not started, Add an airline; IATA monograms only', async () => {
-    window.localStorage.setItem('gp.airlines.job', 'ai-ua');
     await mount(serve(uaJob));
     await waitFor(() => expect(tile('ua').dataset['kind']).toBe('draft'), { timeout: 4000 });
 
@@ -261,6 +299,45 @@ describe('AC1: tenant tiles', () => {
     expect(marks.length).toBeGreaterThanOrEqual(3);
     for (const m of marks) expect(m).toMatch(/^[A-Z0-9]{2,3}$/);
     expect(document.querySelector('.gp-airlines-tile img, .gp-airlines-tile svg')).toBeNull();
+  });
+
+  it('finds the cached UA job through GET /api/ai/reconfig, with nothing remembered in the browser', async () => {
+    const served = serve(uaJob);
+    window.localStorage.clear();
+    await mount(served);
+    await waitFor(() => expect(tile('ua').dataset['kind']).toBe('draft'), { timeout: 4000 });
+    expect(served.lists).toBe(1);
+    expect(within(tile('ua')).getByText('Continue setup')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Review' })).toBeTruthy();
+    // the browser keeps no job id (neither read nor written)
+    expect(window.localStorage.length).toBe(0);
+
+    // a list without a job leaves UA as a tenant not started
+    cleanup();
+    server.resetHandlers();
+    await mount(serve());
+    expect(tile('ua').dataset['kind']).toBe('new');
+  });
+
+  it('shows the tenant parity tier 2 recorded on the live tile, and none where it recorded none', async () => {
+    await mount(serve(null, PARITY));
+    await waitFor(
+      () =>
+        expect(within(tile(aa)).getByTestId(`facts-${aa}`).textContent).toBe(
+          `${activeCount('line')} lines · ${activeCount('vp')} VPs · ${specFixtures.scenarios.scenarios.length} scenarios · parity 12/14`,
+        ),
+      { timeout: 4000 },
+    );
+    expect(tile('as').textContent).not.toContain('parity');
+    expect(tile('ua').textContent).not.toContain('parity');
+
+    cleanup();
+    server.resetHandlers();
+    await mount(serve(null, []));
+    await waitFor(() => expect(within(tile(aa)).getByTestId(`facts-${aa}`)).toBeTruthy(), {
+      timeout: 4000,
+    });
+    expect(tile(aa).textContent).not.toContain('parity');
   });
 
   it('Set up with AI fills the prompt for that airline and asks tier 2 for that tenant', async () => {
@@ -353,7 +430,6 @@ describe('AC2: Reconfigure with AI', () => {
       ...uaJob,
       openQuestions: [{ ...uaJob.openQuestions[0]!, blocking: true }],
     } as ReconfigJob;
-    window.localStorage.setItem('gp.airlines.job', 'ai-ua');
     await mount(serve(blocked));
     const apply = await screen.findByRole('button', { name: 'Apply' }, { timeout: 4000 });
     expect((apply as HTMLButtonElement).disabled).toBe(true);
@@ -361,18 +437,15 @@ describe('AC2: Reconfigure with AI', () => {
 });
 
 describe('AC3: onboarding checklist', () => {
-  it('lists the nine steps with done / in review / to do from the job', async () => {
-    window.localStorage.setItem('gp.airlines.job', 'ai-ua');
+  it('shows the steps and states tier 2 sent on the job, and the count it sent, without deriving either', async () => {
     await mount(serve(uaJob));
     const list = await screen.findByRole('list', { name: 'Onboarding checklist' });
-    await waitFor(() => expect(list.querySelectorAll('[data-state="done"]').length).toBe(4), {
-      timeout: 4000,
-    });
+    await waitFor(() => expect(list.querySelectorAll('li').length).toBe(9), { timeout: 4000 });
     const items = [...list.querySelectorAll('li')];
+    expect(items.map((li) => li.dataset['step'])).toEqual([...STEP_IDS]);
     expect(items.map((li) => li.querySelector('.gp-airlines-check-label')!.textContent)).toEqual(
-      CHECKLIST.map((c) => c.label),
+      STEP_IDS.map((id) => stepLabel(id)),
     );
-    expect(items.length).toBe(9);
     expect(items.map((li) => li.dataset['state'])).toEqual([
       'done',
       'done',
@@ -389,6 +462,37 @@ describe('AC3: onboarding checklist', () => {
     expect(within(items[8]!).getByText('To do')).toBeTruthy();
     expect(screen.getAllByText('4 of 9').length).toBe(2); // tile chip and panel header
   });
+
+  it('prints what tier 2 sent even where the facts on the job would say otherwise', async () => {
+    // Every fact is sourced and no question is open, yet tier 2 says org is in review, and counts 2 of 3 steps.
+    const told = {
+      ...uaJob,
+      openQuestions: [],
+      onboarding: {
+        steps: [
+          { id: 'tenant_record', state: 'done' },
+          { id: 'org', state: 'review' },
+          { id: 'steps_a_new_model_added', state: 'done' },
+        ],
+        done: 2,
+        total: 3,
+      },
+    } as unknown as ReconfigJob;
+    await mount(serve(told));
+    const list = await screen.findByRole('list', { name: 'Onboarding checklist' });
+    await waitFor(() => expect(list.querySelectorAll('li').length).toBe(3), { timeout: 4000 });
+    expect([...list.querySelectorAll('li')].map((li) => li.dataset['state'])).toEqual([
+      'done',
+      'review',
+      'done',
+    ]);
+    // an id the screen has no words for is shown by its own words
+    expect(list.querySelectorAll('li')[2]!.textContent).toContain('Steps a new model added');
+    expect(screen.getAllByText('2 of 3').length).toBe(2);
+    expect(document.querySelector('progress[aria-label$="onboarding"]')!.getAttribute('max')).toBe(
+      '3',
+    );
+  });
 });
 
 describe('AC4: values come from tier 2', () => {
@@ -396,17 +500,14 @@ describe('AC4: values come from tier 2', () => {
     await mount(serve());
     expect(within(tile(aa)).getByText('Fixture Air')).toBeTruthy();
     expect(tile(aa).textContent).toContain(`model ${tenants[0]!.modelVersionId}`);
-    // before any job there is no checklist state: every step is to do
-    const states = [...document.querySelectorAll('.gp-airlines-checklist li')].map(
-      (li) => (li as HTMLElement).dataset['state'],
-    );
-    expect(states).toEqual(CHECKLIST.map(() => 'todo'));
+    // before any job tier 2 has sent no step: the empty line, no checklist rows
+    expect(document.querySelectorAll('.gp-airlines-checklist li').length).toBe(0);
+    expect(screen.getByText('Draft an airline to see its onboarding steps.')).toBeTruthy();
   });
 });
 
 describe('G12: accessibility', () => {
   it('has no serious or critical axe violations', async () => {
-    window.localStorage.setItem('gp.airlines.job', 'ai-ua');
     await mount(serve(uaJob));
     await screen.findByRole('region', { name: 'Review' }, { timeout: 4000 });
     const r = await axe.run(document.body, { rules: { 'color-contrast': { enabled: false } } });

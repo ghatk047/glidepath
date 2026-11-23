@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { aiJobsOverQueue } from '../../compose/ai-jobs';
 import type { JobQueue } from '../../compose/queue';
-import { toReconfigJob } from './map';
+import { onboardingOf, toReconfigJob } from './map';
+import { parityOf } from './parity';
 
 const host = { slug: 'xa', currency: 'USD' };
 const times = { createdAt: '2026-11-23T10:00:00.000Z', updatedAt: '2026-11-23T10:05:00.000Z', createdBy: null };
@@ -108,5 +109,85 @@ describe('aiJobsOverQueue (API-11)', () => {
       { op: 'run', queue: 'ai.reconfig', payload: { tenantId: 't', userId: 'u', jobId: 'j', dryRun: true } },
       { op: 'run', queue: 'ai.apply', payload: { tenantId: 't', userId: 'u', jobId: 'j', accept: ['seed'], clientRequestId: 'r' } },
     ]);
+  });
+});
+
+describe('onboarding step states (API-14)', () => {
+  const steps = ['tenant_record', 'baseline_lines', 'org', 'sources'];
+  const fact = (item: string, sourceId: string | null, confidence = 'M') => ({ item, sourceId, confidence });
+
+  it('is todo with nothing behind it, review for an open question or an unsourced / low-confidence fact, done for sourced facts', () => {
+    const out = onboardingOf(
+      steps,
+      [fact('tenant_record', 'S1', 'H'), fact('baseline_lines', 'S1'), fact('baseline_lines', null), fact('org', 'S1', 'L')],
+      [],
+      'review',
+    );
+    expect(out.steps).toEqual([
+      { id: 'tenant_record', state: 'done' },
+      { id: 'baseline_lines', state: 'review' },
+      { id: 'org', state: 'review' },
+      { id: 'sources', state: 'todo' },
+    ]);
+    expect(out).toMatchObject({ done: 1, total: 4 });
+    const asked = onboardingOf(steps, [fact('sources', 'S1')], [{ item: 'sources' }, { item: null }], 'review');
+    expect(asked.steps.at(-1)).toEqual({ id: 'sources', state: 'review' });
+  });
+
+  it('an applied job settles every step that has something behind it; the rest stay todo', () => {
+    const out = onboardingOf(steps, [fact('org', null, 'L')], [{ item: 'tenant_record' }], 'applied');
+    expect(out.steps.map((s) => s.state)).toEqual(['done', 'todo', 'done', 'todo']);
+    expect(out.done).toBe(2);
+  });
+
+  it('follows the stored plan: its checklist in order, none before the plan is known or for a tuning plan', () => {
+    expect(toReconfigJob(row('queued', {}), host, times).onboarding).toEqual({ steps: [], done: 0, total: 0 });
+    const plan = {
+      intent: 'onboard',
+      tenant: { name: 'Example Air', iataCode: 'XA', ticker: null, currency: 'USD' },
+      baseYear: 2025,
+      targetYear: 2027,
+      produce: ['seed'],
+      checklist: ['org', 'tenant_record', 'org'],
+    };
+    const stored = {
+      format: 1,
+      step: 'review',
+      progress: 1,
+      estimate: { inputTokens: 1, outputTokens: 1, usd: 0.1, model: 'm', maxTokens: 10 },
+      review: {
+        plan,
+        sources: [{ url: 'https://example.com/ar', title: 'Annual report' }],
+        facts: [{ id: 'f1', step: 'tenant_record', label: 'Name', value: 'Example Air', unit: '', sourceUrl: 'https://example.com/ar', date: null, confidence: 'H' }],
+        flags: [{ kind: 'incomplete_checklist', step: 'org', target: 'plan', message: 'Org is thin' }],
+        drafts: {},
+      },
+    };
+    const job = toReconfigJob(row('review', stored), host, times);
+    expect(job.onboarding).toEqual({
+      steps: [
+        { id: 'org', state: 'review' },
+        { id: 'tenant_record', state: 'done' },
+      ],
+      done: 1,
+      total: 2,
+    });
+  });
+});
+
+describe('parityOf (API-14)', () => {
+  const bytes = (v: unknown) => new TextEncoder().encode(JSON.stringify(v));
+  const record = { format: 'glidepath.parity/1', tenant: 'aa', recordedAt: '2026-11-23T10:00:00Z', passed: 9, total: 10 };
+
+  it('reads the stored record as the parity of the tenant that holds it', () => {
+    expect(parityOf(bytes(record), 'aa')).toEqual({ tenant: 'aa', passed: 9, total: 10, recordedAt: '2026-11-23T10:00:00.000Z' });
+  });
+
+  it('a record it cannot read is none, never an error', () => {
+    expect(parityOf(new TextEncoder().encode('not json'), 'aa')).toBeNull();
+    expect(parityOf(bytes({ ...record, format: 'other' }), 'aa')).toBeNull();
+    expect(parityOf(bytes({ ...record, passed: 11 }), 'aa')).toBeNull();
+    expect(parityOf(bytes({ ...record, recordedAt: 'yesterday' }), 'aa')).toBeNull();
+    expect(parityOf(bytes(null), 'aa')).toBeNull();
   });
 });

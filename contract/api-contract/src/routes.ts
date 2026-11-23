@@ -52,6 +52,7 @@ import {
   ReconfigApplyRequest,
   ReconfigApplyResult,
   ReconfigJob,
+  ReconfigList,
   ReconfigParams,
   ReconfigRequest,
 } from './ai';
@@ -284,6 +285,12 @@ export const jobRoutes = {
     status: 201,
     body: ReconfigRequest,
     response: ReconfigJob,
+  },
+  aiReconfigList: {
+    method: 'GET',
+    path: '/api/ai/reconfig',
+    status: 200,
+    response: ReconfigList,
   },
   aiReconfigGet: {
     method: 'GET',

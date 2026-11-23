@@ -450,7 +450,7 @@ title: "Airlines module data: AI job list, tenant parity, onboarding states"
 epic: API
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -469,4 +469,5 @@ acceptance:
 gates: [G1, G2, G7, G13]
 size: S
 notes: "From MOD-10 and API-13 reviews."
+merged_at: "2026-11-23"
 ```

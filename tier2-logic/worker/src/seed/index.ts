@@ -10,3 +10,5 @@ export type { TenantSeedOptions, TenantSeedReport } from './tenant';
 export { findTier3Data, readSeedInputs, GLOBAL_SEED_FILES, TENANT_SEED_FILES } from './files';
 export type { GlobalSeed, SeedInputs } from './files';
 export { seedIds, uuidV5 } from './ids';
+export { PARITY_FORMAT, PARITY_KEY, ParityReportError, readParityReports, recordParity } from './parity';
+export type { ParityRecord, ParityTally, RecordParityOptions } from './parity';

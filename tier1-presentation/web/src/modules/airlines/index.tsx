@@ -32,6 +32,7 @@ export default function Airlines() {
           tenants={rows}
           current={tenant}
           job={r.job}
+          parity={r.parity}
           onSetUp={(prompt, slug) =>
             setSeed((s) => ({
               prompt: prompt ?? '',

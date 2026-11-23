@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { PROBLEM_CONTENT_TYPE, UserId, assertContract } from '@glidepath/api-contract';
-import type { MarketRefreshResult, ReconfigApplyResult, ReconfigJob } from '@glidepath/api-contract';
+import type { MarketRefreshResult, ReconfigApplyResult, ReconfigJob, ReconfigList } from '@glidepath/api-contract';
 import { createDb, schema, sql, withTenant } from '@glidepath/data-access';
 import type { DbHandle } from '@glidepath/data-access';
 import { start, stop } from '@glidepath/pg-local';
@@ -236,6 +236,101 @@ describe('API-11 AI reconfig routes', { timeout: 180_000 }, () => {
     expect(read.id).toBe(cachedId);
     const other = await assertContract('aiReconfigStart', await post('/api/ai/reconfig', { prompt: 'Something else entirely', tenant: null, dryRun: true }));
     expect(other.id).not.toBe(cachedId);
+  });
+});
+
+describe('API-14 job list, tenant parity, onboarding states', { timeout: 180_000 }, () => {
+  const bundleDir = (): string => join(tmp, 'bundle');
+  const cachedId = (): string => cacheJobId({ homeTenant: 'aa', id: readCacheBundle(bundleDir()).manifest.id });
+  const list = async (who = OWNER): Promise<ReconfigList> => assertContract('aiReconfigList', await get('/api/ai/reconfig', who));
+  /** The report folder of `pnpm parity:golden`, with the counts a test chooses. */
+  const reports = (name: string, golden: [number, number], replay: [number, number]): string => {
+    const dir = join(tmp, name);
+    mkdirSync(dir, { recursive: true });
+    const summary = ([passed, total]: [number, number]) => JSON.stringify({ summary: { total, passed, failed: total - passed }, rows: [] });
+    writeFileSync(join(dir, 'golden-report.json'), summary(golden));
+    writeFileSync(join(dir, 'replay-report.json'), summary(replay));
+    return dir;
+  };
+
+  it('GET /api/ai/reconfig lists the reconfig jobs of the caller (incl. the cached UA rehearsal) so the Airlines tile finds it without localStorage (test)', async () => {
+    const res = await get('/api/ai/reconfig');
+    expect(res.headers.get('cache-control')).toBe('private, no-store');
+    const out = await list();
+    const ids = out.jobs.map((j) => j.id);
+    expect(ids).toContain(cachedId());
+    const cached = out.jobs.find((j) => j.id === cachedId())!;
+    expect(cached).toMatchObject({ status: 'review', step: 'review', prompt: readCacheBundle(bundleDir()).manifest.prompt });
+    expect(cached.plan!.tenant.monogram).toBe(readCacheBundle(bundleDir()).review.plan.tenant.iataCode);
+    // the job the first test applied is listed too; a dry run (estimated) is not a job to continue
+    expect(out.jobs.some((j) => j.status === 'applied')).toBe(true);
+    expect(out.jobs.some((j) => j.status === 'estimated')).toBe(false);
+    expect(new Set(ids).size).toBe(ids.length);
+    // newest first
+    expect(out.jobs.map((j) => j.createdAt)).toEqual([...out.jobs.map((j) => j.createdAt)].sort().reverse());
+    // each entry is what GET :id answers for it
+    const one = await assertContract('aiReconfigGet', await get(`/api/ai/reconfig/${cachedId()}`));
+    expect(cached).toEqual(one);
+
+    // members may read; a user in no tenant sees nothing; nobody signed in is refused
+    expect((await list(EDITOR)).jobs.map((j) => j.id)).toContain(cachedId());
+    expect(await list(STRANGER)).toEqual({ jobs: [], parity: [] });
+    expect((await app.request('/api/ai/reconfig')).status).toBe(401);
+  });
+
+  it('tenant parity {passed,total} is the latest result recorded for the tenant, read from tier 2 (test)', async () => {
+    expect((await list()).parity).toEqual([]); // nothing recorded yet: no entry, no invented count
+
+    const first = reports('parity-1', [9, 10], [3, 4]);
+    await runMigrate({ databaseUrl: ownerUrl, seed: 'aa', tier3Data, parity: first });
+    const one = (await list()).parity;
+    expect(one).toEqual([{ tenant: 'aa', passed: 3, total: 4, recordedAt: expect.any(String) }]);
+
+    // the next recording replaces it
+    await runMigrate({ databaseUrl: ownerUrl, seed: 'aa', tier3Data, parity: reports('parity-2', [7, 10], [4, 4]) });
+    const two = (await list()).parity;
+    expect(two).toEqual([{ tenant: 'aa', passed: 4, total: 4, recordedAt: expect.any(String) }]);
+    expect(two[0]!.recordedAt >= one[0]!.recordedAt).toBe(true);
+
+    // it is the tenant's own: members of aa see it, a user of no tenant does not; zz (applied by the first test) has none
+    expect((await list(EDITOR)).parity.map((p) => p.tenant)).toEqual(['aa']);
+    expect((await list(STRANGER)).parity).toEqual([]);
+    expect((await list()).parity.map((p) => p.tenant)).not.toContain('zz');
+    // another tenant's record never shows under a tenant the caller is not in
+    expect(await scalar(sql`select count(*)::int as n from stored_object where bucket = 'ai' and key = 'parity/latest.json'`)).toBe(1);
+
+    // a malformed report stops the run and leaves the record as it was
+    const bad = join(tmp, 'parity-bad');
+    mkdirSync(bad, { recursive: true });
+    writeFileSync(join(bad, 'golden-report.json'), '{}');
+    writeFileSync(join(bad, 'replay-report.json'), '{}');
+    await expect(runMigrate({ databaseUrl: ownerUrl, seed: 'aa', tier3Data, parity: bad })).rejects.toThrow(/no summary of passed and total/);
+    expect((await list()).parity).toEqual(two);
+  });
+
+  it('tier 2 sends the state of each onboarding step (done / review / todo) and the counts on the job (test)', async () => {
+    const out = await list();
+    const cached = out.jobs.find((j) => j.id === cachedId())!;
+    const checklist = readCacheBundle(bundleDir()).review.plan.checklist;
+    expect(cached.onboarding.steps.map((s) => s.id)).toEqual(checklist);
+    expect(cached.onboarding.total).toBe(checklist.length);
+    expect(cached.onboarding.done).toBe(cached.onboarding.steps.filter((s) => s.state === 'done').length);
+    const named = new Set([...cached.facts.map((f) => f.item), ...cached.openQuestions.flatMap((q) => (q.item === null ? [] : [q.item]))]);
+    for (const s of cached.onboarding.steps) expect(s.state === 'todo', s.id).toBe(!named.has(s.id));
+    // a step with an unsourced or low-confidence fact, or an open question, is in review; sourced facts alone settle it
+    for (const s of cached.onboarding.steps.filter((x) => named.has(x.id))) {
+      const flagged =
+        cached.facts.some((f) => f.item === s.id && (f.sourceId === null || f.confidence === 'L')) || cached.openQuestions.some((q) => q.item === s.id);
+      expect(s.state, s.id).toBe(flagged ? 'review' : 'done');
+    }
+
+    // an applied job settles what it holds; the same step ids reach GET :id and the POST answer
+    const applied = out.jobs.find((j) => j.status === 'applied')!;
+    expect(applied.onboarding.steps.some((s) => s.state === 'review')).toBe(false);
+    expect(applied.onboarding.done).toBe(applied.onboarding.steps.filter((s) => s.state === 'done').length);
+    expect(applied.onboarding.total).toBeGreaterThan(0);
+    const viaGet = await assertContract('aiReconfigGet', await get(`/api/ai/reconfig/${applied.id}`));
+    expect(viaGet.onboarding).toEqual(applied.onboarding);
   });
 });
 

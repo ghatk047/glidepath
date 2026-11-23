@@ -15,7 +15,15 @@ const NET = toCellKey('res.net', '');
 /** `per_vp[vp_operations]` names the VP in brackets (tier 2's constraint id for per-VP rows). */
 const memberOf = (constraint: string) => /\[(.*)\]$/.exec(constraint)?.[1] ?? null;
 
-function Result({ run, vps }: { run: SolverRun; vps: readonly VpMember[] }) {
+function Result({
+  run,
+  vps,
+  current,
+}: {
+  run: SolverRun;
+  vps: readonly VpMember[];
+  current: boolean;
+}) {
   const nav = useShellNavigation();
   const result = run.result;
   if (!result) return null;
@@ -27,11 +35,21 @@ function Result({ run, vps }: { run: SolverRun; vps: readonly VpMember[] }) {
   const coverage = result.detail?.problem === 'vp_feasible' ? result.detail.coverage : [];
   return (
     <>
-      <p className="gp-vps-result" data-status={result.status} data-testid="feasible-result">
+      <p
+        className="gp-vps-result"
+        data-status={result.status}
+        data-current={current}
+        data-testid="feasible-result"
+      >
         Optimizer with all {vps.length} VP bars: <strong data-value={net}>{fmt.money(net)}</strong>
         {binding.length > 0 && <>, {binding.map((m) => label(m)).join(', ')} binding</>}
         {result.status === 'infeasible' && <>. No plan clears every bar.</>}
       </p>
+      {!current && (
+        <p className="gp-vps-stale" data-testid="feasible-stale">
+          From earlier inputs. Run again for this scenario as it stands.
+        </p>
+      )}
       {coverage.length > 0 && (
         <ul className="gp-vps-coverage" aria-label="Coverage per VP">
           {coverage.map((c) => (
@@ -68,7 +86,7 @@ export function FeasiblePanel({
       header={{ label: 'Every VP clears?', status: <JobHeader id={feas.jobId} /> }}
     >
       {done ? (
-        <Result run={feas.run!} vps={vps} />
+        <Result run={feas.run!} vps={vps} current={feas.current} />
       ) : (
         <EmptyState
           line={

@@ -2417,7 +2417,7 @@
     "epic": "API",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -2445,7 +2445,8 @@
       "G13"
     ],
     "size": "S",
-    "notes": "From MOD-10 and API-13 reviews."
+    "notes": "From MOD-10 and API-13 reviews.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "JOB-01",

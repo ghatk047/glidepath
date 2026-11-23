@@ -1,18 +1,20 @@
-import { DimKey, type ReconfigJob, type Tenant } from '@glidepath/api-contract';
+import { DimKey, type ReconfigJob, type Tenant, type TenantParity } from '@glidepath/api-contract';
 import { GlassPanel, GridCell } from '@glidepath/ui/glass';
 import { useMembers, useScenarios } from '../../data';
-import { checklistStates, draftTile, tileOf, type TileModel } from './model';
-import { COPY, CHECKLIST, cyLabel } from './copy';
+import { draftTile, tileOf, type TileModel } from './model';
+import { COPY, cyLabel } from './copy';
 
 export interface TilesProps {
   tenants: readonly Tenant[];
   current: string;
   job: ReconfigJob | null;
+  /** Latest parity tier 2 recorded per tenant; a tenant without one has no entry. */
+  parity: readonly TenantParity[];
   onSetUp(prompt: string | null, tenant: string | null): void;
 }
 
-/** "AA · 415 lines · 4 VPs · 5 scenarios": the counts of what tier 2 sent for the tenant. */
-function LiveFacts({ tenant }: { tenant: Tenant }) {
+/** "415 lines · 4 VPs · 5 scenarios · parity 245/245": the counts and parity tier 2 sent for the tenant. */
+function LiveFacts({ tenant, parity }: { tenant: Tenant; parity: TenantParity | undefined }) {
   const members = useMembers(tenant.slug);
   const scenarios = useScenarios(tenant.slug);
   const dims = members.data?.dimensions;
@@ -25,6 +27,7 @@ function LiveFacts({ tenant }: { tenant: Tenant }) {
     part(lines, 'line', 'lines'),
     part(vps, 'VP', 'VPs'),
     part(count, 'scenario', 'scenarios'),
+    parity ? `${COPY.parity} ${parity.passed}/${parity.total}` : null,
   ];
   return (
     <p className="gp-airlines-facts" data-testid={`facts-${tenant.slug}`}>
@@ -38,22 +41,25 @@ function Tile({
   tenant,
   current,
   job,
+  parity,
   onSetUp,
 }: {
   tile: TileModel;
   tenant: Tenant | undefined;
   current: boolean;
   job: ReconfigJob | null;
+  parity: TenantParity | undefined;
   onSetUp: TilesProps['onSetUp'];
 }) {
-  const states = tile.kind === 'draft' ? checklistStates(job) : null;
-  const doneCount = states ? CHECKLIST.filter((c) => states[c.id] === 'done').length : 0;
+  const onboarding = tile.kind === 'draft' ? (job?.onboarding ?? null) : null;
   const tag =
     tile.kind === 'live'
       ? COPY.live
-      : tile.kind === 'draft'
-        ? `${doneCount} of ${CHECKLIST.length}`
-        : COPY.newTag;
+      : onboarding
+        ? `${onboarding.done} of ${onboarding.total}`
+        : tile.kind === 'draft'
+          ? COPY.draft
+          : COPY.newTag;
   const status = tile.kind === 'live' ? 'Live' : tile.kind === 'draft' ? 'Draft' : COPY.notStarted;
   return (
     <GridCell span={3} className="gp-airlines-cell">
@@ -80,13 +86,13 @@ function Tile({
           {status}
           {tile.sub ? ` · ${tile.sub}` : ''}
         </p>
-        {tile.kind === 'live' && tenant ? <LiveFacts tenant={tenant} /> : null}
-        {tile.kind === 'draft' ? (
+        {tile.kind === 'live' && tenant ? <LiveFacts tenant={tenant} parity={parity} /> : null}
+        {onboarding && onboarding.total > 0 ? (
           <progress
             className="gp-airlines-progress"
             aria-label={`${tile.name} onboarding`}
-            max={CHECKLIST.length}
-            value={doneCount}
+            max={onboarding.total}
+            value={onboarding.done}
           />
         ) : null}
         {tile.kind !== 'live' ? (
@@ -104,7 +110,7 @@ function Tile({
 }
 
 /** Tenant tiles: the tenants tier 2 lists, an AI draft not yet a tenant, and "Add an airline". */
-export function Tiles({ tenants, current, job, onSetUp }: TilesProps) {
+export function Tiles({ tenants, current, job, parity, onSetUp }: TilesProps) {
   const first = tenants[0];
   const cy = first ? cyLabel(first.targetYear) : '';
   const tiles = tenants.map((t) => ({
@@ -122,6 +128,7 @@ export function Tiles({ tenants, current, job, onSetUp }: TilesProps) {
           tenant={tenant}
           current={tile.slug === current}
           job={job}
+          parity={parity.find((p) => p.tenant === tile.slug)}
           onSetUp={onSetUp}
         />
       ))}
@@ -132,6 +139,7 @@ export function Tiles({ tenants, current, job, onSetUp }: TilesProps) {
           tenant={undefined}
           current={false}
           job={job}
+          parity={undefined}
           onSetUp={onSetUp}
         />
       ) : null}

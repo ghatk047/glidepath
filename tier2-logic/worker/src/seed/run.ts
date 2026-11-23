@@ -4,6 +4,7 @@ import { loadModelDefs, type ModelDefsReport } from './model-defs';
 import { seedTenant, type TenantSeedReport } from './tenant';
 import { join } from 'node:path';
 import { seedIds } from './ids';
+import { recordParity, type ParityRecord } from './parity';
 import { importAiCache, type ImportAiCacheReport } from '../jobs/ai/cache';
 import { defaultSolverDeps } from '../jobs/solver/deps';
 import type { SolverJobDeps } from '../jobs/solver/types';
@@ -18,6 +19,10 @@ export interface MigrateRunOptions {
   readonly aiCache?: string;
   /** `--ai-cache-tenant`: slug of the tenant that owns the imported job; default the bundle's `homeTenant`. */
   readonly aiCacheTenant?: string;
+  /** `--parity <dir>`: the report folder of `pnpm parity:golden`, recorded as the latest parity of `parityTenant` (API-14). */
+  readonly parity?: string;
+  /** `--parity-tenant`: slug of the tenant the reports are for; default the seed tenant. */
+  readonly parityTenant?: string;
   /** WARM=1 (demo profile, JOB-04): after the seed, pre-run the demo's solver jobs into the result cache. */
   readonly warm?: boolean;
   /** Solver dependencies of the warm step (tests pass their own); default: the spec bundle from SPEC_DIR. */
@@ -37,6 +42,8 @@ export interface MigrateRunReport {
   readonly tenant: TenantSeedReport | null;
   /** The imported AI cache bundle, when `--ai-cache` was given. */
   readonly aiCache: ImportAiCacheReport | null;
+  /** The recorded parity, when `--parity` was given (and a tenant seeded). */
+  readonly parity?: ParityRecord;
   /** The cache warm, when `warm` was set (and a tenant seeded). */
   readonly warm?: WarmReport;
   /** Everything this run wrote: migration files, definition rows, tenant rows and changesets. 0 on a rerun. */
@@ -52,14 +59,29 @@ export async function runMigrate(o: MigrateRunOptions): Promise<MigrateRunReport
   const tier3Data = o.tier3Data ?? findTier3Data();
   const migrations = await migrate(o.databaseUrl, { dir: join(tier3Data, 'migrations'), log });
   log(`migrate: migrations: ${migrations.applied.length} applied, ${migrations.skipped.length} already applied`);
-  if (o.seed === undefined && o.aiCache === undefined)
+  if (o.seed === undefined && o.aiCache === undefined && o.parity === undefined)
     return { migrations, modelDefs: null, tenant: null, aiCache: null, changes: migrations.applied.length };
   if (o.seed === undefined) {
     // Cache bundle without a seed: the home tenant must exist already.
     const handle = createDb(o.databaseUrl, { poolMax: 2 });
     try {
-      const aiCache = await importAiCache(handle.db, { dir: o.aiCache!, ...(o.aiCacheTenant === undefined ? {} : { homeTenant: o.aiCacheTenant }), log });
-      return { migrations, modelDefs: null, tenant: null, aiCache, changes: migrations.applied.length + (aiCache.created ? 1 : 0) };
+      const aiCache =
+        o.aiCache === undefined
+          ? null
+          : await importAiCache(handle.db, { dir: o.aiCache, ...(o.aiCacheTenant === undefined ? {} : { homeTenant: o.aiCacheTenant }), log });
+      let parity: ParityRecord | undefined;
+      if (o.parity !== undefined) {
+        if (o.parityTenant === undefined) throw new Error('migrate: --parity without --seed needs --parity-tenant <slug>');
+        parity = await recordParity(handle.db, { dir: o.parity, tenant: o.parityTenant, log });
+      }
+      return {
+        migrations,
+        modelDefs: null,
+        tenant: null,
+        aiCache,
+        ...(parity === undefined ? {} : { parity }),
+        changes: migrations.applied.length + (aiCache?.created ? 1 : 0),
+      };
     } finally {
       await handle.close();
     }
@@ -83,6 +105,8 @@ export async function runMigrate(o: MigrateRunOptions): Promise<MigrateRunReport
       o.aiCache === undefined
         ? null
         : await importAiCache(handle.db, { dir: o.aiCache, ...(o.aiCacheTenant === undefined ? {} : { homeTenant: o.aiCacheTenant }), log });
+    const parity =
+      o.parity === undefined ? undefined : await recordParity(handle.db, { dir: o.parity, tenant: o.parityTenant ?? inputs.slug, log });
     let warm: WarmReport | undefined;
     if (o.warm) {
       warm = await warmTenant({
@@ -99,6 +123,7 @@ export async function runMigrate(o: MigrateRunOptions): Promise<MigrateRunReport
       modelDefs,
       tenant,
       aiCache,
+      ...(parity === undefined ? {} : { parity }),
       ...(warm === undefined ? {} : { warm }),
       changes: migrations.applied.length + modelDefs.total + tenant.total + (aiCache?.created ? 1 : 0),
     };

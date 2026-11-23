@@ -186,6 +186,26 @@ export const CostEstimate = AiUsage.extend({
 });
 export type CostEstimate = z.infer<typeof CostEstimate>;
 
+/** One onboarding step (07 section 2) as the job stands: nothing yet, needs a reviewer, or settled. */
+export const OnboardingState = z.enum(['done', 'review', 'todo']);
+export type OnboardingState = z.infer<typeof OnboardingState>;
+
+/**
+ * The onboarding checklist of one job (07 section 2), as tier 2 judges it. `steps` follow the
+ * job's plan, in checklist order, each with the id facts and open questions use in their `item`.
+ * `review` = an open question, or a fact with no source or confidence `L`, is attached to the
+ * step; `done` = it has facts and none of that (every step once the job is applied);
+ * `todo` = nothing yet. `done` and `total` count the steps, so a screen prints "done of total"
+ * without counting. Empty `steps` (`total` 0): the plan is not known yet, or it covers no
+ * onboarding step (a lever-tuning job).
+ */
+export const OnboardingStatus = z.object({
+  steps: z.array(z.object({ id: z.string().min(1), state: OnboardingState })),
+  done: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+});
+export type OnboardingStatus = z.infer<typeof OnboardingStatus>;
+
 /** What `POST` and `GET /api/ai/reconfig/:id` answer. Sections fill in as steps complete. */
 export const ReconfigJob = z.object({
   id: JobId,
@@ -202,6 +222,8 @@ export const ReconfigJob = z.object({
   validation: z.array(Violation),
   calibration: CalibrationReport.nullable(),
   openQuestions: z.array(OpenQuestion),
+  /** Per-step onboarding state, judged by tier 2 (a screen never derives it from facts). */
+  onboarding: OnboardingStatus,
   costEstimate: CostEstimate,
   usage: AiUsage.nullable(),
   error: Problem.nullable(),
@@ -231,3 +253,28 @@ export const ReconfigApplyResult = z.object({
   ),
 });
 export type ReconfigApplyResult = z.infer<typeof ReconfigApplyResult>;
+
+/**
+ * The latest parity result tier 2 recorded for a tenant: `passed` of `total` checks of the parity
+ * replay (docs/spec/reference/parity_report.json, the "parity 245/245" of the Airlines tile) matched
+ * the engine. A tenant with no recorded result has no entry.
+ */
+export const TenantParity = z.object({
+  tenant: TenantSlug,
+  passed: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  /** When the result was recorded. */
+  recordedAt: Timestamp,
+});
+export type TenantParity = z.infer<typeof TenantParity>;
+
+/**
+ * `GET /api/ai/reconfig`: the reconfiguration jobs of every tenant the caller belongs to, newest
+ * first (the cached rehearsal included; dry-run estimates are left out), and the latest parity
+ * of those tenants. A screen finds its job here without remembering an id.
+ */
+export const ReconfigList = z.object({
+  jobs: z.array(ReconfigJob),
+  parity: z.array(TenantParity),
+});
+export type ReconfigList = z.infer<typeof ReconfigList>;

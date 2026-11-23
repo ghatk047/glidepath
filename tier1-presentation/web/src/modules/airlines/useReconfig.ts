@@ -4,6 +4,7 @@ import {
   type DraftKind,
   type ReconfigApplyResult,
   type ReconfigJob,
+  type TenantParity,
   type TenantSlug,
 } from '@glidepath/api-contract';
 import { dataKeys, useApiClient, useServerState } from '../../data';
@@ -11,25 +12,17 @@ import { jobIsLive } from './copy';
 
 /** How often a queued or running job is re-read (`GET /api/ai/reconfig/:id`). */
 export const POLL_MS = 1500;
-const STORE_KEY = 'gp.airlines.job';
 
 const line = (e: unknown): string =>
   e instanceof ApiError ? e.problem.detail : e instanceof Error ? e.message : 'Request failed';
 
-const remembered = (): string | null => {
-  try {
-    return window.localStorage.getItem(STORE_KEY);
-  } catch {
-    return null;
-  }
-};
-const remember = (id: string) => {
-  try {
-    window.localStorage.setItem(STORE_KEY, id);
-  } catch {
-    /* per-viewer convenience only */
-  }
-};
+/**
+ * The job the screen picks up from `GET /api/ai/reconfig` (newest first): one tier 2 is running, else the
+ * newest it holds for review (the cached example included). Which job that is, tier 2's list says; no id is
+ * kept in the browser.
+ */
+const pickUp = (jobs: readonly ReconfigJob[]): ReconfigJob | null =>
+  jobs.find((j) => jobIsLive(j)) ?? jobs.find((j) => j.status === 'review') ?? null;
 
 export interface Reconfig {
   /** Dry run answer: plan and cost estimate; nothing queued. */
@@ -37,6 +30,8 @@ export interface Reconfig {
   /** The job tier 2 is running or holds for review. */
   job: ReconfigJob | null;
   result: ReconfigApplyResult | null;
+  /** Latest parity tier 2 recorded per tenant (the live tile's "parity n/m"). */
+  parity: readonly TenantParity[];
   busy: boolean;
   applying: boolean;
   error: string | null;
@@ -56,6 +51,7 @@ export function useReconfig(): Reconfig {
   const [asked, setAsked] = useState<{ prompt: string; tenant: TenantSlug | null } | null>(null);
   const [job, setJob] = useState<ReconfigJob | null>(null);
   const [result, setResult] = useState<ReconfigApplyResult | null>(null);
+  const [parity, setParity] = useState<readonly TenantParity[]>([]);
   const [busy, setBusy] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,13 +66,16 @@ export function useReconfig(): Reconfig {
   const jobId = job?.id ?? null;
   const polling = jobIsLive(job);
 
-  // pick up the job this browser last worked on (the cached example, or a running job)
+  // pick up the caller's job from tier 2's list (the cached example, or a running job), and the tenants' parity
   useEffect(() => {
-    const id = remembered();
-    if (!id) return;
     api
-      .aiReconfigGet({ params: { id } })
-      .then((j) => live.current && setJob((cur) => cur ?? j))
+      .aiReconfigList({})
+      .then((list) => {
+        if (!live.current) return;
+        setParity(list.parity);
+        const found = pickUp(list.jobs);
+        if (found) setJob((cur) => cur ?? found);
+      })
       .catch(() => undefined);
   }, [api]);
 
@@ -117,7 +116,6 @@ export function useReconfig(): Reconfig {
     try {
       const j = await api.aiReconfigStart({ body: { prompt: asked.prompt, tenant: asked.tenant } });
       if (!live.current) return;
-      remember(j.id);
       setEstimate(null);
       setJob(j);
     } catch (e) {
@@ -152,6 +150,7 @@ export function useReconfig(): Reconfig {
     estimate,
     job,
     result,
+    parity,
     busy,
     applying,
     error,
