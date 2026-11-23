@@ -4872,7 +4872,7 @@
     "epic": "MOD",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "C",
     "model": "sonnet",
     "effort": "high",
@@ -4904,7 +4904,8 @@
       "G13"
     ],
     "size": "M",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "QA-01",
