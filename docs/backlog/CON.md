@@ -146,3 +146,39 @@ merged_at: "2026-11-23"
 ```
 
 Lets tier 1 build and test against the contract before tier 2 serves real numbers.
+
+## CON-05 · Review fixes: scenario switch, batched preview, scratch lifecycle
+
+```yaml
+id: CON-05
+title: "WS/REST contract review fixes: open{scenarioId}, batched preview, scratch lifecycle, error message"
+epic: CON
+milestone: M1
+priority: must
+status: in_progress
+stream: B
+model: opus
+effort: high
+depends_on: [CON-04]
+tier: contract
+package: "contract/api-contract"
+contract: "ClientMessage open/preview(changes[]); ServerMessage error; Scenario.editsCount; ChangesetRequest.clientRequestId"
+inputs:
+  - "docs/architecture/03_engine_and_solvers.md#2"
+  - "docs/architecture/04_data_and_api.md#4"
+  - "docs/ux/05_demo_storyline.md"
+  - "contract/api-contract/README.md"
+acceptance:
+  - "client message open{scenarioId} answered by snapshot + re-sent subscribed views; documented that a session follows changeset{forkedFrom} it caused (test: ws-protocol.spec.ts)"
+  - "preview carries changes:[{var,member,value}] (1..n cells applied atomically, e.g. two org.dom_share cells) with seq; single-cell form removed or normalised (test)"
+  - "scratch lifecycle documented and typed: previews rebased onto each commit; tier 1 sends cancelPreview after its POST resolves or fails; changeset message precedes its delta{seq:null} (test: fixture order)"
+  - "preview rate limit is 30/s per connection (PREVIEW_MAX_PER_SECOND doc + fixture) (test)"
+  - "new server message error{problem} for rejected frames; warnings never used for frame errors (test)"
+  - "changeset message gains optional changesetId, origin, author; Scenario gains editsCount; ChangesetRequest gains optional clientRequestId (idempotency) (test)"
+  - "NodeDef is strict so expr/cases can never leak to tier 1 (test that fails on extra keys); 409 fixture text says tier 1 re-sends its edits; Scenario doc no longer says a child inherits overrides (test)"
+gates: [G1, G2, G13]
+size: M
+notes: "From the opus review of CON-01/CON-02 (2026-11-23). Contract change: WEB-03 and API-06/07 consume it."
+```
+
+Fixes the blocking contract findings before the session manager and WS client depend on them.
