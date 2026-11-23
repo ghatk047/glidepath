@@ -67,3 +67,15 @@ export { blend } from './blend';
 export type { BlendEnd, BlendOptions } from './blend';
 export { BLEND_METRICS, BLEND_OUTPUT, BLEND_TARGET, blendCells, blendChanges } from './problems/blend';
 export type { BlendCell } from './problems/blend';
+// SOL-04: minimum-risk lever mix.
+export { minRiskMix } from './min-risk';
+export {
+  COST_FLOOR,
+  DEFAULT_PEOPLE_WEIGHT,
+  DEFAULT_SEED,
+  FEASIBILITY_TOL,
+  MAX_STEPS,
+  MIN_RISK_DEFAULTS,
+  STEP_DIVISIONS,
+  riskExposure,
+} from './problems/min-risk';

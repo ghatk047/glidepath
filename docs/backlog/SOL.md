@@ -125,7 +125,7 @@ title: "Minimum-risk lever mix (total bar)"
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -147,6 +147,7 @@ acceptance:
 gates: [G1, G2, G5, G8]
 size: M
 notes: "Greedy marginal analysis as the explainable default; production method may refine but must keep the acceptance numbers."
+merged_at: "2026-11-23"
 ```
 
 'Show me a path' — the demo's headline solver.

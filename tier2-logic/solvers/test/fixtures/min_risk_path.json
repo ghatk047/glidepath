@@ -1,0 +1,172 @@
+{
+ "sources": {
+  "docs/spec/variables.json": "e8090f4d4768ded0472896d2e3937cc92900af1c9e7d52e633ec9c16ca56469c",
+  "docs/spec/formula_graph.json": "6200e779230a8f1ff8044b3d93ccbd7bff26c885ae5764eeb51d1ae3052bdc7d",
+  "docs/spec/seed/aa/scenarios.json": "ae55d62a38f8800c7ba34f8c2e61caac299bc86ed8bece57c6c8f04e20dd8ba1",
+  "docs/spec/reference/solvers_demo.py": "622d6cf2c920c0a7db3c8e328b12d7285fe7ebb9fb5ac039e7eb2e15ac836d2f"
+ },
+ "path": [
+  "lev.L11.pct",
+  "lev.L11.pct",
+  "lev.L11.pct",
+  "lev.L11.pct",
+  "lev.L11.pct",
+  "lev.L02.cut",
+  "lev.L02.cut",
+  "lev.L01.rel",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.cut",
+  "lev.L01.rel",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.rel",
+  "lev.L01.rel",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.rel",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L01.cut",
+  "lev.L01.cut",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L14.pct",
+  "lev.L16.pct",
+  "lev.L16.pct",
+  "lev.L16.pct",
+  "lev.L16.pct",
+  "lev.L16.pct",
+  "lev.L17.cola",
+  "lev.L17.cl",
+  "lev.L17.cola",
+  "lev.L17.cola",
+  "lev.L17.sw",
+  "lev.L17.sw",
+  "lev.L17.sw",
+  "lev.L17.cl",
+  "lev.L10.ms",
+  "lev.L10.ms",
+  "lev.L10.rcut",
+  "lev.L10.shelf",
+  "lev.L10.rcut",
+  "lev.L10.rcut",
+  "lev.L10.rcut",
+  "lev.L08.cov",
+  "lev.L08.cov",
+  "lev.L08.cov",
+  "lev.L12.tpm",
+  "lev.L07.pct"
+ ],
+ "order": [
+  "lev.L11.pct",
+  "lev.L02.cut",
+  "lev.L01.rel",
+  "lev.L01.cut",
+  "lev.L14.pct",
+  "lev.L16.pct",
+  "lev.L17.cola",
+  "lev.L17.cl",
+  "lev.L17.sw",
+  "lev.L10.ms",
+  "lev.L10.rcut",
+  "lev.L10.shelf",
+  "lev.L08.cov",
+  "lev.L12.tpm",
+  "lev.L07.pct"
+ ],
+ "result": {
+  "feasible": true,
+  "evaluations": 1634,
+  "steps": 64,
+  "net": 143.02,
+  "bar": 142.98,
+  "risk_adj_net": 101.01,
+  "risk_exposure": 42.01,
+  "one_time_it": 20.0,
+  "fte_us": 2692.0,
+  "fte_gcc": 1318.0,
+  "eps27": 0.113,
+  "vp_gaps": {
+   "vp_commercial": 1.69,
+   "vp_operations": -1.44,
+   "vp_corporate": 0.5,
+   "vp_infra": -0.72
+  }
+ },
+ "moved": {
+  "lev.L01.cut": [
+   0.25,
+   0.35
+  ],
+  "lev.L01.rel": [
+   0.18,
+   0.3
+  ],
+  "lev.L02.cut": [
+   0.4,
+   0.5
+  ],
+  "lev.L07.pct": [
+   0.6,
+   0.65
+  ],
+  "lev.L08.cov": [
+   0.75,
+   0.9
+  ],
+  "lev.L10.shelf": [
+   0.1,
+   0.11
+  ],
+  "lev.L10.ms": [
+   0.18,
+   0.2
+  ],
+  "lev.L10.rcut": [
+   0.2,
+   0.24
+  ],
+  "lev.L11.pct": [
+   0.3,
+   0.35
+  ],
+  "lev.L12.tpm": [
+   0.6,
+   0.65
+  ],
+  "lev.L14.pct": [
+   0.15,
+   0.25
+  ],
+  "lev.L16.pct": [
+   0.015,
+   0.02
+  ],
+  "lev.L17.cola": [
+   0.7,
+   1.0
+  ],
+  "lev.L17.sw": [
+   0.5,
+   0.8
+  ],
+  "lev.L17.cl": [
+   0.5,
+   0.7
+  ]
+ }
+}

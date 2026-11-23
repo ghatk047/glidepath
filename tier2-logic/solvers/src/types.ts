@@ -113,6 +113,8 @@ export interface OptimiserParams {
   readonly method?: OptimiserMethod;
   /** Multi-start seed; absent = a seeded default (reproducible). */
   readonly seed?: number;
+  /** `min_people_impact`: weight `w` of an onshore contractor exit against a US employee exit; absent = 1. */
+  readonly peopleWeight?: number;
 }
 
 export type MinRiskMixParams = OptimiserParams;

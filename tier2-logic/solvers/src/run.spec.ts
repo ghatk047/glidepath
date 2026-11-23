@@ -217,8 +217,8 @@ describe('SOL-01 runSolver: result assembly and move rules', () => {
       if (outcome?.code === 'NOT_IMPLEMENTED') expect(outcome.message).toContain(item);
       else implemented.push(problem);
     }
-    // Items that have landed: SOL-02 goal seek and breakeven, SOL-03 blend, SOL-06 Monte Carlo, SOL-07 sensitivity, SOL-08 stress.
-    for (const p of ['goal_seek', 'breakeven', 'monte_carlo', 'sensitivity', 'stress_presets', 'scenario_blend']) expect(implemented).toContain(p);
+    // Items that have landed: SOL-02 goal seek and breakeven, SOL-03 blend, SOL-04 min-risk mix, SOL-06 Monte Carlo, SOL-07 sensitivity, SOL-08 stress.
+    for (const p of ['goal_seek', 'breakeven', 'monte_carlo', 'sensitivity', 'stress_presets', 'scenario_blend', 'min_risk_mix']) expect(implemented).toContain(p);
     await expect(runSolver(model, { problem: 'nope' as ProblemId, params: {} } as never)).rejects.toBeInstanceOf(SolverError);
   });
 

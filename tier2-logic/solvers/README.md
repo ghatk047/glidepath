@@ -30,6 +30,15 @@ SOL-03 scenario blend (`blend()` in `src/blend.ts`; problem in `src/problems/ble
 - λ is searched on [0, 1] with the SOL-02 seek (11-point scan in one batch, then Brent). Status `optimal` with `detail.lambda`, or `unreachable` with `detail.lambda` null and the closest scan λ in `metrics.lambda` and `changes`.
 - `metrics`: the output, target, residual, λ, `res.net`, `res.bar`, `res.risk`, `res.tot_ot_it`, `br.eps27`, `vp.gap[<vp>]`. Budget < 1 s asserted in `blend.spec.ts`.
 
+SOL-04 minimum-risk lever mix (`minRiskMix()` in `src/min-risk.ts`; problem in `src/problems/min-risk.ts`):
+
+- `explainable` (default): greedy marginal analysis as `optimise` in `docs/spec/reference/solvers_demo.py`. Each round prices every one-step move in one engine batch and takes the best `constraint gain / max(Δobjective, COST_FLOOR)`; a tie keeps the first move in decision order. Lever-intensity inputs step up only (toward the stretch cap); other sets step either way. Values accumulate `x ± step` like the reference, which keeps the plan (moved set, end values, first-move order) equal to the reference's; inside a group of levers whose scores tie up to rounding, single steps may interleave differently. Result values are rounded back onto the step grid.
+- Objectives (`solvers.json` `objective_options`): `min_risk_exposure` (Σ `lev.iy`·(1 − `lev.conf`), default), `max_risk_adjusted_net`, `min_one_time`, `min_people_impact` (`(hc.us − res.fte_us) + w·(lv.on0 − res.fte_on)`, `w` = `params.peopleWeight`, default 1), `min_change`.
+- Constraints: `total` (`res.net ≥ res.bar`) always; optional `per_vp`, `one_time_cap`, `rate_share`, `us_floor`, `gcc_hiring`, `eps` add their violation. `binding` lists held constraints the last improving step was needed for, shadow price = Δobjective per unit of slack on that step.
+- `production`: the explainable plan, then a seeded refinement stepping moved inputs back toward the start while feasible and the objective falls; `diagnostics.seed` records the seed.
+- `ranked`: one row per moved input in the order the optimiser first moved it, impacts on `res.net` along that path. `metrics`: `res.net`, `res.bar`, `res.risk`, `res.tot_ot_it`, … plus `risk_exposure`, `objective`, `violation`, `steps`, `evaluations`.
+- `test/fixtures/min_risk_path.json` is the reference greedy path, dumped by `python3 -I tier2-logic/solvers/test/fixtures/dump_min_risk.py .`. The reference bounds intensity inputs by max(C, D) alone, above the registry max for `lev.L01.cut`, `lev.L01.rel`, `lev.L03.pct` and `lev.L15.pct`; the spec widens those to the reference bounds through `model.caps` (with SOL-01's default bounds the mix still clears the bar from C: risk exposure 42.54, one-time IT 20.34, no people levers, but `lev.L08.cut` replaces `lev.L12.tpm`).
+
 ```ts
 import { runSolver, type SolverModel } from '@glidepath/solvers';
 
