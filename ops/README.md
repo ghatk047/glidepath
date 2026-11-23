@@ -11,6 +11,7 @@ Tests and helpers for the repo-root operations files: `docker-compose.yml`,
   the Neon override.
 - `test/env-example.spec.ts`: every setting listed, no secret filled.
 - `test/readme.spec.ts`: the "Running locally" section.
+- `test/dockerfile.spec.ts` (OPS-02): the `glidepath/logic` image in `ops/docker/logic`: Dockerfile, hadolint (when installed), bake platforms, `.dockerignore`, entry files, build helpers.
 
 Set `OPS_COMPOSE_SOURCE=yaml` to force the YAML path. Run with
 `pnpm turbo run typecheck lint test --filter=@glidepath/ops`.

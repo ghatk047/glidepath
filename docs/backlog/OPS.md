@@ -58,7 +58,7 @@ title: "logic image Dockerfile (server, worker, migrate), multi-arch"
 epic: OPS
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -78,6 +78,7 @@ acceptance:
 gates: [G14]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 One tier-2 image, three commands.
