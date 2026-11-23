@@ -1663,6 +1663,43 @@
     "notes": "Found by DATA-10: references without FK accepted tenant B ids (nothing of B read or changed)."
   },
   {
+    "id": "DATA-13",
+    "title": "Commit path speed and data-access tidy-ups",
+    "epic": "DATA",
+    "milestone": "M2",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "B",
+    "model": "opus",
+    "effort": "high",
+    "depends_on": [
+      "API-05",
+      "API-06"
+    ],
+    "tier": 2,
+    "package": "tier2-logic/data-access + tier2-logic/domain + tools/pg-local",
+    "contract": "POST changesets p95 < 150 ms on the seeded DB with margin (G8)",
+    "inputs": [
+      "tier2-logic/server/src/routes/write (API-05 bench api.commit: p95 ~140-158 ms; loadMembers ~25 ms, loadInputs ~12 ms, membersHash ~9.5 ms per commit)",
+      "tier2-logic/server/src/session/model-cache.ts (API-06 ModelCache keyed tenant, model_version, members_hash)"
+    ],
+    "acceptance": [
+      "members snapshot and members_hash are cached per (tenant, members version) and invalidated by any structural changeset; a commit with no structural change does not reload members or rehash (test)",
+      "bench api.commit p95 <= 100 ms on the seeded DB on a dev machine (G8 budget 150 ms keeps headroom for CI)",
+      "getLatestCalcRun orders by scenario_version desc, then created_at desc (an undo re-stamps an older run; test); server write/support.ts uses it instead of its own query",
+      "ScenarioTx.updateScenario (rename/lock/archive) is implemented in data-access; server write/support.ts uses it instead of raw sql",
+      "pg-local stops and removes its clusters on process exit (no leaked clusters after a test run; test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G7",
+      "G8"
+    ],
+    "size": "M",
+    "notes": "Follow-ups from API-05/API-06 reviews."
+  },
+  {
     "id": "DOM-01",
     "title": "Changeset model, member keys, scenario resolution, ports",
     "epic": "DOM",
