@@ -26,7 +26,7 @@ title: "tools/gen-schema: DDL migrations from schema.json"
 epic: DATA
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -48,6 +48,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Schema from the spec, never hand-written.

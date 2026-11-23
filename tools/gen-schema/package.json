@@ -8,6 +8,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate": "tsx src/cli.ts generate",
+    "check": "tsx src/cli.ts check"
   }
 }
