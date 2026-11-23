@@ -94,7 +94,7 @@ title: "Views v_inputs_resolved and v_dimension_members"
 epic: DATA
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
@@ -125,7 +125,7 @@ title: "Manual migrations: solver_run progress/cancel and auth tables"
 epic: DATA
 milestone: M0
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: medium
@@ -253,7 +253,7 @@ title: "Object store port with Postgres adapter (ADR-025)"
 epic: DATA
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: medium

@@ -57,7 +57,7 @@ title: "Data hooks over the typed client"
 epic: WEB
 milestone: M2
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high

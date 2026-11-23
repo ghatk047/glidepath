@@ -362,7 +362,7 @@ title: "Ownership bar (#13)"
 epic: UI
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: C
 model: sonnet
 effort: high
