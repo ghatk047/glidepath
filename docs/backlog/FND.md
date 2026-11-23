@@ -22,7 +22,7 @@ title: "Monorepo scaffold with tier folders, pnpm and Turborepo"
 epic: FND
 milestone: M0
 priority: must
-status: in_progress
+status: done
 stream: D
 model: sonnet
 effort: medium
@@ -44,6 +44,7 @@ acceptance:
 gates: [G1, G2]
 size: M
 notes: "No feature code. Root scripts are placeholders owned by later items."
+merged_at: "2026-11-23"
 ```
 
 Creates the empty three-tier monorepo so every later item has a package to land in. Turbo pipeline: typecheck, lint, test, build, bench.

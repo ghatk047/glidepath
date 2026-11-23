@@ -5,7 +5,7 @@
     "epic": "FND",
     "milestone": "M0",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "D",
     "model": "sonnet",
     "effort": "medium",
@@ -31,7 +31,8 @@
       "G2"
     ],
     "size": "M",
-    "notes": "No feature code. Root scripts are placeholders owned by later items."
+    "notes": "No feature code. Root scripts are placeholders owned by later items.",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "FND-02",

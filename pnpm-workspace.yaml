@@ -1,0 +1,6 @@
+packages:
+  - "tier1-presentation/*"
+  - "tier2-logic/*"
+  - "contract/*"
+  - "tools/*"
+  - "e2e"
