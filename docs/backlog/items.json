@@ -4450,6 +4450,41 @@
     "notes": "Found by QA-04 on the real stack; msw unit tests hid both."
   },
   {
+    "id": "WEB-10",
+    "title": "Percent-point units shown correctly everywhere",
+    "epic": "WEB",
+    "milestone": "M3",
+    "priority": "must",
+    "status": "in_progress",
+    "stream": "C",
+    "model": "sonnet",
+    "effort": "high",
+    "depends_on": [
+      "MOD-08",
+      "WEB-07"
+    ],
+    "tier": 1,
+    "package": "contract/api-contract (bundle), tier2-logic (bundle builder), tier1-presentation/ui/src/format, web bind and overlays",
+    "contract": "ModelBundle variables and nodes carry a percent scale (fraction or points) set by tier 2",
+    "inputs": [
+      "docs/spec/variables.json (unit '%': layer corporate values are percentage points, e.g. corp.gdp 2.0 = 2.0%; others are fractions, e.g. g.target_pct 0.1 = 10%)",
+      "tier1-presentation/web/src/modules/market/format.ts (local workaround to remove)"
+    ],
+    "acceptance": [
+      "tier 2 sets the percent scale per variable/node in the bundle from registry data (no ids hard-coded in tier 1); a test proves every corporate % variable is 'points' and g.target_pct is 'fraction'",
+      "ui fmt and the shared BoundEditable, slider and edit popover display and parse both scales correctly (tests: corp.gdp 2 shows 2.0%; g.target_pct 0.1 shows 10.0%; typing 2.5 for a points var commits 2.5)",
+      "Market module drops its local scaling and uses the shared path (test)"
+    ],
+    "gates": [
+      "G1",
+      "G2",
+      "G3",
+      "G13"
+    ],
+    "size": "S",
+    "notes": "From MOD-08 review."
+  },
+  {
     "id": "MOD-01",
     "title": "Cockpit hero: Net savings gauge, Bridge, Your inputs",
     "epic": "MOD",
