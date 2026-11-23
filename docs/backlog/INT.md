@@ -39,9 +39,8 @@ acceptance:
   - "docs/status/2026-11-24.md written with the M0 status and the DATA-08 seed timing (test: file exists)"
 gates: [G1, G2, G13, G14]
 size: S
-notes: "merged wiring 2026-11-23; G14 PENDING until DATA-08 migrate entry and JOB-01 worker entry land, then set STRICT_ENTRYPOINTS=1"
+notes: "merged wiring 2026-11-23; G14 PASS with STRICT_ENTRYPOINTS=1: 6 services in 22s, M0 data and token checks ok"
 merged_at: "2026-11-23"
-note: "G14 PASS strict: 6 services in 22s, M0 data and token checks ok"
 ```
 
 Closes M0.
