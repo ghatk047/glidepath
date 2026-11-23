@@ -87,7 +87,7 @@ title: "parse.ts: header-text parsing and normalisation"
 epic: XL
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
