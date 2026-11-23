@@ -105,3 +105,26 @@ export type {
   UnmatchedDiff,
   UnmatchedReason,
 } from './diff';
+
+export { blocks, buildReport, withImpact } from './report';
+export type {
+  BuiltReport,
+  CellItem,
+  DeltaImpact,
+  DeltaReport,
+  DeltaSummary,
+  IssueItem,
+  ReportItem,
+  ReportOptions,
+  RowItem,
+} from './report';
+export { ToChangesetError, toChangeset } from './toChangeset';
+export type {
+  ApplyDecisions,
+  ChangesetOptions,
+  ChangesetPlan,
+  ImportDecision,
+  LayerBase,
+  SkipReason,
+  SkippedEntry,
+} from './toChangeset';

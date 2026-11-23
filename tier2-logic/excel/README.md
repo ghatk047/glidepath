@@ -2,7 +2,7 @@
 
 Template, build, parse, diff, delta report. Pure: no IO (`eslint.config.js` rejects node builtins, DB/HTTP clients and `@glidepath/spec/node` in `src`). Callers load spec data with the `@glidepath/spec` loaders and pass it in.
 
-Implemented so far: `template.ts` (XL-01), `build.ts` (XL-02), `parse.ts` (XL-03), `validate.ts` (XL-04), `diff.ts` (XL-05). `report` and `toChangeset` follow in XL-06. Dependency: `exceljs` (works on buffers, no IO).
+Implemented so far: `template.ts` (XL-01), `build.ts` (XL-02), `parse.ts` (XL-03), `validate.ts` (XL-04), `diff.ts` (XL-05), `report.ts` and `toChangeset.ts` (XL-06). Dependency: `exceljs` (works on buffers, no IO).
 
 ## template.ts
 
@@ -106,3 +106,34 @@ const result = diff(E, W, D, sheets); // DiffResult
 - Fast path: a row whose parsed `hash` equals the snapshot's row hash (and D's) counts as `unchanged` without a cell compare (`stats.rowsSkipped`; `{ fastPath: false }` turns it off). A row whose hidden `_hash` is not the snapshot's gets a message (moved without its key?).
 - `counts` per cell and row status (unchanged cells are counted, not listed). `DiffError` when W names another export than E.
 - Fixtures: `fixtures/precision_export.xlsx` (an export with 17-digit values) and `fixtures/precision_export_libreoffice.xlsx` (the same file saved by LibreOffice headless); `npx tsx fixtures/make_fixtures.ts` regenerates both (needs `soffice`).
+
+## report.ts
+
+```ts
+import { buildReport, withImpact } from '@glidepath/excel';
+
+const built = buildReport(diffResult, validationEntries, { importJobId, exportJobId }); // BuiltReport
+const withPreview = withImpact(built, { scenario: 'C', 'res.net': [119.3, 123.1] }); // import_pipeline step 5
+```
+
+- `built.report` is `delta_report_schema` verbatim (`DeltaReport`: `import_job_id`, `export_job_id`, `mode`, `summary`, `changes[]`, `impact`), mirrored from CON-03 without importing the contract. Ids and the impact preview come from the caller (no IO, no engine here); without `impact` the slot is `{ scenario: <first scenario touched> }` with no nodes, for the worker to fill.
+- `changes[]`: every `CellDiff` and `RowDiff` (`toDeltaEntry`) in workbook order, grouped by sheet, plus the validation messages that point at them. `summary.unchanged` is the diff's count; the other counts come from `changes[]`; `ignored` = `already_applied` + `missing_row` + rows and cells the diff could not place + warnings that point at no change.
+- `invalid`: a validation entry blocks when its severity is `error` or it is VR04 (`out_of_range`; `validate.ts` calls it a warning, but `applyChangeset` rejects an out-of-bounds value from origin `excel_import`, so the import marks it not applied). Entries are matched by sheet, file row and column (`CellLocation`); every cell or row they hit becomes `invalid`. A blocking entry that hits nothing the diff listed (an unchanged cell with a bad type, an unknown key, a cross-row rule on unchanged cells) becomes one `invalid` entry at its first location with `null` values.
+- `built.items[i]` is the detail of `changes[i]` that the schema has no place for: `column`, `rowNumber`, write `target`, `diffStatus` (before validation). Store `items` with the report: `toChangeset` needs them. `built.unmatched` and `built.warnings` are the diff's unplaced rows and the non-blocking, unplaced validation entries.
+
+## toChangeset.ts
+
+```ts
+import { toChangeset } from '@glidepath/excel';
+
+const plan = toChangeset(built, { accept: 'all', decisions }, { defaultsVersion, scenarios, ... }); // ChangesetPlan
+for (const draft of plan.drafts) await applyChangeset(store, draft, { actor, ... });
+```
+
+- `decisions` is `ImportApplyRequest` of CON-03 (`accept`, `decisions[]` of sheet, key, member, scenario, `take: 'excel' | 'app'`), mirrored, plus optional `column` and `rowNumber` on a decision (see below).
+- Default per status: `changed_in_excel`, `new_row`, `deleted_row` apply (`accept: 'all'`, unless decided `app`; `'selected'`: only when decided `excel`); `conflict` needs a decision in both modes (else `ToChangesetError`, `.undecided` = indexes into `changes[]`); `changed_in_app`, `already_applied` keep the app value (a decision is ignored); `missing_row` is never applied; `invalid` is never applied, whatever is decided.
+- Output: `ChangesetDraft[]` of `@glidepath/domain`, origin `excel_import`, one per layer (tenant defaults first, then each scenario in workbook order), each passing `checkDraft`. `plan.applied` and `plan.skipped` (with a `SkipReason`) index into `changes[]`; `plan.unmatchedDecisions` lists decisions that matched no entry.
+- Layers need their base: `options.defaultsVersion` and `options.scenarios[<scenario key>] = { id, version }` (the report's scenario key is not the uuid). Missing = `ToChangesetError`.
+- Targets: a value cell is a `set` of `variable_value` / `scenario_value`; a blank scenario cell or pin is an `unset` (inherit again), a blank Default or attribute is skipped; a Note rides on its default's change, a pin's `reason` on the pin's; an edited line attribute is a structural `set` of the line row (needs `options.memberRow`, since a `set` replaces the whole row); a new Line_Items row is an `insert` (needs `options.newMemberKey`; its numbers become values of the new key); `DELETE` is a structural `delete`; a new Overrides row is a pin. A note edited alone needs the cell's value (`options.currentValue`), else it is skipped (`needs_value`).
+- Out-of-bounds values never get here (VR04 is `invalid`); `applyChangeset` is still the final judge for cross-row rules after the user's decisions (a declined cell can change a sum).
+- Contract gap: `DeltaChange` and `ImportDecision` have no `column`, so the Default, Note and attribute cells of one row share (sheet, key, member, scenario), and new rows all have the key `''`. Here a decision without `column` covers all of them, and `column` / `rowNumber` pick one. The contract needs `column: string | null` (snapshot column id) and a row identity (`row`, the file row) on both, optional, so existing clients keep working.

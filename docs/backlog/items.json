@@ -2990,7 +2990,7 @@
     "epic": "XL",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "B",
     "model": "sonnet",
     "effort": "high",
@@ -3015,7 +3015,8 @@
       "G6"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "XL-07",
