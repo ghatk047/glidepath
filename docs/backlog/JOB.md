@@ -19,7 +19,7 @@ title: "Worker runtime on pg-boss: queues, progress, cancel"
 epic: JOB
 milestone: M3
 priority: must
-status: todo
+status: in_progress
 stream: A
 model: sonnet
 effort: high
