@@ -10,6 +10,8 @@ import { registerExcelRoutes } from '../routes/excel';
 import type { ExcelRoutesDeps } from '../routes/excel';
 import { registerExplainRoutes } from '../routes/explain';
 import { registerReadRoutes } from '../routes/read';
+import { registerSolverRoutes } from '../routes/solver';
+import type { SolverRoutesDeps } from '../routes/solver';
 import { afterCommitMiddleware, registerWriteRoutes } from '../routes/write';
 import type { SessionHub as CommitNotifier } from '../routes/write';
 import { specBundleFromDir } from '../routes/read/spec-source';
@@ -42,6 +44,8 @@ export interface AppDeps {
   hub?: CommitNotifier;
   /** Excel and file routes (API-10): the job runner and object store; absent = the routes are not mounted. */
   excel?: ExcelRoutesDeps;
+  /** Solver routes (API-09): quick runs on the session model and worker jobs; absent = the routes are not mounted. */
+  solver?: SolverRoutesDeps;
   /** Health probe timeout in ms. */
   healthTimeoutMs?: number;
   /** What-if sessions (API-06): mounts the `GET /ws/session` handshake; `listen` wires the upgrades. */
@@ -136,6 +140,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   registerWriteRoutes(app, { specBundle, ...(hub ? { hub } : {}) });
   registerExplainRoutes(app, { specBundle });
   if (deps.excel) registerExcelRoutes(app, deps.excel);
+  if (deps.solver) registerSolverRoutes(app, { ...(hub ? { hub } : {}), ...deps.solver });
 
   app.onError(errorHandler());
   app.notFound(notFoundHandler);

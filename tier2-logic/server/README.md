@@ -47,3 +47,7 @@ WebAuthn via `@simplewebauthn/server`; the magic link stays the fallback. RP id 
 ## API-06: what-if sessions (`src/session`)
 
 `WS /ws/session?tenant&scenario`: the handshake checks origin, the session cookie, membership and the scenario before upgrading; each connection is a `Session(user, tenant, scenario)` on a `CompiledModel` from the `ModelCache` keyed `(tenant, model_version, members_hash)`. `subscribe` → `snapshot`, `preview` → coalesced `rerun` on a scratch copy → `delta` of the subscribed cells that changed, `cancelPreview`, `open`. Previews run no SQL. `startServer` builds the hub (`createSessionHub` + `dbScenarioLoader`, one spec source shared with the bundle route), mounts it on the app (`AppDeps.sessions`) and on the server's `upgrade` event, and closes it on shutdown. Details: `src/session/README.md`. Bench (G8): `pnpm --filter @glidepath/server bench` (`ws.preview`).
+
+## API-09: solver routes and server composition
+
+`POST solver-runs/quick` (the short solvers on the session model, 2 s, else 202 and a job), `POST` / `GET` / `DELETE solver-runs`: `src/routes/solver/README.md`. `start.ts` also wires the pg-boss client, the JOB-02 relay and API-10's Excel jobs on the queue: `src/compose/README.md`. New settings: `IMPORT_MAX_BYTES`, `JOB_QUEUE_SCHEMA`, `JOB_RELAY_POLL_MS`.

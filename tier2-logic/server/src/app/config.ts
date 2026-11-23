@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_IMPORT_MAX_BYTES } from '../routes/excel/limits';
 
 /**
  * Configuration comes from environment variables only (CLAUDE.md rule 10, 12-factor, doc 11 §4).
@@ -66,6 +67,16 @@ export const ConfigSchema = z.object({
         }
       }, 'SMTP_URL must be an smtp:// or smtps:// URL')
       .optional(),
+  ),
+  /** Largest workbook `POST imports` takes, in bytes (ADR-022); `importMaxBytes()` clamps it to the object store's own cap. */
+  IMPORT_MAX_BYTES: intFromEnv('IMPORT_MAX_BYTES', DEFAULT_IMPORT_MAX_BYTES),
+  /** pg-boss schema of the job queue (the worker's `JOB_QUEUE_SCHEMA`): the server sends jobs to it. */
+  JOB_QUEUE_SCHEMA: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .string()
+      .regex(/^[a-z_][a-z0-9_]*$/, 'JOB_QUEUE_SCHEMA must be a lower-case SQL identifier')
+      .default('pgboss'),
   ),
   AUTH_LINK_TTL_MIN: intFromEnv('AUTH_LINK_TTL_MIN', DEFAULT_AUTH_LINK_TTL_MIN).pipe(
     z.number().max(MAX_AUTH_LINK_TTL_MIN, `AUTH_LINK_TTL_MIN must be at most ${MAX_AUTH_LINK_TTL_MIN}`),
