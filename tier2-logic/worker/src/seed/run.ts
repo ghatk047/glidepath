@@ -3,7 +3,11 @@ import { findTier3Data, readSeedInputs } from './files';
 import { loadModelDefs, type ModelDefsReport } from './model-defs';
 import { seedTenant, type TenantSeedReport } from './tenant';
 import { join } from 'node:path';
+import { seedIds } from './ids';
 import { importAiCache, type ImportAiCacheReport } from '../jobs/ai/cache';
+import { defaultSolverDeps } from '../jobs/solver/deps';
+import type { SolverJobDeps } from '../jobs/solver/types';
+import { warmTenant, type WarmReport } from '../warm';
 
 export interface MigrateRunOptions {
   /** DATABASE_URL_MIGRATE: the owner role. */
@@ -14,6 +18,10 @@ export interface MigrateRunOptions {
   readonly aiCache?: string;
   /** `--ai-cache-tenant`: slug of the tenant that owns the imported job; default the bundle's `homeTenant`. */
   readonly aiCacheTenant?: string;
+  /** WARM=1 (demo profile, JOB-04): after the seed, pre-run the demo's solver jobs into the result cache. */
+  readonly warm?: boolean;
+  /** Solver dependencies of the warm step (tests pass their own); default: the spec bundle from SPEC_DIR. */
+  readonly warmDeps?: SolverJobDeps;
   /** DEMO_USER_EMAIL */
   readonly demoUserEmail?: string;
   /** DEMO_USER_NAME */
@@ -29,6 +37,8 @@ export interface MigrateRunReport {
   readonly tenant: TenantSeedReport | null;
   /** The imported AI cache bundle, when `--ai-cache` was given. */
   readonly aiCache: ImportAiCacheReport | null;
+  /** The cache warm, when `warm` was set (and a tenant seeded). */
+  readonly warm?: WarmReport;
   /** Everything this run wrote: migration files, definition rows, tenant rows and changesets. 0 on a rerun. */
   readonly changes: number;
 }
@@ -73,11 +83,23 @@ export async function runMigrate(o: MigrateRunOptions): Promise<MigrateRunReport
       o.aiCache === undefined
         ? null
         : await importAiCache(handle.db, { dir: o.aiCache, ...(o.aiCacheTenant === undefined ? {} : { homeTenant: o.aiCacheTenant }), log });
+    let warm: WarmReport | undefined;
+    if (o.warm) {
+      warm = await warmTenant({
+        db: handle.db,
+        tenantId: tenant.tenantId,
+        userId: seedIds.seedActor(),
+        deps: o.warmDeps ?? defaultSolverDeps(),
+        log,
+      });
+      log(`migrate: warm: ${warm.ran} ran, ${warm.hits} cached, ${warm.skipped} skipped, ${warm.failed} failed`);
+    }
     return {
       migrations,
       modelDefs,
       tenant,
       aiCache,
+      ...(warm === undefined ? {} : { warm }),
       changes: migrations.applied.length + modelDefs.total + tenant.total + (aiCache?.created ? 1 : 0),
     };
   } finally {

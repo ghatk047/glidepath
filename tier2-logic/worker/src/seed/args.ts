@@ -4,7 +4,7 @@ import type { MigrateRunOptions } from './run';
  * Command line of the migrate entry: `--seed aa` (compose) or `--tenant aa` (`pnpm seed --tenant aa`),
  * also as `--seed=aa`. No seed flag: migrations only. `--ai-cache <dir>` (AI-06) imports a rehearsal bundle as an
  * `ai_reconfig_job` in review; `--ai-cache-tenant <slug>` names the tenant that owns it (default: the bundle's).
- * Settings come from the environment, never flags.
+ * Settings come from the environment, never flags (`WARM=1` also runs the JOB-04 cache warm after the seed).
  */
 export function parseArgs(argv: readonly string[]): { seed: string | undefined; aiCache?: string; aiCacheTenant?: string } {
   let seed: string | undefined;
@@ -41,6 +41,7 @@ export function optionsFromEnv(
     ...(seed === undefined ? {} : { seed }),
     ...(aiCache === undefined ? {} : { aiCache }),
     ...(aiCacheTenant === undefined ? {} : { aiCacheTenant }),
+    ...(/^(1|true|yes|on)$/i.test(env.WARM?.trim() ?? '') ? { warm: true } : {}),
     ...(email ? { demoUserEmail: email } : {}),
     ...(name ? { demoUserName: name } : {}),
     ...(log ? { log } : {}),

@@ -117,7 +117,7 @@ title: "Demo cache warmer"
 epic: JOB
 milestone: M4
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: medium
@@ -135,6 +135,7 @@ acceptance:
 gates: [G1, G2]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 Odds and paths appear instantly in the room.

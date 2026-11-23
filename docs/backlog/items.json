@@ -2490,7 +2490,7 @@
     "epic": "JOB",
     "milestone": "M4",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "sonnet",
     "effort": "medium",
@@ -2515,7 +2515,8 @@
       "G2"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "SOL-01",
