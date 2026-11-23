@@ -4,6 +4,7 @@
  */
 import type { ModelBundle, TenantMembers } from '@glidepath/spec';
 import { notImplemented } from '../errors';
+import { evaluate, inputHash, modelDigest, type SlotEvaluation } from '../eval';
 import { expand, symbolDims, type Cell } from '../expand';
 import type { ParseCache } from '../parse';
 import type {
@@ -22,8 +23,6 @@ import { topoSort } from './toposort';
 
 /** Which backlog item builds each `CompiledModel` method that is not built yet. */
 export const PENDING_METHODS = {
-  evaluate: 'ENG-05',
-  inputHash: 'ENG-05',
   rerun: 'ENG-07',
   evaluateBatch: 'ENG-08',
   explain: 'ENG-09',
@@ -37,6 +36,10 @@ export interface CompileDiagnostics {
 
 /** The compiled model. `compile` returns it as a `CompiledModel`; tests and tools may inspect more. */
 export class EngineModel implements CompiledModel {
+  /** Expression of each node cell (topological order), for error positions. */
+  readonly sources: readonly string[];
+  private digest: string | undefined;
+
   constructor(
     readonly bundle: ModelBundle,
     readonly members: TenantMembers,
@@ -45,14 +48,32 @@ export class EngineModel implements CompiledModel {
     readonly program: Program,
     readonly graph: Adjacency,
     readonly diagnostics: CompileDiagnostics,
-  ) {}
-
-  evaluate(): Evaluation {
-    throw notImplemented('CompiledModel.evaluate', PENDING_METHODS.evaluate);
+  ) {
+    this.sources = cells.map((c) => c.expr);
   }
 
-  inputHash(): string {
-    throw notImplemented('CompiledModel.inputHash', PENDING_METHODS.inputHash);
+  /** Key → id over node cells (= slots), inputs and dangling keys. */
+  get index(): ReadonlyMap<CellKey, number> {
+    return this.graph.index;
+  }
+
+  /** Full evaluation in topological order (`Model.run`, S15, S20). */
+  evaluate(
+    values: ReadonlyMap<CellKey, number>,
+    overrides?: ReadonlyMap<CellKey, number>,
+  ): SlotEvaluation {
+    return evaluate(this, values, overrides);
+  }
+
+  /** Digest of the bundle and the members in order, computed on first use. */
+  get modelDigest(): string {
+    this.digest ??= modelDigest(this.bundle, this.members);
+    return this.digest;
+  }
+
+  /** calc_run cache key: SHA-256 of the model digest and the sorted cells. */
+  inputHash(values: ReadonlyMap<CellKey, number>, overrides: ReadonlyMap<CellKey, number>): string {
+    return inputHash(this.modelDigest, values, overrides);
   }
 
   rerun(prev: Evaluation, changes: readonly Change[]): Evaluation {

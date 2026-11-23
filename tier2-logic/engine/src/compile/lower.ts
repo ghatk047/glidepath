@@ -155,8 +155,12 @@ export function lower(cells: readonly Cell[], order: Int32Array, symbols: Symbol
   let nextTemp = 0;
   let maxTemp = 0;
 
+  const positions: number[] = [];
+  /** Source position of the construct being lowered (each instruction records it, for errors). */
+  let curPos = 0;
   const emit = (op: number, dst: number, a: number, b: number): number => {
     code.push(op, dst, a, b);
+    positions.push(curPos);
     return code.length / WIDTH - 1;
   };
   const here = () => code.length / WIDTH;
@@ -189,6 +193,16 @@ export function lower(cells: readonly Cell[], order: Int32Array, symbols: Symbol
 
   /** Emits code computing `e`; returns the slot holding its value (`target` when given). */
   const lowerExpr = (e: Resolved, target: number): number => {
+    const outer = curPos;
+    curPos = e.pos;
+    try {
+      return lowerNode(e, target);
+    } finally {
+      curPos = outer;
+    }
+  };
+
+  const lowerNode = (e: Resolved, target: number): number => {
     const mark = nextTemp;
     switch (e.kind) {
       case 'const':
@@ -303,6 +317,7 @@ export function lower(cells: readonly Cell[], order: Int32Array, symbols: Symbol
 
   const program: Program = {
     code: Int32Array.from(code),
+    positions: Int32Array.from(positions),
     lists: Int32Array.from(lists),
     cellStart,
     nCells,

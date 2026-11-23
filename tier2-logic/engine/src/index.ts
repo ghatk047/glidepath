@@ -40,3 +40,7 @@ export type { Cell, Resolved } from './expand';
 // Compiler (ENG-04): `compile(bundle, members)` → parse, expand, toposort, lower, CSR adjacency.
 export { compile, compileModel, EngineModel } from './compile';
 export type { CompileDiagnostics } from './compile';
+
+// Evaluation (ENG-05): `evaluate(values, overrides?)`, `inputHash`, and `resolveInputs` (Model.input_cells).
+export { findScenario, inputHash, putValue, resolveInputs, SlotEvaluation } from './eval';
+export type { EvaluationDiagnostics, ExtraInputs, ResolvedInputs, ScenarioInputs } from './eval';

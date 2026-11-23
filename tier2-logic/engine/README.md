@@ -11,6 +11,7 @@ ENG-01 skeleton: `src/index.ts` exports the interfaces of `docs/architecture/03_
 - ENG-02 `src/parse`: `tokenize`, `Parser`, `parse(src, cache?)` → `Ast` (num, str, neg, bin, call, agg, ref); `toPyTuple` gives engine.py's tuple shape. Every spec expression's AST equals Python's (`test/fixtures/dump_ast.py` → `ast.json`). Syntax errors are `EngineError` SYNTAX with `pos` (offset into the expression as written) and `source`.
 - ENG-03 `src/expand`: `expand(bundle, members)` → `Cell[]` in expansion order: chosen case per cell, resolved expression (bound variables and attributes folded to constants, refs as cell keys, `where` filtered at compile time, `COUNT` a constant) and deps. Per-cell deps equal Python `cdeps` for all 3,370 cells (`test/fixtures/dump_deps.py` → `deps.json`). `src/eval/pyops.ts` holds the Python float semantics (Neumaier `pySum`, `pyMin`/`pyMax`, `pyPow`, truthiness) shared by static where-filters and evaluation.
 - ENG-04 `src/compile`: `compile(bundle, members)` → `EngineModel` (a `CompiledModel`): Kahn toposort equal to `Model.order` (cycle = CYCLE naming up to 10 cells), lowering to one flat program over a `Float64Array` of slots (node cells, inputs, constants, temps; `IF`/`SAFEDIV` lazy via jumps; aggregates as member-ordered slot lists; `disassemble` prints a cell's code), forward and reverse CSR adjacency with raw `upstream`/`downstream`. Methods still to come throw `NOT_IMPLEMENTED` naming their item (`PENDING_METHODS`).
+- ENG-05 `src/eval`: `model.evaluate(values, overrides?)` runs the program in topological order (`runCells`, Python float semantics; errors name the cell being computed, with `pos`/`source`); overrides pin node cells without evaluating them, other override keys are ignored and listed in `diagnostics.ignoredOverrides`. `model.inputHash(values, overrides)` = SHA-256 of a model digest (bundle + members in order) and the cells sorted by key as float64 bit patterns. `resolveInputs(bundle, tenantValues, scenario?, extra?)` mirrors `Model.input_cells` (BAD_INPUT). Every cell of preset C equals Python bitwise, plain and with the parity overrides (`test/fixtures/dump_run_c.py` → `run_c.json`).
 
 ```ts
 import { compile, type CompiledModel, type TenantData } from '@glidepath/engine';
@@ -24,4 +25,4 @@ result.get('res.net');
 
 `pnpm turbo run typecheck lint test --filter=@glidepath/engine...` (G1, G2 with >= 90% line coverage).
 
-Benches (G8): `pnpm --filter ./tier2-logic/engine bench` (`bench/engine.bench.ts`: `engine.compile`).
+Benches (G8): `pnpm --filter ./tier2-logic/engine bench` (`bench/engine.bench.ts`: `engine.compile` < 150 ms, `engine.evaluate` < 50 ms, `engine.inputHash`).

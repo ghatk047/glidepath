@@ -16,6 +16,10 @@
 
 /** Words per instruction. */
 export const WIDTH = 4;
+/** Word offsets inside an instruction: `op, dst, a, b`. */
+export const DST_WORD = 1;
+export const A_WORD = 2;
+export const B_WORD = 3;
 
 // Opcodes. `dst` is always the second word.
 /** dst = slot a */
@@ -95,6 +99,8 @@ export const OP_NAMES: readonly string[] = [
 
 export interface Program {
   readonly code: Int32Array;
+  /** Per instruction: offset in its cell's expression of the construct it computes (errors, D2). */
+  readonly positions: Int32Array;
   readonly lists: Int32Array;
   /** nCells + 1 instruction offsets: cell c runs `cellStart[c] .. cellStart[c + 1]`. */
   readonly cellStart: Int32Array;
