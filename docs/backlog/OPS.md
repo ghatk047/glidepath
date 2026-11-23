@@ -186,11 +186,11 @@ title: "Demo profile with pinned digests and ops/demo-check.sh"
 epic: OPS
 milestone: M4
 priority: must
-status: todo
+status: in_progress
 stream: B
 model: sonnet
 effort: high
-depends_on: [OPS-05, JOB-04, AI-07]
+depends_on: [OPS-05, JOB-04]
 tier: ops
 package: "ops/demo-check.sh (+ demo profile in docker-compose.yml)"
 contract: "`docker compose --profile demo up -d`"
@@ -206,7 +206,7 @@ acceptance:
   - "demo profile includes the local mail sink so magic-link sign-in works offline (GAP-09); demo-check signs in through it (test: demo-check)"
 gates: [G14]
 size: M
-notes: ""
+notes: "AI-07 dependency dropped (2026-11-23): AI-07 needs the user's Mac. Build the UA-draft check now; it fails with a clear reason until the UA cache lands. Also: wire --parity/--ai-cache into compose migrate for the demo profile, and check cached min-risk C matches solver_demo_results within G5 (catches a cache warmed before SOL-12)."
 ```
 
 The pre-demo checklist as a script.
