@@ -40,9 +40,18 @@ def headings(path):
 
 class AdrCheck(unittest.TestCase):
     def test_all_24_files_exist_with_valid_names(self):
+        # 001-024 come from the architecture pack; later ADRs are appended with no gaps.
         bad = [p.name for p in DIR.glob("ADR-*.md") if not FILE_RE.match(p.name)]
         self.assertEqual(bad, [], "bad file names")
-        self.assertEqual(sorted(adr_files()), list(range(1, 25)))
+        nums = sorted(adr_files())
+        self.assertGreaterEqual(len(nums), 24)
+        self.assertEqual(nums, list(range(1, len(nums) + 1)))
+
+    def test_adr_025_onward_have_required_headings(self):
+        files = adr_files()
+        for n in sorted(files):
+            if n >= 25:
+                self.assertEqual(headings(files[n][0]), HEADINGS, f"ADR-{n:03d}")
 
     def test_adr_001_to_014_have_required_headings(self):
         files = adr_files()

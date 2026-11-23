@@ -14,4 +14,4 @@ A static bundle served by the web container. No server-side rendering. The three
 
 ## Status
 
-Accepted. The server-state line is amended by ADR-026.
+Accepted (the server-state line is amended by ADR-026).
