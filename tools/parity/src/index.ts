@@ -76,3 +76,12 @@ export {
 } from './replay';
 export { goldenClose, pyRound, replayClose } from './round';
 export { cbOffRun, parityRun, plainRun, Runner, type RunConfig } from './runs';
+export {
+  runSolverGate,
+  SOLVER_ITEMS,
+  TOLERANCES as SOLVER_TOLERANCES,
+  type SolverGateOptions,
+  type SolverGateResult,
+  type SolverReport,
+  type SolverRow,
+} from './solvers-gate';

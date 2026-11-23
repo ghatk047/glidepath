@@ -20,6 +20,7 @@
     "gen:types": "tsx tools/gen-types/src/cli.ts",
     "parity:golden": "tsx tools/parity/src/cli.ts",
     "parity:fuzz": "tsx tools/parity/src/fuzz-cli.ts",
+    "test:solvers": "tsx tools/parity/src/solvers-cli.ts",
     "test:excel": "pnpm --filter @glidepath/excel run test:roundtrip",
     "test:leak": "pnpm -r --workspace-concurrency=1 run test:leak",
     "tier-check": "tsx tools/tier-check/src/cli.ts",

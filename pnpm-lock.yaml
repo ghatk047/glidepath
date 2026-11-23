@@ -409,6 +409,9 @@ importers:
       '@glidepath/engine':
         specifier: workspace:*
         version: link:../../tier2-logic/engine
+      '@glidepath/solvers':
+        specifier: workspace:*
+        version: link:../../tier2-logic/solvers
       '@glidepath/spec':
         specifier: workspace:*
         version: link:../../tier2-logic/spec

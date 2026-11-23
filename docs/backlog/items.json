@@ -2876,7 +2876,7 @@
     "epic": "SOL",
     "milestone": "M3",
     "priority": "must",
-    "status": "in_progress",
+    "status": "done",
     "stream": "A",
     "model": "sonnet",
     "effort": "medium",
@@ -2901,7 +2901,8 @@
       "G5"
     ],
     "size": "S",
-    "notes": ""
+    "notes": "",
+    "merged_at": "2026-11-23"
   },
   {
     "id": "XL-01",

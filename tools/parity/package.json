@@ -10,10 +10,12 @@
     "lint": "eslint src",
     "test": "vitest run",
     "golden": "tsx src/cli.ts",
-    "fuzz": "tsx src/fuzz-cli.ts"
+    "fuzz": "tsx src/fuzz-cli.ts",
+    "solvers": "tsx src/solvers-cli.ts"
   },
   "dependencies": {
     "@glidepath/engine": "workspace:*",
+    "@glidepath/solvers": "workspace:*",
     "@glidepath/spec": "workspace:*"
   }
 }

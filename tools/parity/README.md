@@ -26,3 +26,14 @@ The engine stays pure; this package loads the files.
   expected totals), `round.spec.ts` (Python rounding), `fuzz.spec.ts` (G4 acceptance: the full fuzz run),
   `fuzz-vectors.spec.ts` (bounds, grid, determinism), `fuzz-compare.spec.ts` (tolerance, raise matching),
   `fuzz-oracle.spec.ts` (D4 cast, input errors, CLI exit codes).
+
+## Solver acceptance (G5, SOL-11)
+
+- `pnpm test:solvers` (`src/solvers-gate.ts`): runs the G5 cases of SOL-03 (blend C to D), SOL-04 (min-risk mix),
+  SOL-05 (all-VP plan, `minRiskMix(per_vp)` and `vpFeasible`), SOL-06 (Monte Carlo C and D, seeds 1-5, 2,000 draws)
+  and SOL-07 (tornado top 15) on the seed tenant against `docs/spec/reference/solver_demo_results.json`.
+  Tolerances are the items' acceptance tolerances (`TOLERANCES`), never loosened here. Writes
+  `out/solver-report.json` (git-ignored; one row per compared value with actual, expected, tolerance, diff, pass,
+  plus per-item tallies) and exits 1 on any miss, 2 when the harness fails. About 5 s.
+  Options: `--reference <file>`, `--out <dir>`. CI job `solvers` (G5) runs it for solver, engine and parity-tool
+  PRs and nightly. Test: `solvers-gate.spec.ts`.

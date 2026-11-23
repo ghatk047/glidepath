@@ -57,7 +57,7 @@ jobs:
           out() { if hit "$2"; then echo "$1=true" >> "$GITHUB_OUTPUT"; else echo "$1=false" >> "$GITHUB_OUTPUT"; fi; }
           out spec '^(docs/spec/|tier2-logic/spec/|tier2-logic/engine/|tier3-data/|tools/parity/|package\.json$)'
           out engine '^(docs/spec/|tier2-logic/engine/|tier2-logic/spec/|tools/parity/|package\.json$)'
-          out solvers '^(tier2-logic/solvers/|tier2-logic/engine/)'
+          out solvers '^(tier2-logic/solvers/|tier2-logic/engine/|tools/parity/|docs/spec/reference/solver_demo_results\.json$)'
           out excel '^tier2-logic/excel/'
           out tenancy '^(tier2-logic/data-access/|tier2-logic/server/|tier3-data/)'
           out perf '^(tier2-logic/engine/|tier2-logic/server/)'
@@ -242,18 +242,18 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Probe script test (tier2-logic/solvers)
+      - name: Probe script test:solvers
         id: probe
         run: |
-          if node -e "const s=require('./tier2-logic/solvers/package.json').scripts['test'];process.exit(s&&!/not implemented yet/.test(s)?0:1)"; then
+          if node -e "const s=require('./package.json').scripts['test:solvers'];process.exit(s&&!/not implemented yet/.test(s)?0:1)"; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Skipped::the solvers test script is still a placeholder (or missing); skipping this gate until it is implemented."
+            echo "::notice title=Skipped::pnpm test:solvers is still a placeholder (or missing); skipping this gate until it is implemented."
           fi
       - name: Run G5 Solver acceptance
         if: steps.probe.outputs.ready == 'true'
-        run: pnpm turbo run test --filter=@glidepath/solvers
+        run: pnpm test:solvers
 
   excel:
     name: G6 Excel round trip

@@ -348,7 +348,7 @@ title: "Solver acceptance gate runner (G5)"
 epic: SOL
 milestone: M3
 priority: must
-status: in_progress
+status: done
 stream: A
 model: sonnet
 effort: medium
@@ -365,6 +365,7 @@ acceptance:
 gates: [G5]
 size: S
 notes: ""
+merged_at: "2026-11-23"
 ```
 
 One command for the solver gate.
