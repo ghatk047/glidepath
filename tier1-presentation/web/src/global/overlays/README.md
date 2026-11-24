@@ -18,7 +18,7 @@ trace drawer, wired to tier 2. Sends intent, renders what tier 2 sent. Nothing i
 - ⌘K (`palette.ts`, `jump.ts`): the ui `CommandPalette` (⌘K / Ctrl+K and the shell's "Find any
   number" button) with `filter={false}`: each typed query is `GET /search?q&limit=9&scenario`
   (the previous request aborted), results listed as tier 2 ranked them; an empty query lists the
-  eight screens. Enter / click: the URL moves to the result's `module` (same tenant and scenario;
+  nine screens. Enter / click: the URL moves to the result's `module` (same tenant and scenario;
   `?lever=` for levers, `?node=` for outputs), then the control bound to the id
   (`data-id`, `data-variable-id`, `data-node`, `data-lever`) is focused once it renders
   (`FOCUS_WAIT_MS`). An input then opens its edit popover anchored there (a dimensioned variable on
