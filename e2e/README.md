@@ -9,6 +9,7 @@ docker compose up -d                  # or: ops/compose-check.sh --keep [--proje
 pnpm e2e -- --trace off               # G9 smoke; INT_COMPOSE_PROJECT=<project> when not `glidepath`
 pnpm int:m2 -- --trace off            # M2 integration spec (its own config and budget)
 pnpm e2e:storyline -- --trace off     # G10 demo storyline (its own config and budget)
+pnpm e2e:wizard -- --trace off        # Build wizard and walkthrough tour (WIZ-11; its own config and budget)
 ```
 
 Settings are the INT settings (`tools/int/src/stack.ts`): `INT_BASE_URL` / `PUBLIC_BASE_URL`,
@@ -168,3 +169,30 @@ changes the same target in the app, and hands the file to the review screen.
 
 Where a step waits on another backlog item the test is `test.fixme` with the item id in its title and states the
 final behaviour; the list is in the QA-05 report, and the header comment of the spec.
+
+## Wizard and tour (WIZ-11)
+
+```
+pnpm e2e:wizard -- --trace off        # INT_COMPOSE_PROJECT=<project> when it is not `glidepath`
+pnpm e2e:storyline -- --trace off     # also runs storyline-wizard.spec.ts (the wizard segment of the demo)
+```
+
+`tests/wizard.spec.ts` and `tests/tour.spec.ts` run in `playwright.wizard.config.ts` (driver `run.mjs`, 420 s budget,
+120 s per test); the G9 smoke config ignores them so it keeps its 180 s budget. Same stack and sign-in as the smoke.
+Selectors are the plan's data attributes (`docs/ux/07_wizard_tour_plan.md` §3.9) kept in `src/wizard.ts`, with the
+tour's 14 steps (§4.2); `src/wizard.test.ts` pins both to the app's source. Expected numbers come from the spec bundle
+(`golden_results.json`, `solver_demo_results.json`, `variables.json`) through the UI's `fmt`.
+
+`wizard.spec.ts`: opens on step 1 with the tape at preset C's golden values; Next / Back / any step; a lever off and on
+moves the tape (In-year less the lever's golden `lev.iy`); pick a lever, tune it (the tape moves before the pointer is
+released), set policy, read the result; Find a path (from the tape and from step 4) shows the math flow, then the moves
+land on the oracle's numbers and write nothing; Use this path switches to the saved `solver` scenario and the moves stay
+marked; a lever switched off (L06, and L11 which the oracle moves) gets no `lev.<Lxx>.*` move; with reduced motion no
+animation runs on `[data-compute]`.
+
+`tour.spec.ts`: never auto-starts; start at step 1 with tier 2's numbers on the card; Next / Back / arrows / Esc / Skip;
+Tab stays in the card; all 14 anchors found on their own screens with no `data-tour-missing`; the tour never edits or
+switches scenario; the `?tour=wizard` deep link, other chapters and step ids, and unknown names ignored.
+
+`storyline-wizard.spec.ts`: `wizard_alt_beats_04_to_06_build_a_plan_and_optimize_to_the_bar`, the narrative's wizard
+segment end to end on a clean scenario C.

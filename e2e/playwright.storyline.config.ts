@@ -15,7 +15,7 @@ export const STORYLINE_BUDGET_MS = 600_000;
 export default defineConfig({
   ...base,
   testIgnore: [],
-  testMatch: ['storyline.spec.ts'],
+  testMatch: ['storyline.spec.ts', 'storyline-wizard.spec.ts'],
   globalTimeout: STORYLINE_BUDGET_MS,
   // a solver run and a workbook round trip are in here
   timeout: 120_000,

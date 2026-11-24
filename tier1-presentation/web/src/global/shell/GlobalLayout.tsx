@@ -70,6 +70,13 @@ export interface GlobalLayoutProps {
  * for everything below it. Every value comes from tier 2; this layer only sends intent.
  * Needs `DataProvider` and the router above it.
  */
+/**
+ * `?tour=` as the page was first loaded. Captured at module load, before the router's strict
+ * search validation (parseViewSearch) rewrites the URL and drops unknown keys.
+ */
+const INITIAL_TOUR_LINK: string | null =
+  typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('tour');
+
 export function GlobalLayout(props: GlobalLayoutProps) {
   const { tenant, scenarioId, session, glass } = props;
   const onFork = useForkNavigation();
@@ -112,7 +119,8 @@ function ShellBody({ tenant, scenarioId, module, session, onTrace, children }: G
   useEffect(() => {
     if (tourLink.current) return;
     tourLink.current = true;
-    const target = new URLSearchParams(router.state.location.searchStr ?? '').get('tour');
+    const target =
+      new URLSearchParams(router.state.location.searchStr ?? '').get('tour') ?? INITIAL_TOUR_LINK;
     if (target) tourStore.getState().startAt(target);
   }, [router]);
 

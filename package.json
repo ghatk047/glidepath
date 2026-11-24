@@ -32,6 +32,7 @@
     "int:m2": "pnpm --filter @glidepath/e2e run m2",
     "int:m3": "pnpm --filter @glidepath/e2e run m3",
     "e2e:storyline": "pnpm --filter @glidepath/e2e run storyline",
+    "e2e:wizard": "pnpm --filter @glidepath/e2e run wizard",
     "bench": "turbo run bench"
   },
   "devDependencies": {
