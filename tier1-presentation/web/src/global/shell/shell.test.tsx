@@ -36,6 +36,7 @@ import { Value } from '../../bind';
 import { useCommit, type CommitQueue } from '../../commit';
 import { DataProvider, createDataClient, createServerState } from '../../data';
 import { createSessionClient } from '../../session';
+import { resolveStep, tourStore } from '../tour';
 import { GlobalLayout, HUD_NODES, MODULE_COPY, scenarioBarModel } from './index';
 
 // ---------------------------------------------------------------------------------------------
@@ -308,12 +309,14 @@ const commit = async (change: Change) => {
 // ---------------------------------------------------------------------------------------------
 
 describe('AC1: rail, tenant monogram, scenario bar from /scenarios, switching', () => {
-  it('rail lists the 8 modules and the tenant monogram opens Airlines', async () => {
+  it('rail lists the 9 modules (Build second) and the tenant monogram opens Airlines', async () => {
     const t = await mount(`/${tenant}/${PRESET_C}/levers`);
     const nav = await screen.findByRole('navigation', { name: 'Modules' });
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => a.textContent)).toEqual(MODULE_IDS.map((id) => MODULE_COPY[id].label));
     expect(links).toHaveLength(MODULE_IDS.length);
+    expect(links).toHaveLength(9);
+    expect(links[1]!.textContent).toBe(MODULE_COPY.wizard.label);
     expect(within(nav).getByRole('link', { current: 'page' }).textContent).toBe(
       MODULE_COPY.levers.label,
     );
@@ -330,6 +333,29 @@ describe('AC1: rail, tenant monogram, scenario bar from /scenarios, switching', 
     await t.until(() =>
       expect(t.router.state.location.pathname).toBe(`/${tenant}/${PRESET_C}/vps`),
     );
+  });
+
+  it('Tour button sits before the search button, the host mounts, ?tour= opens at a chapter', async () => {
+    await mount(`/${tenant}/${PRESET_C}/levers`);
+    const tour = await waitFor(() => {
+      const b = document.querySelector<HTMLElement>('.gp-tools [data-tour-button]');
+      expect(b).not.toBeNull();
+      return b!;
+    });
+    const search = document.querySelector<HTMLElement>('.gp-search[aria-keyshortcuts]')!;
+    expect(tour.compareDocumentPosition(search) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tourStore.getState().open).toBe(false);
+    fireEvent.click(tour);
+    await waitFor(() => expect(tourStore.getState().open).toBe(true));
+    expect(tourStore.getState().index).toBe(0);
+    act(() => tourStore.getState().close('skip'));
+  });
+
+  it('?tour=wizard deep link starts the walkthrough at that chapter once', async () => {
+    await mount(`/${tenant}/${PRESET_C}/levers?tour=wizard`);
+    await waitFor(() => expect(tourStore.getState().open).toBe(true));
+    expect(tourStore.getState().index).toBe(resolveStep('wizard'));
+    act(() => tourStore.getState().close('skip'));
   });
 
   it('scenario bar shows R/A/B/C/D from /scenarios, customs and paths in the menu', async () => {

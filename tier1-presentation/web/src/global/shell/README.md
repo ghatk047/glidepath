@@ -14,7 +14,7 @@ part 1. Sends intent, renders what tier 2 sent. Nothing is computed here.
 - `GlobalLayout` mounts `GlassProvider` + `Aurora`, the toast, `CommitProvider`
   (`onFork = useForkNavigation()`) and `BindProvider commit={useCommit().commit}`, so every bound
   number below it commits through the WEB-05 queue.
-- Rail (`@glidepath/ui/shell`): the 8 modules (ids from the contract, copy in `modules.tsx`), the
+- Rail (`@glidepath/ui/shell`): the 9 modules (Build second) (ids from the contract, copy in `modules.tsx`), the
   tenant monogram (slug, upper case, never a logo) opens Airlines. Links are real paths; clicks
   route without reload and drop the module's selection.
 - Scenario bar: `GET /scenarios` → `scenarioBarModel` (presets as letters, `user`/`blend` in
@@ -34,6 +34,7 @@ part 1. Sends intent, renders what tier 2 sent. Nothing is computed here.
   `problem.detail` (commit, tray action, session `error`, scenario list); rule warnings of the last
   commit verbatim; reconnecting chip on a session drop; "Recalculate" chip when the stored calc is
   `stale`. Any `[data-stale]` value is dimmed.
+- Tour: `<TourButton/>` in the top bar before "Find any number"; `<TourHost module/>` inside `BindProvider` after the flight strip (`global/tour`). Presenter deep link `?tour=<chapter|stepId>` (main, levers, wizard, close) calls `tourStore.startAt` once on mount.
 - "Find any number" opens the `commandPalette` panel in the view store (the palette is WEB-07).
 - Tests: `shell.test.tsx` (msw for REST, the contract's mock session for WS, a memory router with
   the app's route shape, axe for G12).

@@ -15,6 +15,7 @@ import { Rail, ScenarioBar, type TenantStatus } from '@glidepath/ui/shell';
 import { themeNames, type ThemeName } from '@glidepath/ui/tokens';
 import type { ModuleId } from '../../app/modules';
 import { useViewStore } from '../../app/view-store';
+import { useRouter } from '@tanstack/react-router';
 import { BindProvider } from '../../bind';
 import { CommitProvider, useCommit, useCommitState, useForkNavigation } from '../../commit';
 import {
@@ -31,6 +32,7 @@ import {
   type ServerMessageSource,
 } from '../../data';
 import type { SessionClient } from '../../session';
+import { TourButton, TourHost, tourStore } from '../tour';
 import { editChanges } from './changes';
 import { Icon, MODULE_COPY, TOOL_ICONS, railItems } from './modules';
 import { useShellNavigation } from './navigation';
@@ -102,6 +104,17 @@ function ShellBody({ tenant, scenarioId, module, session, onTrace, children }: G
   const toast = useToast();
   const api = useApiClient();
   const serverState = useServerState();
+
+  // ---- presenter deep link `?tour=<chapter|stepId>`: opens the walkthrough there, once.
+  // Read raw from the router location (the module route's own search parser drops unknown keys).
+  const router = useRouter();
+  const tourLink = useRef(false);
+  useEffect(() => {
+    if (tourLink.current) return;
+    tourLink.current = true;
+    const target = new URLSearchParams(router.state.location.searchStr ?? '').get('tour');
+    if (target) tourStore.getState().startAt(target);
+  }, [router]);
 
   // ---- server state (tier 2's answers, as sent)
   const tenants = useTenants();
@@ -292,6 +305,7 @@ function ShellBody({ tenant, scenarioId, module, session, onTrace, children }: G
                 onDiscard={discard}
                 title={current ? `Changeset · ${current.label}` : 'Changeset'}
               />
+              <TourButton />
               <button
                 type="button"
                 className="gp-search"
@@ -320,6 +334,7 @@ function ShellBody({ tenant, scenarioId, module, session, onTrace, children }: G
         </div>
       </div>
       <BoundFlightStrip hidden={module === 'cockpit'} />
+      <TourHost module={module} />
     </BindProvider>
   );
 }

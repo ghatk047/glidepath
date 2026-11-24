@@ -180,7 +180,7 @@ Use this instead of beats 4, 5 and 6 when the MD wants to build rather than watc
 | Find any number | Command-K. |
 
 - The tour moves between screens by itself, but it never edits a value and never changes the scenario. Everything you click is yours.
-- The tour has no jump. For the wizard variant, press Esc after beat 3, drive the wizard by hand, and restart the tour only if you want its cards for beats 7 to 11 (Next past the early steps is one line each).
+- Jump straight to a chapter with a deep link: add `?tour=wizard` (or `main`, `levers`, `close`, or any step id) to the URL. For the wizard variant, open `…/wizard?tour=wizard` after beat 3, or press Esc and drive the wizard by hand.
 - The Tour button shows a dot until the tour has been seen in this browser. Clear it by finishing or skipping once. It is only a convenience.
 - Do not start the tour with a dialog or palette open. Esc closes those first.
 
