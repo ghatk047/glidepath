@@ -21,6 +21,9 @@ const LIVE = `${ON}[data-visible="true"]`;
 export const computeCss = [
   '/* @glidepath/ui compute: generated from tokens in src/compute/styles.ts */',
   `@keyframes gp-compute-flow { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }`,
+  // The counter-flow is its own keyframe (no animation-direction keyword): tier-check flags the
+  // bare word as a tier-2 symbol name in the bundle.
+  `@keyframes gp-compute-counter { from { transform: translate3d(-50%, 0, 0); } to { transform: translate3d(0, 0, 0); } }`,
   `@keyframes gp-compute-rise { 0% { transform: translate3d(0, var(--gp-rise), 0) scale(0.8); opacity: 0; } 25% { opacity: 0.8; } 60% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.8; } 100% { transform: translate3d(0, calc(var(--gp-rise) * -1), 0) scale(0.8); opacity: 0; } }`,
   `@keyframes gp-compute-in { from { opacity: 0; } to { opacity: 1; } }`,
   // ---- root
@@ -39,7 +42,7 @@ export const computeCss = [
   `.gp-compute-wave[data-tone="b"] path { stroke-opacity: 0.6; }`,
   `.gp-compute-wave[data-tone="c"] path { stroke-opacity: 0.35; }`,
   `${ON} .gp-compute-wave { animation: gp-compute-flow linear infinite; animation-duration: calc(${flash} * var(--w)); }`,
-  `${ON} .gp-compute-wave[data-dir="r"] { animation-direction: reverse; }`,
+  `${ON} .gp-compute-wave[data-dir="r"] { animation-name: gp-compute-counter; }`,
   // ---- glyphs
   `.gp-compute-glyphs { position: absolute; inset: 0; display: block; opacity: calc(0.6 + 0.4 * var(--gp-p, 0.5)); }`,
   `.gp-compute-glyphs > b { position: absolute; top: 50%; margin-top: -0.5em; line-height: 1; font-weight: 500; color: ${c('accent')}; opacity: 0; }`,
