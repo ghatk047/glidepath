@@ -52,3 +52,5 @@ explainable, constraints}}`; progress from the session's `job` messages (`JobHea
 - Tests: `path.test.tsx` (app router, msw for REST incl. the solver routes, the contract's mock
   session for WS and jobs, golden fixtures and `docs/spec/reference/solver_demo_results.json`),
   one test per acceptance line plus axe.
+
+- Result panel (WIZ-08): header uses `RunIndicator` while a run is busy; while `busy` and no result yet, a field `ComputeFlow` sits above the "Finding a path…" empty state.

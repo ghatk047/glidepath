@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { ComputeFlow } from '@glidepath/ui/compute';
 import { useJob } from './useJob';
 import { JobsStyles } from './styles';
 
@@ -54,6 +55,7 @@ export function JobHeader({ id }: JobHeaderProps) {
         data-cancelling={job.cancelRequested || undefined}
       >
         <span className="gp-job-sr">{STATE_WORD[state]}</span>
+        <ComputeFlow active variant="inline" progress={job.progress ?? undefined} />
         <span className="gp-job-note" aria-live="off">
           {text}
         </span>

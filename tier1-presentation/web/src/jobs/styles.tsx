@@ -14,6 +14,8 @@ export const jobsCss = [
   '/* web/src/jobs: generated from tokens in styles.tsx */',
   // ---- job header: inline in the panel header's status area
   `.gp-job { display: inline-flex; align-items: center; gap: ${part('space.gap', 2, 3)}; min-width: 0; position: relative; font-size: ${part('type.scale.s.size', 12, 13)}; color: ${c('ink2')}; }`,
+  `.gp-job > .gp-compute, .gp-job-starting > .gp-compute { flex: none; }`,
+  `.gp-job-starting { display: inline-flex; align-items: center; gap: ${part('space.gap', 2, 3)}; min-width: 0; font-size: ${part('type.scale.s.size', 12, 13)}; color: ${c('ink2')}; }`,
   `.gp-job-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }`,
   `.gp-job-bar { display: block; flex: none; width: 5rem; height: 0.25rem; border-radius: 0.25rem; background: ${c('track')}; overflow: hidden; }`,
   `.gp-job-bar i { display: block; height: 100%; border-radius: inherit; background: ${c('accent')}; transform-origin: left center; transform: scaleX(var(--gp-job-progress, 0)); transition: transform ${v('motion.value')} ${v('motion.ease')}; }`,

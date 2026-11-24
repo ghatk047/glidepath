@@ -13,5 +13,9 @@ Job progress and empty-state plumbing (WEB-08, 02 §6 "Job running" and "Empty")
   thin bar + "Cancel" link while queued / running; "Cancelling…" once asked. A failed or cancelled
   job leaves a one-line end state, a done job renders nothing. Inline only: the panel body is
   not blocked. Screen readers hear state changes (Running, Cancelling), not every tick.
+- `ComputeFlow` (WIZ-08): `JobHeader` draws `<ComputeFlow active variant="inline" progress>` before the
+  note while the job is queued, running or cancelling (decorative; the progressbar stays the signal).
+- `RunIndicator { busy, jobId, note? }`: `JobHeader` when `jobId`; else, while `busy` (POST in flight,
+  before the first `job` message), the inline ComputeFlow and "Starting…"; else nothing.
 - `EmptyState line action`: one line and one action, supplied by the screen.
 - Imports `@glidepath/api-contract`, `@glidepath/ui`, `../session`. No arithmetic on received values.
