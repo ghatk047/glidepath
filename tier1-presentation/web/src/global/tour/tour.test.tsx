@@ -203,7 +203,7 @@ describe('store and seen', () => {
 describe('TourButton', () => {
   it('has the dot until seen and always starts at step 1', () => {
     render(<TourButton />);
-    const btn = screen.getByRole('button', { name: 'Start the walkthrough' });
+    const btn = screen.getByRole('button', { name: 'Tour: start the walkthrough' });
     expect(btn.hasAttribute('data-tour-button')).toBe(true);
     expect(btn.hasAttribute('data-tour-seen')).toBe(false);
     tourStore.setState({ index: 4 });

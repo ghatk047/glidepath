@@ -21,7 +21,7 @@ function ChosenRow({ lever, label, focused }: { lever: string; label: string; fo
   const on = useVariable('lev.on', lever);
   if (on.value !== 1) return null;
   return (
-    <li>
+    <li className="gp-wz-pick-row" data-on={focused || undefined}>
       <button
         type="button"
         className="gp-wz-pick"
@@ -30,8 +30,9 @@ function ChosenRow({ lever, label, focused }: { lever: string; label: string; fo
         onClick={() => wizardStore.getState().setFocusLever(lever)}
       >
         <span>{label}</span>
-        <Value node="lev.iy" member={lever} format="money" />
       </button>
+      {/* outside the button: the value may open the trace drawer (no nested interactive controls) */}
+      <Value node="lev.iy" member={lever} format="money" className="gp-wz-pick-iy" />
     </li>
   );
 }

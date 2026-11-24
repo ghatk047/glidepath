@@ -58,8 +58,8 @@ const FRAME_WARMUP = 5;
 /** Preview round trips measured, after a warm-up the numbers do not include. */
 const PREVIEW_SAMPLES = 200;
 const PREVIEW_WARMUP = 20;
-/** drag.frame_p95, preview.round_trip_p95, glass.layers */
-const EXPECTED_METRICS = 3;
+/** drag.frame_p95, preview.round_trip_p95, glass.layers, compute.frame_p95 */
+const EXPECTED_METRICS = 4;
 
 /**
  * Metrics are kept in `perf-report.json` (git-ignored; reset by `perf.mjs`), not in memory: the tests
@@ -330,6 +330,73 @@ test.describe('QA-08 performance monitors', () => {
       detail: `${rows.join(' ')}${worstAt ? ` (worst ${worstAt})` : ''}`,
     });
     printNow(m);
+  });
+
+  test('compute_indicator_frame_p95_within_60fps', async ({ browser, stack }) => {
+    // a fresh copy of C so the solver is a real run (no cached look-up) with the indicator on screen
+    const copy = await stack.api.scenarioCreate({
+      params: { tenant: config.tenant },
+      body: { mode: 'copy', from: presetC, label: 'perf (compute indicator)' },
+    });
+    const p = await browser.newPage();
+    try {
+      await stack.signInPage(p);
+      await p.goto(`/${config.tenant}/${copy.id}/wizard`);
+      await expect(p.locator('main[data-module="wizard"]')).toBeVisible();
+      await p.waitForTimeout(1000);
+      await p.evaluate(() => {
+        const w = window as unknown as { __perf: { stamps: number[]; on: boolean } };
+        w.__perf = { stamps: [], on: true };
+        const tick = (t: number) => {
+          if (!w.__perf.on) return;
+          w.__perf.stamps.push(t);
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      await p.locator('[data-wizard-optimize]').click();
+      const compute = p.locator('[data-compute]').first();
+      await expect(compute).toBeAttached({ timeout: 15_000 });
+      // sample while the indicator is mounted (the run ends when the moves land)
+      await expect(p.locator('[data-testid="wizard-found"]')).toBeVisible({ timeout: 90_000 });
+      const stamps = await p.evaluate(() => {
+        const w = window as unknown as { __perf: { stamps: number[]; on: boolean } };
+        w.__perf.on = false;
+        return w.__perf.stamps;
+      });
+      const stats = frameStats(stamps.slice(FRAME_WARMUP));
+      const m = record({
+        name: 'compute.frame_p95',
+        label: 'compute indicator p95 frame interval',
+        value: stats.p95,
+        unit: 'ms',
+        budget: FRAME_P95_BUDGET_MS,
+        detail: `p50 ${stats.p50.toFixed(1)}, p99 ${stats.p99.toFixed(1)}, max ${stats.max.toFixed(1)} ms; ${stats.fps.toFixed(1)} fps over ${stats.frames} frames; ${stats.dropped} dropped`,
+      });
+      printNow(m);
+      expect(stats.frames, 'frames sampled while the job runs').toBeGreaterThan(30);
+      expect(stats.p95, m.detail).toBeLessThanOrEqual(FRAME_P95_BUDGET_MS);
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('glass_layers_within_budget_with_tour_open', async () => {
+    const rows: string[] = [];
+    for (const module of ['cockpit', 'wizard']) {
+      await page.goto(`/${config.tenant}/${presetC}/${module}`);
+      await expect(page.locator('.gp-panel').first()).toBeVisible();
+      await page.locator('[data-tour-button]').click();
+      await expect(page.locator('[data-tour-card]')).toBeVisible();
+      await page.waitForTimeout(500);
+      const layers = await blurredLayers(page);
+      rows.push(`${module}+tour=${layers}`);
+      expect(layers, `backdrop-filter layers on ${module} with the tour open`).toBeLessThanOrEqual(
+        GLASS_LAYER_BUDGET,
+      );
+      await page.keyboard.press('Escape');
+    }
+    process.stdout.write(`  glass with tour open: ${rows.join(' ')}\n`);
   });
 
   test('report', () => {

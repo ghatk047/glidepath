@@ -19,7 +19,7 @@ export function TourButton() {
       <button
         type="button"
         className="gp-search gp-tour-btn"
-        aria-label="Start the walkthrough"
+        aria-label="Tour: start the walkthrough"
         data-tour-button=""
         data-tour-seen={seen ? '' : undefined}
         onClick={() => tourStore.getState().start()}

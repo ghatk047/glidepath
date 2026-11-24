@@ -37,7 +37,9 @@ export const wizardCss = [
   `.gp-wz-btn:disabled { opacity: .4; cursor: default; }`,
   `.gp-wz-btn[data-variant="primary"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: 0 ${rem(10)} ${rem(30)} ${rem(-10)} var(--accent-glow); }`,
   // ---- tape
-  `.gp-panel.gp-wz-tape[data-pad] { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: ${rem(14)}; flex-wrap: wrap; padding: ${rem(12)} ${rem(18)}; }`,
+  `.gp-panel.gp-wz-tape[data-pad] { position: sticky; top: 0; z-index: 5; padding: ${rem(12)} ${rem(18)}; }`,
+  // GlassPanel wraps its children in `.gp-body`: that is the tape's row.
+  `.gp-wz-tape > .gp-body { display: flex; align-items: center; gap: ${rem(14)}; flex-wrap: wrap; }`,
   `.gp-wz-term { display: flex; flex-direction: column; gap: ${rem(2)}; min-width: 0; }`,
   `.gp-wz-term .gp-value, .gp-wz-term [data-value] { font-family: ${num}; font-variant-numeric: tabular-nums; font-size: var(--type-l-size); color: var(--ink); }`,
   `.gp-wz-term[data-term="net"] .gp-value { font-size: var(--type-xl-size); font-weight: var(--type-xl-weight); }`,
@@ -81,7 +83,13 @@ export const wizardCss = [
   `.gp-wz-pick:focus-visible { ${focus} }`,
   `.gp-wz-pick[aria-pressed="true"] { background: var(--glass-2); border-color: var(--glass-line); }`,
   `.gp-wz-pick > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`,
-  `.gp-wz-pick [data-value], .gp-wz-pick .gp-value { font-family: ${num}; font-variant-numeric: tabular-nums; color: var(--ink-2); }`,
+  // The tape's gap chip: ink text with a neg outline, so the label keeps 4.5:1 on the tinted pill in
+  // both themes (neg text on its own tint is 3.8:1 in Daylight, and the tape sits under the tour scrim).
+  `.gp-wz-tape .gp-chip[data-tone="neg"] { color: var(--ink); border-color: var(--neg); }`,
+  `.gp-wz-pick-row { display: flex; align-items: center; gap: ${rem(6)}; border-radius: var(--radius-card); }`,
+  `.gp-wz-pick-row[data-on] { background: var(--glass-2); }`,
+  `.gp-wz-pick-row .gp-wz-pick { flex: 1; min-width: 0; }`,
+  `.gp-wz-pick-row .gp-wz-pick-iy, .gp-wz-pick-row .gp-value-wrap { flex: none; padding-right: ${rem(10)}; font-family: ${num}; font-variant-numeric: tabular-nums; color: var(--ink-2); }`,
   `.gp-wz-empty { color: var(--ink-3); font-size: var(--type-m-size); margin: 0; }`,
   `.gp-wz-title { margin: 0 0 ${rem(16)}; font-size: var(--type-xl-size); font-weight: var(--type-xl-weight); letter-spacing: var(--type-xl-tracking); color: var(--ink); }`,
   `.gp-wz-kpis { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: ${rem(12)}; margin-bottom: ${rem(20)}; }`,
@@ -109,7 +117,8 @@ export const wizardCss = [
   `  .gp-wz-step .gp-wz-step-label { display: none; }`,
   `  .gp-wz-step[aria-current="step"] .gp-wz-step-label { display: inline; }`,
   `  .gp-wz-btn { min-height: ${TOUCH_TARGET}; }`,
-  `  .gp-wz-tape { gap: ${rem(10)}; padding: ${rem(10)} ${rem(14)}; }`,
+  `  .gp-panel.gp-wz-tape[data-pad] { padding: ${rem(10)} ${rem(14)}; }`,
+  `  .gp-wz-tape > .gp-body { gap: ${rem(10)}; }`,
   `  .gp-wz-tape-act { margin-left: 0; width: 100%; }`,
   `  .gp-wz-tape-act .gp-wz-btn { flex: 1; }`,
   `  .gp-wz-term[data-term="inyear"], .gp-wz-term[data-term="onetime"], .gp-wz-op[data-op="minus"] { order: 2; }`,

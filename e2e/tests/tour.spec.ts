@@ -56,7 +56,7 @@ test.describe('Walkthrough tour (WIZ-11)', () => {
       await stack.signInPage(fresh);
       await open(fresh, presetC, 'cockpit');
       await expect(fresh.locator('[data-tour-button]')).toBeVisible();
-      await expect(fresh.locator('[data-tour-button]')).toHaveAccessibleName('Start the walkthrough');
+      await expect(fresh.locator('[data-tour-button]')).toHaveAccessibleName('Tour: start the walkthrough');
       await expect(fresh.locator('[data-tour-button]')).not.toHaveAttribute('data-tour-seen', '');
       await fresh.waitForTimeout(1500); // it would have opened by now
       await expect(tour(fresh)).toHaveCount(0);
