@@ -60,7 +60,7 @@ export function GroupDetail({
           return (
             <li key={l.key} data-line={l.key}>
               <span className="gp-bl-line-name">
-                <span>{info?.name ?? l.key}</span>
+                <span title={info?.name ?? l.key}>{info?.name ?? l.key}</span>
                 <small>{info?.vendor}</small>
               </span>
               <LineAmount line={l.key} name={info?.name} format={(v) => fmt.money(v)} />

@@ -25,6 +25,8 @@ export const MONTHLY_OFFSETS = {
   monthLabel: 8,
   familyLabelInset: 4,
   familyLabelBaseline: 4,
+  /** Closest two family labels may sit (about one label height); a crowded label is left out. */
+  familyLabelMinGap: 11,
   endDotRadius: 4,
 } as const;
 /** Family colour slots, cycled by family order (prototype: seq-3, seq-2, accent). */

@@ -318,6 +318,7 @@ function ShellBody({ tenant, scenarioId, module, session, onTrace, children }: G
                 type="button"
                 className="gp-search"
                 aria-keyshortcuts="Meta+K Control+K"
+                title="Find any number (⌘K)"
                 onClick={() => openPanel('commandPalette')}
               >
                 <Icon paths={TOOL_ICONS.search} />

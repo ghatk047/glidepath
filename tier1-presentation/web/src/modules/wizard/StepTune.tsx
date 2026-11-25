@@ -29,7 +29,7 @@ function ChosenRow({ lever, label, focused }: { lever: string; label: string; fo
         aria-pressed={focused}
         onClick={() => wizardStore.getState().setFocusLever(lever)}
       >
-        <span>{label}</span>
+        <span title={label}>{label}</span>
       </button>
       {/* outside the button: the value may open the trace drawer (no nested interactive controls) */}
       <Value node="lev.iy" member={lever} format="money" className="gp-wz-pick-iy" />

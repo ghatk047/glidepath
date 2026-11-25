@@ -73,9 +73,13 @@ export function LineTable({
               const info = members.lines.get(l.key);
               return (
                 <tr key={l.key} data-line={l.key}>
-                  <th scope="row">{info?.name ?? l.key}</th>
-                  <td>{info?.vendor}</td>
-                  <td>{info ? members.domainLabel(info.domain) : ''}</td>
+                  <th scope="row" title={info?.name ?? l.key}>
+                    {info?.name ?? l.key}
+                  </th>
+                  <td title={info?.vendor}>{info?.vendor}</td>
+                  <td title={info ? members.domainLabel(info.domain) : undefined}>
+                    {info ? members.domainLabel(info.domain) : ''}
+                  </td>
                   <td>
                     {info && (
                       <span className="gp-bl-addr" data-addr={info.addr}>

@@ -1,4 +1,5 @@
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { media } from '@glidepath/ui/tokens';
 
 /**
@@ -104,6 +105,19 @@ export const cockpitCss = [
   `  .gp-cockpit-stat + .gp-cockpit-stat { border-left: 0; }`,
   `  .gp-cockpit-all, .gp-cockpit-bar, .gp-cockpit-primary, .gp-cockpit-go, .gp-cockpit-vp-name button { min-height: ${TOUCH_TARGET}; }`,
   `  .gp-cockpit-share-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }`,
+  `}`,
+  // desktop (UIX-01): on a short screen the gauge gives up height so the first row fits
+  `@media ${DESKTOP_QUERY} {`,
+  // the bridge scales with its panel: on a wide screen it would grow taller than the gauge
+  `  .gp-cockpit .gp-bridge { max-height: 36vh; }`,
+  // the three steppers share their columns: the number field gives way instead of the + spilling out
+  `  .gp-cockpit-inputs { gap: ${rem(14)}; }`,
+  `  .gp-cockpit-input .gp-stepper input { flex: 1 1 auto; width: 0; min-width: 0; }`,
+  `  .gp-cockpit-input .gp-stepper button { flex: none; width: ${rem(28)}; }`,
+  `}`,
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-cockpit-net .gp-gauge { width: min(100%, ${rem(300)}); }`,
+  `  .gp-cockpit-stats { padding-top: ${rem(14)}; }`,
   `}`,
 ].join('\n');
 

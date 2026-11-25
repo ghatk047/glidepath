@@ -3,7 +3,7 @@
  * breakpoint value comes from tokens.json. Matches docs/ux/prototype/src/styles.css
  * (`.sky`, `.glass`, `.grid`, `.panel-h`, `.label`). Mounted by <GlassProvider>.
  */
-import { cssVar, defaultTheme, media, tokenValue, type TokenPath } from '../tokens';
+import { breakpoints, cssVar, defaultTheme, media, tokenValue, type TokenPath } from '../tokens';
 import { GLASS_LEVELS, type GlassLevel } from './budget';
 import { SPANS, spanAt } from './layout';
 import { REDUCED_TRANSPARENCY_QUERY } from './quality';
@@ -88,6 +88,31 @@ const lowRules = (prefix: string) =>
 const font = (w: TokenPath, s: TokenPath, fam: TokenPath, fallback: string) =>
   `${v(w)} ${v(s)}/1.25 ${v(fam)}, ${fallback}`;
 
+/**
+ * Desktop density (UIX-01). The app is presented full screen on a laptop (1280x720) and on a
+ * 1080p display, so above the tablet breakpoint the spacing and the two display sizes step down,
+ * and step down again on short screens. Only the token custom properties are redefined (in rem,
+ * relative to the token defaults), so every panel, grid and module follows; tablet and phone keep
+ * the token values. `:root:root` outranks the generated token sheet whatever the mount order.
+ */
+// media queries cannot read custom properties, and em there is always the 16 px browser default
+const MQ_EM = 16;
+/** Wider than the token tablet breakpoint. */
+export const DESKTOP_QUERY = `(min-width: ${(breakpoints.tablet + 1) / MQ_EM}em)`;
+/** Desktop on a short screen (a 1280x720 laptop, a 1440x900 display). */
+export const SHORT_DESKTOP_QUERY = `${DESKTOP_QUERY} and (max-height: ${900 / MQ_EM}em)`;
+const desktopDensity = [
+  `@media ${DESKTOP_QUERY} {`,
+  `  :root:root { ${v('space.gap')}: 0.875rem; ${v('space.panelPad')}: 1.125rem 1.25rem; ${v('radius.panel')}: 1.125rem; ${v('type.scale.hero.size')}: clamp(2.75rem, 3.9vw, 4.5rem); ${v('type.scale.xl.size')}: clamp(1.625rem, 2.2vw, 2.25rem); }`,
+  `}`,
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  :root:root { ${v('space.gap')}: 0.75rem; ${v('space.panelPad')}: 0.875rem 1.125rem; ${v('type.scale.hero.size')}: clamp(2.5rem, 3.4vw, 3.75rem); ${v('type.scale.xl.size')}: clamp(1.5rem, 2vw, 2rem); ${v('type.scale.l.size')}: 1.25rem; }`,
+  `}`,
+]
+  .join('\n')
+  // cssVar values are `var(--x)`: the declarations need the bare property name
+  .replace(/var\((--[a-z0-9-]+)\):/g, '$1:');
+
 export const glassCss = [
   '/* @glidepath/ui glass: generated from tokens in src/glass/styles.ts */',
   // aurora: pre-blurred sky, no live filter
@@ -133,4 +158,5 @@ export const glassCss = [
   `@media ${media.tablet} {\n${SPANS.map((s) => `  .gp-span-${s} { grid-column: span ${spanAt(s, 'tablet')}; }`).join('\n')}\n}`,
   `@media ${media.phone} {\n${SPANS.map((s) => `  .gp-span-${s} { grid-column: span ${spanAt(s, 'phone')}; }`).join('\n')}\n}`,
   `@media (prefers-reduced-motion: reduce) {\n  .gp-aurora i, .gp-body[data-reveal] { animation: none; }\n}`,
+  desktopDensity,
 ].join('\n');

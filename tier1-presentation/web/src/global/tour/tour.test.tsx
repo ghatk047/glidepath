@@ -93,8 +93,17 @@ describe('steps table', () => {
       '[data-wizard-optimize]',
       '[data-tour-button]',
     ]);
-    expect(TOUR_VERSION).toBe('1');
+    expect(TOUR_VERSION).toBe('2');
     for (const s of TOUR_STEPS) if (s.module) expect(MODULE_IDS).toContain(s.module);
+  });
+
+  it('about: every step says what its screen is for, at most 22 words, no digit, no placeholder, no airline word', () => {
+    for (const s of TOUR_STEPS) {
+      expect(s.about.length, s.id).toBeGreaterThan(0);
+      expect(s.about, s.id).not.toMatch(/\d|\{/);
+      expect(s.about, s.id).not.toMatch(AIRLINE_WORDS);
+      expect(s.about.split(/\s+/).length, s.id).toBeLessThanOrEqual(22);
+    }
   });
 
   it('copy: at most 16 words, no digit outside placeholders, no airline word, ids or tenant only', () => {

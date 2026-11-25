@@ -1,3 +1,4 @@
+import { DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem } from '@glidepath/ui/shell';
 
 /**
@@ -28,7 +29,7 @@ export const leversCss = [
   `.gp-lv-bar > i { display: block; height: 100%; width: calc(100% * var(--value, 0) / var(--max, 1)); max-width: 100%; background: var(--accent); border-radius: inherit; transition: width var(--motion-value) var(--motion-ease); }`,
   `.gp-lv-chips { display: flex; gap: ${rem(8)}; flex-wrap: wrap; margin-bottom: ${rem(10)}; }`,
   `.gp-lv-chip { display: inline-flex; align-items: center; padding: ${rem(4)} ${rem(12)}; border-radius: var(--radius-pill); border: ${line}; background: var(--glass); color: var(--ink-2); font-size: var(--type-s-size); }`,
-  `.gp-lv-chip[data-tone="accent"] { color: var(--accent-ink); }`,
+  `.gp-lv-chip[data-tone="accent"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }`,
   `.gp-lv-title { margin: 0 0 ${rem(16)}; font-size: var(--type-xl-size); font-weight: var(--type-xl-weight); letter-spacing: var(--type-xl-tracking); color: var(--ink); }`,
   `.gp-lv-kpis { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: ${rem(12)}; margin-bottom: ${rem(20)}; }`,
   `.gp-lv-kpi { display: flex; flex-direction: column; gap: ${rem(6)}; padding: ${rem(14)} ${rem(16)}; border-radius: var(--radius-card); border: ${line}; background: var(--glass); min-width: 0; }`,
@@ -51,4 +52,20 @@ export const leversCss = [
   `.gp-lv-all-pair div { display: flex; flex-direction: column; gap: ${rem(4)}; }`,
   `.gp-lv-all-pair [data-value], .gp-lv-all-pair .gp-value { font-family: ${num}; font-size: var(--type-l-size); color: var(--ink); }`,
   `@media (prefers-reduced-motion: reduce) { .gp-lv-bar > i { transition: none; } }`,
+  // desktop (UIX-01): the 20 levers scroll inside their panel so the detail and the month chart
+  // stay beside them; display numbers are capped so they fit their column at 1280 px
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-lv-list-wrap { max-height: calc(100vh - ${rem(170)}); min-height: ${rem(300)}; overflow-y: auto; overscroll-behavior: contain; margin-right: calc(-1 * ${rem(8)}); padding-right: ${rem(8)}; }`,
+  `  .gp-lv-family { margin: ${rem(10)} 0 ${rem(2)}; }`,
+  `  .gp-lv-row { padding: ${rem(4)} ${rem(8)}; }`,
+  `  .gp-lv-title { font-size: min(var(--type-xl-size), ${rem(30)}); margin-bottom: ${rem(10)}; }`,
+  `  .gp-lv-kpis { gap: ${rem(8)}; margin-bottom: ${rem(12)}; }`,
+  `  .gp-lv-kpi { padding: ${rem(10)} ${rem(12)}; }`,
+  `  .gp-lv-kpi[data-hero="true"] [data-value], .gp-lv-kpi[data-hero="true"] .gp-value { font-size: min(var(--type-xl-size), ${rem(28)}); }`,
+  `  .gp-lv-sliders { gap: ${rem(10)}; margin-bottom: ${rem(12)}; }`,
+  `  .gp-lv-conf { margin-bottom: ${rem(10)}; }`,
+  `  .gp-lv-cell { height: ${rem(30)}; }`,
+  `  .gp-lv-hyp { margin-top: ${rem(12)}; font-size: var(--type-s-size); }`,
+  `  .gp-lv-all-hero { font-size: min(var(--type-hero-size), ${rem(46)}); white-space: nowrap; }`,
+  `}`,
 ].join('\n');

@@ -1,3 +1,4 @@
+import { DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
 
@@ -128,6 +129,15 @@ export const wizardCss = [
   `  .gp-wz-pick { width: auto; flex: none; border-color: var(--glass-line); border-radius: var(--radius-pill); }`,
   `  .gp-wz-row { column-gap: ${rem(8)}; }`,
   `  .gp-wz-row .gp-wz-conf { display: none; }`,
+  `}`,
+  // desktop (UIX-01): the 20 levers of step 1 sit in two columns, family by family, so the step
+  // fits a 1280x720 screen; rows lose some air
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-wz-levers > .gp-body { columns: 2; column-gap: ${rem(24)}; }`,
+  `  .gp-wz-levers .gp-wz-group { break-inside: avoid; }`,
+  `  .gp-wz-family { margin: ${rem(8)} 0 ${rem(2)}; }`,
+  `  .gp-wz-row { padding: ${rem(3)} ${rem(6)}; column-gap: ${rem(10)}; }`,
+  `  .gp-wz-fam-row { padding: ${rem(5)} 0; gap: ${rem(4)}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) {`,
   `  .gp-wz-stage > [data-wizard-step] { animation: none; }`,

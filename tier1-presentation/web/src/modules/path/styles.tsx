@@ -1,3 +1,4 @@
+import { DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
 
@@ -91,6 +92,14 @@ export const pathCss = [
   `@media ${media.phone} {`,
   `  .gp-path-head, .gp-path-stats { gap: ${rem(18)}; }`,
   `  .gp-path-btn, .gp-path-goal-value { min-height: ${TOUCH_TARGET}; }`,
+  `}`,
+  // desktop (UIX-01): the goal panel's options and holds lose some air so the goal and the path
+  // panel fit a 1280x720 screen above the analysis row
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-path-goal .gp-radio-card { padding: ${rem(6)} ${rem(10)}; }`,
+  `  .gp-path-hold-row { padding: ${rem(6)} ${rem(12)}; }`,
+  // charts scale with their panel: on a wide screen the histogram would outgrow the row
+  `  .gp-path .gp-chart { max-height: 30vh; }`,
   `}`,
 ].join('\n');
 

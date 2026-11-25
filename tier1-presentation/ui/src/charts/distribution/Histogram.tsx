@@ -39,6 +39,8 @@ const BIN_RADIUS = 2;
 const LABEL_BASELINE = 4;
 const BAR_LABEL_DX = 5;
 const BAR_LABEL_Y = 10;
+/** viewBox units the "Bar" label needs right of its line; less than that left and it flips. */
+const BAR_LABEL_ROOM = 28;
 
 /**
  * Histogram (`hist`, #21): bars from the bin array in props, a dashed bar line with its label,
@@ -136,7 +138,13 @@ export function Histogram({
         {barX !== null && (
           <g data-part="bar">
             <line className="gp-chart-ref" x1={barX} x2={barX} y1={0} y2={baseline} />
-            <text className="gp-chart-ink2" x={barX + BAR_LABEL_DX} y={BAR_LABEL_Y}>
+            {/* near the right edge the label sits left of the line, so it stays inside the panel */}
+            <text
+              className="gp-chart-ink2"
+              x={barX > width - BAR_LABEL_ROOM ? barX - BAR_LABEL_DX : barX + BAR_LABEL_DX}
+              y={BAR_LABEL_Y}
+              textAnchor={barX > width - BAR_LABEL_ROOM ? 'end' : undefined}
+            >
               Bar
             </text>
           </g>
