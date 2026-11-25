@@ -9,6 +9,10 @@ import { tourStore, useTour } from './store';
 import { TOUR_STEPS } from './steps';
 import { useAnchor } from './useAnchor';
 
+/** The first-time viewer's line (UIX-02): what the screen is for, above the step's numbers. */
+const ABOUT_CSS =
+  '.gp-tour-about { display: block; margin-bottom: 0.375rem; color: var(--ink); font-size: var(--type-s-size); line-height: 1.45; }';
+
 /** Tenant on screen: the URL's slug (`/:tenant/...`) when a router is mounted. */
 function useTenantSlug(): string | undefined {
   const router = useRouter({ warn: false }) as
@@ -78,7 +82,15 @@ export function TourHost({ module }: { module: ModuleId }) {
         index={index}
         count={TOUR_STEPS.length}
         title={step.title}
-        body={<TourBody text={step.body} tenantName={tenantName} />}
+        body={
+          <>
+            <style href="glidepath-tour-about" precedence="glidepath">
+              {ABOUT_CSS}
+            </style>
+            <span className="gp-tour-about">{step.about}</span>
+            <TourBody text={step.body} tenantName={tenantName} />
+          </>
+        }
         preferred={step.placement}
         onNext={next}
         onBack={back}
