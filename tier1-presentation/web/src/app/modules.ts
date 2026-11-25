@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { AppModule } from '@glidepath/api-contract';
 
-/** The eight modules, in site-map order (IA §1). The list itself is owned by the contract. */
+/** The nine modules, in site-map order (IA §1). The list itself is owned by the contract. */
 export const MODULE_IDS = AppModule.options;
 export type ModuleId = AppModule;
 
@@ -15,6 +15,7 @@ type ModuleLoader = () => Promise<{ default: ComponentType }>;
  */
 export const moduleLoaders: Record<ModuleId, ModuleLoader> = {
   cockpit: () => import('../modules/cockpit'),
+  wizard: () => import('../modules/wizard'),
   baseline: () => import('../modules/baseline'),
   levers: () => import('../modules/levers'),
   vps: () => import('../modules/vps'),

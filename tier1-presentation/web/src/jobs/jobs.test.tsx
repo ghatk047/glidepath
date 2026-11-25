@@ -20,6 +20,7 @@ import {
   EmptyState,
   JobHeader,
   JobsProvider,
+  RunIndicator,
   solverRunCanceller,
   useJob,
   type JobHandle,
@@ -295,6 +296,44 @@ describe('AC2: panel header inline progress + cancel link; the rest of the scree
     expect(header.querySelector('[role="progressbar"]')!.getAttribute('aria-valuenow')).toBe(
       '0.75',
     );
+  });
+
+  it('draws the inline ComputeFlow before the note while queued, running or cancelling, and not after the end', async () => {
+    const { client, push } = await setup();
+    const { host } = mount(screen(client, cancelFor(fakeFetch().fetch), () => {}));
+    expect(host.querySelector('.gp-compute')).toBeNull();
+    await push(job({ status: 'queued', progress: 0 }));
+    const flow = () => host.querySelector('.gp-job > .gp-compute');
+    expect(flow()!.getAttribute('data-variant')).toBe('inline');
+    expect(flow()!.getAttribute('aria-hidden')).toBe('true');
+    await push(job());
+    expect(flow()).toBeTruthy();
+    expect(host.querySelectorAll('.gp-job [role="progressbar"]')).toHaveLength(1);
+    await push(job({ cancelRequested: true }));
+    expect(flow()).toBeTruthy();
+    await push(job({ status: 'done', progress: 1 }));
+    expect(host.querySelector('.gp-compute')).toBeNull();
+  });
+
+  it('RunIndicator: Starting… with the flow while busy and no job yet; the JobHeader once a job exists; nothing when idle', async () => {
+    const { client, push } = await setup();
+    const wrap = (busy: boolean, jobId: string | null) => (
+      <GlassProvider frameSampling={false}>
+        <JobsProvider session={client} cancel={cancelFor(fakeFetch().fetch)}>
+          <RunIndicator busy={busy} jobId={jobId} />
+        </JobsProvider>
+      </GlassProvider>
+    );
+    const { host, rerender } = mount(wrap(false, null));
+    expect(host.querySelector('.gp-compute')).toBeNull();
+    rerender(wrap(true, null));
+    expect(host.querySelector('.gp-job-starting .gp-compute')).toBeTruthy();
+    expect(host.textContent).toContain('Starting…');
+    await push(job());
+    rerender(wrap(true, 'job-1'));
+    expect(host.querySelector('.gp-job-starting')).toBeNull();
+    expect(host.querySelector('.gp-job > .gp-compute')).toBeTruthy();
+    expect(host.querySelector('[role="progressbar"]')).toBeTruthy();
   });
 
   it('Cancel sends DELETE and turns into "Cancelling…"; a finished job leaves the header empty', async () => {

@@ -19,8 +19,8 @@ const v = (id: string, impact: string | null, n = 1) => ({
 });
 
 describe('a11y gate helpers', () => {
-  it('covers the eight modules and both themes', () => {
-    expect(A11Y_MODULES).toHaveLength(8);
+  it('covers the nine modules and both themes', () => {
+    expect(A11Y_MODULES).toHaveLength(9);
     expect([...A11Y_THEMES].sort()).toEqual(['cruise', 'daylight']);
     for (const m of LIGHTHOUSE_MODULES) expect(A11Y_MODULES).toContain(m);
   });

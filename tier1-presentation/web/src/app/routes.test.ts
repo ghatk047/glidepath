@@ -19,9 +19,9 @@ async function open(url: string) {
 const leaf = (router: Awaited<ReturnType<typeof open>>) => router.state.matches.at(-1)!;
 
 describe('route parsing', () => {
-  it('has exactly the 8 modules of the contract, in IA order', () => {
+  it('has exactly the 9 modules of the contract, in IA order', () => {
     expect(MODULE_IDS).toEqual(AppModule.options);
-    expect(MODULE_IDS).toHaveLength(8);
+    expect(MODULE_IDS).toHaveLength(9);
   });
 
   it.each(MODULE_IDS)('parses /:tenant/:scenario/%s', async (module) => {

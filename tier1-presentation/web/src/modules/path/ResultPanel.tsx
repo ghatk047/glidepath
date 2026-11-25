@@ -8,9 +8,10 @@ import {
 import { fmt } from '@glidepath/ui/format';
 import { GlassPanel } from '@glidepath/ui/glass';
 import { StatusChip } from '@glidepath/ui/hud';
+import { ComputeFlow } from '@glidepath/ui/compute';
 import { MoveRow } from '@glidepath/ui/rows';
 import { Value, useNode } from '../../bind';
-import { EmptyState, JobHeader } from '../../jobs';
+import { EmptyState, RunIndicator } from '../../jobs';
 import {
   COMPARE_ROWS,
   COPY,
@@ -335,7 +336,7 @@ export function ResultPanel({
       className="gp-path-result-panel"
       header={{
         label: headerLabel(run, pair),
-        status: jobId ? <JobHeader id={jobId} /> : search,
+        status: busy || jobId ? <RunIndicator busy={busy} jobId={jobId} /> : search,
       }}
     >
       {done ? (
@@ -350,17 +351,24 @@ export function ResultPanel({
           saveError={saveError}
         />
       ) : (
-        <EmptyState
-          line={
-            error ??
-            (run && terminal(run.status)
-              ? (run.error?.detail ?? COPY.failed)
-              : busy
-                ? COPY.finding
-                : COPY.empty)
-          }
-          action={{ label: COPY.find, onAction: onFind, disabled: busy }}
-        />
+        <>
+          {busy && (
+            <div data-testid="path-flow" style={{ position: 'relative', height: '4rem' }}>
+              <ComputeFlow active variant="field" />
+            </div>
+          )}
+          <EmptyState
+            line={
+              error ??
+              (run && terminal(run.status)
+                ? (run.error?.detail ?? COPY.failed)
+                : busy
+                  ? COPY.finding
+                  : COPY.empty)
+            }
+            action={{ label: COPY.find, onAction: onFind, disabled: busy }}
+          />
+        </>
       )}
     </GlassPanel>
   );

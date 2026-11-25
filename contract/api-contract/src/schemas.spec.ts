@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  AppModule,
   BundleResponse,
   CellKey,
   ChangeTarget,
@@ -11,6 +12,7 @@ import {
   DimensionScope,
   MembershipRole,
   ScenarioKind,
+  SearchResult,
   TenantStatus,
   toCellKey,
   type CoreRouteId,
@@ -126,6 +128,22 @@ describe('schemas.spec: enums match docs/spec/schema.json', () => {
       'line_item',
       'dimension_member',
     ]);
+  });
+});
+
+describe('schemas.spec: app modules', () => {
+  it('AppModule.options has nine ids, wizard second', () => {
+    expect([...AppModule.options]).toEqual([
+      'cockpit', 'wizard', 'baseline', 'levers', 'vps', 'path', 'market', 'excel', 'airlines',
+    ]);
+  });
+  it('SearchResult parses for every module including wizard', () => {
+    for (const module of AppModule.options) {
+      const r = SearchResult.parse({
+        kind: 'screen', id: module, label: module, unit: null, group: null, module, hint: null,
+      });
+      expect(r.module).toBe(module);
+    }
   });
 });
 

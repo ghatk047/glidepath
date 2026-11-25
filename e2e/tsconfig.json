@@ -17,6 +17,7 @@
     "playwright.visual.config.ts",
     "playwright.int-m3.config.ts",
     "playwright.storyline.config.ts",
+    "playwright.wizard.config.ts",
     "vitest.config.ts"
   ]
 }

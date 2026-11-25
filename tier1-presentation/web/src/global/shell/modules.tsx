@@ -2,7 +2,7 @@ import type { RailItem } from '@glidepath/ui/shell';
 import { MODULE_IDS, type ModuleId } from '../../app/modules';
 
 /**
- * Rail entries and screen titles of the eight modules (IA §1, prototype `NAV`). UX copy only:
+ * Rail entries and screen titles of the nine modules (IA §1, prototype `NAV`). UX copy only:
  * module ids come from the contract (`AppModule`), labels and titles are the approved wording.
  */
 interface ModuleCopy {
@@ -19,6 +19,11 @@ export const MODULE_COPY: Readonly<Record<ModuleId, ModuleCopy>> = {
     label: 'Cockpit',
     title: 'Path to the bar',
     icon: '<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4.5-5"/><circle cx="12" cy="16" r="1.2"/>',
+  },
+  wizard: {
+    label: 'Build',
+    title: 'Build a plan',
+    icon: '<path d="M4 18h4v-4h4v-4h4V6h4"/><circle cx="4" cy="18" r="1.4"/><circle cx="20" cy="6" r="1.4"/>',
   },
   baseline: {
     label: 'Baseline',
@@ -61,6 +66,7 @@ export const MODULE_COPY: Readonly<Record<ModuleId, ModuleCopy>> = {
 export const TOOL_ICONS = {
   search: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  tour: '<circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 11h1v5h1"/>',
 } as const;
 
 /** A 24-unit stroke icon drawn with `currentColor` (the rail and the buttons tint it). */
@@ -84,7 +90,7 @@ export function Icon({ paths }: { paths: string }) {
 export const modulePath = (tenant: string, scenario: string, module: ModuleId): string =>
   `/${encodeURIComponent(tenant)}/${encodeURIComponent(scenario)}/${module}`;
 
-/** The rail's eight items, in site-map order. */
+/** The rail's nine items, in site-map order. */
 export function railItems(tenant: string, scenario: string): RailItem[] {
   return MODULE_IDS.map((id) => ({
     id,

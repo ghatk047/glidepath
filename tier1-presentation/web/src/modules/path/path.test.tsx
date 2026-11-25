@@ -197,7 +197,9 @@ const TIER2_CATEGORY: Readonly<Record<string, 'policy' | 'timing'>> = {
   'g.ot_in_year': 'timing',
   'g.head_start': 'timing',
 };
-const tornadoRows = (category: (id: string) => 'lever' | 'policy' | 'timing' = (id) => TIER2_CATEGORY[id] ?? 'lever') =>
+const tornadoRows = (
+  category: (id: string) => 'lever' | 'policy' | 'timing' = (id) => TIER2_CATEGORY[id] ?? 'lever',
+) =>
   reference.tornado_net_top15.map((r) => ({
     cell: toCellKey(r.id, ''),
     category: category(r.id),
@@ -208,7 +210,10 @@ const tornadoRows = (category: (id: string) => 'lever' | 'policy' | 'timing' = (
     first: null,
     total: null,
   }));
-const sensitivityRunWith = (rows: ReturnType<typeof tornadoRows>, ranked: typeof tornadoRanked = tornadoRanked) => ({
+const sensitivityRunWith = (
+  rows: ReturnType<typeof tornadoRows>,
+  ranked: typeof tornadoRanked = tornadoRanked,
+) => ({
   ...sensitivityRun,
   result: {
     ...sensitivityRun.result,
@@ -419,19 +424,23 @@ function serve(
         );
       }
       // The analysis panels (Odds) start their own problem; the Path flow stays with `start`.
-      const answer = body.spec.problem === 'min_risk_mix' ? start(body) : extra.analysis?.[body.spec.problem];
+      const answer =
+        body.spec.problem === 'min_risk_mix' ? start(body) : extra.analysis?.[body.spec.problem];
       return HttpResponse.json(answer ?? start(body), { status: 201 });
     }),
     http.post(`${BASE}${apiRoutes.solverRunQuick.path}`, async ({ request }) => {
       const body = (await request.json()) as QuickSolverRunRequest;
       quicks.push(body);
-      const answer = body.spec.problem === 'scenario_blend' ? blendRun : extra.analysis?.[body.spec.problem];
+      const answer =
+        body.spec.problem === 'scenario_blend' ? blendRun : extra.analysis?.[body.spec.problem];
       return HttpResponse.json(answer ?? blendRun);
     }),
     http.get(`${BASE}${apiRoutes.solverRunGet.path}`, ({ params }) => {
       const id = String(params['id']);
       // The analysis panels re-read a started run once its job ends; answer by id.
-      const byId = extra.analysis && Object.values(extra.analysis).find((r) => (r as { id?: string }).id === id);
+      const byId =
+        extra.analysis &&
+        Object.values(extra.analysis).find((r) => (r as { id?: string }).id === id);
       return HttpResponse.json(byId ?? get());
     }),
   );
@@ -515,8 +524,13 @@ const oddsPanel = () => screen.getByTestId('path-odds');
 const tornadoPanel = () => screen.getByTestId('path-tornado');
 const point = (label: string) => scatter().querySelector<HTMLElement>(`[data-point="${label}"]`);
 /** Lookups that hand the Odds panel the Monte Carlo runs for C and D. */
-const mcLookups = { [`${SCENARIO}|monte_carlo`]: { run: mcC, current: true, trials: 2000 }, [`sc-D|monte_carlo`]: { run: mcD, current: true, trials: 2000 } };
-const tornadoLookup = { [`${SCENARIO}|sensitivity`]: { run: sensitivityRun, current: true, trials: null } };
+const mcLookups = {
+  [`${SCENARIO}|monte_carlo`]: { run: mcC, current: true, trials: 2000 },
+  [`sc-D|monte_carlo`]: { run: mcD, current: true, trials: 2000 },
+};
+const tornadoLookup = {
+  [`${SCENARIO}|sensitivity`]: { run: sensitivityRun, current: true, trials: null },
+};
 /** The bare swing label the tornado prints (chart `plain(v, 1)`): $M dropped, from `fmt`. */
 const plainSwing = (v: number) => fmt.money(v, { digits: 1 }).replace(/^(−?)\$(.*)M$/, '$1$2');
 
@@ -708,6 +722,37 @@ describe('AC2: Find a path runs the job and lands the moves', () => {
   });
 });
 
+describe('WIZ-08: the compute indicator while a path is found', () => {
+  it("shows the inline flow in the header and the field flow above 'Finding a path…' until the result lands", async () => {
+    const t = await mount(
+      () => queuedPath,
+      () => ({ ...queuedPath, status: 'running' }),
+    );
+    expect(document.querySelector('[data-testid="path-flow"]')).toBeNull();
+    fireEvent.click(find());
+    await t.until(() => expect(t.starts).toHaveLength(1));
+    await t.until(() => {
+      const flow = screen.getByTestId('path-flow').querySelector('.gp-compute');
+      expect(flow!.getAttribute('data-variant')).toBe('field');
+      expect(screen.getByTestId('path-flow').parentElement!.textContent).toContain('Finding a path…');
+    });
+    await t.mock.replay([
+      {
+        v: WS_PROTOCOL_VERSION,
+        type: 'job',
+        id: JOB,
+        status: 'running',
+        progress: 0.4,
+        note: null,
+      },
+    ]);
+    await t.until(() => {
+      const panel = screen.getByRole('region', { name: /Finding a path · lowest risk/ });
+      expect(panel.querySelector('header .gp-compute[data-variant="inline"]')).toBeTruthy();
+    });
+  });
+});
+
 describe('AC3: Blend C → D', () => {
   it("'Blend C → D' runs quick scenario_blend and shows the result", async () => {
     const t = await mount();
@@ -868,9 +913,13 @@ describe('AC-MOD07-1: savings vs risk scatter', () => {
   });
 
   it('draws the frontier curve when a Pareto run exists (post-demo)', async () => {
-    const t = await mount(() => donePath, () => donePath, {
-      lookups: { [`${SCENARIO}|pareto`]: { run: paretoRun, current: true, trials: null } },
-    });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      {
+        lookups: { [`${SCENARIO}|pareto`]: { run: paretoRun, current: true, trials: null } },
+      },
+    );
     fireEvent.click(find());
     await t.until(() => expect(point('Path')).toBeTruthy());
     await t.until(() => expect(scatter().querySelector('[data-part="frontier"]')).toBeTruthy());
@@ -882,7 +931,11 @@ describe('AC-MOD07-1: savings vs risk scatter', () => {
 
 describe('AC-MOD07-2: odds', () => {
   it('shows P(clear) for C and D and the D histogram from the Monte Carlo runs', async () => {
-    const t = await mount(() => donePath, () => donePath, { lookups: mcLookups });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { lookups: mcLookups },
+    );
     await t.until(() =>
       expect(oddsPanel().querySelector('[data-scenario="C"] [data-clear]')).toBeTruthy(),
     );
@@ -899,7 +952,11 @@ describe('AC-MOD07-2: odds', () => {
   });
 
   it('offers a run action when a scenario has not been simulated (tier 2 trial count)', async () => {
-    const t = await mount(() => donePath, () => donePath, { analysis: { monte_carlo: mcD } });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { analysis: { monte_carlo: mcD } },
+    );
     await t.until(() =>
       expect(within(oddsPanel()).getByText('D has not been simulated.')).toBeTruthy(),
     );
@@ -915,14 +972,20 @@ describe('AC-MOD07-2: odds', () => {
       ).toBe(true),
     );
     await t.until(() =>
-      expect(within(oddsPanel()).getByRole('img', { name: /Distribution of net savings for D/ })).toBeTruthy(),
+      expect(
+        within(oddsPanel()).getByRole('img', { name: /Distribution of net savings for D/ }),
+      ).toBeTruthy(),
     );
   });
 });
 
 describe('AC-MOD07-3: what moves net most (tornado)', () => {
   it('shows the top ten inputs in tier 2 swing order, policy and timing amber by category', async () => {
-    const t = await mount(() => donePath, () => donePath, { lookups: tornadoLookup });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { lookups: tornadoLookup },
+    );
     await t.until(() =>
       expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
     );
@@ -931,7 +994,9 @@ describe('AC-MOD07-3: what moves net most (tornado)', () => {
     // tier 2's order is kept; tier 1 does not re-sort
     expect(trows.map((r) => r.dataset['variableId'])).toEqual(top.map((r) => r.id));
     // the swing drawn is the row's swing in $M, the value tier 2 sent
-    expect(trows[0]!.querySelector('[data-part="value"]')!.textContent).toBe(plainSwing(top[0]!.swing));
+    expect(trows[0]!.querySelector('[data-part="value"]')!.textContent).toBe(
+      plainSwing(top[0]!.swing),
+    );
     // policy and timing inputs are amber by category; levers are blue
     const cat = (id: string) =>
       tornadoPanel().querySelector<HTMLElement>(`[data-variable-id="${id}"]`)!.dataset['category'];
@@ -942,14 +1007,19 @@ describe('AC-MOD07-3: what moves net most (tornado)', () => {
     expect(cat('hc.ctr')).toBe('lever');
   });
 
-  it('SOL-13: draws tier 2\'s category and swing as sent; it classifies nothing and takes no magnitude', async () => {
+  it("SOL-13: draws tier 2's category and swing as sent; it classifies nothing and takes no magnitude", async () => {
     // Tier 2 says the opposite of what the registry group would: lev.L10.ren is timing, g.ot_out_share a lever.
     // `ranked` is empty and its impacts would be signed: the bars must come from the rows alone.
-    const flipped = (id: string) => (id === 'lev.L10.ren' ? 'timing' : id === 'g.ot_out_share' ? 'lever' : 'policy');
+    const flipped = (id: string) =>
+      id === 'lev.L10.ren' ? 'timing' : id === 'g.ot_out_share' ? 'lever' : 'policy';
     const run = sensitivityRunWith(tornadoRows(flipped), []);
-    const t = await mount(() => donePath, () => donePath, {
-      lookups: { [`${SCENARIO}|sensitivity`]: { run, current: true, trials: null } },
-    });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      {
+        lookups: { [`${SCENARIO}|sensitivity`]: { run, current: true, trials: null } },
+      },
+    );
     await t.until(() =>
       expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
     );
@@ -959,28 +1029,40 @@ describe('AC-MOD07-3: what moves net most (tornado)', () => {
     expect(cat('g.ot_out_share')).toBe('lever');
     expect(cat('g.head_start')).toBe('policy');
     const first = [...tornadoPanel().querySelectorAll<HTMLElement>('[data-part="row"]')][0]!;
-    expect(first.querySelector('[data-part="value"]')!.textContent).toBe(plainSwing(reference.tornado_net_top15[0]!.swing));
+    expect(first.querySelector('[data-part="value"]')!.textContent).toBe(
+      plainSwing(reference.tornado_net_top15[0]!.swing),
+    );
   });
 
-  it('SOL-13: a row without tier 2\'s category or swing is not drawn', async () => {
+  it("SOL-13: a row without tier 2's category or swing is not drawn", async () => {
     const rows = tornadoRows();
     const { category: _c, ...noCategory } = rows[0]!;
     const { swing: _s, ...noSwing } = rows[1]!;
     void _c;
     void _s;
     const run = sensitivityRunWith([noCategory, noSwing, ...rows.slice(2)] as typeof rows);
-    const t = await mount(() => donePath, () => donePath, {
-      lookups: { [`${SCENARIO}|sensitivity`]: { run, current: true, trials: null } },
-    });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      {
+        lookups: { [`${SCENARIO}|sensitivity`]: { run, current: true, trials: null } },
+      },
+    );
     await t.until(() =>
       expect(tornadoPanel().querySelectorAll('[data-part="row"]').length).toBe(10),
     );
-    const ids = [...tornadoPanel().querySelectorAll<HTMLElement>('[data-part="row"]')].map((r) => r.dataset['variableId']);
+    const ids = [...tornadoPanel().querySelectorAll<HTMLElement>('[data-part="row"]')].map(
+      (r) => r.dataset['variableId'],
+    );
     expect(ids).toEqual(reference.tornado_net_top15.slice(2, 12).map((r) => r.id));
   });
 
   it('runs a quick sensitivity when the scenario has none', async () => {
-    const t = await mount(() => donePath, () => donePath, { analysis: { sensitivity: sensitivityRun } });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { analysis: { sensitivity: sensitivityRun } },
+    );
     await t.until(() =>
       expect(within(tornadoPanel()).getByRole('button', { name: 'Run sensitivity' })).toBeTruthy(),
     );
@@ -1000,9 +1082,13 @@ describe('AC-MOD07-3: what moves net most (tornado)', () => {
 
 describe('AC-MOD07-4: every analysis value from tier 2', () => {
   it('scatter, odds and tornado values equal the fixtures (the module computes nothing)', async () => {
-    const t = await mount(() => donePath, () => donePath, {
-      lookups: { ...mcLookups, ...tornadoLookup },
-    });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      {
+        lookups: { ...mcLookups, ...tornadoLookup },
+      },
+    );
     fireEvent.click(find());
     await t.until(() => expect(point('Path')).toBeTruthy());
     await t.until(() => expect(oddsPanel().querySelector('[data-clear]')).toBeTruthy());
@@ -1025,9 +1111,13 @@ describe('AC-MOD07-4: every analysis value from tier 2', () => {
 
 describe('G12: accessibility', () => {
   it('has no serious or critical axe violations (empty and with a result)', async () => {
-    const t = await mount(() => donePath, () => donePath, {
-      lookups: { ...mcLookups, ...tornadoLookup },
-    });
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      {
+        lookups: { ...mcLookups, ...tornadoLookup },
+      },
+    );
     const run = async () => {
       const out = await axe.run(t.view.container, {
         rules: { 'color-contrast': { enabled: false } }, // jsdom has no layout or colours

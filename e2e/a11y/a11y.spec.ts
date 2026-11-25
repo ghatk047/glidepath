@@ -212,6 +212,74 @@ test.describe('QA-07 accessibility (G12)', () => {
     }
   });
 
+  test.describe('axe_wizard_steps_and_tour_open_have_zero_serious_violations', () => {
+    const pages = new Map<ThemeName, Page>();
+    let presetC: string;
+
+    test.beforeAll(async ({ browser, stack }) => {
+      presetC = stack.presets.get('C')!.id;
+      for (const theme of A11Y_THEMES) {
+        const page = await (await browser.newContext()).newPage();
+        await stack.signInPage(page);
+        const init = themeInit(theme);
+        await page.addInitScript(init.script, init.arg);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        pages.set(theme, page);
+      }
+    });
+    test.afterAll(async () => {
+      for (const page of pages.values()) await page.context().close();
+    });
+
+    async function noSerious(page: Page, what: string): Promise<void> {
+      const results = await new AxeBuilder({ page }).analyze();
+      const minor = results.violations.filter((v) => !blocking([v]).length);
+      process.stdout.write(
+        `  axe ${what}: ${results.passes.length} rules passed, ${results.violations.length} violations` +
+          ` (${minor.length} below serious), ${results.incomplete.length} for review\n`,
+      );
+      for (const v of minor) process.stdout.write(`    below serious: ${describeViolation(v)}\n`);
+      expect(results.passes.length, `${what}: axe ran its rules`).toBeGreaterThan(10);
+      expect(
+        blocking(results.violations).map((v) => describeViolation(v)),
+        what,
+      ).toEqual([]);
+    }
+
+    for (const theme of A11Y_THEMES) {
+      test(`wizard_steps_2_to_4_${theme}`, async () => {
+        const page = pages.get(theme)!;
+        await openModule(page, presetC, 'wizard', theme);
+        for (const n of [2, 3, 4]) {
+          await page.locator(`.gp-wz-step[data-step="${n}"]`).click();
+          await expect(page.locator(`[data-wizard-step="${n}"]`)).toBeVisible();
+          await settled(page, theme);
+          await noSerious(page, `wizard step ${n} (${theme})`);
+        }
+      });
+
+      for (const module of ['cockpit', 'wizard']) {
+        test(`tour_open_on_${module}_${theme}`, async () => {
+          const page = pages.get(theme)!;
+          await openModule(page, presetC, module, theme);
+          await page.locator('[data-tour-button]').click();
+          await expect(page.locator('[data-tour-card]')).toBeVisible();
+          if (module === 'wizard') {
+            // step 12 of the tour lives on the wizard
+            while ((await page.locator('[data-tour]').getAttribute('data-tour-step')) !== 'wizard') {
+              await page.locator('[data-tour-next]').click();
+            }
+            await expect(page.locator('[data-tour-spotlight]')).toBeVisible();
+          }
+          await page.evaluate(() => new Promise<void>((r) => setTimeout(r, 400)));
+          await noSerious(page, `tour open on ${module} (${theme})`);
+          await page.keyboard.press('Escape');
+          await expect(page.locator('[data-tour-card]')).toBeHidden();
+        });
+      }
+    }
+  });
+
   test.describe('lighthouse_accessibility_at_least_95_on_cockpit_levers_path', () => {
     let context: BrowserContext;
     let userDataDir: string;

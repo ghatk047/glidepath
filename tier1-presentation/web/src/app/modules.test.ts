@@ -10,7 +10,7 @@ import {
 afterEach(() => vi.restoreAllMocks());
 
 describe('module registry', () => {
-  it('knows the 8 module ids and nothing else', () => {
+  it('knows the 9 module ids and nothing else', () => {
     expect(MODULE_IDS.every(isModuleId)).toBe(true);
     expect(isModuleId('settings')).toBe(false);
     expect(Object.keys(moduleLoaders).sort()).toEqual([...MODULE_IDS].sort());
