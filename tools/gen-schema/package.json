@@ -1,0 +1,20 @@
+{
+  "name": "@glidepath/gen-schema",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "generate": "tsx src/cli.ts generate",
+    "check": "tsx src/cli.ts check"
+  },
+  "devDependencies": {
+    "@glidepath/pg-local": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1"
+  }
+}

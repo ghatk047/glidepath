@@ -1,0 +1,19 @@
+# Managed Postgres (Neon, RDS, ...) instead of the local db container (ADR-015).
+#
+#   1. In .env set DATABASE_URL (app role glidepath_app, pooled host) and
+#      DATABASE_URL_MIGRATE (owner role glidepath_owner, direct host), both with ?sslmode=require.
+#   2. docker compose -f docker-compose.yml -f docker-compose.neon.yml up -d
+#      (or put COMPOSE_FILE=docker-compose.yml:docker-compose.neon.yml in .env and keep
+#      running plain `docker compose up -d`).
+#
+# Nothing else changes: tier 2 reads the database only from those two URLs.
+services:
+  db:
+    # Only started with `--profile local-db`, i.e. never in normal use.
+    profiles: [local-db]
+
+  migrate:
+    # The data network is internal (no internet), so migrate also joins egress to reach
+    # the managed database. logic reaches it through edge, worker through egress.
+    networks: !override [data, egress]
+    depends_on: !override {}

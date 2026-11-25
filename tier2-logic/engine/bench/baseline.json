@@ -1,0 +1,37 @@
+{
+  "$comment": "G8 (docs/architecture/03 \u00a75, 08 \u00a71). Budgets are fixed by 03 \u00a75; baselineMs is re-recorded with `pnpm --filter ./tier2-logic/engine bench:baseline`. The guard fails a bench over its budget or more than tolerance (+30%) over its baseline.",
+  "statistic": "median",
+  "tolerance": 0.3,
+  "runs": 3,
+  "benches": {
+    "engine.compile": {
+      "budgetMs": 150,
+      "baselineMs": 57.007
+    },
+    "engine.evaluate": {
+      "budgetMs": 50,
+      "baselineMs": 3.916
+    },
+    "engine.inputHash": {
+      "budgetMs": null,
+      "baselineMs": 1.418
+    },
+    "engine.rerun.lever": {
+      "budgetMs": 10,
+      "baselineMs": 0.468
+    },
+    "engine.batch.2000": {
+      "budgetMs": 10000,
+      "baselineMs": 7.244
+    }
+  },
+  "recorded": {
+    "date": "2026-11-23",
+    "node": "v22.23.5",
+    "platform": "linux-x64",
+    "cpus": 4
+  },
+  "notes": [
+    "2026-11-23: engine.evaluate baseline raised to the CI runner median (3.916 ms, ubuntu-latest) after the dev-container figure (2.772 ms) tripped +30% on CI; each other baseline is already at or above its CI median. Budgets unchanged."
+  ]
+}

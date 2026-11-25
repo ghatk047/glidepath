@@ -1,0 +1,67 @@
+# Glidepath web tier (tier 1): static SPA + reverse proxy, nothing else.
+# docs/architecture/11_docker_deployment.md section 1, 01_architecture_overview.md section 1.
+#
+#   /api/*  -> logic:8080   REST
+#   /ws/*   -> logic:8080   WebSocket (reverse_proxy forwards the Upgrade handshake itself)
+#   else    -> the built SPA in /srv, history fallback to index.html
+#
+# The site address is PUBLIC_BASE_URL (compose passes it; default https://localhost).
+# Certificates come from Caddy's internal CA (`tls internal`); the CA and certs live in the
+# /data volume (caddydata) so they survive `down`/`up`. No setting is baked into the image.
+{
+	# The container cannot reach a host trust store; trust the CA by hand (see README).
+	skip_install_trust
+}
+
+# Security headers shared by every response. The CSP lists no external origin: the demo
+# runs offline (07_frontend.md section 7), so every source is 'self' (or data:/blob: for
+# inline images). connect-src names the page's own ws(s) origin explicitly because older
+# Safari does not treat 'self' as covering WebSocket.
+(security_headers) {
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://{http.request.hostport} ws://{http.request.hostport}; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+}
+
+{$PUBLIC_BASE_URL:https://localhost} {
+	tls internal
+	import security_headers
+	encode zstd gzip
+
+	# Tier 2 API (Hono) and the what-if session socket.
+	handle /api/* {
+		reverse_proxy logic:8080
+	}
+	handle /ws/* {
+		reverse_proxy logic:8080
+	}
+
+	# Hashed build output: immutable, and a missing file is a real 404 (never index.html).
+	handle /assets/* {
+		root * /srv
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# SPA with history fallback: any other path that is not a file serves index.html.
+	handle {
+		root * /srv
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Container healthcheck listener: loopback only, never published, never proxied.
+# (The public port 80 only redirects to https, so it cannot answer a plain probe.)
+http://127.0.0.1:2020 {
+	bind 127.0.0.1
+	respond /healthz 200
+	respond 404
+}

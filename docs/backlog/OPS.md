@@ -1,0 +1,334 @@
+# OPS · Docker and operations
+
+Compose stack with edge/data/egress networks, multi-arch images, Caddy, dev override, compose checks, demo profile, backup/restore.
+
+7 items. Fields and status values: see [README](README.md). Rubric: `docs/architecture/10_backlog_conventions.md` §2.
+
+| id | title | ms | model/effort | size | depends on |
+|---|---|---|---|---|---|
+| OPS-01 | docker-compose.yml, networks and .env.example | M0 | opus/high | M | FND-05, FND-01 |
+| OPS-02 | logic image Dockerfile (server, worker, migrate), multi-arch | M0 | sonnet/high | S | OPS-01 |
+| OPS-03 | web image (Caddy + SPA) and Caddyfile | M0 | sonnet/high | S | OPS-01 |
+| OPS-04 | docker-compose.dev.yml hot-reload override and mailpit | M3 | sonnet/medium | S | OPS-01 |
+| OPS-05 | Compose checks: clean start < 3 min, web cannot reach db | M0 | sonnet/high | S | OPS-02, OPS-03, DATA-04, API-01 |
+| OPS-06 | Demo profile with pinned digests and ops/demo-check.sh | M4 | sonnet/high | M | OPS-05, JOB-04, AI-07 |
+| OPS-07 | ops/backup.sh and ops/restore.sh | M4 | sonnet/medium | S | OPS-05, DATA-07 |
+
+## OPS-01 · docker-compose.yml, networks and .env.example
+
+```yaml
+id: OPS-01
+title: "docker-compose.yml, networks and .env.example"
+epic: OPS
+milestone: M0
+priority: must
+status: done
+stream: B
+model: opus
+effort: high
+depends_on: [FND-05, FND-01]
+tier: ops
+package: "repo-root (docker-compose.yml, .env.example, README 'Running locally')"
+contract: "Services and networks of 11 §1–§2"
+inputs:
+  - "docs/architecture/11_docker_deployment.md#1. Containers"
+  - "docs/architecture/11_docker_deployment.md#2. Compose sketch"
+  - "docs/architecture/11_docker_deployment.md#4. Configuration (12-factor)"
+  - "docs/architecture/02_repo_and_conventions.md#4. Environments"
+  - "docs/adr/ADR-015-database-portability.md"
+acceptance:
+  - "services db (postgres:16 pinned minor), objects (minio pinned RELEASE tag), migrate, logic, worker, web, mail (dev profile) with networks edge, data (internal: true), egress (test: ops/test/compose-config.spec.ts parses `docker compose config` output or the YAML when no daemon)"
+  - "web on edge only; db and objects on data only; worker on data + egress; logic on edge + data (same test)"
+  - ".env.example lists DATABASE_URL (glidepath_app), DATABASE_URL_MIGRATE (glidepath_owner), POSTGRES_PASSWORD, APP_DB_PASSWORD, S3_ENDPOINT/S3_ACCESS_KEY/S3_SECRET_KEY, MINIO_ROOT_PASSWORD, AUTH_SECRET, PUBLIC_BASE_URL, SMTP_URL, ANTHROPIC_API_KEY, LOG_LEVEL, SESSION_IDLE_MIN, JOB_CONCURRENCY, AI_MAX_TOKENS_PER_JOB, AUTH_LINK_TTL_MIN, DEMO_USER_EMAIL, all empty or placeholder (test: env-example.spec.ts)"
+  - "tier-2 services read only DATABASE_URL / DATABASE_URL_MIGRATE for the DB (no host/port/user split vars) so a Neon URL is a drop-in (test: grep compose for PGHOST etc. fails)"
+  - "README 'Running locally': cp .env.example .env, docker compose up -d, open https://localhost (test: section exists)"
+gates: [G14]
+size: M
+notes: "If the builder has no Docker daemon, validate the YAML by test; INT-01 runs it on a daemon (CI or the Mac)."
+merged_at: "2026-11-23"
+```
+
+The one compose file that runs all tiers on the Mac and later on any VM.
+
+## OPS-02 · logic image Dockerfile (server, worker, migrate), multi-arch
+
+```yaml
+id: OPS-02
+title: "logic image Dockerfile (server, worker, migrate), multi-arch"
+epic: OPS
+milestone: M0
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: high
+depends_on: [OPS-01]
+tier: ops
+package: "ops/docker/logic"
+contract: "Image glidepath/logic with entrypoints dist/server.js, dist/worker.js, dist/migrate.js"
+inputs:
+  - "docs/architecture/11_docker_deployment.md#1. Containers"
+  - "docs/architecture/11_docker_deployment.md#5. Moving to a cloud server later"
+  - "docs/architecture/02_repo_and_conventions.md#2. Toolchain"
+acceptance:
+  - "multi-stage build on a pinned node:22 slim image, pnpm deploy of server + worker, non-root user (test: hadolint + ops/test/dockerfile.spec.ts)"
+  - "`docker buildx bake --print logic` lists linux/arm64 and linux/amd64 (test)"
+  - ".dockerignore excludes .env, docs, tests; no secret build args (test: dockerignore check)"
+  - "same image runs `node dist/server.js`, `node dist/worker.js`, `node dist/migrate.js --seed aa` (test: entrypoint files referenced exist in package build outputs; stubbed until API-01/JOB-01/DATA-08)"
+gates: [G14]
+size: S
+notes: ""
+merged_at: "2026-11-23"
+```
+
+One tier-2 image, three commands.
+
+## OPS-03 · web image (Caddy + SPA) and Caddyfile
+
+```yaml
+id: OPS-03
+title: "web image (Caddy + SPA) and Caddyfile"
+epic: OPS
+milestone: M0
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: high
+depends_on: [OPS-01]
+tier: ops
+package: "ops/docker/web"
+contract: "Caddy proxies /api/* and /ws/* to logic:8080"
+inputs:
+  - "docs/architecture/11_docker_deployment.md#1. Containers"
+  - "docs/architecture/07_frontend.md#7. Demo resilience (replaces v1.0's in-browser offline kit)"
+  - "docs/architecture/01_architecture_overview.md#1. The three tiers"
+acceptance:
+  - "Caddyfile serves the SPA with history fallback and proxies /api/* and /ws/* (WebSocket upgrade) to logic:8080; local TLS via Caddy internal CA (test: `caddy validate` in a test + ops/test/caddy.spec.ts)"
+  - "CSP without unsafe-eval and with no external origins (the demo needs no internet) (test: header assertions)"
+  - "multi-arch bake target glidepath/web (test: bake --print)"
+gates: [G13, G14]
+size: S
+notes: ""
+merged_at: "2026-11-23"
+```
+
+Tier 1 container: static files and a reverse proxy, nothing else.
+
+## OPS-04 · docker-compose.dev.yml hot-reload override and mailpit
+
+```yaml
+id: OPS-04
+title: "docker-compose.dev.yml hot-reload override and mailpit"
+epic: OPS
+milestone: M3
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: medium
+depends_on: [OPS-01]
+tier: ops
+package: "repo-root (docker-compose.dev.yml)"
+contract: "Dev override of 11 §3"
+inputs:
+  - "docs/architecture/11_docker_deployment.md#3. On the Mac"
+  - "docs/architecture/02_repo_and_conventions.md#4. Environments"
+acceptance:
+  - "web runs the Vite dev server and logic/worker run `tsx watch` from bind mounts (test: compose-config.spec.ts on merged config)"
+  - "db 5432, MinIO console and mailpit 8025 bound to 127.0.0.1 only (same test)"
+  - "README documents the dev command (test)"
+gates: [G14]
+size: S
+notes: ""
+merged_at: "2026-11-23"
+```
+
+Daily dev loop on the Mac.
+
+## OPS-05 · Compose checks: clean start < 3 min, web cannot reach db
+
+```yaml
+id: OPS-05
+title: "Compose checks: clean start < 3 min, web cannot reach db"
+epic: OPS
+milestone: M0
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: high
+depends_on: [OPS-02, OPS-03, DATA-04, API-01]
+tier: ops
+package: "ops/compose-check.sh"
+contract: "`ops/compose-check.sh` exit code contract"
+inputs:
+  - "docs/architecture/08_quality_and_testing.md#1. Gates (G13, G14)"
+  - "docs/architecture/11_docker_deployment.md#1. Containers"
+  - "docs/architecture/01_architecture_overview.md#6. Non-functional targets"
+acceptance:
+  - "from clean volumes all services healthy and migrate completed in < 3 min; script prints per-service timings (G14)"
+  - "inside the web container `getent hosts db` and `getent hosts objects` fail (G13 network test)"
+  - "CI job compose (FND-04) runs it on pushes to main and nightly; exits non-zero with a one-line reason (test: bats or shellcheck + dry-run mode)"
+gates: [G13, G14]
+size: S
+notes: "Needs a Docker daemon: runs in CI and on the Mac; in a daemon-less builder only shellcheck + dry-run are checked."
+merged_at: "2026-11-23"
+```
+
+Turns the physical tier separation and the 3-minute start into a repeatable check.
+
+## OPS-06 · Demo profile with pinned digests and ops/demo-check.sh
+
+```yaml
+id: OPS-06
+title: "Demo profile with pinned digests and ops/demo-check.sh"
+epic: OPS
+milestone: M4
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: high
+depends_on: [OPS-05, JOB-04]
+tier: ops
+package: "ops/demo-check.sh (+ demo profile in docker-compose.yml)"
+contract: "`docker compose --profile demo up -d`"
+inputs:
+  - "docs/architecture/02_repo_and_conventions.md#4. Environments"
+  - "docs/architecture/07_frontend.md#7. Demo resilience (replaces v1.0's in-browser offline kit)"
+  - "docs/architecture/prompts/20_orchestrator.md#Freeze (Thu 3 Dec, 18:00 US Central)"
+  - "docs/spec/reference/golden_results.json (scenarios.C)"
+acceptance:
+  - "demo profile uses images tagged demo-2026-12-04 pinned by digest (test: compose-config.spec.ts)"
+  - "`ops/demo-check.sh` verifies all containers healthy, AA seed loaded, /calc for C equals golden_results.json C headline values (res.net, res.gap, res.risk, br.eps27) within 1e-6 relative, cached Monte Carlo C/D and min-risk results present, cached UA reconfig draft present; exits non-zero with a one-line reason (test: script against the stack)"
+  - "check resolves no external hostnames (runs with networking off) (test: run with --network none for the checker container)"
+  - "demo profile includes the local mail sink so magic-link sign-in works offline (GAP-09); demo-check signs in through it (test: demo-check)"
+gates: [G14]
+size: M
+notes: "AI-07 dependency dropped (2026-11-23): AI-07 needs the user's Mac. Build the UA-draft check now; it fails with a clear reason until the UA cache lands. Also: wire --parity/--ai-cache into compose migrate for the demo profile, and check cached min-risk C matches solver_demo_results within G5 (catches a cache warmed before SOL-12)."
+merged_at: "2026-11-23"
+```
+
+The pre-demo checklist as a script.
+
+## OPS-07 · ops/backup.sh and ops/restore.sh
+
+```yaml
+id: OPS-07
+title: "ops/backup.sh and ops/restore.sh"
+epic: OPS
+milestone: M4
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: medium
+depends_on: [OPS-05, DATA-07]
+tier: ops
+package: "ops/backup.sh + ops/restore.sh"
+contract: "Backup folder layout ./backups/<timestamp>/"
+inputs:
+  - "docs/architecture/11_docker_deployment.md#3. On the Mac"
+  - "docs/architecture/04_data_and_api.md#5. Tier 3 · Object storage (MinIO)"
+  - "docs/adr/ADR-015-database-portability.md"
+acceptance:
+  - "backup writes pg_dump (custom format, via DATABASE_URL_MIGRATE) to ./backups/<timestamp>/; stored objects are in Postgres (ADR-025) so the dump covers them (test: ops/test/backup.spec)"
+  - "restore into clean volumes, then /calc for C and object counts equal the pre-backup values (round-trip test)"
+  - "uses --no-owner --no-privileges so it works against a non-superuser URL including sslmode=require (test with pg-local --ssl)"
+gates: [G14]
+size: S
+notes: ""
+merged_at: "2026-11-23"
+```
+
+Run before the freeze; also the first step of moving to Neon later.
+
+## OPS-08 · Remove the MinIO service (ADR-025)
+
+```yaml
+id: OPS-08
+title: "Remove objects (MinIO) service from compose, .env.example and ops tests"
+epic: OPS
+milestone: M0
+priority: must
+status: done
+stream: B
+model: sonnet
+effort: medium
+depends_on: [OPS-01]
+tier: ops
+package: "repo-root (docker-compose*.yml, .env.example, README.md, ops/test)"
+contract: "Compose services db, migrate, logic, worker, web, mail; OBJECT_STORE=postgres"
+inputs:
+  - "docs/adr/ADR-025-object-store-in-postgres.md"
+  - "docker-compose.yml"
+  - "ops/test/compose-config.spec.ts"
+acceptance:
+  - "no objects service, objdata volume, OBJECTS_IMAGE, MINIO_* or S3_* settings in compose or .env.example; OBJECT_STORE=postgres added (test: compose-config.spec.ts, env-example.spec.ts)"
+  - "README Running locally no longer mentions MinIO (test: readme.spec.ts)"
+  - "`docker compose config` is valid with and without docker-compose.neon.yml (test)"
+gates: [G14]
+size: S
+notes: "Follow-up to OPS-01 after the official MinIO image stopped being pullable (ADR-025)."
+merged_at: "2026-11-23"
+```
+
+Drops the third-party object store image from the stack.
+
+```yaml
+id: OPS-09
+title: "Public demo through Cloudflare Tunnel, with Cloudflare Access as the sign-in"
+epic: OPS
+milestone: M4
+priority: must
+status: done
+stream: B
+model: opus
+effort: high
+depends_on: [OPS-06]
+tier: ops
+package: "docker-compose.yml (tunnel profile), .env.example, ops/README.md, tier2-logic/server/src/auth (Access identity), ops/demo-check"
+contract: "`docker compose --profile demo --profile tunnel up -d` serves the app at PUBLIC_BASE_URL through a Cloudflare Tunnel; a request carrying a valid Cloudflare Access JWT signs the user in as that email"
+inputs:
+  - "Owner decision 2026-11-23: deploy on the owner's Mac mini behind Cloudflare Tunnel, access limited by Cloudflare Access to @gmail.com and @infosys.com emails; the AI (Anthropic key) feature is not used"
+  - "tier2-logic/server/src/auth (magic link, passkey, memberships); magic links go to the local mail sink, so outside users cannot sign in without this item"
+  - "ops/docker/web/Caddyfile (site address = PUBLIC_BASE_URL, tls internal)"
+acceptance:
+  - "compose service `tunnel` (profile tunnel) runs cloudflare/cloudflared pinned by version, `tunnel --no-autoupdate run` with TUNNEL_TOKEN from .env, on the edge network only (cannot reach db); .env.example documents TUNNEL_TOKEN and that the dashboard public hostname points at https://web:443 with origin server name = the PUBLIC_BASE_URL host and no TLS verify (test: compose-config.spec)"
+  - "auth: when CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD are set, the server verifies the Cf-Access-Jwt-Assertion header (RS256 against https://<team>/cdn-cgi/access/certs, cached; aud, iss, exp checked) and creates a session for its email; an invalid or missing JWT falls back to the existing sign-in; with the vars unset nothing changes (tests with a locally signed JWT and a fake certs endpoint)"
+  - "an Access-verified email with no membership gets one on the tenants listed in ACCESS_AUTO_TENANTS (default aa) with role ACCESS_AUTO_ROLE (default editor, or the closest existing role); allowed email domains are enforced by Cloudflare Access, and optionally re-checked by ACCESS_ALLOWED_DOMAINS (test)"
+  - "logic can reach the certs endpoint (egress network) and nothing else changes for web/db isolation (G13 test still passes)"
+  - "AI-07 dropped by the owner: demo-check skips the UA draft check when AI_ENABLED=0 (default 0 in .env.example) and says 'skipped (AI off)'; storyline beat_11 UA/AS stays fixme (test)"
+  - "ops/README 'Public demo (Cloudflare)' section: the dashboard steps, the .env keys, start/stop commands"
+gates: [G1, G2, G7, G13, G14]
+size: M
+notes: "From the owner's 2026-11-23 request. No secrets in git: TUNNEL_TOKEN and the AUD live only in the Mac's .env."
+merged_at: "2026-11-23"
+```
+
+```yaml
+id: OPS-10
+title: "Guard checks follow the Cloudflare Access sign-in (OPS-09)"
+epic: OPS
+milestone: M4
+priority: must
+status: done
+stream: B
+model: opus
+effort: medium
+depends_on: [OPS-09]
+tier: ops
+package: "tier2-logic/worker (AI-06 compose check), tools/gen-schema (manual overlay, DATA-02 rls check)"
+contract: "No contract change."
+inputs:
+  - "Owner decision 2026-11-23: update the 3 checks OPS-09 turned red, allowing only what the sign-in needs"
+acceptance:
+  - "AI-06 compose check: logic may be on egress (exactly edge, data, egress) and holds no API key; every other non-worker service stays off egress (test)"
+  - "manual overlay accounts for 0006 as routines only (access_provision_user); every manual file is still listed (test)"
+  - "DATA-02: migrations still never revoke a role membership; REVOKE ... ON <object> FROM PUBLIC is allowed (test)"
+gates: [G2, G7]
+size: S
+notes: "The rules are narrowed to OPS-09's needs, not removed."
+merged_at: "2026-11-23"
+```

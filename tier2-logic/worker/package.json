@@ -1,0 +1,36 @@
+{
+  "name": "@glidepath/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "build": "esbuild src/worker.ts src/seed/migrate.ts --bundle --platform=node --target=node22 --format=esm --external:pg-native --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\" --outdir=dist --entry-names=[name]",
+    "start": "node dist/worker.js",
+    "seed": "tsx src/seed/migrate.ts",
+    "warm": "tsx src/warm/cli.ts",
+    "ai:rehearse": "tsx src/jobs/ai/rehearse-cli.ts",
+    "seed:sync": "cp ../../docs/spec/variables.json ../../docs/spec/formula_graph.json ../../tier3-data/seed/ && cp ../../docs/spec/seed/aa/*.json ../../tier3-data/seed/aa/"
+  },
+  "dependencies": {
+    "@glidepath/ai": "workspace:*",
+    "@glidepath/data-access": "workspace:*",
+    "@glidepath/domain": "workspace:*",
+    "@glidepath/engine": "workspace:*",
+    "@glidepath/excel": "workspace:*",
+    "@glidepath/solvers": "workspace:*",
+    "@glidepath/spec": "workspace:*",
+    "pg-boss": "12.39.0"
+  },
+  "devDependencies": {
+    "@glidepath/pg-local": "workspace:*",
+    "@glidepath/testkit": "workspace:*",
+    "esbuild": "^0.28.2",
+    "exceljs": "4.4.0",
+    "tsx": "^4.19.0"
+  }
+}

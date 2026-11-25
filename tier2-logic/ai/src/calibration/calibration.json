@@ -1,0 +1,43 @@
+{
+  "source": "docs/architecture/06_multitenancy_and_ai.md §2 steps 4-5 and §4; docs/spec/07_multitenancy_reconfiguration.md §2 item 6",
+  "tolerance": 0.01,
+  "repairRounds": 1,
+  "repairLayers": ["corporate"],
+  "year": {
+    "dim": "year",
+    "prevAttribute": "prev",
+    "inputYearAttribute": "in",
+    "itAttribute": "it"
+  },
+  "units": [
+    { "names": ["usd m", "usd mn", "usd million", "usd millions", "$m", "$ m", "m usd", "musd"], "factor": 1 },
+    { "names": ["usd bn", "usd b", "usd billion", "usd billions", "$bn", "$b", "bn usd"], "factor": 1000 },
+    { "names": ["usd k", "usd thousand", "usd thousands", "$k"], "factor": 0.001 },
+    { "names": ["usd", "$"], "factor": 0.000001 }
+  ],
+  "metrics": [
+    { "id": "revenue", "label": "Revenue", "node": "pl.rev", "aliases": ["total operating revenues", "total operating revenue", "total revenues", "total revenue", "operating revenues", "revenue"] },
+    { "id": "fuel", "label": "Fuel", "node": "pl.fuel", "aliases": ["aircraft fuel and related taxes", "aircraft fuel expense", "fuel expense", "aircraft fuel", "fuel"] },
+    { "id": "swb", "label": "SWB", "node": "pl.swb", "aliases": ["salaries wages and benefits", "salaries and related costs", "wages salaries and benefits", "swb"] },
+    { "id": "opex", "label": "Opex", "node": "pl.opex", "aliases": ["total operating expenses excluding special items", "adjusted operating expenses", "total operating expenses", "operating expenses"] },
+    { "id": "ebit", "label": "EBIT", "node": "pl.ebit", "aliases": ["adjusted operating income", "adjusted ebit", "operating income", "ebit"] },
+    { "id": "interest", "label": "Interest", "node": "pl.int_exp", "aliases": ["interest expense net of capitalized interest", "interest expense"] },
+    { "id": "net_income", "label": "Net income", "node": "pl.ni", "aliases": ["adjusted net income", "net income excluding special items", "net income"] },
+    { "id": "ocf", "label": "OCF", "node": "pl.ocf", "aliases": ["net cash provided by operating activities", "cash provided by operating activities", "operating cash flow"] },
+    { "id": "fcf", "label": "FCF", "node": "pl.fcf", "aliases": ["free cash flow"] },
+    { "id": "cash", "label": "Cash", "node": "pl.cash_close", "aliases": ["total cash and short-term investments", "cash and short-term investments", "unrestricted cash and short-term investments", "total available cash", "cash"] },
+    { "id": "net_debt", "label": "Net debt", "node": "pl.net_debt", "aliases": ["adjusted net debt", "net debt"] }
+  ],
+  "invariants": [
+    { "id": "pool_effects", "label": "Pool effects sum to run-rate", "kind": "zero", "node": "lev.rr_check" },
+    { "id": "vp_nets", "label": "VP nets sum to total", "kind": "zero", "node": "vp.check" },
+    { "id": "base_vs_it_revenue", "label": "Base and IT years have identical revenue", "kind": "same_input_year", "node": "pl.rev" }
+  ],
+  "memberReferences": [
+    { "dim": "year", "attribute": "in", "references": "iyear" },
+    { "dim": "year", "attribute": "prev", "references": "year" },
+    { "dim": "line", "attribute": "addr", "references": "addr_tag" },
+    { "dim": "line", "attribute": "lever_ids", "references": "lever" },
+    { "dim": "lever", "attribute": "alloc_key", "references": "akey" }
+  ]
+}

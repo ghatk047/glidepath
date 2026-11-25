@@ -1,0 +1,40 @@
+{
+  "name": "@glidepath/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "test:leak": "vitest run test/leak",
+    "bench": "vitest bench --run",
+    "build": "esbuild src/app/server.ts --bundle --platform=node --target=node22 --format=esm --external:pg-native --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\" --outfile=dist/server.js",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@glidepath/api-contract": "workspace:*",
+    "@glidepath/data-access": "workspace:*",
+    "@glidepath/domain": "workspace:*",
+    "@glidepath/engine": "workspace:*",
+    "@glidepath/solvers": "workspace:*",
+    "@glidepath/spec": "workspace:*",
+    "@hono/node-server": "^2.1.11",
+    "@simplewebauthn/server": "14.0.3",
+    "hono": "^4.13.20",
+    "jose": "6.2.14",
+    "nodemailer": "10.3.1",
+    "pg-boss": "12.39.0",
+    "ws": "^8.23.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@glidepath/parity": "workspace:*",
+    "@glidepath/pg-local": "workspace:*",
+    "@glidepath/testkit": "workspace:*",
+    "@types/ws": "^8.18.2",
+    "esbuild": "^0.28.2"
+  }
+}

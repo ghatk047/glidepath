@@ -1,0 +1,126 @@
+/* GENERATED from docs/ux/tokens.json by src/tokens/build.ts. Do not edit. */
+
+:root {
+  --font-ui: Geist, system-ui, sans-serif;
+  --font-num: Geist, system-ui, sans-serif;
+  --font-mono: Geist Mono, ui-monospace, monospace;
+  --font-source: Google Fonts (OFL);
+  --type-hero-size: clamp(48px,5.4vw,76px);
+  --type-hero-weight: 300;
+  --type-hero-tracking: -0.035em;
+  --type-xl-size: clamp(30px,3vw,40px);
+  --type-xl-weight: 300;
+  --type-xl-tracking: -0.03em;
+  --type-l-size: 22px;
+  --type-l-weight: 400;
+  --type-m-size: 15px;
+  --type-m-weight: 400;
+  --type-s-size: 13px;
+  --type-s-weight: 400;
+  --type-xs-size: 11px;
+  --type-xs-weight: 500;
+  --type-xs-family: mono;
+  --type-xs-case: upper;
+  --type-xs-tracking: 0.09em;
+  --type-numerals: tabular-nums;
+  --radius-panel: 22px;
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-small: 8px;
+  --radius-pill: 999px;
+  --space-grid-columns: 12;
+  --space-gap: 18px;
+  --space-panel-pad: 22px 24px;
+  --space-rail-width: 84px;
+  --space-phone-gutter: 16px;
+  --glass-blur: 28px;
+  --glass-saturate: 150%;
+  --glass-highlight: inset 0 1px 0 glassHi;
+  --glass-border: 1px glassLine;
+  --motion-ease: cubic-bezier(.2,.8,.2,1);
+  --motion-spring: cubic-bezier(.34,1.56,.64,1);
+  --motion-value: 420ms;
+  --motion-roll: 520ms;
+  --motion-flash: 900ms;
+  --motion-stagger: 90ms;
+  --motion-toast: 2400ms;
+  --motion-sky-drift: 46-60s;
+  --motion-reduced-motion: all off;
+  --breakpoint-tablet: 1180px;
+  --breakpoint-phone: 760px;
+}
+
+:root,
+:root[data-theme="cruise"] {
+  color-scheme: dark;
+  --ground: #060a12;
+  --aurora-1: #16365f;
+  --aurora-2: #0c4450;
+  --aurora-3: #4a2f19;
+  --glass: rgba(148,182,228,.055);
+  --glass-2: rgba(148,182,228,.10);
+  --glass-3: rgba(148,182,228,.16);
+  --glass-line: rgba(196,222,255,.11);
+  --glass-hi: rgba(255,255,255,.13);
+  --ink: #eaf1fb;
+  --ink-2: #a8b8cd;
+  --ink-3: #7d8ea6;
+  --hair: rgba(196,222,255,.09);
+  --accent: #8ccbff;
+  --accent-2: #4f9be8;
+  --accent-ink: #04111f;
+  --accent-glow: rgba(140,203,255,.35);
+  --track: rgba(148,182,228,.17);
+  --total: rgba(148,182,228,.22);
+  --chart-grid: rgba(196,222,255,.07);
+  --pos: #3ddc97;
+  --neg: #ff7466;
+  --warn: #fab219;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #9085e9;
+  --series-5: #d55181;
+  --sequential-1: #26364d;
+  --sequential-2: #2f5d93;
+  --sequential-3: #5f9fe6;
+  --shadow: 0 30px 70px -30px rgba(0,0,0,.75);
+  --noise: 0.05;
+}
+
+:root[data-theme="daylight"] {
+  color-scheme: light;
+  --ground: #e8eef6;
+  --aurora-1: #bcd4f2;
+  --aurora-2: #c8e8e6;
+  --aurora-3: #f5dcbd;
+  --glass: rgba(255,255,255,.50);
+  --glass-2: rgba(255,255,255,.66);
+  --glass-3: rgba(255,255,255,.82);
+  --glass-line: rgba(255,255,255,.85);
+  --glass-hi: rgba(255,255,255,.95);
+  --ink: #0a1525;
+  --ink-2: #3f4f66;
+  --ink-3: #5d6c82;
+  --hair: rgba(16,36,72,.09);
+  --accent: #1667c0;
+  --accent-2: #4f9be8;
+  --accent-ink: #ffffff;
+  --accent-glow: rgba(22,103,192,.25);
+  --track: rgba(16,36,72,.12);
+  --total: #c3d0e2;
+  --chart-grid: rgba(16,36,72,.07);
+  --pos: #0b8a54;
+  --neg: #cf3f33;
+  --warn: #a86a00;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #6250d6;
+  --series-5: #e87ba4;
+  --sequential-1: #c5d2e3;
+  --sequential-2: #86b6ef;
+  --sequential-3: #2a78d6;
+  --shadow: 0 30px 60px -34px rgba(22,44,84,.35);
+  --noise: 0.035;
+}

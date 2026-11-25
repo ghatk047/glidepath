@@ -1,0 +1,25 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "typecheck": {
+      "dependsOn": [
+        "^typecheck"
+      ]
+    },
+    "lint": {},
+    "test": {
+      "passThroughEnv": ["TEST_DATABASE_URL", "TESTCONTAINERS", "PG_BIN"]
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "bench": {
+      "cache": false
+    }
+  }
+}

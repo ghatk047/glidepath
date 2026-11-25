@@ -1,0 +1,37 @@
+# @glidepath/engine
+
+Parser, compiler, evaluator (full, incremental, batch), explain. Pure: no IO. TypeScript port of `docs/spec/reference/engine.py` (ADR-005); must match `docs/spec/reference/golden_results.json` (ADR-020).
+
+**Start with [PORTING.md](PORTING.md)**: the map from every def/class of engine.py to a TS module and function, the semantics that are easy to get wrong (each with its planned test), the deliberate deviations, and the parity harness design. Its tables are checked by `src/porting-*.spec.ts`.
+
+## Status
+
+ENG-01 skeleton: `src/index.ts` exports the interfaces of `docs/architecture/03_engine_and_solvers.md` §1 (`compile`, `CompiledModel`, `TenantData`, `Evaluation`, `Change`, `BatchInput`, `BatchResult`, `Explanation`, `EngineError`) and re-exports `ModelBundle` and member types from `@glidepath/spec`. Work order: ENG-02 → 03 → 04 → 05 → 06 (parity gate).
+
+- ENG-02 `src/parse`: `tokenize`, `Parser`, `parse(src, cache?)` → `Ast` (num, str, neg, bin, call, agg, ref); `toPyTuple` gives engine.py's tuple shape. Every spec expression's AST equals Python's (`test/fixtures/dump_ast.py` → `ast.json`). Syntax errors are `EngineError` SYNTAX with `pos` (offset into the expression as written) and `source`.
+- ENG-03 `src/expand`: `expand(bundle, members)` → `Cell[]` in expansion order: chosen case per cell, resolved expression (bound variables and attributes folded to constants, refs as cell keys, `where` filtered at compile time, `COUNT` a constant) and deps. Per-cell deps equal Python `cdeps` for all 3,370 cells (`test/fixtures/dump_deps.py` → `deps.json`). `src/eval/pyops.ts` holds the Python float semantics (Neumaier `pySum`, `pyMin`/`pyMax`, `pyPow`, truthiness) shared by static where-filters and evaluation.
+- ENG-04 `src/compile`: `compile(bundle, members)` → `EngineModel` (a `CompiledModel`): Kahn toposort equal to `Model.order` (cycle = CYCLE naming up to 10 cells), lowering to one flat program over a `Float64Array` of slots (node cells, inputs, constants, temps; `IF`/`SAFEDIV` lazy via jumps; aggregates as member-ordered slot lists; `disassemble` prints a cell's code), forward and reverse CSR adjacency with raw `upstream`/`downstream`. Methods still to come throw `NOT_IMPLEMENTED` naming their item (`PENDING_METHODS`).
+- ENG-05 `src/eval`: `model.evaluate(values, overrides?)` runs the program in topological order (`runCells`, Python float semantics; errors name the cell being computed, with `pos`/`source`); overrides pin node cells without evaluating them, other override keys are ignored and listed in `diagnostics.ignoredOverrides`. `model.inputHash(values, overrides)` = SHA-256 of a model digest (bundle + members in order) and the cells sorted by key as float64 bit patterns. `resolveInputs(bundle, tenantValues, scenario?, extra?)` mirrors `Model.input_cells` (BAD_INPUT). Every cell of preset C equals Python bitwise, plain and with the parity overrides (`test/fixtures/dump_run_c.py` → `run_c.json`).
+- ENG-07 `src/eval/rerun.ts`: `model.rerun(prev, changes)` equals `evaluate` of `prev`'s inputs and pins with the changes applied, bitwise and error for error, running only dirty cells: changed inputs dirty their users, override changes (pin, move, unpin) dirty their cell, dirty cells run in topological order over the reverse CSR, and a cell whose float64 bits did not change dirties nothing (early stop). `prev` is never modified. `diagnostics` lists `recomputed` and `changed` node cells; an evaluation of another compiled model is rerun in full (`full: true`). Checked over 700 seeded random edits on the seed tenant (`rerun-equivalence.spec.ts`).
+- ENG-08 `src/batch`: `model.evaluateBatch(base, {size, values})` runs N input vectors at once, structure of arrays: only the downstream closure of the varied inputs (reverse CSR, stopping at pinned cells) runs, one `Float64Array(N)` per closure cell, varied input and temporary; every other slot is the base value. The scalar program runs unchanged over lane masks: a conditional jump splits the active lanes by their own condition, so `IF`/`SAFEDIV` are elementwise selects and a lane never runs a branch it did not take. Errors are per lane: a failing lane gets the exact `EngineError` a scalar `evaluate` of it throws (`errors`), is marked in `failed`, its values are NaN, and the other lanes finish. Each lane is bitwise equal to `evaluate` (NaN payloads aside), checked over 250 seeded random vectors of every lever input on the seed tenant (`batch.spec.ts`). Lanes run in blocks of `LANE_BLOCK`.
+- ENG-09 `src/explain`: `model.explain(cell, at?)` → expression, the resolved cells it reads with values, `words` (formula in words from spec labels), and `drivers` (provided inputs and pinned cells it reads, ranked by |∂y/∂x · x|, derivatives by a forward-difference step recomputed with rerun over the reverse CSR; equal to `Model.rerun` bitwise, `test/fixtures/dump_explain.py`). `upstream`/`downstream` are read-only views over the CSR; they equal Python's `cdeps`/`users` closures on 50 sampled keys (`dump_closure.py`). An unread variable cell has neither.
+- ENG-11 `bench/`: G8 benches with the budget guard (`guard.ts`, `guard-cli.ts`) against the committed `baseline.json`; see Tests below.
+
+```ts
+import { compile, type CompiledModel, type TenantData } from '@glidepath/engine';
+
+const model: CompiledModel = compile(bundle, tenant.members); // members in evaluation order
+const result = model.evaluate(tenant.values, tenant.overrides);
+result.get('res.net');
+```
+
+## Tests
+
+`pnpm turbo run typecheck lint test --filter=@glidepath/engine...` (G1, G2 with >= 90% line coverage).
+
+Benches (G8, ENG-11): `pnpm bench --filter=./tier2-logic/engine` runs `bench/engine.bench.ts` through the budget guard. Benches: `engine.compile` < 150 ms, `engine.evaluate` < 50 ms, `engine.inputHash` (baseline only), `engine.rerun.lever` < 10 ms (the lever slider that moves the most cells, dragged one registry step per rerun), `engine.batch.2000` < 10 s (2,000 seeded vectors over every `lev.realize` cell).
+
+- `bench/baseline.json` (committed) holds the budgets of 03 §5, the recorded `baselineMs` per bench, the statistic (`median`), `tolerance` (0.3) and `runs` (3).
+- `bench/guard-cli.ts run` runs `vitest bench` and fails (exit 1) when a bench is over its budget or more than +30% over its baseline, or is missing / has no baseline. It stops at the first passing run; otherwise it keeps the best median per bench over up to `runs` runs, so one run slowed by a noisy neighbour does not fail CI while a real regression (slow in every run) does. Pure logic in `bench/guard.ts`, tested in `bench/guard.spec.ts` with synthetic reports.
+- `guard-cli.ts check <report.json>...` checks existing `vitest bench --outputJson` reports.
+- Re-record the baseline after an intended perf change, on the machine class CI uses: `pnpm --filter ./tier2-logic/engine bench:baseline` (best of `runs` runs; budgets kept; refuses a run over budget).

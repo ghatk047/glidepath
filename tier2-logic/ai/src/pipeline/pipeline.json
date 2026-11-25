@@ -1,0 +1,14 @@
+{
+  "source": "docs/architecture/06_multitenancy_and_ai.md §2 steps 6-8 and Safety and trust; docs/spec/07_multitenancy_reconfiguration.md §2",
+  "tuning": {
+    "layers": ["levers"],
+    "step": "scenarios"
+  },
+  "impact": {
+    "nodes": ["base.total", "res.net", "res.gap", "br.eps27"]
+  },
+  "drafts": {
+    "seed": { "title": "Tenant seed", "summary": "Tenant record, members, baseline and drivers, with the global presets" },
+    "lever_tuning": { "title": "Lever tuning", "summary": "Tenant-specific lever intensities with reasons" }
+  }
+}

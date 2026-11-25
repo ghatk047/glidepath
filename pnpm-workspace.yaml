@@ -1,0 +1,8 @@
+packages:
+  - "tier1-presentation/*"
+  - "tier2-logic/*"
+  - "contract/*"
+  - "tools/*"
+  - "tier3-data/migrations/manual"
+  - "e2e"
+  - "ops"

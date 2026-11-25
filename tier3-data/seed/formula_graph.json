@@ -1,0 +1,3951 @@
+{
+ "spec_version": "1.0.0",
+ "model_id": "it_savings_unified",
+ "units": "USD millions unless stated; + = saving",
+ "expression_language": "see 03_formula_graph.md section 2",
+ "dimensions": [
+  {
+   "id": "pool",
+   "label": "Cost pool (canonical L1)",
+   "scope": "global",
+   "attributes": [
+    "label",
+    "tenant_label",
+    "third_party",
+    "order"
+   ]
+  },
+  {
+   "id": "line",
+   "label": "Baseline cost line",
+   "scope": "tenant",
+   "attributes": [
+    "pool",
+    "domain",
+    "addr",
+    "drv",
+    "l2",
+    "name",
+    "vendor",
+    "nature",
+    "accounting",
+    "lever_ids",
+    "in_scope",
+    "memo",
+    "confidence",
+    "source",
+    "legacy_id"
+   ]
+  },
+  {
+   "id": "domain",
+   "label": "IT domain (drives VP ownership)",
+   "scope": "tenant",
+   "attributes": [
+    "label",
+    "description"
+   ]
+  },
+  {
+   "id": "vp",
+   "label": "Org unit (VP)",
+   "scope": "tenant",
+   "attributes": [
+    "label"
+   ]
+  },
+  {
+   "id": "lever",
+   "label": "Savings lever (library)",
+   "scope": "global+tenant",
+   "attributes": [
+    "label",
+    "order",
+    "alloc_key",
+    "category"
+   ]
+  },
+  {
+   "id": "akey",
+   "label": "Lever allocation key (pools + apps + blend)",
+   "scope": "system",
+   "attributes": [
+    "label"
+   ]
+  },
+  {
+   "id": "vendor",
+   "label": "Vendor (preferred SI panel)",
+   "scope": "tenant",
+   "attributes": [
+    "label",
+    "preferred",
+    "role"
+   ]
+  },
+  {
+   "id": "addr_tag",
+   "label": "Addressability tag",
+   "scope": "global",
+   "attributes": [
+    "label"
+   ]
+  },
+  {
+   "id": "year",
+   "label": "Corporate model column",
+   "scope": "system",
+   "attributes": [
+    "label",
+    "in",
+    "prev",
+    "it"
+   ]
+  },
+  {
+   "id": "iyear",
+   "label": "Corporate input year",
+   "scope": "system",
+   "attributes": [
+    "label"
+   ]
+  },
+  {
+   "id": "lgroup",
+   "label": "Airline labor group",
+   "scope": "tenant",
+   "attributes": [
+    "label"
+   ]
+  }
+ ],
+ "layers": [
+  "baseline",
+  "levers",
+  "results",
+  "pnl",
+  "vp",
+  "it_bridge",
+  "corporate",
+  "valuation",
+  "bridge"
+ ],
+ "nodes": [
+  {
+   "id": "base.line_scale",
+   "dims": [
+    "line"
+   ],
+   "unit": "x",
+   "label": "Headcount scaling of the line",
+   "layer": "baseline",
+   "output": false,
+   "expr": "IF(line.drv == 'us', hc.us / hc.us_seed, IF(line.drv == 'gcc', hc.gcc / hc.gcc_seed, IF(line.drv == 'ctr', hc.ctr / hc.ctr_seed, 1)))"
+  },
+  {
+   "id": "base.line_outlay",
+   "dims": [
+    "line"
+   ],
+   "unit": "$M",
+   "label": "CY26 outlay of the line",
+   "layer": "baseline",
+   "output": false,
+   "expr": "line.amount * base.line_scale"
+  },
+  {
+   "id": "base.line_capex",
+   "dims": [
+    "line"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": false,
+   "expr": "base.line_outlay * line.capex_share"
+  },
+  {
+   "id": "base.line_addressable",
+   "dims": [
+    "line"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": false,
+   "expr": "base.line_outlay * addr.share[line.addr]"
+  },
+  {
+   "id": "base.line_growth",
+   "dims": [
+    "line"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": false,
+   "expr": "base.line_outlay * pool.growth[line.pool]"
+  },
+  {
+   "id": "base.pool_outlay",
+   "dims": [
+    "pool"
+   ],
+   "unit": "$M",
+   "label": "CY26 outlay by pool",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(l in line where l.pool == pool, base.line_outlay[l])"
+  },
+  {
+   "id": "base.pool_capex",
+   "dims": [
+    "pool"
+   ],
+   "unit": "$M",
+   "label": "CY26 cash capex by pool",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(l in line where l.pool == pool, base.line_capex[l])"
+  },
+  {
+   "id": "base.pool_addressable",
+   "dims": [
+    "pool"
+   ],
+   "unit": "$M",
+   "label": "Addressable spend by pool",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(l in line where l.pool == pool, base.line_addressable[l])"
+  },
+  {
+   "id": "base.pool_growth",
+   "dims": [
+    "pool"
+   ],
+   "unit": "$M",
+   "label": "CY27 status-quo growth by pool",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(l in line where l.pool == pool, base.line_growth[l])"
+  },
+  {
+   "id": "base.pool_capex_share",
+   "dims": [
+    "pool"
+   ],
+   "unit": "%",
+   "label": "",
+   "layer": "baseline",
+   "output": false,
+   "expr": "SAFEDIV(base.pool_capex, base.pool_outlay, 0)"
+  },
+  {
+   "id": "base.total",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY26 normalized IT outlay",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(p in pool, base.pool_outlay[p])"
+  },
+  {
+   "id": "base.capex_total",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(p in pool, base.pool_capex[p])"
+  },
+  {
+   "id": "base.opex_total",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": true,
+   "expr": "base.total - base.capex_total"
+  },
+  {
+   "id": "base.addressable_total",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(p in pool, base.pool_addressable[p])"
+  },
+  {
+   "id": "base.headwinds",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 cost growth to absorb",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(p in pool, base.pool_growth[p])"
+  },
+  {
+   "id": "base.locked_total",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SUM(l in line where l.addr == 'locked', base.line_outlay[l])"
+  },
+  {
+   "id": "base.locked_share",
+   "dims": [],
+   "unit": "%",
+   "label": "",
+   "layer": "baseline",
+   "output": true,
+   "expr": "SAFEDIV(base.locked_total, base.total, 0)"
+  },
+  {
+   "id": "base.fees_addressable",
+   "dims": [],
+   "unit": "$M",
+   "label": "Airline platform spend not locked",
+   "layer": "baseline",
+   "output": false,
+   "expr": "SUM(l in line where AND(l.pool == 'airline_platforms', l.addr != 'locked'), base.line_outlay[l])"
+  },
+  {
+   "id": "lv.us_total",
+   "dims": [],
+   "unit": "$M",
+   "label": "US internal labour cost",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['internal_labour']"
+  },
+  {
+   "id": "lv.us_cost",
+   "dims": [],
+   "unit": "$M/FTE",
+   "label": "US loaded cost per FTE",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.us_total / hc.us"
+  },
+  {
+   "id": "lv.gcc_total",
+   "dims": [],
+   "unit": "$M",
+   "label": "Captive (GCC) cost",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['captive_labour']"
+  },
+  {
+   "id": "lv.gcc_cost",
+   "dims": [],
+   "unit": "$M/FTE",
+   "label": "GCC loaded cost per FTE",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.gcc_total / hc.gcc"
+  },
+  {
+   "id": "lv.on0",
+   "dims": [],
+   "unit": "FTE",
+   "label": "Onshore contractor FTE",
+   "layer": "levers",
+   "output": false,
+   "expr": "hc.ctr * hc.ctr_on_share"
+  },
+  {
+   "id": "lv.off0",
+   "dims": [],
+   "unit": "FTE",
+   "label": "Offshore contractor FTE",
+   "layer": "levers",
+   "output": false,
+   "expr": "hc.ctr * (1 - hc.ctr_on_share)"
+  },
+  {
+   "id": "lv.on_cost",
+   "dims": [],
+   "unit": "$M/FTE",
+   "label": "Onshore contractor cost per FTE",
+   "layer": "levers",
+   "output": false,
+   "expr": "rate.ctr_on_hourly * rate.billable_hours / 1000000"
+  },
+  {
+   "id": "lv.off_cost",
+   "dims": [],
+   "unit": "$M/FTE",
+   "label": "Offshore contractor cost per FTE",
+   "layer": "levers",
+   "output": false,
+   "expr": "rate.ctr_off_hourly * rate.billable_hours / 1000000"
+  },
+  {
+   "id": "lv.ext",
+   "dims": [],
+   "unit": "$M",
+   "label": "SI & contingent spend",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['si_contingent']"
+  },
+  {
+   "id": "lv.ctr_cost",
+   "dims": [],
+   "unit": "$M",
+   "label": "Contingent T&M cost",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.on0 * lv.on_cost + lv.off0 * lv.off_cost"
+  },
+  {
+   "id": "lv.ms0",
+   "dims": [],
+   "unit": "$M",
+   "label": "Managed / fixed-price SI services",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.ext - lv.ctr_cost"
+  },
+  {
+   "id": "lv.pref",
+   "dims": [],
+   "unit": "$M",
+   "label": "Preferred SI book",
+   "layer": "levers",
+   "output": false,
+   "expr": "SUM(v in vendor, vendor.book[v] * v.preferred)"
+  },
+  {
+   "id": "lv.tail",
+   "dims": [],
+   "unit": "$M",
+   "label": "Long-tail SI spend",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.ext - lv.pref"
+  },
+  {
+   "id": "lv.cons",
+   "dims": [],
+   "unit": "$M",
+   "label": "Consulting",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['consulting']"
+  },
+  {
+   "id": "lv.sw",
+   "dims": [],
+   "unit": "$M",
+   "label": "Software",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['software']"
+  },
+  {
+   "id": "lv.sw_ms",
+   "dims": [],
+   "unit": "$M",
+   "label": "Microsoft software",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.sw * sub.sw_ms_share"
+  },
+  {
+   "id": "lv.cloud",
+   "dims": [],
+   "unit": "$M",
+   "label": "Cloud",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['cloud']"
+  },
+  {
+   "id": "lv.dc_capex",
+   "dims": [],
+   "unit": "$M",
+   "label": "Hardware & infrastructure cash capex",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_capex['dc_hardware']"
+  },
+  {
+   "id": "lv.dc_opex",
+   "dims": [],
+   "unit": "$M",
+   "label": "DC & hardware opex",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['dc_hardware'] - lv.dc_capex"
+  },
+  {
+   "id": "lv.dc_maint",
+   "dims": [],
+   "unit": "$M",
+   "label": "Hardware maintenance",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.dc_opex * sub.dc_maint_share"
+  },
+  {
+   "id": "lv.dc_colo",
+   "dims": [],
+   "unit": "$M",
+   "label": "Colo & facilities",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.dc_opex - lv.dc_maint"
+  },
+  {
+   "id": "lv.net",
+   "dims": [],
+   "unit": "$M",
+   "label": "Network & telecom",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['network']"
+  },
+  {
+   "id": "lv.euc",
+   "dims": [],
+   "unit": "$M",
+   "label": "End-user",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['end_user']"
+  },
+  {
+   "id": "lv.fees",
+   "dims": [],
+   "unit": "$M",
+   "label": "Airline platforms",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.pool_outlay['airline_platforms']"
+  },
+  {
+   "id": "lv.fees_addr",
+   "dims": [],
+   "unit": "$M",
+   "label": "Airline platforms not locked",
+   "layer": "levers",
+   "output": false,
+   "expr": "base.fees_addressable"
+  },
+  {
+   "id": "lev.L01.f",
+   "dims": [],
+   "unit": "%",
+   "label": "Share of SI volume removed",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L01'] * (wf.change_share * lev.L01.cut + (1 - wf.change_share) * lev.L01.rel)"
+  },
+  {
+   "id": "lev.L01.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L01.f * (lv.on0 * lv.on_cost + lv.off0 * lv.off_cost + lv.ms0)"
+  },
+  {
+   "id": "lev.L01.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L01.ot_pct * lev.L01.rr"
+  },
+  {
+   "id": "lev.L01.on1",
+   "dims": [],
+   "unit": "FTE",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.on0 * (1 - lev.L01.f)"
+  },
+  {
+   "id": "lev.L01.off1",
+   "dims": [],
+   "unit": "FTE",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.off0 * (1 - lev.L01.f)"
+  },
+  {
+   "id": "lev.L01.ms1",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.ms0 * (1 - lev.L01.f)"
+  },
+  {
+   "id": "lev.L02.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L02'] * lv.cons * lev.L02.cut"
+  },
+  {
+   "id": "lev.L02.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L02.ot_pct * lev.L02.rr"
+  },
+  {
+   "id": "lev.L03.h",
+   "dims": [],
+   "unit": "FTE",
+   "label": "Onshore roles relocated",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L03'] * lev.L01.on1 * lev.L03.pct"
+  },
+  {
+   "id": "lev.L03.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L03.h * (lv.on_cost - lv.gcc_cost * wf.prod_factor)"
+  },
+  {
+   "id": "lev.L03.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L03.h * lev.L03.tc"
+  },
+  {
+   "id": "lev.L03.on3",
+   "dims": [],
+   "unit": "FTE",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L01.on1 - lev.L03.h"
+  },
+  {
+   "id": "lev.L03.gcc_add",
+   "dims": [],
+   "unit": "FTE",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L03.h * wf.prod_factor"
+  },
+  {
+   "id": "lev.L04.h",
+   "dims": [],
+   "unit": "FTE",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L04'] * lev.L01.off1 * lev.L04.pct"
+  },
+  {
+   "id": "lev.L04.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L04.h * (lv.off_cost - lv.gcc_cost * lev.L04.pf)"
+  },
+  {
+   "id": "lev.L04.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L04.h * lev.L04.tc"
+  },
+  {
+   "id": "lev.L04.off4",
+   "dims": [],
+   "unit": "FTE",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L01.off1 - lev.L04.h"
+  },
+  {
+   "id": "lev.L05.h",
+   "dims": [],
+   "unit": "FTE",
+   "label": "US leavers not backfilled onshore",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L05'] * hc.us * wf.us_attrition * lev.L05.nb"
+  },
+  {
+   "id": "lev.L05.r",
+   "dims": [],
+   "unit": "FTE",
+   "label": "US roles relocated beyond attrition",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L05'] * hc.us * lev.L05.rel"
+  },
+  {
+   "id": "lev.L05.us_saving",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "(lev.L05.h + lev.L05.r) * lv.us_cost + lev.on['L05'] * lv.us_total * (lev.L05.sl + lev.L05.vac)"
+  },
+  {
+   "id": "lev.L05.gcc_added",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "(lev.L05.h * lev.L05.bf + lev.L05.r) * lv.gcc_cost * wf.prod_factor"
+  },
+  {
+   "id": "lev.L05.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L05.us_saving - lev.L05.gcc_added"
+  },
+  {
+   "id": "lev.L05.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L05'] * lv.us_total * lev.L05.sl * lev.L05.sev + lev.L05.r * lv.us_cost * lev.L05.reloc_sev + (lev.L05.h * lev.L05.bf + lev.L05.r) * lev.L05.hire_cost"
+  },
+  {
+   "id": "lev.L06.g",
+   "dims": [],
+   "unit": "%",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L06'] * lev.L06.gain"
+  },
+  {
+   "id": "lev.L06.pool",
+   "dims": [],
+   "unit": "$M",
+   "label": "Remaining SI + managed pool",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L03.on3 * lv.on_cost + lev.L04.off4 * lv.off_cost + lev.L01.ms1"
+  },
+  {
+   "id": "lev.L06.si_saving",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L06.pool * lev.L06.g * lev.L06.cap"
+  },
+  {
+   "id": "lev.L06.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L06.si_saving - lev.on['L06'] * lev.L06.tool"
+  },
+  {
+   "id": "lev.L06.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "IF(lev.L06.g > 0, lev.L06.setup, 0)"
+  },
+  {
+   "id": "lev.L07.ext",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L06.pool * (1 - lev.L06.g * lev.L06.cap)"
+  },
+  {
+   "id": "lev.L07.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L07'] * lev.L07.ext * SAFEDIV(lv.tail, lv.ext, 0) * lev.L07.pct * lev.L07.diff"
+  },
+  {
+   "id": "lev.L07.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L07.ot_pct * lev.L07.rr"
+  },
+  {
+   "id": "lev.L08.ext",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L07.ext - lev.L07.rr"
+  },
+  {
+   "id": "lev.L08.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L08'] * lev.L08.ext * lev.L08.cov * lev.L08.cut * (1 - lev.L08.leak)"
+  },
+  {
+   "id": "lev.L08.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L08.ot_pct * lev.L08.rr"
+  },
+  {
+   "id": "lev.L09.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L09'] * lev.L09.n * portfolio.app_cost * (1 - portfolio.app_lab)"
+  },
+  {
+   "id": "lev.L09.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L09'] * lev.L09.n * lev.L09.dc"
+  },
+  {
+   "id": "lev.L09.sw9",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.sw - lev.L09.split_sw * lev.L09.rr"
+  },
+  {
+   "id": "lev.L09.cl9",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lv.cloud - lev.L09.split_cloud * lev.L09.rr"
+  },
+  {
+   "id": "lev.L10.msp",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "SAFEDIV(lv.sw_ms * lev.L09.sw9, lv.sw, 0)"
+  },
+  {
+   "id": "lev.L10.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L10'] * (lev.L09.sw9 * lev.L10.shelf + lev.L10.msp * (1 - lev.L10.shelf) * lev.L10.ms + (lev.L09.sw9 - lev.L10.msp) * (1 - lev.L10.shelf) * lev.L10.ren * lev.L10.rcut)"
+  },
+  {
+   "id": "lev.L10.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L10.ot_pct * lev.L10.rr"
+  },
+  {
+   "id": "lev.L11.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L11'] * lev.L09.cl9 * lev.L11.pct"
+  },
+  {
+   "id": "lev.L11.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "IF(lev.on['L11'] * lev.L11.pct > 0, lev.L11.setup, 0)"
+  },
+  {
+   "id": "lev.L12.capex_saving",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L12'] * lv.dc_capex * lev.L12.life"
+  },
+  {
+   "id": "lev.L12.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L12'] * (lv.dc_maint * lev.L12.tpm * lev.L12.tpm_saving + lv.dc_colo * lev.L12.colo) + lev.L12.capex_saving"
+  },
+  {
+   "id": "lev.L12.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L12.ot_pct * lev.L12.rr"
+  },
+  {
+   "id": "lev.L13.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L13'] * lv.net * lev.L13.pct"
+  },
+  {
+   "id": "lev.L13.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L13.ot_pct * lev.L13.rr"
+  },
+  {
+   "id": "lev.L14.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L14'] * lv.euc * lev.L14.pct"
+  },
+  {
+   "id": "lev.L14.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L14.ot_pct * lev.L14.rr"
+  },
+  {
+   "id": "lev.L15.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L15'] * lv.fees_addr * lev.L15.pct"
+  },
+  {
+   "id": "lev.L15.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L15.ot_pct * lev.L15.rr"
+  },
+  {
+   "id": "lev.L16.pool",
+   "dims": [],
+   "unit": "$M",
+   "label": "Remaining third-party spend",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L08.ext - lev.L08.rr + lv.cons * (1 - lev.on['L02'] * lev.L02.cut) + lev.L09.sw9 - lev.L10.rr + lev.L09.cl9 - lev.L11.rr + lv.dc_maint + lv.dc_colo + lv.net + lv.euc + lv.fees"
+  },
+  {
+   "id": "lev.L16.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L16'] * lev.L16.pool * lev.L16.pct"
+  },
+  {
+   "id": "lev.L16.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L16.ot_pct * lev.L16.rr"
+  },
+  {
+   "id": "lev.L17.si_avoid",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L17'] * lv.ext * pool.growth['si_contingent'] * lev.L17.cola"
+  },
+  {
+   "id": "lev.L17.sw_avoid",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L17'] * lv.sw * pool.growth['software'] * lev.L17.sw"
+  },
+  {
+   "id": "lev.L17.cl_avoid",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.on['L17'] * lv.cloud * pool.growth['cloud'] * lev.L17.cl"
+  },
+  {
+   "id": "lev.L17.rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.L17.si_avoid + lev.L17.sw_avoid + lev.L17.cl_avoid"
+  },
+  {
+   "id": "lev.L17.ot",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "0"
+  },
+  {
+   "id": "lev.rr",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "Run-rate annual saving",
+   "layer": "levers",
+   "output": true,
+   "cases": [
+    {
+     "when": {
+      "lever": [
+       "L01"
+      ]
+     },
+     "expr": "lev.L01.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L02"
+      ]
+     },
+     "expr": "lev.L02.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L03"
+      ]
+     },
+     "expr": "lev.L03.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L04"
+      ]
+     },
+     "expr": "lev.L04.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L05"
+      ]
+     },
+     "expr": "lev.L05.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L06"
+      ]
+     },
+     "expr": "lev.L06.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L07"
+      ]
+     },
+     "expr": "lev.L07.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L08"
+      ]
+     },
+     "expr": "lev.L08.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L09"
+      ]
+     },
+     "expr": "lev.L09.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L10"
+      ]
+     },
+     "expr": "lev.L10.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L11"
+      ]
+     },
+     "expr": "lev.L11.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L12"
+      ]
+     },
+     "expr": "lev.L12.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L13"
+      ]
+     },
+     "expr": "lev.L13.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L14"
+      ]
+     },
+     "expr": "lev.L14.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L15"
+      ]
+     },
+     "expr": "lev.L15.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L16"
+      ]
+     },
+     "expr": "lev.L16.rr"
+    },
+    {
+     "when": {
+      "lever": [
+       "L17"
+      ]
+     },
+     "expr": "lev.L17.rr"
+    }
+   ]
+  },
+  {
+   "id": "lev.ot",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "One-time cost to achieve (before funding split)",
+   "layer": "levers",
+   "output": true,
+   "cases": [
+    {
+     "when": {
+      "lever": [
+       "L01"
+      ]
+     },
+     "expr": "lev.L01.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L02"
+      ]
+     },
+     "expr": "lev.L02.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L03"
+      ]
+     },
+     "expr": "lev.L03.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L04"
+      ]
+     },
+     "expr": "lev.L04.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L05"
+      ]
+     },
+     "expr": "lev.L05.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L06"
+      ]
+     },
+     "expr": "lev.L06.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L07"
+      ]
+     },
+     "expr": "lev.L07.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L08"
+      ]
+     },
+     "expr": "lev.L08.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L09"
+      ]
+     },
+     "expr": "lev.L09.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L10"
+      ]
+     },
+     "expr": "lev.L10.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L11"
+      ]
+     },
+     "expr": "lev.L11.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L12"
+      ]
+     },
+     "expr": "lev.L12.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L13"
+      ]
+     },
+     "expr": "lev.L13.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L14"
+      ]
+     },
+     "expr": "lev.L14.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L15"
+      ]
+     },
+     "expr": "lev.L15.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L16"
+      ]
+     },
+     "expr": "lev.L16.ot"
+    },
+    {
+     "when": {
+      "lever": [
+       "L17"
+      ]
+     },
+     "expr": "lev.L17.ot"
+    }
+   ]
+  },
+  {
+   "id": "lev.eff_start",
+   "dims": [
+    "lever"
+   ],
+   "unit": "month",
+   "label": "",
+   "layer": "levers",
+   "output": false,
+   "expr": "MAX(1, lev.start - g.head_start)"
+  },
+  {
+   "id": "lev.ramp_factor",
+   "dims": [
+    "lever"
+   ],
+   "unit": "%",
+   "label": "Share of run-rate realised in CY27 (linear ramp)",
+   "layer": "levers",
+   "output": false,
+   "expr": "IF(13 - lev.eff_start <= lev.ramp, (13 - lev.eff_start) * (14 - lev.eff_start) / (2 * lev.ramp), (lev.ramp + 1) / 2 + (13 - lev.eff_start - lev.ramp)) / 12"
+  },
+  {
+   "id": "lev.iy",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "CY27 in-year saving",
+   "layer": "levers",
+   "output": true,
+   "expr": "lev.rr * lev.ramp_factor * lev.realize"
+  },
+  {
+   "id": "lev.iy_risk",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "Confidence-weighted CY27 saving",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.iy * lev.conf"
+  },
+  {
+   "id": "lev.eff",
+   "dims": [
+    "lever",
+    "pool"
+   ],
+   "unit": "$M",
+   "label": "Run-rate saving by pool touched",
+   "layer": "levers",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "lever": [
+       "L01"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L01.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L02"
+      ]
+     },
+     "expr": "IF(pool == 'consulting', lev.L02.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L03"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L03.h * lv.on_cost, 0) - IF(pool == 'captive_labour', lev.L03.h * lv.gcc_cost * wf.prod_factor, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L04"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L04.h * lv.off_cost, 0) - IF(pool == 'captive_labour', lev.L04.h * lv.gcc_cost * lev.L04.pf, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L05"
+      ]
+     },
+     "expr": "IF(pool == 'internal_labour', lev.L05.us_saving, 0) - IF(pool == 'captive_labour', lev.L05.gcc_added, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L06"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L06.si_saving, 0) - IF(pool == 'software', lev.on['L06'] * lev.L06.tool, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L07"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L07.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L08"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L08.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L09"
+      ]
+     },
+     "expr": "lev.L09.rr * (IF(pool == 'software', lev.L09.split_sw, 0) + IF(pool == 'cloud', lev.L09.split_cloud, 0) + IF(pool == 'dc_hardware', 1 - lev.L09.split_sw - lev.L09.split_cloud, 0))"
+    },
+    {
+     "when": {
+      "lever": [
+       "L10"
+      ]
+     },
+     "expr": "IF(pool == 'software', lev.L10.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L11"
+      ]
+     },
+     "expr": "IF(pool == 'cloud', lev.L11.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L12"
+      ]
+     },
+     "expr": "IF(pool == 'dc_hardware', lev.L12.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L13"
+      ]
+     },
+     "expr": "IF(pool == 'network', lev.L13.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L14"
+      ]
+     },
+     "expr": "IF(pool == 'end_user', lev.L14.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L15"
+      ]
+     },
+     "expr": "IF(pool == 'airline_platforms', lev.L15.rr, 0)"
+    },
+    {
+     "when": {
+      "lever": [
+       "L16"
+      ]
+     },
+     "expr": "lev.on['L16'] * lev.L16.pct * (IF(pool == 'si_contingent', lev.L08.ext - lev.L08.rr, 0) + IF(pool == 'consulting', lv.cons * (1 - lev.on['L02'] * lev.L02.cut), 0) + IF(pool == 'software', lev.L09.sw9 - lev.L10.rr, 0) + IF(pool == 'cloud', lev.L09.cl9 - lev.L11.rr, 0) + IF(pool == 'dc_hardware', lv.dc_maint + lv.dc_colo, 0) + IF(pool == 'network', lv.net, 0) + IF(pool == 'end_user', lv.euc, 0) + IF(pool == 'airline_platforms', lv.fees, 0))"
+    },
+    {
+     "when": {
+      "lever": [
+       "L17"
+      ]
+     },
+     "expr": "IF(pool == 'si_contingent', lev.L17.si_avoid, 0) + IF(pool == 'software', lev.L17.sw_avoid, 0) + IF(pool == 'cloud', lev.L17.cl_avoid, 0)"
+    }
+   ]
+  },
+  {
+   "id": "lev.rr_check",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "Check: pool effects sum to run-rate (must be 0)",
+   "layer": "levers",
+   "output": false,
+   "expr": "lev.rr - SUM(p in pool, lev.eff[lever, p])"
+  },
+  {
+   "id": "lev.capex_rr",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "Capex part of run-rate saving",
+   "layer": "levers",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "lever": [
+       "L12"
+      ]
+     },
+     "expr": "lev.L12.capex_saving"
+    },
+    {
+     "when": null,
+     "expr": "SUM(p in pool, lev.eff[lever, p] * base.pool_capex_share[p])"
+    }
+   ]
+  },
+  {
+   "id": "lev.cx",
+   "dims": [
+    "lever"
+   ],
+   "unit": "%",
+   "label": "Capex share of lever saving",
+   "layer": "levers",
+   "output": false,
+   "expr": "SAFEDIV(lev.capex_rr, lev.rr, 0)"
+  },
+  {
+   "id": "lev.swb_rr",
+   "dims": [
+    "lever"
+   ],
+   "unit": "$M",
+   "label": "Employee-cost (SWB) opex part of run-rate saving",
+   "layer": "levers",
+   "output": false,
+   "expr": "SUM(p in pool, lev.eff[lever, p] * pool.swb_flag[p] * (1 - base.pool_capex_share[p]))"
+  },
+  {
+   "id": "res.tot_rr",
+   "dims": [],
+   "unit": "$M",
+   "label": "Run-rate savings (exit CY27)",
+   "layer": "results",
+   "output": true,
+   "expr": "SUM(l in lever, lev.rr[l])"
+  },
+  {
+   "id": "res.tot_iy",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 in-year gross savings",
+   "layer": "results",
+   "output": true,
+   "expr": "SUM(l in lever, lev.iy[l])"
+  },
+  {
+   "id": "res.tot_ot_raw",
+   "dims": [],
+   "unit": "$M",
+   "label": "One-time costs, all",
+   "layer": "results",
+   "output": true,
+   "expr": "SUM(l in lever, lev.ot[l])"
+  },
+  {
+   "id": "res.tot_ot_all",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 one-time costs (AA P&L bears all)",
+   "layer": "results",
+   "output": true,
+   "expr": "res.tot_ot_raw * g.ot_in_year"
+  },
+  {
+   "id": "res.tot_ot_it",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 one-time costs charged to IT",
+   "layer": "results",
+   "output": true,
+   "expr": "res.tot_ot_all * (1 - g.ot_out_share)"
+  },
+  {
+   "id": "res.tot_ot_out",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 one-time costs funded outside IT",
+   "layer": "results",
+   "output": true,
+   "expr": "res.tot_ot_all - res.tot_ot_it"
+  },
+  {
+   "id": "res.net",
+   "dims": [],
+   "unit": "$M",
+   "label": "NET CY27 outlay reduction (CIO test)",
+   "layer": "results",
+   "output": true,
+   "expr": "res.tot_iy - res.tot_ot_it"
+  },
+  {
+   "id": "res.risk_gross",
+   "dims": [],
+   "unit": "$M",
+   "label": "Confidence-weighted gross",
+   "layer": "results",
+   "output": true,
+   "expr": "SUM(l in lever, lev.iy_risk[l])"
+  },
+  {
+   "id": "res.risk",
+   "dims": [],
+   "unit": "$M",
+   "label": "Risk-adjusted net",
+   "layer": "results",
+   "output": true,
+   "expr": "res.risk_gross - res.tot_ot_it"
+  },
+  {
+   "id": "res.target",
+   "dims": [],
+   "unit": "$M",
+   "label": "Net target",
+   "layer": "results",
+   "output": true,
+   "expr": "IF(g.target_mode == 2, g.target_pct * base.total, g.target_net)"
+  },
+  {
+   "id": "res.bar",
+   "dims": [],
+   "unit": "$M",
+   "label": "Gross bar to clear",
+   "layer": "results",
+   "output": true,
+   "expr": "res.target + g.absorb_growth * base.headwinds"
+  },
+  {
+   "id": "res.gap",
+   "dims": [],
+   "unit": "$M",
+   "label": "Gap to bar (negative = shortfall)",
+   "layer": "results",
+   "output": true,
+   "expr": "res.net - res.bar"
+  },
+  {
+   "id": "res.gap_risk",
+   "dims": [],
+   "unit": "$M",
+   "label": "Gap to bar, risk-adjusted",
+   "layer": "results",
+   "output": true,
+   "expr": "res.risk - res.bar"
+  },
+  {
+   "id": "res.coverage",
+   "dims": [],
+   "unit": "%",
+   "label": "Coverage of bar",
+   "layer": "results",
+   "output": true,
+   "expr": "SAFEDIV(res.net, res.bar, 0)"
+  },
+  {
+   "id": "res.rate_share",
+   "dims": [],
+   "unit": "%",
+   "label": "Rate renegotiation share of net",
+   "layer": "results",
+   "output": true,
+   "expr": "SAFEDIV(lev.iy['L08'], res.net, 0)"
+  },
+  {
+   "id": "res.cy27_outlay",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 IT outlay after program",
+   "layer": "results",
+   "output": true,
+   "expr": "base.total + base.headwinds - res.net"
+  },
+  {
+   "id": "res.cy27_vs_cy26_pct",
+   "dims": [],
+   "unit": "%",
+   "label": "CY27 vs CY26 outlay change",
+   "layer": "results",
+   "output": true,
+   "expr": "SAFEDIV(res.cy27_outlay - base.total, base.total, 0)"
+  },
+  {
+   "id": "res.fte_us",
+   "dims": [],
+   "unit": "FTE",
+   "label": "End-state US employees",
+   "layer": "results",
+   "output": true,
+   "expr": "hc.us - lev.L05.h - lev.L05.r - lev.on['L05'] * hc.us * lev.L05.sl"
+  },
+  {
+   "id": "res.fte_on",
+   "dims": [],
+   "unit": "FTE",
+   "label": "End-state onshore contractors",
+   "layer": "results",
+   "output": true,
+   "expr": "lev.L03.on3"
+  },
+  {
+   "id": "res.fte_off",
+   "dims": [],
+   "unit": "FTE",
+   "label": "End-state SI offshore FTE",
+   "layer": "results",
+   "output": true,
+   "expr": "lev.L04.off4"
+  },
+  {
+   "id": "res.fte_gcc",
+   "dims": [],
+   "unit": "FTE",
+   "label": "End-state GCC",
+   "layer": "results",
+   "output": true,
+   "expr": "hc.gcc + lev.L03.gcc_add + lev.L04.h * lev.L04.pf + (lev.L05.h * lev.L05.bf + lev.L05.r) * wf.prod_factor"
+  },
+  {
+   "id": "res.offshore_mix",
+   "dims": [],
+   "unit": "%",
+   "label": "Offshore share of delivery FTE",
+   "layer": "results",
+   "output": true,
+   "expr": "SAFEDIV(res.fte_gcc + res.fte_off, res.fte_gcc + res.fte_off + res.fte_us + res.fte_on, 0)"
+  },
+  {
+   "id": "pnl.o27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 opex savings",
+   "layer": "pnl",
+   "output": true,
+   "expr": "SUM(l in lever, lev.iy[l] * (1 - lev.cx[l]))"
+  },
+  {
+   "id": "pnl.c27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 capex savings",
+   "layer": "pnl",
+   "output": true,
+   "expr": "SUM(l in lever, lev.iy[l] * lev.cx[l])"
+  },
+  {
+   "id": "pnl.ot27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 one-time costs (P&L, all funding)",
+   "layer": "pnl",
+   "output": true,
+   "expr": "res.tot_ot_all"
+  },
+  {
+   "id": "pnl.ot27_it",
+   "dims": [],
+   "unit": "$M",
+   "label": "of which IT budget",
+   "layer": "pnl",
+   "output": true,
+   "expr": "res.tot_ot_it"
+  },
+  {
+   "id": "pnl.ot27_out",
+   "dims": [],
+   "unit": "$M",
+   "label": "of which outside IT",
+   "layer": "pnl",
+   "output": true,
+   "expr": "res.tot_ot_out"
+  },
+  {
+   "id": "pnl.e27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 EBITDA impact",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.o27 - pnl.ot27"
+  },
+  {
+   "id": "pnl.e27x",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 EBITDA if one-time = special items",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.o27"
+  },
+  {
+   "id": "pnl.d27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 D&A relief",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.c27 / g.it_dep_life * g.da_first_year_factor"
+  },
+  {
+   "id": "pnl.ebit27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 EBIT impact",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.e27 + pnl.d27"
+  },
+  {
+   "id": "pnl.cash27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 IT-budget outlay reduction",
+   "layer": "pnl",
+   "output": true,
+   "expr": "res.net"
+  },
+  {
+   "id": "pnl.cash27_co",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 company cash impact",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.o27 + pnl.c27 - pnl.ot27"
+  },
+  {
+   "id": "pnl.o28",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY28 opex savings (run-rate)",
+   "layer": "pnl",
+   "output": true,
+   "expr": "SUM(l in lever, lev.rr[l] * (1 - lev.cx[l]))"
+  },
+  {
+   "id": "pnl.c28",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY28 capex savings (run-rate)",
+   "layer": "pnl",
+   "output": true,
+   "expr": "SUM(l in lever, lev.rr[l] * lev.cx[l])"
+  },
+  {
+   "id": "pnl.e28",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY28 EBITDA impact",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.o28"
+  },
+  {
+   "id": "pnl.d28",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY28 D&A relief",
+   "layer": "pnl",
+   "output": true,
+   "expr": "(pnl.c27 + g.da_first_year_factor * pnl.c28) / g.it_dep_life"
+  },
+  {
+   "id": "pnl.ebit28",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY28 EBIT impact",
+   "layer": "pnl",
+   "output": true,
+   "expr": "pnl.e28 + pnl.d28"
+  },
+  {
+   "id": "pnl.cash28",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY28 outlay reduction",
+   "layer": "pnl",
+   "output": true,
+   "expr": "res.tot_rr"
+  },
+  {
+   "id": "pnl.swb27",
+   "dims": [],
+   "unit": "$M",
+   "label": "CY27 savings landing in SWB",
+   "layer": "pnl",
+   "output": true,
+   "expr": "SUM(l in lever, SAFEDIV(lev.iy[l] * lev.swb_rr[l], lev.rr[l], 0))"
+  },
+  {
+   "id": "pnl.swb_share27",
+   "dims": [],
+   "unit": "%",
+   "label": "SWB share of CY27 opex savings",
+   "layer": "pnl",
+   "output": true,
+   "expr": "SAFEDIV(pnl.swb27, pnl.o27, 0)"
+  },
+  {
+   "id": "vp.pool_usd",
+   "dims": [
+    "vp",
+    "pool"
+   ],
+   "unit": "$M",
+   "label": "Outlay owned by VP",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(l in line where l.pool == pool, base.line_outlay[l] * org.dom_share[l.domain, vp])"
+  },
+  {
+   "id": "vp.alloc",
+   "dims": [
+    "vp",
+    "pool"
+   ],
+   "unit": "%",
+   "label": "Share of pool owned by VP",
+   "layer": "vp",
+   "output": false,
+   "expr": "SAFEDIV(vp.pool_usd, base.pool_outlay[pool], 0)"
+  },
+  {
+   "id": "vp.outlay",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "vp",
+   "output": true,
+   "expr": "SUM(p in pool, vp.pool_usd[vp, p])"
+  },
+  {
+   "id": "vp.addressable",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "vp",
+   "output": true,
+   "expr": "SUM(l in line, base.line_addressable[l] * org.dom_share[l.domain, vp])"
+  },
+  {
+   "id": "vp.ss_alloc",
+   "dims": [
+    "pool"
+   ],
+   "unit": "%",
+   "label": "Shared-services VP slice of pool",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(u in vp, vp.alloc[u, pool] * org.ss_flag[u])"
+  },
+  {
+   "id": "vp.nonshared",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "Non-shared spend owned (usage proxy)",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(p in pool, vp.alloc[vp, p] * base.pool_outlay[p] * (1 - pool.shared[p]))"
+  },
+  {
+   "id": "vp.usage_default",
+   "dims": [
+    "vp"
+   ],
+   "unit": "%",
+   "label": "",
+   "layer": "vp",
+   "output": false,
+   "expr": "SAFEDIV(vp.nonshared, SUM(u in vp, vp.nonshared[u]), 0)"
+  },
+  {
+   "id": "vp.usage",
+   "dims": [
+    "vp"
+   ],
+   "unit": "%",
+   "label": "Usage key",
+   "layer": "vp",
+   "output": false,
+   "expr": "IF(org.usage_override_on == 1, org.usage_override, vp.usage_default)"
+  },
+  {
+   "id": "vp.eff_alloc",
+   "dims": [
+    "vp",
+    "pool"
+   ],
+   "unit": "%",
+   "label": "Effective allocation after chargeback",
+   "layer": "vp",
+   "output": false,
+   "expr": "vp.alloc + g.chargeback_on * pool.shared[pool] * (vp.ss_alloc[pool] * vp.usage - org.ss_flag[vp] * vp.ss_alloc[pool])"
+  },
+  {
+   "id": "vp.ss_shared_addr",
+   "dims": [],
+   "unit": "$M",
+   "label": "Shared-services addressable spend in shared pools",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(u in vp, org.ss_flag[u] * SAFEDIV(vp.addressable[u] * SUM(p in pool, vp.alloc[u, p] * base.pool_outlay[p] * pool.shared[p]), SUM(p in pool, vp.alloc[u, p] * base.pool_outlay[p]), 0))"
+  },
+  {
+   "id": "vp.eff_addr",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "Effective addressable (drives targets)",
+   "layer": "vp",
+   "output": true,
+   "expr": "vp.addressable + g.chargeback_on * vp.ss_shared_addr * (vp.usage - org.ss_flag[vp])"
+  },
+  {
+   "id": "vp.growth",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "VP's own CY27 cost growth",
+   "layer": "vp",
+   "output": true,
+   "expr": "SUM(p in pool, base.pool_growth[p] * vp.eff_alloc[vp, p])"
+  },
+  {
+   "id": "vp.n_active",
+   "dims": [],
+   "unit": "#",
+   "label": "",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(u in vp, IF(vp.eff_addr[u] > 0, 1, 0))"
+  },
+  {
+   "id": "vp.target",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "VP net target",
+   "layer": "vp",
+   "output": true,
+   "expr": "IF(g.vp_target_method == 1, SAFEDIV((res.target + SUM(u in vp, vp.growth[u])) * vp.eff_addr, SUM(u in vp, vp.eff_addr[u]), 0) - vp.growth, IF(g.vp_target_method == 2, IF(vp.eff_addr > 0, SAFEDIV(res.target, vp.n_active, 0), 0), org.manual_target))"
+  },
+  {
+   "id": "vp.bar",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "VP gross bar",
+   "layer": "vp",
+   "output": true,
+   "expr": "vp.target + g.absorb_growth * vp.growth"
+  },
+  {
+   "id": "vp.key_share",
+   "dims": [
+    "vp",
+    "akey"
+   ],
+   "unit": "%",
+   "label": "VP share by allocation key",
+   "layer": "vp",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "akey": [
+       "apps"
+      ]
+     },
+     "expr": "vp.eff_alloc[vp, 'si_contingent']"
+    },
+    {
+     "when": {
+      "akey": [
+       "blend"
+      ]
+     },
+     "expr": "SAFEDIV(SUM(p in pool where p.third_party == 1, vp.eff_alloc[vp, p] * base.pool_outlay[p]), SUM(p in pool where p.third_party == 1, base.pool_outlay[p]), 0)"
+    },
+    {
+     "when": null,
+     "expr": "vp.eff_alloc[vp, akey]"
+    }
+   ]
+  },
+  {
+   "id": "vp.lever_share",
+   "dims": [
+    "lever",
+    "vp"
+   ],
+   "unit": "%",
+   "label": "VP share of lever",
+   "layer": "vp",
+   "output": false,
+   "expr": "IF(g.vp_alloc_method == 1, vp.key_share[vp, lever.alloc_key], SAFEDIV(SUM(p in pool, lev.eff[lever, p] * vp.eff_alloc[vp, p]), lev.rr[lever], 0))"
+  },
+  {
+   "id": "vp.savings",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "vp",
+   "output": true,
+   "expr": "SUM(l in lever, lev.iy[l] * vp.lever_share[l, vp])"
+  },
+  {
+   "id": "vp.savings_risk",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(l in lever, lev.iy_risk[l] * vp.lever_share[l, vp])"
+  },
+  {
+   "id": "vp.one_time",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "One-time charged to IT",
+   "layer": "vp",
+   "output": true,
+   "expr": "SUM(l in lever, lev.ot[l] * vp.lever_share[l, vp]) * g.ot_in_year * (1 - g.ot_out_share)"
+  },
+  {
+   "id": "vp.net",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "vp",
+   "output": true,
+   "expr": "vp.savings - vp.one_time"
+  },
+  {
+   "id": "vp.gap",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "Gap vs VP bar",
+   "layer": "vp",
+   "output": true,
+   "expr": "vp.net - vp.bar"
+  },
+  {
+   "id": "vp.gap_risk",
+   "dims": [
+    "vp"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "vp",
+   "output": true,
+   "expr": "vp.savings_risk - vp.one_time - vp.bar"
+  },
+  {
+   "id": "vp.coverage",
+   "dims": [
+    "vp"
+   ],
+   "unit": "%",
+   "label": "",
+   "layer": "vp",
+   "output": true,
+   "expr": "SAFEDIV(vp.net, vp.bar, 0)"
+  },
+  {
+   "id": "vp.check",
+   "dims": [],
+   "unit": "$M",
+   "label": "Check: VP nets sum to total (0 unless lever shares leak)",
+   "layer": "vp",
+   "output": false,
+   "expr": "SUM(u in vp, vp.net[u]) - res.net"
+  },
+  {
+   "id": "it.opex27_src",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_override == 1, corp.cust_opex, pnl.o27)"
+  },
+  {
+   "id": "it.capex27_src",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_override == 1, corp.cust_capex, pnl.c27)"
+  },
+  {
+   "id": "it.ot27_src",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_override == 1, corp.cust_ot, pnl.ot27)"
+  },
+  {
+   "id": "it.opex28_src",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_override == 1, corp.cust_opex28, pnl.o28)"
+  },
+  {
+   "id": "it.capex28_src",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_override == 1, corp.cust_capex28, pnl.c28)"
+  },
+  {
+   "id": "it.risk_factor",
+   "dims": [],
+   "unit": "x",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(AND(corp.it_risk == 1, corp.it_override == 0), SAFEDIV(res.risk_gross, res.tot_iy, 1), 1)"
+  },
+  {
+   "id": "it.opex27",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.opex27_src * it.risk_factor * corp.it_on"
+  },
+  {
+   "id": "it.capex27",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.capex27_src * it.risk_factor * corp.it_on"
+  },
+  {
+   "id": "it.opex28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.opex28_src * it.risk_factor * corp.it_on"
+  },
+  {
+   "id": "it.capex28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.capex28_src * it.risk_factor * corp.it_on"
+  },
+  {
+   "id": "it.ot27",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.ot27_src * corp.it_on"
+  },
+  {
+   "id": "it.da27",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.capex27 / g.it_dep_life * g.da_first_year_factor"
+  },
+  {
+   "id": "it.da28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.capex27 / g.it_dep_life + it.capex28 / g.it_dep_life * g.da_first_year_factor"
+  },
+  {
+   "id": "it.swb_share",
+   "dims": [],
+   "unit": "%",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(AND(corp.it_swb_mode == 1, corp.it_override == 0), pnl.swb_share27, corp.it_swb / 100)"
+  },
+  {
+   "id": "it.swb27",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.opex27 * it.swb_share"
+  },
+  {
+   "id": "it.oth27",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "it.opex27 - it.swb27"
+  },
+  {
+   "id": "it.ot_adj",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_ot_si == 1, 0, it.ot27)"
+  },
+  {
+   "id": "it.ot_si",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "it_bridge",
+   "output": false,
+   "expr": "IF(corp.it_ot_si == 1, it.ot27, 0)"
+  },
+  {
+   "id": "pl.asm",
+   "dims": [
+    "year"
+   ],
+   "unit": "m",
+   "label": "ASMs",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.asm25"
+    },
+    {
+     "when": null,
+     "expr": "pl.asm[year.prev] * (1 + corp.asm_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.gap",
+   "dims": [
+    "year"
+   ],
+   "unit": "pts",
+   "label": "GDP gap",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.gdp[year.in] - corp.gdp_ref[year.in]"
+  },
+  {
+   "id": "pl.lf",
+   "dims": [
+    "year"
+   ],
+   "unit": "%",
+   "label": "Load factor",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.lf[year.in] + corp.lf_gdp[year.in] * pl.gap"
+  },
+  {
+   "id": "pl.rpm",
+   "dims": [
+    "year"
+   ],
+   "unit": "m",
+   "label": "RPMs",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.asm * pl.lf / 100"
+  },
+  {
+   "id": "pl.yield",
+   "dims": [
+    "year"
+   ],
+   "unit": "cents",
+   "label": "Yield",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.yield25"
+    },
+    {
+     "when": null,
+     "expr": "pl.yield[year.prev] * (1 + (corp.yield_g[year.in] + corp.yield_gdp[year.in] * pl.gap) / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.rev_pax",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Passenger revenue",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.rpm * pl.yield / 100 * (1 - corp.fx_share[year.in] / 100 * corp.usd[year.in] / 100)"
+  },
+  {
+   "id": "pl.rev_cargo",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Cargo revenue",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.cargo25"
+    },
+    {
+     "when": null,
+     "expr": "pl.rev_cargo[year.prev] * (1 + corp.cargo_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.rev_other",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Other revenue",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.other25"
+    },
+    {
+     "when": null,
+     "expr": "pl.rev_other[year.prev] * (1 + corp.other_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.rev",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Total revenue",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.rev_pax + pl.rev_cargo + pl.rev_other"
+  },
+  {
+   "id": "pl.gpa",
+   "dims": [
+    "year"
+   ],
+   "unit": "gal/k ASM",
+   "label": "Fuel burn",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.gpa25"
+    },
+    {
+     "when": null,
+     "expr": "pl.gpa[year.prev] * (1 - corp.fuel_eff[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.gal",
+   "dims": [
+    "year"
+   ],
+   "unit": "m gal",
+   "label": "Gallons",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.asm * pl.gpa / 1000"
+  },
+  {
+   "id": "pl.jet",
+   "dims": [
+    "year"
+   ],
+   "unit": "$/gal",
+   "label": "Jet fuel price",
+   "layer": "corporate",
+   "output": false,
+   "expr": "IF(corp.fuel_mode[year.in] == 1, (corp.brent[year.in] + corp.crack[year.in]) / 42 + corp.fuel_tax[year.in], corp.jet_direct[year.in])"
+  },
+  {
+   "id": "pl.fuel",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Fuel expense",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.gal * pl.jet"
+  },
+  {
+   "id": "pl.wages",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Total pay",
+   "layer": "corporate",
+   "output": false,
+   "expr": "SUM(g in lgroup, pl.lab_cost[year, g])"
+  },
+  {
+   "id": "pl.benefits",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Benefits",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.wages * corp.ben_load[year.in] / 100"
+  },
+  {
+   "id": "pl.it_swb",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "IT program: labor savings",
+   "layer": "corporate",
+   "output": false,
+   "expr": "0 - year.it * it.swb27"
+  },
+  {
+   "id": "pl.swb_xps",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "SWB before profit sharing",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.wages + pl.benefits + pl.it_swb"
+  },
+  {
+   "id": "pl.ac",
+   "dims": [
+    "year"
+   ],
+   "unit": "#",
+   "label": "Mainline aircraft",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.ac25"
+    },
+    {
+     "when": null,
+     "expr": "pl.ac[year.prev] + corp.ac_add[year.in]"
+    }
+   ]
+  },
+  {
+   "id": "pl.mxr",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Maintenance per aircraft",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.mxr25"
+    },
+    {
+     "when": null,
+     "expr": "pl.mxr[year.prev] * (1 + corp.mx_infl[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.maint",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Maintenance",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.ac * pl.mxr"
+  },
+  {
+   "id": "pl.dep",
+   "dims": [
+    "year"
+   ],
+   "unit": "k",
+   "label": "Departures",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.dep25"
+    },
+    {
+     "when": null,
+     "expr": "pl.dep[year.prev] * (1 + corp.asm_g[year.in] / 100) / (1 + corp.gauge_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.aptr",
+   "dims": [
+    "year"
+   ],
+   "unit": "$",
+   "label": "Airport cost per departure",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.aptr25"
+    },
+    {
+     "when": null,
+     "expr": "pl.aptr[year.prev] * (1 + corp.apt_infl[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.airport",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Rent & landing fees",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.dep * pl.aptr / 1000"
+  },
+  {
+   "id": "pl.leaser",
+   "dims": [
+    "year"
+   ],
+   "unit": "$k/mo",
+   "label": "Lease rate",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.lease_rate25"
+    },
+    {
+     "when": null,
+     "expr": "pl.leaser[year.prev] * (1 + corp.lease_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.rent",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Aircraft rent",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.lease_n[year.in] * pl.leaser * 12 / 1000"
+  },
+  {
+   "id": "pl.selling",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Selling",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.rev_pax * corp.sell_pct[year.in] / 100"
+  },
+  {
+   "id": "pl.regcap",
+   "dims": [
+    "year"
+   ],
+   "unit": "x",
+   "label": "Regional capacity index",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "1"
+    },
+    {
+     "when": null,
+     "expr": "pl.regcap[year.prev] * (1 + corp.reg_cap_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.regional",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Regional expenses",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.reg25"
+    },
+    {
+     "when": null,
+     "expr": "pl.regional[year.prev] * (1 + corp.reg_cap_g[year.in] / 100) * (1 + corp.reg_infl[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.oth_base",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Other opex before IT",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.oth25"
+    },
+    {
+     "when": null,
+     "expr": "pl.oth_base[year.prev] * (1 + corp.oth_vol[year.in] * corp.asm_g[year.in] / 100) * (1 + (corp.cpi[year.in] + corp.oth_prem[year.in]) / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.it_oth",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "IT program: non-labor savings",
+   "layer": "corporate",
+   "output": false,
+   "expr": "0 - year.it * it.oth27"
+  },
+  {
+   "id": "pl.it_ot",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "IT one-time costs in adjusted results",
+   "layer": "corporate",
+   "output": false,
+   "expr": "year.it * it.ot_adj"
+  },
+  {
+   "id": "pl.other",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Other opex",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.oth_base + pl.it_oth + pl.it_ot"
+  },
+  {
+   "id": "pl.dpa",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "D&A per owned aircraft",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.dpa25"
+    },
+    {
+     "when": null,
+     "expr": "pl.dpa[year.prev] * (1 + corp.dpa_g[year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.da_ac",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Aircraft D&A",
+   "layer": "corporate",
+   "output": false,
+   "expr": "(pl.ac - corp.lease_n[year.in]) * pl.dpa"
+  },
+  {
+   "id": "pl.da_oth",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Non-aircraft D&A",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.oda25"
+    },
+    {
+     "when": null,
+     "expr": "pl.da_oth[year.prev] * (1 + corp.oda_g[year.in] / 100) - year.it * it.da27"
+    }
+   ]
+  },
+  {
+   "id": "pl.da",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "D&A mainline",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.da_ac + pl.da_oth"
+  },
+  {
+   "id": "pl.reg_da",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Regional D&A",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.reg_da25 * pl.regcap"
+  },
+  {
+   "id": "pl.opex_xps",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Opex before profit sharing",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.fuel + pl.swb_xps + pl.regional + pl.reg_da + pl.maint + pl.airport + pl.rent + pl.selling + pl.da + pl.other"
+  },
+  {
+   "id": "pl.debt_close",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Debt year-end",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.debt_open + corp.debt_chg['fy25']"
+    },
+    {
+     "when": null,
+     "expr": "pl.debt_close[year.prev] + corp.debt_chg[year.in]"
+    }
+   ]
+  },
+  {
+   "id": "pl.debt_avg",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Average debt",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.debt_open + corp.debt_chg['fy25'] / 2"
+    },
+    {
+     "when": null,
+     "expr": "pl.debt_close[year.prev] + corp.debt_chg[year.in] / 2"
+    }
+   ]
+  },
+  {
+   "id": "pl.rate",
+   "dims": [
+    "year"
+   ],
+   "unit": "%",
+   "label": "Blended rate",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.fix_share[year.in] / 100 * corp.fix_rate[year.in] + (1 - corp.fix_share[year.in] / 100) * (corp.sofr[year.in] + corp.flt_spread[year.in])"
+  },
+  {
+   "id": "pl.int_exp",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Interest expense",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.debt_avg * pl.rate / 100"
+  },
+  {
+   "id": "pl.cash_open",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Opening cash",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.cash_open"
+    },
+    {
+     "when": null,
+     "expr": "pl.cash_close[year.prev]"
+    }
+   ]
+  },
+  {
+   "id": "pl.int_inc",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Interest income",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.cash_open * (corp.sofr[year.in] + corp.cash_spread[year.in]) / 100"
+  },
+  {
+   "id": "pl.oth_inc",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Other nonoperating",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.oth_inc[year.in]"
+  },
+  {
+   "id": "pl.pretax_pps",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Pre-tax before profit sharing",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.rev - pl.opex_xps - pl.int_exp + pl.int_inc + pl.oth_inc"
+  },
+  {
+   "id": "pl.ps",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Profit sharing",
+   "layer": "corporate",
+   "output": false,
+   "expr": "MAX(0, pl.pretax_pps) * corp.ps_rate[year.in] / 100"
+  },
+  {
+   "id": "pl.swb",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "SWB",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.swb_xps + pl.ps"
+  },
+  {
+   "id": "pl.opex",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Opex ex special items",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.opex_xps + pl.ps"
+  },
+  {
+   "id": "pl.ebit",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Adjusted EBIT",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.rev - pl.opex"
+  },
+  {
+   "id": "pl.op_margin",
+   "dims": [
+    "year"
+   ],
+   "unit": "%",
+   "label": "Adjusted operating margin",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.ebit / pl.rev * 100"
+  },
+  {
+   "id": "pl.ebitda",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Adjusted EBITDA",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.ebit + pl.da + pl.reg_da"
+  },
+  {
+   "id": "pl.ebitdar",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Adjusted EBITDAR",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.ebitda + pl.rent"
+  },
+  {
+   "id": "pl.casm_x",
+   "dims": [
+    "year"
+   ],
+   "unit": "cents",
+   "label": "CASM ex fuel",
+   "layer": "corporate",
+   "output": false,
+   "expr": "(pl.opex - pl.fuel) / pl.asm * 100"
+  },
+  {
+   "id": "pl.pretax",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Adjusted pre-tax",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.pretax_pps - pl.ps"
+  },
+  {
+   "id": "pl.taxx",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Tax",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.pretax * corp.tax[year.in] / 100"
+  },
+  {
+   "id": "pl.ni",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Adjusted net income",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.pretax - pl.taxx"
+  },
+  {
+   "id": "pl.sh",
+   "dims": [
+    "year"
+   ],
+   "unit": "m",
+   "label": "Diluted shares",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.shares[year.in] - corp.buyback[year.in] / corp.price_now"
+  },
+  {
+   "id": "pl.eps",
+   "dims": [
+    "year"
+   ],
+   "unit": "$",
+   "label": "Adjusted EPS",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.ni / pl.sh"
+  },
+  {
+   "id": "pl.si",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Special items",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.si[year.in] + year.it * it.ot_si"
+  },
+  {
+   "id": "pl.ni_gaap",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "GAAP net income",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.ni - pl.si * (1 - corp.tax[year.in] / 100)"
+  },
+  {
+   "id": "pl.eps_gaap",
+   "dims": [
+    "year"
+   ],
+   "unit": "$",
+   "label": "GAAP EPS",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.ni_gaap / pl.sh"
+  },
+  {
+   "id": "pl.cf_int",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Net interest (cash)",
+   "layer": "corporate",
+   "output": false,
+   "expr": "0 - pl.int_exp + pl.int_inc + pl.oth_inc"
+  },
+  {
+   "id": "pl.cf_tax",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Cash taxes",
+   "layer": "corporate",
+   "output": false,
+   "expr": "0 - MAX(0, pl.pretax) * corp.cash_tax[year.in] / 100"
+  },
+  {
+   "id": "pl.cf_si",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Special items paid",
+   "layer": "corporate",
+   "output": false,
+   "expr": "0 - pl.si"
+  },
+  {
+   "id": "pl.cf_wc",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Working capital & other",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.cal_ocf25 - (pl.ebitda + pl.cf_int + pl.cf_tax + pl.cf_si)"
+    },
+    {
+     "when": null,
+     "expr": "corp.wc[year.in]"
+    }
+   ]
+  },
+  {
+   "id": "pl.ocf",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Operating cash flow",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.ebitda + pl.cf_int + pl.cf_tax + pl.cf_si + pl.cf_wc"
+  },
+  {
+   "id": "pl.cf_capex",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Capex",
+   "layer": "corporate",
+   "output": false,
+   "expr": "0 - corp.capex[year.in] + year.it * it.capex27"
+  },
+  {
+   "id": "pl.cf_slb",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Sale-leaseback",
+   "layer": "corporate",
+   "output": false,
+   "expr": "corp.slb[year.in]"
+  },
+  {
+   "id": "pl.cf_oi",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Other investing",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.cal_fcf25 - (pl.ocf + pl.cf_capex + pl.cf_slb)"
+    },
+    {
+     "when": null,
+     "expr": "corp.oth_inv[year.in]"
+    }
+   ]
+  },
+  {
+   "id": "pl.fcf",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Free cash flow",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.ocf + pl.cf_capex + pl.cf_slb + pl.cf_oi"
+  },
+  {
+   "id": "pl.cf_of",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Other financing",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.cal_cash25 - (pl.cash_open + pl.fcf + corp.debt_chg['fy25'] - corp.buyback['fy25'])"
+    },
+    {
+     "when": null,
+     "expr": "corp.oth_fin[year.in]"
+    }
+   ]
+  },
+  {
+   "id": "pl.cash_close",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Cash year-end",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.cash_open + pl.fcf + corp.debt_chg[year.in] - corp.buyback[year.in] + pl.cf_of"
+  },
+  {
+   "id": "pl.total_debt",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Total debt (AA definition)",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.debt_close + corp.oplease[year.in] + corp.pension[year.in]"
+  },
+  {
+   "id": "pl.net_debt",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "Net debt",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.total_debt - pl.cash_close"
+  },
+  {
+   "id": "pl.lev",
+   "dims": [
+    "year"
+   ],
+   "unit": "x",
+   "label": "Leverage",
+   "layer": "corporate",
+   "output": true,
+   "expr": "pl.net_debt / pl.ebitdar"
+  },
+  {
+   "id": "pl.lab_hc",
+   "dims": [
+    "year",
+    "lgroup"
+   ],
+   "unit": "FTE",
+   "label": "",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.lab_hc25[lgroup]"
+    },
+    {
+     "when": null,
+     "expr": "pl.lab_hc[year.prev, lgroup] * (1 + corp.lab_hc_g[lgroup, year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.lab_rate",
+   "dims": [
+    "year",
+    "lgroup"
+   ],
+   "unit": "$k",
+   "label": "",
+   "layer": "corporate",
+   "output": false,
+   "cases": [
+    {
+     "when": {
+      "year": [
+       "fy25"
+      ]
+     },
+     "expr": "corp.lab_rate25[lgroup]"
+    },
+    {
+     "when": null,
+     "expr": "pl.lab_rate[year.prev, lgroup] * (1 + corp.lab_wage_g[lgroup, year.in] / 100)"
+    }
+   ]
+  },
+  {
+   "id": "pl.lab_cost",
+   "dims": [
+    "year",
+    "lgroup"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "corporate",
+   "output": false,
+   "expr": "pl.lab_hc * pl.lab_rate / 1000"
+  },
+  {
+   "id": "val.pe_valid",
+   "dims": [],
+   "unit": "0/1",
+   "label": "",
+   "layer": "valuation",
+   "output": false,
+   "expr": "AND(pl.eps['fy27b'] > 0, pl.eps['fy27it'] > 0)"
+  },
+  {
+   "id": "val.ev",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "valuation",
+   "output": false,
+   "expr": "pl.ebitdar * corp.ev_mult",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "val.eqv",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "valuation",
+   "output": false,
+   "expr": "val.ev - pl.net_debt",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "val.px_ev",
+   "dims": [
+    "year"
+   ],
+   "unit": "$",
+   "label": "",
+   "layer": "valuation",
+   "output": false,
+   "expr": "val.eqv / pl.sh",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "val.px_pe",
+   "dims": [
+    "year"
+   ],
+   "unit": "$",
+   "label": "",
+   "layer": "valuation",
+   "output": false,
+   "expr": "pl.eps * corp.pe",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "val.px",
+   "dims": [
+    "year"
+   ],
+   "unit": "$",
+   "label": "Implied share price",
+   "layer": "valuation",
+   "output": true,
+   "expr": "IF(val.pe_valid, corp.w_pe / 100 * val.px_pe + (1 - corp.w_pe / 100) * val.px_ev, val.px_ev)",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "val.px_vs",
+   "dims": [
+    "year"
+   ],
+   "unit": "%",
+   "label": "",
+   "layer": "valuation",
+   "output": true,
+   "expr": "(val.px / corp.price_now - 1) * 100",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "val.mcap",
+   "dims": [
+    "year"
+   ],
+   "unit": "$M",
+   "label": "",
+   "layer": "valuation",
+   "output": true,
+   "expr": "val.px * pl.sh",
+   "members": {
+    "year": [
+     "fy27b",
+     "fy27it"
+    ]
+   }
+  },
+  {
+   "id": "br.ebitda27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on ebitda, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.ebitda['fy27it'] - pl.ebitda['fy27b']"
+  },
+  {
+   "id": "br.ebit27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on ebit, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.ebit['fy27it'] - pl.ebit['fy27b']"
+  },
+  {
+   "id": "br.pretax27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on pretax, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.pretax['fy27it'] - pl.pretax['fy27b']"
+  },
+  {
+   "id": "br.ni27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on ni, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.ni['fy27it'] - pl.ni['fy27b']"
+  },
+  {
+   "id": "br.eps27",
+   "dims": [],
+   "unit": "$",
+   "label": "IT effect on eps, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.eps['fy27it'] - pl.eps['fy27b']"
+  },
+  {
+   "id": "br.eps_gaap27",
+   "dims": [],
+   "unit": "$",
+   "label": "IT effect on eps_gaap, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.eps_gaap['fy27it'] - pl.eps_gaap['fy27b']"
+  },
+  {
+   "id": "br.fcf27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on fcf, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.fcf['fy27it'] - pl.fcf['fy27b']"
+  },
+  {
+   "id": "br.net_debt27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on net_debt, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.net_debt['fy27it'] - pl.net_debt['fy27b']"
+  },
+  {
+   "id": "br.ps27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on ps, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "pl.ps['fy27it'] - pl.ps['fy27b']"
+  },
+  {
+   "id": "br.px27",
+   "dims": [],
+   "unit": "$",
+   "label": "IT effect on share price, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "val.px['fy27it'] - val.px['fy27b']"
+  },
+  {
+   "id": "br.mcap27",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on equity value, CY27",
+   "layer": "bridge",
+   "output": true,
+   "expr": "br.px27 * pl.sh['fy27it']"
+  },
+  {
+   "id": "br.eps_pct27",
+   "dims": [],
+   "unit": "%",
+   "label": "",
+   "layer": "bridge",
+   "output": true,
+   "expr": "SAFEDIV(br.eps27, pl.eps['fy27b'], 0) * 100"
+  },
+  {
+   "id": "br.int28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "bridge",
+   "output": false,
+   "expr": "(br.fcf27 + 0.5 * (it.opex28 + it.capex28)) * (corp.sofr['fy27'] + corp.cash_spread['fy27']) / 100"
+  },
+  {
+   "id": "br.pps28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "bridge",
+   "output": false,
+   "expr": "it.opex28 + it.da28 + br.int28"
+  },
+  {
+   "id": "br.ps28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "bridge",
+   "output": false,
+   "expr": "0 - br.pps28 * corp.ps_rate['fy27'] / 100"
+  },
+  {
+   "id": "br.ebitda28",
+   "dims": [],
+   "unit": "$M",
+   "label": "IT effect on EBITDA, CY28 run-rate",
+   "layer": "bridge",
+   "output": true,
+   "expr": "it.opex28 + br.ps28"
+  },
+  {
+   "id": "br.pretax28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "bridge",
+   "output": false,
+   "expr": "br.ebitda28 + it.da28 + br.int28"
+  },
+  {
+   "id": "br.ni28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "bridge",
+   "output": true,
+   "expr": "br.pretax28 * (1 - corp.tax['fy27'] / 100)"
+  },
+  {
+   "id": "br.eps28",
+   "dims": [],
+   "unit": "$",
+   "label": "IT effect on EPS, CY28 run-rate",
+   "layer": "bridge",
+   "output": true,
+   "expr": "br.ni28 / pl.sh['fy27it']"
+  },
+  {
+   "id": "br.fcf28",
+   "dims": [],
+   "unit": "$M",
+   "label": "",
+   "layer": "bridge",
+   "output": false,
+   "expr": "br.ebitda28 + br.int28 - MAX(0, br.pretax28) * corp.cash_tax['fy27'] / 100 + it.capex28"
+  },
+  {
+   "id": "br.px28",
+   "dims": [],
+   "unit": "$",
+   "label": "IT effect on share price, CY28 run-rate",
+   "layer": "bridge",
+   "output": true,
+   "expr": "corp.w_pe / 100 * br.eps28 * corp.pe + (1 - corp.w_pe / 100) * (br.ebitda28 * corp.ev_mult + br.fcf27 + br.fcf28) / pl.sh['fy27it']"
+  },
+  {
+   "id": "br.fuel_equiv_cents",
+   "dims": [],
+   "unit": "c/gal",
+   "label": "Jet fuel change with the same EBITDA effect",
+   "layer": "bridge",
+   "output": true,
+   "expr": "br.ebitda27 / pl.gal['fy27b'] * 100"
+  }
+ ]
+}

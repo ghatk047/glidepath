@@ -5,7 +5,7 @@ Multi-tenant what-if app for airline IT cost reduction. AA is the first tenant. 
 ## Tiers
 - **Tier 1 · Presentation** `tier1-presentation/` (`web`, `ui`): the React SPA. Renders values from tier 2, sends intent. No business logic.
 - **Tier 2 · Business logic** `tier2-logic/` (`server`, `worker`, `spec`, `engine`, `solvers`, `domain`, `excel`, `ai`, `data-access`): every formula, rule, solver, Excel and AI step.
-- **Tier 3 · Data** `tier3-data/` (migrations, seed, Postgres config, backup): Postgres 16 + RLS, MinIO.
+- **Tier 3 · Data** `tier3-data/` (migrations, seed, Postgres config, backup): Postgres 16 + RLS (workbooks and audit files too, ADR-025).
 - **Contract** `contract/api-contract`: the only code shared by tiers 1 and 2.
 
 ## Where things are

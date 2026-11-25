@@ -1,0 +1,4 @@
+# hadolint --config ops/docker/logic/.hadolint.yaml ops/docker/logic/Dockerfile
+failure-threshold: warning
+trustedRegistries:
+  - docker.io

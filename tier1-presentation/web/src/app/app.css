@@ -1,0 +1,41 @@
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+/* Form controls do not inherit the page font by default (the browser draws them in its own face). */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: var(--type-m-size);
+  font-weight: var(--type-m-weight);
+}
+
+.gp-module {
+  padding: var(--space-panel-pad);
+}
+
+.gp-module-loading {
+  min-height: 50vh;
+  margin: var(--space-gap);
+  border-radius: var(--radius-panel);
+  background: var(--glass);
+  opacity: 0.4;
+}
+
+/* `/` when it cannot open a tenant (WEB-12): one quiet line, centred. */
+.gp-home-note {
+  margin: 30vh var(--space-gap) 0;
+  text-align: center;
+  color: var(--ink-2);
+}

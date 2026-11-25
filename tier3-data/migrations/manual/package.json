@@ -1,0 +1,16 @@
+{
+  "name": "@glidepath/migrations-manual",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint tests",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@glidepath/testkit": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1"
+  }
+}

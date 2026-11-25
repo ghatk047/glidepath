@@ -1,0 +1,42 @@
+# Applies to ops/docker/logic/Dockerfile (BuildKit reads <Dockerfile>.dockerignore first).
+# The context is the repo root; send only what the tier-2 build needs.
+
+# Never in an image: settings and secrets (.env.example is documentation, not needed either)
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+
+# VCS and tooling
+.git
+.github
+.claude
+.turbo
+**/.turbo
+**/node_modules
+**/dist
+coverage
+**/coverage
+
+# Docs and specs (the AA seed is copied into tier3-data/seed by DATA-08, not read from docs/).
+# Except the two spec files the read routes load (SPEC_DIR=/app/spec in the image, FIX-04).
+docs
+!docs/spec/variables.json
+!docs/spec/formula_graph.json
+!docs/spec/excel_template.json
+
+# Tests and fixtures
+e2e
+ops/test
+**/test
+**/tests
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/playwright-report
+**/test-results
+
+# Other tiers' sources: tier 1 is built into the web image
+tier1-presentation

@@ -1,0 +1,51 @@
+{
+  "name": "glidepath",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22 <23",
+    "pnpm": ">=10 <11"
+  },
+  "scripts": {
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "pg:local": "tsx tools/pg-local/src/cli.ts",
+    "seed": "pnpm --filter @glidepath/worker run seed",
+    "warm": "pnpm --filter @glidepath/worker run warm",
+    "ai:rehearse": "pnpm --filter @glidepath/worker run ai:rehearse",
+    "scaffold-check": "tsx tools/scaffold-check/src/cli.ts",
+    "gen:types": "tsx tools/gen-types/src/cli.ts",
+    "parity:golden": "tsx tools/parity/src/cli.ts",
+    "parity:fuzz": "tsx tools/parity/src/fuzz-cli.ts",
+    "test:solvers": "tsx tools/parity/src/solvers-cli.ts",
+    "test:excel": "pnpm --filter @glidepath/excel run test:roundtrip",
+    "test:leak": "pnpm -r --workspace-concurrency=1 run test:leak",
+    "tier-check": "tsx tools/tier-check/src/cli.ts",
+    "int:m1": "pnpm --filter @glidepath/int run m1",
+    "e2e": "pnpm --filter @glidepath/e2e run smoke",
+    "e2e:perf": "pnpm --filter @glidepath/e2e run perf",
+    "e2e:visual": "pnpm --filter @glidepath/e2e run visual",
+    "e2e:a11y": "pnpm --filter @glidepath/e2e run a11y",
+    "int:m2": "pnpm --filter @glidepath/e2e run m2",
+    "int:m3": "pnpm --filter @glidepath/e2e run m3",
+    "e2e:storyline": "pnpm --filter @glidepath/e2e run storyline",
+    "e2e:wizard": "pnpm --filter @glidepath/e2e run wizard",
+    "bench": "turbo run bench"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.39.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-boundaries": "^7.4.4",
+    "prettier": "^3.4.0",
+    "tsx": "^4.19.0",
+    "turbo": "^2.5.0",
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.40.0",
+    "vitest": "^3.2.0"
+  }
+}

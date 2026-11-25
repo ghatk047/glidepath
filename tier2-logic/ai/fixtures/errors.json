@@ -1,0 +1,11 @@
+{
+  "description": "Recorded error responses, one exchange each; tests put them in front of a success fixture.",
+  "exchanges": {
+    "rate_limited": { "status": 429, "headers": { "request-id": "req_err_429", "retry-after": "7" }, "body": { "type": "error", "error": { "type": "rate_limit_error", "message": "Number of request tokens has exceeded your per-minute rate limit." } } },
+    "overloaded": { "status": 529, "headers": { "request-id": "req_err_529" }, "body": { "type": "error", "error": { "type": "overloaded_error", "message": "Overloaded" } } },
+    "server_error": { "status": 500, "headers": { "request-id": "req_err_500" }, "body": { "type": "error", "error": { "type": "api_error", "message": "Internal server error" } } },
+    "bad_request_saying_rate_limit": { "status": 400, "headers": { "request-id": "req_err_400" }, "body": { "type": "error", "error": { "type": "invalid_request_error", "message": "rate limit exceeded, overloaded, please retry: this wording must not make the request retry" } } },
+    "unauthorized": { "status": 401, "headers": { "request-id": "req_err_401" }, "body": { "type": "error", "error": { "type": "authentication_error", "message": "invalid x-api-key" } } },
+    "connection_reset": { "networkError": true }
+  }
+}

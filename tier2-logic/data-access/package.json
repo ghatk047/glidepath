@@ -1,0 +1,27 @@
+{
+  "name": "@glidepath/data-access",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src scripts test",
+    "test": "vitest run",
+    "test:leak": "vitest run test/leak",
+    "gen:drizzle": "tsx scripts/gen-drizzle.ts generate",
+    "check:drizzle": "tsx scripts/gen-drizzle.ts check"
+  },
+  "dependencies": {
+    "@glidepath/domain": "workspace:*",
+    "@glidepath/spec": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@glidepath/gen-schema": "workspace:*",
+    "@glidepath/pg-local": "workspace:*",
+    "@types/pg": "^8.23.1"
+  }
+}

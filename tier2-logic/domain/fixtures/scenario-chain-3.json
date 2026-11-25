@@ -1,0 +1,553 @@
+{
+  "description": "Three-level scenario chain (root -> child -> grandchild, plus a sibling of child) for v_inputs_resolved. Shared by DOM-01 (resolveInputs) and DATA-03 (the SQL view). Rows use schema.json column names; tenant_id applies to every row; other NOT NULL columns are left to the loader. Values are synthetic.",
+  "semantics": [
+    "Per (var_key, member_key) cell: variable definition -> tenant default (variable_value) -> each scenario from the root ancestor down to the scenario itself (scenario_value); the last level that has a row wins.",
+    "Cells come from every level: a scenario_value cell with no tenant default is included (flight_attendants,fy26 in child).",
+    "Only variables in variable_def (the tenant's pinned model_version) are returned (zz.not_in_model is dropped).",
+    "Node overrides are the scenario's own node_override rows only; they are not inherited from ancestors.",
+    "expected.<key>.chain lists scenario ids from the root ancestor to the scenario itself.",
+    "expected.<key>.values[].scenario_id is the level that supplied the value (null = tenant default).",
+    "Rows are ordered by var_key, then member_key, in code-point order (COLLATE \"C\")."
+  ],
+  "tenant_id": "00000000-0000-4000-8000-000000000001",
+  "variable_def": [
+    {
+      "var_key": "corp.lab_hc_g",
+      "dims": [
+        "lgroup",
+        "iyear"
+      ]
+    },
+    {
+      "var_key": "g.head_start",
+      "dims": []
+    },
+    {
+      "var_key": "g.target_net",
+      "dims": []
+    },
+    {
+      "var_key": "lev.L01.cut",
+      "dims": []
+    },
+    {
+      "var_key": "lev.L05.nb",
+      "dims": []
+    },
+    {
+      "var_key": "lev.L09.n",
+      "dims": []
+    },
+    {
+      "var_key": "lev.start",
+      "dims": [
+        "lever"
+      ]
+    }
+  ],
+  "variable_value": [
+    {
+      "var_key": "g.target_net",
+      "member_key": "",
+      "value": 100
+    },
+    {
+      "var_key": "g.head_start",
+      "member_key": "",
+      "value": 1
+    },
+    {
+      "var_key": "lev.L05.nb",
+      "member_key": "",
+      "value": 0.1
+    },
+    {
+      "var_key": "lev.L01.cut",
+      "member_key": "",
+      "value": 0.05
+    },
+    {
+      "var_key": "lev.L09.n",
+      "member_key": "",
+      "value": 10
+    },
+    {
+      "var_key": "corp.lab_hc_g",
+      "member_key": "pilots,fy26",
+      "value": 1
+    },
+    {
+      "var_key": "corp.lab_hc_g",
+      "member_key": "pilots,fy27",
+      "value": 2
+    },
+    {
+      "var_key": "corp.lab_hc_g",
+      "member_key": "flight_attendants,fy27",
+      "value": 3
+    },
+    {
+      "var_key": "lev.start",
+      "member_key": "L05",
+      "value": 3
+    },
+    {
+      "var_key": "lev.start",
+      "member_key": "L09",
+      "value": 6
+    },
+    {
+      "var_key": "zz.not_in_model",
+      "member_key": "",
+      "value": 1
+    }
+  ],
+  "scenario": [
+    {
+      "id": "00000000-0000-4000-8000-0000000000a3",
+      "key": "grandchild",
+      "parent_id": "00000000-0000-4000-8000-0000000000a2"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000000b2",
+      "key": "sibling",
+      "parent_id": "00000000-0000-4000-8000-0000000000a1"
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000000a1",
+      "key": "root",
+      "parent_id": null
+    },
+    {
+      "id": "00000000-0000-4000-8000-0000000000a2",
+      "key": "child",
+      "parent_id": "00000000-0000-4000-8000-0000000000a1"
+    }
+  ],
+  "scenario_value": [
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a1",
+      "var_key": "g.target_net",
+      "member_key": "",
+      "value": 110
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a1",
+      "var_key": "lev.L05.nb",
+      "member_key": "",
+      "value": 0.2
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a1",
+      "var_key": "lev.L01.cut",
+      "member_key": "",
+      "value": 0.1
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a1",
+      "var_key": "corp.lab_hc_g",
+      "member_key": "pilots,fy27",
+      "value": 4
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a2",
+      "var_key": "g.target_net",
+      "member_key": "",
+      "value": 120
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a2",
+      "var_key": "lev.L05.nb",
+      "member_key": "",
+      "value": 0.3
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a2",
+      "var_key": "corp.lab_hc_g",
+      "member_key": "flight_attendants,fy27",
+      "value": 5
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a2",
+      "var_key": "corp.lab_hc_g",
+      "member_key": "flight_attendants,fy26",
+      "value": 6
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a2",
+      "var_key": "lev.start",
+      "member_key": "L09",
+      "value": 9
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a2",
+      "var_key": "zz.not_in_model",
+      "member_key": "",
+      "value": 2
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a3",
+      "var_key": "g.target_net",
+      "member_key": "",
+      "value": 130
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a3",
+      "var_key": "lev.L09.n",
+      "member_key": "",
+      "value": 40
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a3",
+      "var_key": "corp.lab_hc_g",
+      "member_key": "pilots,fy27",
+      "value": 7
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000b2",
+      "var_key": "lev.L05.nb",
+      "member_key": "",
+      "value": 0.9
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000b2",
+      "var_key": "lev.L09.n",
+      "member_key": "",
+      "value": 90
+    }
+  ],
+  "node_override": [
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a1",
+      "node_key": "base.pool_outlay",
+      "member_key": "si_contingent",
+      "value": 118,
+      "reason": "Pinned on root"
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000a3",
+      "node_key": "res.net",
+      "member_key": "",
+      "value": 140,
+      "reason": "Pinned on grandchild"
+    },
+    {
+      "scenario_id": "00000000-0000-4000-8000-0000000000b2",
+      "node_key": "base.total",
+      "member_key": "",
+      "value": 999,
+      "reason": "Pinned on sibling"
+    }
+  ],
+  "expected": {
+    "child": {
+      "chain": [
+        "00000000-0000-4000-8000-0000000000a1",
+        "00000000-0000-4000-8000-0000000000a2"
+      ],
+      "values": [
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "flight_attendants,fy26",
+          "value": 6,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "flight_attendants,fy27",
+          "value": 5,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy26",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy27",
+          "value": 4,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "g.head_start",
+          "member_key": "",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "g.target_net",
+          "member_key": "",
+          "value": 120,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "lev.L01.cut",
+          "member_key": "",
+          "value": 0.1,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L05.nb",
+          "member_key": "",
+          "value": 0.3,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "lev.L09.n",
+          "member_key": "",
+          "value": 10,
+          "scenario_id": null
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L05",
+          "value": 3,
+          "scenario_id": null
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L09",
+          "value": 9,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        }
+      ],
+      "overrides": []
+    },
+    "grandchild": {
+      "chain": [
+        "00000000-0000-4000-8000-0000000000a1",
+        "00000000-0000-4000-8000-0000000000a2",
+        "00000000-0000-4000-8000-0000000000a3"
+      ],
+      "values": [
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "flight_attendants,fy26",
+          "value": 6,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "flight_attendants,fy27",
+          "value": 5,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy26",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy27",
+          "value": 7,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a3"
+        },
+        {
+          "var_key": "g.head_start",
+          "member_key": "",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "g.target_net",
+          "member_key": "",
+          "value": 130,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a3"
+        },
+        {
+          "var_key": "lev.L01.cut",
+          "member_key": "",
+          "value": 0.1,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L05.nb",
+          "member_key": "",
+          "value": 0.3,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        },
+        {
+          "var_key": "lev.L09.n",
+          "member_key": "",
+          "value": 40,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a3"
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L05",
+          "value": 3,
+          "scenario_id": null
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L09",
+          "value": 9,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a2"
+        }
+      ],
+      "overrides": [
+        {
+          "node_key": "res.net",
+          "member_key": "",
+          "value": 140,
+          "reason": "Pinned on grandchild"
+        }
+      ]
+    },
+    "root": {
+      "chain": [
+        "00000000-0000-4000-8000-0000000000a1"
+      ],
+      "values": [
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "flight_attendants,fy27",
+          "value": 3,
+          "scenario_id": null
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy26",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy27",
+          "value": 4,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "g.head_start",
+          "member_key": "",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "g.target_net",
+          "member_key": "",
+          "value": 110,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L01.cut",
+          "member_key": "",
+          "value": 0.1,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L05.nb",
+          "member_key": "",
+          "value": 0.2,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L09.n",
+          "member_key": "",
+          "value": 10,
+          "scenario_id": null
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L05",
+          "value": 3,
+          "scenario_id": null
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L09",
+          "value": 6,
+          "scenario_id": null
+        }
+      ],
+      "overrides": [
+        {
+          "node_key": "base.pool_outlay",
+          "member_key": "si_contingent",
+          "value": 118,
+          "reason": "Pinned on root"
+        }
+      ]
+    },
+    "sibling": {
+      "chain": [
+        "00000000-0000-4000-8000-0000000000a1",
+        "00000000-0000-4000-8000-0000000000b2"
+      ],
+      "values": [
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "flight_attendants,fy27",
+          "value": 3,
+          "scenario_id": null
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy26",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "corp.lab_hc_g",
+          "member_key": "pilots,fy27",
+          "value": 4,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "g.head_start",
+          "member_key": "",
+          "value": 1,
+          "scenario_id": null
+        },
+        {
+          "var_key": "g.target_net",
+          "member_key": "",
+          "value": 110,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L01.cut",
+          "member_key": "",
+          "value": 0.1,
+          "scenario_id": "00000000-0000-4000-8000-0000000000a1"
+        },
+        {
+          "var_key": "lev.L05.nb",
+          "member_key": "",
+          "value": 0.9,
+          "scenario_id": "00000000-0000-4000-8000-0000000000b2"
+        },
+        {
+          "var_key": "lev.L09.n",
+          "member_key": "",
+          "value": 90,
+          "scenario_id": "00000000-0000-4000-8000-0000000000b2"
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L05",
+          "value": 3,
+          "scenario_id": null
+        },
+        {
+          "var_key": "lev.start",
+          "member_key": "L09",
+          "value": 6,
+          "scenario_id": null
+        }
+      ],
+      "overrides": [
+        {
+          "node_key": "base.total",
+          "member_key": "",
+          "value": 999,
+          "reason": "Pinned on sibling"
+        }
+      ]
+    }
+  }
+}

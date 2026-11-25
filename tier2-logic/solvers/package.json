@@ -1,0 +1,21 @@
+{
+  "name": "@glidepath/solvers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src test bench",
+    "test": "vitest run",
+    "bench": "mkdir -p bench/.results && vitest bench --run --outputJson bench/.results/run.json && tsx ../engine/bench/guard-cli.ts check bench/.results/run.json --baseline bench/baseline.json"
+  },
+  "dependencies": {
+    "@glidepath/engine": "workspace:*",
+    "@glidepath/spec": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "3.2.7"
+  }
+}

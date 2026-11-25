@@ -25,7 +25,7 @@ name: glidepath
 networks:
   edge: {}
   data: { internal: true }
-  egress: {}   # outbound only, used by worker for the Claude API
+  egress: {}   # outbound only, used by worker for the Claude API and by logic for the Cloudflare Access keys (OPS-09)
 volumes: { pgdata: {}, objdata: {} }
 services:
   db:

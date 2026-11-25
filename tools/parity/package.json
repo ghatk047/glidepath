@@ -1,0 +1,21 @@
+{
+  "name": "@glidepath/parity",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "golden": "tsx src/cli.ts",
+    "fuzz": "tsx src/fuzz-cli.ts",
+    "solvers": "tsx src/solvers-cli.ts"
+  },
+  "dependencies": {
+    "@glidepath/engine": "workspace:*",
+    "@glidepath/solvers": "workspace:*",
+    "@glidepath/spec": "workspace:*"
+  }
+}

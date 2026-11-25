@@ -1,0 +1,2 @@
+# vitest bench --outputJson (pnpm bench), compared with baseline.json by guard-cli.ts
+.results/

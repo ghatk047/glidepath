@@ -1,0 +1,8 @@
+id,label,value
+g.target_net,Net cut in CY27 IT outlay vs CY26 (CIO target),100
+g.target_pct,Net cut as % of CY26 base (used if target mode = 2),0.1
+hc.us,Internal US IT employees,3000
+hc.gcc,Offshore captive (India GCC) employees,900
+hc.ctr,Contingent workers (badged contractors),800
+wf.us_attrition,US IT voluntary attrition,0.09
+rate.billable_hours,Billable hours per contractor FTE-year,1880

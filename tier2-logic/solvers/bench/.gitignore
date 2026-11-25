@@ -1,0 +1,2 @@
+# vitest bench --outputJson (pnpm bench), checked against baseline.json by the engine's guard
+.results/
