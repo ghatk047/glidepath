@@ -6,26 +6,37 @@ Product-owner request for the demo (Fri 4 Dec 2026): the app is shown full scree
 
 | id | title | ms | model/effort | size | depends on |
 |---|---|---|---|---|---|
-| UIX-01 | Desktop density pass and desktop fit audit | M4 | opus/high | M | WIZ-12 |
-| UIX-02 | Tour as a first-time viewer's demo script | M4 | opus/high | S | UIX-01 |
+| UIX-01 | Desktop density pass | M4 | opus/high | M | WIZ-12 |
+| UIX-02 | Tour as a first-time viewer's demo script | M4 | opus/high | S | WIZ-10 |
+| UIX-03 | E2E: desktop fit audit at 1280x720 and 1920x1080 | M4 | opus/high | S | WIZ-11 |
 
-## UIX-01 · Desktop density pass and desktop fit audit
+## UIX-01 · Desktop density pass
 
 ```yaml
 id: UIX-01
-title: "Desktop density pass and desktop fit audit"
+title: "Desktop density pass"
 epic: UIX
 milestone: M4
 priority: must
 status: review
+stream: C
+model: opus
+effort: high
+depends_on: [WIZ-12]
 tier: 1
-package: "tier1-presentation/ui, tier1-presentation/web, e2e"
+package: "tier1-presentation (ui glass, web shell and modules)"
+contract: "Token custom properties redefined above the tablet breakpoint; DESKTOP_QUERY / SHORT_DESKTOP_QUERY from @glidepath/ui/glass"
+inputs:
+  - "tier1-presentation/ui/src/glass/styles.ts"
+  - "tier1-presentation/web/src/global/shell/styles.ts"
 acceptance:
-  - "Above the tablet breakpoint the token gap, panel padding, panel radius and display sizes step down (ui glass `desktopDensity`), again at heights up to 900 px; tablet and phone unchanged"
-  - "Title, scenario bar and tools share one row at 1280 px and wider"
-  - "Long lists (baseline line items, lever list) scroll inside their panel; wizard step 1 lays levers out in two columns"
-  - "Every ellipsis-truncated label has a title with the full text"
-  - "`pnpm e2e:desktop -- --trace off`: every module at 1280x720 and 1920x1080 with no horizontal page scroll, no text past its panel, no untitled truncation; captures and per-screen JSON in DESKTOP_SHOTS_DIR"
+  - "Above the tablet breakpoint gap, panel padding, panel radius and display sizes step down, again up to 900 px tall; tablet and phone unchanged (ui glass tests)"
+  - "Title, scenario bar and tools on one row at 1280 px and wider (UIX-03 audit)"
+  - "Baseline line items and the lever list scroll inside their panel; wizard step 1 in two columns (UIX-03 audit)"
+  - "Every ellipsis-truncated label has a title with the full text (UIX-03 audit)"
+gates: [G2, G12, G13]
+size: M
+notes: "G11 baselines (chromium-linux) change by design and need re-approval in a Linux container."
 ```
 
 ## UIX-02 · Tour as a first-time viewer's demo script
@@ -37,10 +48,47 @@ epic: UIX
 milestone: M4
 priority: must
 status: review
+stream: C
+model: opus
+effort: high
+depends_on: [WIZ-10]
 tier: 1
-package: "tier1-presentation/web (global/tour), docs/ux/06_walkthrough_narrative.md"
+package: "tier1-presentation/web (global/tour)"
+contract: "TourStepDef.about"
+inputs:
+  - "tier1-presentation/web/src/global/tour/steps.ts"
+  - "docs/ux/06_walkthrough_narrative.md"
 acceptance:
-  - "Each step says what the screen is for and what to try, in plain words; numbers only as placeholders"
-  - "TOUR_VERSION bumped so the Tour button's dot shows again"
-  - "Every step's card fits on screen beside its target at 1280x720 and 1920x1080"
+  - "Each step has an about line: what the screen is for, at most 22 words, no digit, no placeholder (tour.test.tsx)"
+  - "TOUR_VERSION is 2 so the Tour button's dot shows again (tour.test.tsx)"
+gates: [G2]
+size: S
+notes: "Copy lives in steps.ts; docs/ux stays read-only."
+```
+
+## UIX-03 · E2E: desktop fit audit at 1280x720 and 1920x1080
+
+```yaml
+id: UIX-03
+title: "E2E: desktop fit audit at 1280x720 and 1920x1080"
+epic: UIX
+milestone: M4
+priority: must
+status: review
+stream: D
+model: opus
+effort: high
+depends_on: [WIZ-11]
+tier: ops
+package: "e2e (desktop/desktop.spec.ts, playwright.desktop.config.ts)"
+contract: "pnpm e2e:desktop; captures and per-screen JSON in DESKTOP_SHOTS_DIR"
+inputs:
+  - "e2e/visual/visual.spec.ts"
+  - "e2e/src/wizard.ts (TOUR_STEP_SPECS)"
+acceptance:
+  - "Every module, wizard steps 2 to 4: no horizontal page scroll, no text past its panel, no text cut without an ellipsis, no ellipsis without a tooltip"
+  - "Every tour step: card inside the screen and covering under 35% of its target"
+gates: [G9]
+size: S
+notes: "Not in CI; run before the freeze against the demo stack."
 ```
