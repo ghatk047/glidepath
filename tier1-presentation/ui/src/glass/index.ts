@@ -27,4 +27,4 @@ export {
   sampleFrameTime,
   watchReducedTransparency,
 } from './quality';
-export { SKELETON_OPACITY, glassCss } from './styles';
+export { DESKTOP_QUERY, SHORT_DESKTOP_QUERY, SKELETON_OPACITY, glassCss } from './styles';

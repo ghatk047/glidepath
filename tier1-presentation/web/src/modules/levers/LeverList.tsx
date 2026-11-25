@@ -50,6 +50,7 @@ function LeverRow({ lever, label, scaleMax, selected, onSelect }: RowProps) {
           className="gp-lv-name"
           data-lever={lever}
           aria-pressed={selected}
+          title={label}
           onClick={() => onSelect(lever)}
         >
           {label}
@@ -66,7 +67,7 @@ function LeverRow({ lever, label, scaleMax, selected, onSelect }: RowProps) {
 /** Lever list (panel 4): families with totals from `levers.families`, rows below. */
 export function LeverList({ families, scaleMax, labels, selected, onSelect }: LeverListProps) {
   return (
-    <>
+    <div className="gp-lv-list-wrap">
       {families.families.map((f) => (
         <div key={f.key} className="gp-lv-group" role="group" aria-label={f.label}>
           <div className="gp-lv-family">
@@ -89,6 +90,6 @@ export function LeverList({ families, scaleMax, labels, selected, onSelect }: Le
           </ul>
         </div>
       ))}
-    </>
+    </div>
   );
 }

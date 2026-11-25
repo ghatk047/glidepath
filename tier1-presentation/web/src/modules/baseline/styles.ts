@@ -1,4 +1,5 @@
 import { rem } from '@glidepath/ui/shell';
+import { DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { media } from '@glidepath/ui/tokens';
 
 /**
@@ -48,4 +49,22 @@ export const baselineCss = [
   `.gp-bl-addr[data-addr="locked"]::before { background: var(--sequential-1); }`,
   `.gp-baseline button:focus-visible { ${focus} }`,
   `@media ${media.tablet} { .gp-bl-main { grid-template-columns: minmax(0, 1fr); } }`,
+  // desktop (UIX-01): the 70-odd line items scroll inside their panel under a sticky header, one
+  // line per row (long names end in an ellipsis; the cell's title has the full text)
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-bl-strip { gap: ${rem(22)}; }`,
+  `  .gp-bl-table-wrap { max-height: calc(100vh - ${rem(150)}); min-height: ${rem(260)}; overflow: auto; overscroll-behavior: contain; }`,
+  `  .gp-bl-table { font-size: var(--type-s-size); table-layout: fixed; }`,
+  `  .gp-bl-table th, .gp-bl-table td { padding: ${rem(7)} ${rem(8)}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
+  `  .gp-bl-table thead th { position: sticky; top: 0; z-index: 1; background: color-mix(in srgb, var(--ground) 88%, transparent); }`,
+  `  .gp-bl-table thead th:nth-child(1) { width: 30%; }`,
+  `  .gp-bl-table thead th:nth-child(2) { width: 12%; }`,
+  `  .gp-bl-table thead th:nth-child(3) { width: 18%; }`,
+  `  .gp-bl-table thead th:nth-child(4) { width: 14%; }`,
+  `  .gp-bl-table thead th:nth-child(5) { width: 6%; }`,
+  `  .gp-bl-table thead th:nth-child(6) { width: 6%; }`,
+  `  .gp-bl-table thead th:nth-child(7) { width: 14%; }`,
+  `  .gp-bl-top { gap: ${rem(6)}; margin-top: ${rem(10)}; }`,
+  `  .gp-bl-split { margin: ${rem(10)} 0; }`,
+  `}`,
 ].join('\n');

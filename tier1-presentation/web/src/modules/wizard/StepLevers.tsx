@@ -52,6 +52,7 @@ function LeverRow({ lever, label, scaleMax }: RowProps) {
           type="button"
           className="gp-wz-name"
           data-lever={lever}
+          title={label}
           onClick={() => {
             const w = wizardStore.getState();
             w.setFocusLever(lever);
@@ -112,6 +113,7 @@ export function StepLevers() {
         <GlassPanel
           as="section"
           span={8}
+          className="gp-wz-levers"
           header={{ label: COPY.levers, labelAs: 'h2' }}
           loading={loading}
         >

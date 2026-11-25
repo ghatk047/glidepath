@@ -1,4 +1,5 @@
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { media } from '@glidepath/ui/tokens';
 
 /**
@@ -46,6 +47,23 @@ export const layoutCss = [
   `  .gp-search span, .gp-search .gp-kbd { display: none; }`,
   `  .gp-iconbtn, .gp-search { min-width: ${TOUCH_TARGET}; min-height: ${TOUCH_TARGET}; justify-content: center; }`,
   `  .gp-hud-loading { left: 50%; transform: translateX(-50%); bottom: calc(${rem(82)} + env(safe-area-inset-bottom, 0)); }`,
+  `}`,
+  // desktop (UIX-01): title, scenarios and tools on one row; the search keeps its icon and ⌘K below
+  // 1600 px (its label stays as the accessible name); less air above and below the content
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-main { padding: ${rem(14)} max(${rem(24)}, env(safe-area-inset-right, 0)) ${rem(112)} ${rem(24)}; }`,
+  `  .gp-topbar { flex-wrap: nowrap; gap: ${rem(12)}; margin-bottom: var(--space-gap); }`,
+  `  .gp-topbar h1 { white-space: nowrap; }`,
+  `  .gp-tools { flex-wrap: nowrap; gap: ${rem(6)}; }`,
+  `}`,
+  `@media ${DESKTOP_QUERY} and (max-width: 1600px) {`,
+  `  .gp-search:not(.gp-tour-btn) > span:not(.gp-kbd) { position: absolute; width: ${rem(1)}; height: ${rem(1)}; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }`,
+  `  .gp-search { gap: ${rem(6)}; padding: 0 ${rem(8)}; }`,
+  `  .gp-seg button { padding: ${rem(6)} ${rem(10)}; }`,
+  `  .gp-seg-k { margin-right: ${rem(4)}; }`,
+  `}`,
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-main { padding-top: ${rem(10)}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) { [data-stale] { transition: none; } }`,
 ].join('\n');

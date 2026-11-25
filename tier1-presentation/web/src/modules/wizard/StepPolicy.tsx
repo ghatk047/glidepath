@@ -74,7 +74,9 @@ function TimingRow({ lever, label }: { lever: string; label: string }) {
   const id = `gp-wzr-start-${lever}`;
   return (
     <li className="gp-wzr-timing-row" data-lever={lever} data-stale={start.stale || undefined}>
-      <span className="gp-wzr-lever">{label}</span>
+      <span className="gp-wzr-lever" title={label}>
+        {label}
+      </span>
       <label className="gp-wzr-eyebrow" htmlFor={id}>
         {COPY.start}
       </label>
