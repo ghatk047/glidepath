@@ -1,4 +1,5 @@
 import { createElement, type ReactElement } from 'react';
+import { DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem } from '@glidepath/ui/shell';
 
 /**
@@ -25,6 +26,12 @@ export const resultCss = [
   `.gp-wzr-timing { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: ${rem(8)}; }`,
   `.gp-wzr-timing-row { display: flex; align-items: center; flex-wrap: wrap; gap: ${rem(8)}; }`,
   `.gp-wzr-lever { flex: 1 1 100%; color: var(--ink); font-size: var(--type-s-size); }`,
+  // desktop (UIX-01): one line per lever (name, start, ramp) in a list that scrolls inside its panel
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-wzr-timing { gap: ${rem(4)}; max-height: calc(100vh - ${rem(330)}); min-height: ${rem(200)}; overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-wzr-timing-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: ${rem(6)}; }`,
+  `  .gp-wzr-timing-row .gp-wzr-lever { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`,
+  `}`,
   `.gp-wzr-select { background: var(--glass-2); color: var(--ink); border: ${line}; border-radius: var(--radius-pill); padding: ${rem(4)} ${rem(10)}; font: inherit; }`,
   `.gp-wzr-select:focus-visible { ${focus} }`,
   `.gp-wzr-own { display: flex; flex-direction: column; gap: var(--space-gap); margin-top: var(--space-gap); }`,

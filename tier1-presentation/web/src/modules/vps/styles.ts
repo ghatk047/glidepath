@@ -1,3 +1,4 @@
+import { DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
 
@@ -79,4 +80,14 @@ export const vpsCss = [
   `  .gp-vps-btn { min-height: ${rem(44)}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) { .gp-vps-bullet-fill, [data-glow] { transition: none; } }`,
+  // desktop (UIX-01): the gap chip keeps to its card (the target column hugs its number), the
+  // pool and ownership rows lose some air so the screen fits a 1280x720 display
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-vps-card { gap: ${rem(10)}; }`,
+  `  .gp-vps-card-foot { grid-template-columns: auto minmax(0, 1fr); gap: ${rem(10)}; padding-top: ${rem(10)}; }`,
+  `  .gp-vps-card-foot > div + div { padding-left: ${rem(10)}; }`,
+  `  .gp-vps-card-foot .gp-chip { max-width: 100%; }`,
+  `  .gp-vps-row { padding: ${rem(5)} 0; }`,
+  `  .gp-vps-pool { padding: ${rem(5)} ${rem(14)}; }`,
+  `}`,
 ].join('\n');
