@@ -1,4 +1,4 @@
 perf-report.json
 visual-report/
 desktop-shots/
-playwright.local-*.config.ts
+playwright.local-*.ts

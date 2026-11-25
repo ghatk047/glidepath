@@ -17,7 +17,7 @@ title: "Desktop density pass and desktop fit audit"
 epic: UIX
 milestone: M4
 priority: must
-status: in_progress
+status: review
 tier: 1
 package: "tier1-presentation/ui, tier1-presentation/web, e2e"
 acceptance:
@@ -36,7 +36,7 @@ title: "Tour as a first-time viewer's demo script"
 epic: UIX
 milestone: M4
 priority: must
-status: todo
+status: review
 tier: 1
 package: "tier1-presentation/web (global/tour), docs/ux/06_walkthrough_narrative.md"
 acceptance:
