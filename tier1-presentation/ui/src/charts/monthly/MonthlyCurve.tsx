@@ -57,6 +57,14 @@ export function MonthlyCurve({
   const monthName = (i: number) => MONTH_NAMES[i] ?? String(i + 1);
   const perMonth = (i: number, value: number) => `${monthName(i)} ${fmt.money(value)}/mo`;
 
+  // labels from the bottom band up; one closer than the minimum gap to the last kept label is dropped
+  const crowded = new Set<number>();
+  let lastY: number | null = null;
+  for (const [bi, b] of g.bands.map((b, i) => [i, b] as const).sort((x, y) => y[1].labelY - x[1].labelY)) {
+    if (lastY !== null && Math.abs(lastY - b.labelY) < O.familyLabelMinGap) crowded.add(bi);
+    else lastY = b.labelY;
+  }
+
   return (
     <>
       <MonthlyStyles />
@@ -99,8 +107,11 @@ export function MonthlyCurve({
           ))}
         </g>
 
-        {g.bands.map((b) => {
+        {g.bands.map((b, bi) => {
           const key = b.family.key;
+          // thin bands crowd the right edge: a label too close to one already drawn is left out
+          // (the band keeps its name in the tooltip and the accessible name)
+          const shown = !crowded.has(bi);
           const last = b.family.values.length - 1;
           const text = last >= 0 ? perMonth(last, b.family.values[last]!) : '';
           const tip = (
@@ -122,16 +133,18 @@ export function MonthlyCurve({
                 tabIndex={0}
                 {...tipProps<SVGPathElement>(tip)}
               />
-              <text
-                className="gp-monthly-family-label"
-                data-part="family-label"
-                aria-hidden="true"
-                x={MONTHLY_PLOT.right - O.familyLabelInset}
-                y={b.labelY + O.familyLabelBaseline}
-                textAnchor="end"
-              >
-                {name(key)}
-              </text>
+              {shown && (
+                <text
+                  className="gp-monthly-family-label"
+                  data-part="family-label"
+                  aria-hidden="true"
+                  x={MONTHLY_PLOT.right - O.familyLabelInset}
+                  y={b.labelY + O.familyLabelBaseline}
+                  textAnchor="end"
+                >
+                  {name(key)}
+                </text>
+              )}
             </g>
           );
         })}

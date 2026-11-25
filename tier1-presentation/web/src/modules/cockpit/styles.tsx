@@ -110,9 +110,13 @@ export const cockpitCss = [
   `@media ${DESKTOP_QUERY} {`,
   // the bridge scales with its panel: on a wide screen it would grow taller than the gauge
   `  .gp-cockpit .gp-bridge { max-height: 36vh; }`,
+  // the three steppers share their columns: the number field gives way instead of the + spilling out
+  `  .gp-cockpit-inputs { gap: ${rem(14)}; }`,
+  `  .gp-cockpit-input .gp-stepper input { flex: 1 1 auto; width: 0; min-width: 0; }`,
+  `  .gp-cockpit-input .gp-stepper button { flex: none; width: ${rem(28)}; }`,
   `}`,
   `@media ${SHORT_DESKTOP_QUERY} {`,
-  `  .gp-cockpit-net .gp-gauge { width: min(100%, ${rem(340)}); }`,
+  `  .gp-cockpit-net .gp-gauge { width: min(100%, ${rem(300)}); }`,
   `  .gp-cockpit-stats { padding-top: ${rem(14)}; }`,
   `}`,
 ].join('\n');

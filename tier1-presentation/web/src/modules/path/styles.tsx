@@ -98,6 +98,8 @@ export const pathCss = [
   `@media ${DESKTOP_QUERY} {`,
   `  .gp-path-goal .gp-radio-card { padding: ${rem(6)} ${rem(10)}; }`,
   `  .gp-path-hold-row { padding: ${rem(6)} ${rem(12)}; }`,
+  // charts scale with their panel: on a wide screen the histogram would outgrow the row
+  `  .gp-path .gp-chart { max-height: 30vh; }`,
   `}`,
 ].join('\n');
 
