@@ -95,8 +95,12 @@ const font = (w: TokenPath, s: TokenPath, fam: TokenPath, fallback: string) =>
  * relative to the token defaults), so every panel, grid and module follows; tablet and phone keep
  * the token values. `:root:root` outranks the generated token sheet whatever the mount order.
  */
-export const DESKTOP_QUERY = `(min-width: ${breakpoints.tablet + 1}px)`;
-export const SHORT_DESKTOP_QUERY = `${DESKTOP_QUERY} and (max-height: 900px)`;
+// media queries cannot read custom properties, and em there is always the 16 px browser default
+const MQ_EM = 16;
+/** Wider than the token tablet breakpoint. */
+export const DESKTOP_QUERY = `(min-width: ${(breakpoints.tablet + 1) / MQ_EM}em)`;
+/** Desktop on a short screen (a 1280x720 laptop, a 1440x900 display). */
+export const SHORT_DESKTOP_QUERY = `${DESKTOP_QUERY} and (max-height: ${900 / MQ_EM}em)`;
 const desktopDensity = [
   `@media ${DESKTOP_QUERY} {`,
   `  :root:root { ${v('space.gap')}: 0.875rem; ${v('space.panelPad')}: 1.125rem 1.25rem; ${v('radius.panel')}: 1.125rem; ${v('type.scale.hero.size')}: clamp(2.75rem, 3.9vw, 4.5rem); ${v('type.scale.xl.size')}: clamp(1.625rem, 2.2vw, 2.25rem); }`,
