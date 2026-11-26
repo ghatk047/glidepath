@@ -62,6 +62,8 @@ import {
   ConsolidationRequest,
   ConsolidationResult,
   RenewalCalendar,
+  SourcingMembers,
+  SourcingMembersQuery,
   SourcingParams,
   SourcingParamsQuery,
   SourcingQuery,
@@ -367,6 +369,14 @@ export const sourcingRoutes = {
     params: TenantParams,
     query: SourcingParamsQuery,
     response: SourcingParams,
+  },
+  sourcingMembers: {
+    method: 'GET',
+    path: '/api/t/:tenant/sourcing/members',
+    status: 200,
+    params: TenantParams,
+    query: SourcingMembersQuery,
+    response: SourcingMembers,
   },
   sourcingConsolidation: {
     method: 'POST',

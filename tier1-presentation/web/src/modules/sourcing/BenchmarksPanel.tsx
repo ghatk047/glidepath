@@ -1,7 +1,8 @@
-import type { CSSProperties } from 'react';
-import type { BenchmarkGap, BenchmarkTotals, SourcingParam } from '@glidepath/api-contract';
+import { Fragment, useState, type CSSProperties } from 'react';
+import type { BenchmarkGap, BenchmarkTotals, SourcingMember, SourcingParam } from '@glidepath/api-contract';
 import { MINUS, fmt } from '@glidepath/ui/format';
 import { GlassPanel } from '@glidepath/ui/glass';
+import { MemberEditor, type MemberField } from './MemberEditor';
 import { ParamStrip } from './ParamStrip';
 import { Kpis, ReadError, Tag, usd } from './parts';
 import type { Read } from './useSourcing';
@@ -29,16 +30,27 @@ export function Headroom({ totals }: { totals: BenchmarkTotals }) {
   );
 }
 
+/** The percentiles of a `benchmark` member (US$ per unit, SRC-01 seed names), edited from its row. */
+const PERCENTILES: readonly MemberField[] = [
+  { attr: 'p25_usd', label: 'p25', step: 1, min: 0, format: usd },
+  { attr: 'median_usd', label: 'Median', step: 1, min: 0, format: usd },
+  { attr: 'p75_usd', label: 'p75', step: 1, min: 0, format: usd },
+];
+
 /** F7 · Should-cost benchmarks: unit cost against the p25-p75 band, gap and opportunity per line. */
 export function BenchmarksPanel({
   read,
+  rows: stored,
   params,
   onCommitted,
 }: {
   read: Read<BenchmarkGap>;
+  /** Stored `benchmark` rows (`GET /sourcing/members?dim=benchmark`); null until read. */
+  rows: readonly SourcingMember[] | null;
   params: readonly SourcingParam[];
   onCommitted(): void;
 }) {
+  const [open, setOpen] = useState<string | null>(null);
   const d = read.data;
   const percentile = d?.rows[0]?.percentile;
   return (
@@ -75,29 +87,48 @@ export function BenchmarksPanel({
                   <span className="gp-src-num">Gap</span>
                   <span className="gp-src-num">Opp.</span>
                 </li>
-                {d.rows.map((r) => (
-                  <li key={`${r.benchmark}-${r.line}`} className="gp-src-row gp-src-bench" data-benchmark={r.benchmark} data-line={r.line}>
-                    <span className="gp-src-name" title={`${r.label} · ${r.pool} · per ${r.unit}`}>
-                      {r.label}
-                      <span className="gp-src-sub"> · per {r.unit}</span>
-                    </span>
-                    <span
-                      className="gp-src-range"
-                      data-over={r.gapPerUnit > 0 || undefined}
-                      title={`p25 ${usd(r.p25)} · median ${usd(r.median)} · p75 ${usd(r.p75)} · unit cost ${usd(r.unitCost)}`}
-                      style={{ '--p25': r.p25, '--median': r.median, '--p75': r.p75, '--cost': r.unitCost } as CSSProperties}
-                    >
-                      <i className="band" />
-                      <i className="mid" />
-                      <i className="cost" />
-                    </span>
-                    <span className="gp-src-num">{usd(r.unitCost)}</span>
-                    <span className="gp-src-num gp-src-sub">{usd(r.gapPerUnit)}</span>
-                    <span className="gp-src-num" title={`Capturable ${fmt.money(r.capturable)}`}>
-                      {fmt.money(r.opportunity)}
-                    </span>
-                  </li>
-                ))}
+                {d.rows.map((r) => {
+                  const id = `${r.benchmark}-${r.line}`;
+                  return (
+                    <Fragment key={id}>
+                      <li className="gp-src-row gp-src-bench" data-benchmark={r.benchmark} data-line={r.line}>
+                        <span className="gp-src-name" title={`${r.label} · ${r.pool} · per ${r.unit}`}>
+                          {r.label}
+                          <span className="gp-src-sub"> · per {r.unit}</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="gp-src-range gp-src-edit"
+                          data-over={r.gapPerUnit > 0 || undefined}
+                          aria-expanded={open === id}
+                          aria-label={`Edit benchmark of ${r.label}: p25 ${usd(r.p25)}, median ${usd(r.median)}, p75 ${usd(r.p75)}, unit cost ${usd(r.unitCost)}`}
+                          title={`p25 ${usd(r.p25)} · median ${usd(r.median)} · p75 ${usd(r.p75)} · unit cost ${usd(r.unitCost)} · click to edit`}
+                          style={{ '--p25': r.p25, '--median': r.median, '--p75': r.p75, '--cost': r.unitCost } as CSSProperties}
+                          onClick={() => setOpen((o) => (o === id ? null : id))}
+                        >
+                          <i className="band" />
+                          <i className="mid" />
+                          <i className="cost" />
+                        </button>
+                        <span className="gp-src-num">{usd(r.unitCost)}</span>
+                        <span className="gp-src-num gp-src-sub">{usd(r.gapPerUnit)}</span>
+                        <span className="gp-src-num" title={`Capturable ${fmt.money(r.capturable)}`}>
+                          {fmt.money(r.opportunity)}
+                        </span>
+                      </li>
+                      {open === id && (
+                        <li className="gp-src-editor">
+                          <MemberEditor
+                            dim="benchmark"
+                            member={stored?.find((m) => m.key === r.benchmark) ?? null}
+                            fields={PERCENTILES}
+                            onCommitted={onCommitted}
+                          />
+                        </li>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </ul>
             </div>
           </>

@@ -62,8 +62,8 @@ function Screen() {
   return (
     <Frame>
       <VendorsPanel read={s.vendors} />
-      <RenewalsPanel read={s.renewals} params={params} onCommitted={s.reload} />
-      <BenchmarksPanel read={s.benchmarks} params={params} onCommitted={s.reload} />
+      <RenewalsPanel read={s.renewals} rows={s.contracts.data?.members ?? null} params={params} onCommitted={s.reload} />
+      <BenchmarksPanel read={s.benchmarks} rows={s.benchmarkRows.data?.members ?? null} params={params} onCommitted={s.reload} />
       <ConsolidationPanel read={s.consolidation} params={params} onCommitted={s.reload} />
     </Frame>
   );

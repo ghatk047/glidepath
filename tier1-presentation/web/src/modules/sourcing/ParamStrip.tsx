@@ -28,9 +28,9 @@ const unitSuffix = (unit: string) => (FORMATTED_UNITS.has(unit) ? '' : unit);
  * The structural change that writes one parameter: the whole `sourcing_param` member row
  * (`{ label, attrs, sort, active }`, label being a column) with `attrs.value` replaced. The attributes
  * are the member's (`value`, `unit`, `min`, `max`, `step`, `group`), as `GET /sourcing/params` returns
- * them; `sort` is the member's place in that answer (tier 2 lists the members in `sort` order).
+ * them, and `sort` the member's own.
  */
-export function paramChange(p: SourcingParam, place: number, value: number): Change {
+export function paramChange(p: SourcingParam, value: number): Change {
   return {
     target: 'structural',
     key: PARAM_DIM as DimKey,
@@ -38,7 +38,7 @@ export function paramChange(p: SourcingParam, place: number, value: number): Cha
     value: {
       label: p.label,
       attrs: { value, unit: p.unit, min: p.min, max: p.max, step: p.step, group: p.group },
-      sort: place,
+      sort: p.sort,
       active: true,
     },
   };
@@ -77,7 +77,7 @@ export function ParamStrip({ params, group, onCommitted }: ParamStripProps) {
   }, [params]);
 
   const edit = useCallback(
-    (p: SourcingParam, place: number, typed: number) => {
+    (p: SourcingParam, typed: number) => {
       const commit = ctx.commit;
       if (!commit) return;
       const value = snapToStep(typed, p.min, p.max, p.step);
@@ -86,7 +86,7 @@ export function ParamStrip({ params, group, onCommitted }: ParamStripProps) {
       setHeld((h) => ({ ...h, [p.key]: { value, done: false } }));
       setError(null);
       const mine = () => latest.current[p.key] === token;
-      commit(paramChange(p, place, value)).then(
+      commit(paramChange(p, value)).then(
         () => {
           // Only the last edit of a burst reads again (the queue posts them as one changeset).
           if (!mine()) return;
@@ -103,15 +103,13 @@ export function ParamStrip({ params, group, onCommitted }: ParamStripProps) {
     [ctx.commit, onCommitted],
   );
 
-  const shown = params
-    .map((p, i) => ({ p, place: i + 1 }))
-    .filter(({ p }) => p.group === group);
+  const shown = params.filter((p) => p.group === group);
   if (shown.length === 0) return null;
 
   return (
     <>
       <ul className="gp-src-params" aria-label="Parameters">
-        {shown.map(({ p, place }) => {
+        {shown.map((p) => {
           const value = held[p.key]?.value ?? p.value;
           const suffix = unitSuffix(p.unit);
           return (
@@ -133,7 +131,7 @@ export function ParamStrip({ params, group, onCommitted }: ParamStripProps) {
                 max={p.max}
                 format={(v) => paramText(p, v)}
                 parse={p.unit === '%' ? parsePercent('fraction') : parseNumber}
-                onChange={(v) => edit(p, place, v)}
+                onChange={(v) => edit(p, v)}
               />
               {suffix && <span className="gp-src-sub">{suffix}</span>}
             </li>

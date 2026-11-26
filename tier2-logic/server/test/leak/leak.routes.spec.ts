@@ -463,6 +463,13 @@ const CASES: Record<string, (p: Probe) => Promise<void>> = {
     for (const t of OTHERS) for (const id of [other[t].fork, other[t].presetC]) await p.aimed('sourcing params', 'GET', (s) => at(s, `/sourcing/params?scenario=${id}`), undefined, t, [id]);
     await p.foreign('sourcing params', 'GET', (s) => at(s, '/sourcing/params'));
   },
+  'GET /api/t/:tenant/sourcing/members': async (p) => {
+    // SRC-11: the stored contract and benchmark rows; tenant members, so only the tenant's own (its own contract among them).
+    const r = await p.own('sourcing contract members', 'ana', 'GET', own('/sourcing/members?dim=contract'));
+    expect((r.json as { members: { key: string }[] }).members.map((x) => x.key)).toContain('c_aa_only');
+    await p.own('sourcing benchmark members by a member of the copy too', 'max', 'GET', own('/sourcing/members?dim=benchmark'));
+    for (const dim of ['contract', 'benchmark']) await p.foreign(`sourcing ${dim} members`, 'GET', (s) => at(s, `/sourcing/members?dim=${dim}`));
+  },
   'POST /api/t/:tenant/sourcing/consolidation': async (p) => {
     // SRC-10: the optimizer over the scenario's spend cube; other tenants' scenarios are refused like the views.
     await p.own('consolidation', 'ana', 'POST', own('/sourcing/consolidation'), json({ scenarioId: A.fork }));

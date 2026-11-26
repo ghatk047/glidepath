@@ -5,6 +5,7 @@ import {
   type ConsolidationResult,
   type RenewalCalendar,
   type ScenarioId,
+  type SourcingMembers,
   type SourcingParams,
   type TenantSlug,
   type VendorSpend,
@@ -26,6 +27,9 @@ export interface SourcingData {
   benchmarks: Read<BenchmarkGap>;
   params: Read<SourcingParams>;
   consolidation: Read<ConsolidationResult>;
+  /** Stored `contract` and `benchmark` rows (what an edit writes back whole). */
+  contracts: Read<SourcingMembers>;
+  benchmarkRows: Read<SourcingMembers>;
   /** Reads everything again and re-runs the consolidation optimizer (after a commit). */
   reload(): void;
 }
@@ -48,6 +52,8 @@ export function useSourcing(tenant: TenantSlug, scenarioId: ScenarioId): Sourcin
   const [benchmarks, setBenchmarks] = useState<Read<BenchmarkGap>>(EMPTY);
   const [params, setParams] = useState<Read<SourcingParams>>(EMPTY);
   const [consolidation, setConsolidation] = useState<Read<ConsolidationResult>>(EMPTY);
+  const [contracts, setContracts] = useState<Read<SourcingMembers>>(EMPTY);
+  const [benchmarkRows, setBenchmarkRows] = useState<Read<SourcingMembers>>(EMPTY);
 
   useEffect(() => {
     let live = true;
@@ -63,6 +69,8 @@ export function useSourcing(tenant: TenantSlug, scenarioId: ScenarioId): Sourcin
     follow(setRenewals, () => api.sourcingRenewals({ params: { tenant }, query }));
     follow(setBenchmarks, () => api.sourcingBenchmarks({ params: { tenant }, query }));
     follow(setParams, () => api.sourcingParams({ params: { tenant }, query }));
+    follow(setContracts, () => api.sourcingMembers({ params: { tenant }, query: { dim: 'contract' } }));
+    follow(setBenchmarkRows, () => api.sourcingMembers({ params: { tenant }, query: { dim: 'benchmark' } }));
     follow(setConsolidation, () =>
       api.sourcingConsolidation({ params: { tenant }, body: { scenarioId } }),
     );
@@ -72,5 +80,5 @@ export function useSourcing(tenant: TenantSlug, scenarioId: ScenarioId): Sourcin
   }, [api, tenant, scenarioId, rev]);
 
   const reload = useCallback(() => setRev((n) => n + 1), []);
-  return { vendors, renewals, benchmarks, params, consolidation, reload };
+  return { vendors, renewals, benchmarks, params, consolidation, contracts, benchmarkRows, reload };
 }

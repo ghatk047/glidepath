@@ -20,6 +20,7 @@ import {
   ScenarioId,
   TenantSlug,
   BenchmarkGap,
+  SourcingMembers,
   SourcingParams,
   VendorSpend,
   apiRoutes,
@@ -68,11 +69,26 @@ const BENCHMARKS = BenchmarkGap.parse({
 });
 // Parameters in the seed's groups (one panel each).
 const { params: PARAMS } = SourcingParams.parse({ params: [
-  { key: 'act_now_days', label: 'Act-now window', group: 'renewals', value: 120, unit: 'days', min: 30, max: 365, step: 15 },
-  { key: 'capture_pct', label: 'Capturable share', group: 'benchmarks', value: 0.5, unit: '%', min: 0, max: 1, step: 0.05 },
-  { key: 'concentration_cap_pct', label: 'Concentration cap', group: 'consolidation', value: 0.35, unit: '%', min: 0.15, max: 0.6, step: 0.05 },
-  { key: 'max_moves', label: 'Maximum moves', group: 'consolidation', value: 10, unit: 'moves', min: 1, max: 20, step: 1 },
+  { key: 'act_now_days', label: 'Act-now window', group: 'renewals', value: 120, unit: 'days', min: 30, max: 365, step: 15, sort: 10 },
+  { key: 'capture_pct', label: 'Capturable share', group: 'benchmarks', value: 0.5, unit: '%', min: 0, max: 1, step: 0.05, sort: 20 },
+  { key: 'concentration_cap_pct', label: 'Concentration cap', group: 'consolidation', value: 0.35, unit: '%', min: 0.15, max: 0.6, step: 0.05, sort: 30 },
+  { key: 'max_moves', label: 'Maximum moves', group: 'consolidation', value: 10, unit: 'moves', min: 1, max: 20, step: 1, sort: 40 },
 ] });
+
+// Stored rows of the edited members: the contract fixture and a benchmark row for the first benchmarked line.
+const CONTRACTS = sfx.sourcingMembers.response;
+const BENCH_ROWS = SourcingMembers.parse({
+  dim: 'benchmark',
+  members: [
+    {
+      key: BENCHMARKS.rows[0]!.benchmark,
+      label: BENCHMARKS.rows[0]!.label,
+      attrs: { unit: BENCHMARKS.rows[0]!.unit, lines: [BENCHMARKS.rows[0]!.line], p25_usd: BENCHMARKS.rows[0]!.p25, median_usd: BENCHMARKS.rows[0]!.median, p75_usd: BENCHMARKS.rows[0]!.p75, source: 'test', confidence: 'M' },
+      sort: 3,
+      active: true,
+    },
+  ],
+});
 
 const server = setupServer();
 beforeAll(() => {
@@ -144,6 +160,9 @@ function serve(opts: { refuse?: string } = {}): Served {
       served.paramReads.push(request.url);
       return HttpResponse.json({ params: held });
     }),
+    http.get(`${BASE}${apiRoutes.sourcingMembers.path}`, ({ request }) =>
+      HttpResponse.json(new URL(request.url).searchParams.get('dim') === 'benchmark' ? BENCH_ROWS : CONTRACTS),
+    ),
     http.post(`${BASE}${apiRoutes.sourcingConsolidation.path}`, async ({ request }) => {
       served.runs.push((await request.json()) as ConsolidationRequest);
       return HttpResponse.json(sfx.sourcingConsolidation.response);
@@ -346,7 +365,7 @@ describe('parameter edits', () => {
         value: {
           label: cap.label,
           attrs: { value: 0.4, unit: cap.unit, min: cap.min, max: cap.max, step: cap.step, group: cap.group },
-          sort: PARAMS.indexOf(cap) + 1,
+          sort: cap.sort,
           active: true,
         },
       },
@@ -396,6 +415,53 @@ describe('parameter edits', () => {
     expect(keys('benchmarks')).toEqual(['capture_pct']);
     expect(keys('consolidation')).toEqual(['concentration_cap_pct', 'max_moves']);
     expect(keys('vendors')).toEqual([]);
+  });
+});
+
+describe('member edits', () => {
+  it("a renewal row's target cut and notice days commit the whole contract row", async () => {
+    const t = await mount();
+    const p = panel('renewals');
+    const row = CONTRACTS.members[0]!;
+    const renewal = sfx.sourcingRenewals.response.renewals.find((r) => r.contract === row.key)!;
+    fireEvent.click(within(p).getByRole('button', { name: new RegExp(`^Edit terms of ${renewal.vendor}`) }));
+    await t.until(() => expect(p.querySelector(`[data-member="${row.key}"]`)).toBeTruthy());
+    fireEvent.click(within(p).getByRole('button', { name: 'Increase Target cut' }));
+    fireEvent.change(within(p).getByRole('textbox', { name: 'Notice days' }), { target: { value: '120' } });
+    fireEvent.blur(within(p).getByRole('textbox', { name: 'Notice days' }));
+    await t.flush();
+    await t.until(() => expect(t.posts).toHaveLength(1));
+    // One row, both edits (latest wins per member in the queue), every other attribute carried over.
+    expect(t.posts[0]!.changes).toEqual([
+      {
+        target: 'structural',
+        key: 'contract',
+        member: row.key,
+        value: { label: row.label, attrs: { ...row.attrs, target_cut_pct: 0.09, notice_days: 120 }, sort: row.sort, active: row.active },
+      },
+    ]);
+    await t.until(() => expect(t.runs).toHaveLength(2));
+  });
+
+  it("a benchmark's p25, median and p75 commit the whole benchmark row", async () => {
+    const t = await mount();
+    const p = panel('benchmarks');
+    const row = BENCH_ROWS.members[0]!;
+    fireEvent.click(within(p).getByRole('button', { name: new RegExp(`^Edit benchmark of ${row.label}`) }));
+    await t.until(() => expect(p.querySelector(`[data-member="${row.key}"]`)).toBeTruthy());
+    const median = within(p).getByRole('textbox', { name: 'Median' });
+    fireEvent.change(median, { target: { value: '12' } });
+    fireEvent.blur(median);
+    await t.flush();
+    await t.until(() => expect(t.posts).toHaveLength(1));
+    expect(t.posts[0]!.changes).toEqual([
+      {
+        target: 'structural',
+        key: 'benchmark',
+        member: row.key,
+        value: { label: row.label, attrs: { ...row.attrs, median_usd: 12 }, sort: row.sort, active: row.active },
+      },
+    ]);
   });
 });
 

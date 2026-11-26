@@ -12,6 +12,7 @@ import {
   SolverResult,
   SolverSpec,
   SourcingParam,
+  SourcingMembers,
   SourcingParams,
   VendorSpend,
   WavePlanParams,
@@ -45,6 +46,7 @@ describe('sourcing.spec: SRC-03 sourcing and plan routes', () => {
         'GET /api/t/:tenant/sourcing/renewals',
         'GET /api/t/:tenant/sourcing/benchmarks',
         'GET /api/t/:tenant/sourcing/params',
+        'GET /api/t/:tenant/sourcing/members',
         'POST /api/t/:tenant/sourcing/consolidation',
         'GET /api/t/:tenant/plan/business-case',
       ].sort(),
@@ -61,6 +63,7 @@ describe('sourcing.spec: SRC-03 sourcing and plan routes', () => {
     expect(sourcingRoutes.sourcingRenewals.response).toBe(RenewalCalendar);
     expect(sourcingRoutes.sourcingBenchmarks.response).toBe(BenchmarkGap);
     expect(sourcingRoutes.sourcingParams.response).toBe(SourcingParams);
+    expect(sourcingRoutes.sourcingMembers.response).toBe(SourcingMembers);
     expect(sourcingRoutes.sourcingConsolidation.body).toBe(ConsolidationRequest);
     expect(sourcingRoutes.sourcingConsolidation.response).toBe(ConsolidationResult);
     expect(planRoutes.planBusinessCase.response).toBe(BusinessCase);

@@ -3,6 +3,8 @@ import {
   ConsolidationRequest,
   ConsolidationResult,
   RenewalCalendar,
+  SourcingMembers,
+  SourcingMembersQuery,
   SourcingParams,
   SourcingParamsQuery,
   SourcingQuery,
@@ -175,7 +177,24 @@ export function registerSourcingRoutes(app: Hono<AppEnv>, deps: SourcingRoutesDe
     if (scenario !== undefined && !(await getScenario(tx, scenario))) throw ApiError.notFound(NO_SCENARIO);
     const sourcing = await loadSourcingMembers(tx);
     const { params } = await guarded(async () => readSourcingParams(sourcing.members['sourcing_param'] ?? []));
-    return json(c, SourcingParams.parse({ params }));
+    // The member's sort comes with it, so a structural change can write the whole row back.
+    const sorts = new Map(sourcing.rows.filter((m) => m.dim_key === 'sourcing_param').map((m) => [m.member_key, m.sort]));
+    return json(c, SourcingParams.parse({ params: params.map((p) => ({ ...p, sort: sorts.get(p.key) })) }));
+  });
+
+  /**
+   * The tenant's stored `contract` or `benchmark` rows (SRC-11 edits), active or not, in member order: each is the
+   * `{ label, attrs, sort, active }` a structural change on it writes back whole. Tenant members, so no scenario.
+   */
+  app.get(r.sourcingMembers.path, async (c) => {
+    TenantParams.parse(c.req.param());
+    const { dim } = SourcingMembersQuery.parse(c.req.query());
+    const { tx } = c.get('tenant');
+    const sourcing = await loadSourcingMembers(tx);
+    const members = sourcing.rows
+      .filter((m) => m.dim_key === dim)
+      .map((m) => ({ key: m.member_key, label: m.label, attrs: m.attrs, sort: m.sort, active: m.active }));
+    return json(c, SourcingMembers.parse({ dim, members }));
   });
 
   /**

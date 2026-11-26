@@ -176,6 +176,7 @@ export const sourcingRouteFixtures = {
           min: 0,
           max: 0.25,
           step: 0.005,
+          sort: 1,
         },
         {
           key: 'concentration_cap',
@@ -186,6 +187,35 @@ export const sourcingRouteFixtures = {
           min: 0.1,
           max: 0.8,
           step: 0.05,
+          sort: 2,
+        },
+      ],
+    },
+  },
+  sourcingMembers: {
+    params: { tenant },
+    query: { dim: 'contract' },
+    response: {
+      dim: 'contract',
+      members: [
+        {
+          key: 'ct_northwind_ams',
+          label: 'Northwind application managed services',
+          attrs: {
+            vendor_name: 'Northwind Services',
+            vendor: 'northwind',
+            category: 'Application managed services',
+            lines: ['it_101', 'it_102'],
+            renewal_month: '2027-03',
+            notice_days: 90,
+            escalator_pct: 0.03,
+            auto_renew: 1,
+            target_cut_pct: 0.08,
+            source: 'test',
+            confidence: 'M',
+          },
+          sort: 1,
+          active: true,
         },
       ],
     },

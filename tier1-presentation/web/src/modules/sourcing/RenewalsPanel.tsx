@@ -1,7 +1,9 @@
-import type { CSSProperties } from 'react';
-import type { RenewalCalendar, RenewalStatus, SourcingParam } from '@glidepath/api-contract';
+import { Fragment, useState, type CSSProperties } from 'react';
+import type { RenewalCalendar, RenewalStatus, SourcingMember, SourcingParam } from '@glidepath/api-contract';
 import { fmt } from '@glidepath/ui/format';
 import { GlassPanel } from '@glidepath/ui/glass';
+import { parsePercent } from '@glidepath/ui/inputs/editable';
+import { MemberEditor, type MemberField } from './MemberEditor';
 import { ParamStrip } from './ParamStrip';
 import { Kpis, ReadError, Tag, monthLabel, type Tone } from './parts';
 import type { Read } from './useSourcing';
@@ -15,16 +17,26 @@ const STATUS: Record<RenewalStatus, { word: string; tone: Tone }> = {
   later: { word: 'later', tone: undefined },
 };
 
+/** The contract terms edited from a renewal row (attributes of the `contract` member, SRC-01 seed names). */
+const TERMS: readonly MemberField[] = [
+  { attr: 'target_cut_pct', label: 'Target cut', step: 0.01, min: 0, max: 1, format: (v) => fmt.pct(v, { digits: 0 }), parse: parsePercent('fraction') },
+  { attr: 'notice_days', label: 'Notice days', step: 1, min: 0, format: (v) => fmt.fte(v) },
+];
+
 /** F6 · Renewal calendar: status counts, a month timeline of the window and the renewals, act-now first. */
 export function RenewalsPanel({
   read,
+  rows: stored,
   params,
   onCommitted,
 }: {
   read: Read<RenewalCalendar>;
+  /** Stored `contract` rows (`GET /sourcing/members?dim=contract`); null until read. */
+  rows: readonly SourcingMember[] | null;
   params: readonly SourcingParam[];
   onCommitted(): void;
 }) {
+  const [open, setOpen] = useState<string | null>(null);
   const d = read.data;
   const rows = d
     ? STATUS_ORDER.flatMap((s) => d.renewals.filter((r) => r.status === s))
@@ -95,7 +107,8 @@ export function RenewalsPanel({
                   <span className="gp-src-num">Capture</span>
                 </li>
                 {rows.map((r) => (
-                  <li key={r.contract} className="gp-src-row gp-src-renewal" data-contract={r.contract} data-status={r.status}>
+                  <Fragment key={r.contract}>
+                  <li className="gp-src-row gp-src-renewal" data-contract={r.contract} data-status={r.status}>
                     <span>
                       <Tag tone={STATUS[r.status].tone}>{STATUS[r.status].word}</Tag>
                     </span>
@@ -107,11 +120,31 @@ export function RenewalsPanel({
                       {fmt.fte(r.daysToDeadline)}d
                     </span>
                     <span className="gp-src-num">{fmt.money(r.annualValue)}</span>
-                    <span className="gp-src-num" title={`Escalator exposure ${fmt.money(r.escalatorExposure)}/yr`}>
-                      {fmt.pct(r.targetCut, { digits: 0 })}
+                    <span className="gp-src-num">
+                      <button
+                        type="button"
+                        className="gp-src-edit"
+                        aria-expanded={open === r.contract}
+                        aria-label={`Edit terms of ${r.vendor}: target cut ${fmt.pct(r.targetCut, { digits: 0 })}`}
+                        title={`Escalator exposure ${fmt.money(r.escalatorExposure)}/yr · click to edit the terms`}
+                        onClick={() => setOpen((o) => (o === r.contract ? null : r.contract))}
+                      >
+                        {fmt.pct(r.targetCut, { digits: 0 })}
+                      </button>
                     </span>
                     <span className="gp-src-num">{fmt.money(r.capture)}</span>
                   </li>
+                  {open === r.contract && (
+                    <li className="gp-src-editor">
+                      <MemberEditor
+                        dim="contract"
+                        member={stored?.find((m) => m.key === r.contract) ?? null}
+                        fields={TERMS}
+                        onCommitted={onCommitted}
+                      />
+                    </li>
+                  )}
+                  </Fragment>
                 ))}
               </ul>
             </div>

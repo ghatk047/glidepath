@@ -1,4 +1,4 @@
-import { BenchmarkGap, ConsolidationResult, PROBLEM_CONTENT_TYPE, RenewalCalendar, SourcingParams, UserId, VendorSpend, sourcingRoutes } from '@glidepath/api-contract';
+import { BenchmarkGap, ConsolidationResult, PROBLEM_CONTENT_TYPE, RenewalCalendar, SourcingMembers, SourcingParams, UserId, VendorSpend, sourcingRoutes } from '@glidepath/api-contract';
 import { aaSeed } from '@glidepath/testkit';
 import type { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -92,6 +92,8 @@ describe('SRC-07 sourcing routes answer their contract schema for scenario C', (
   it('GET params: the sourcing_param members, with or without a scenario', async () => {
     const p = await body(await get(path('sourcingParams')), SourcingParams);
     expect(p.params.map((x) => x.key)).toEqual(dims.sourcing_param.map((m) => m.id));
+    // each with the member's sort (seeded in file order), so the whole row can be written back
+    expect(p.params.map((x) => x.sort)).toEqual(dims.sourcing_param.map((_, i) => i + 1));
     expect(p.params.find((x) => x.key === 'capture_pct')).toMatchObject({ value: 0.5, group: 'benchmarks', unit: '%' });
     const withScenario = await body(await get(path('sourcingParams', C())), SourcingParams);
     expect(withScenario).toEqual(p);
@@ -241,6 +243,59 @@ describe('SRC-07 reference tenant numbers (scenario C), for the record', () => {
     };
     process.stdout.write(`SRC-07 scenario C: ${JSON.stringify(summary, null, 1)}\n`);
     expect(v.totals.vendorCount).toBeGreaterThan(0);
+  });
+});
+
+describe('SRC-11 GET sourcing/members', () => {
+  const members = (dim: string, who = ana, tenant = 'aa') => get(`${path('sourcingMembers', undefined, tenant)}?dim=${dim}`, who);
+
+  it.each(['contract', 'benchmark'] as const)('%s: every stored row, whole, in member order', async (dim) => {
+    const r = await body(await members(dim), SourcingMembers);
+    expect(r.dim).toBe(dim);
+    expect(r.members).toEqual(
+      dims[dim].map((m, i) => {
+        const { id, label, ...attrs } = m;
+        return { key: id, label, attrs, sort: i + 1, active: true };
+      }),
+    );
+  });
+
+  it('a dimension that is not editable here is a 422 problem; another tenant sees only its own (none)', async () => {
+    for (const dim of ['sourcing_param', 'vendor', '']) {
+      const res = await members(dim);
+      expect(res.status).toBe(422);
+      expect(res.headers.get('content-type')).toContain(PROBLEM_CONTENT_TYPE);
+    }
+    expect((await get(`${path('sourcingMembers')}`)).status).toBe(422);
+    const zz = await body(await members('contract', asUser(BOB), 'zz'), SourcingMembers);
+    expect(zz.members).toEqual([]);
+    expect((await members('contract', asUser(BOB))).status).toBe(404);
+    expect((await members('contract', asUser(CAROL))).status).toBe(404);
+    expect((await app.request(`${path('sourcingMembers')}?dim=contract`)).status).toBe(401);
+  });
+
+  it('a row read here and written back whole with a new target cut changes the renewal on the next call', async () => {
+    const { members: rows } = await body(await members('contract'), SourcingMembers);
+    const row = rows.find((m) => m.key === 'c_azure_macc')!;
+    const before = await body(await get(path('sourcingRenewals', MINE)), RenewalCalendar);
+    const old = before.renewals.find((x) => x.contract === row.key)!;
+    const scenarios = (await (await get('/api/t/aa/scenarios')).json()) as { scenarios: { id: string; version: number }[] };
+    const mine = scenarios.scenarios.find((s) => s.id === MINE)!;
+    const { key, ...value } = row;
+    const res = await app.request('/api/t/aa/changesets', {
+      method: 'POST',
+      headers: { ...ana.headers, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        scenarioId: MINE,
+        baseVersion: mine.version,
+        changes: [{ target: 'structural', key: 'contract', member: key, value: { ...value, attrs: { ...value.attrs, target_cut_pct: 0.12 } } }],
+      }),
+    });
+    expect(res.status, await res.clone().text()).toBe(200);
+    const after = await body(await get(path('sourcingRenewals', MINE)), RenewalCalendar);
+    expect(after.renewals.find((x) => x.contract === row.key)).toMatchObject({ ...old, targetCut: 0.12, capture: expect.any(Number) as number });
+    const again = await body(await members('contract'), SourcingMembers);
+    expect(again.members.find((m) => m.key === key)).toEqual({ ...row, attrs: { ...row.attrs, target_cut_pct: 0.12 } });
   });
 });
 

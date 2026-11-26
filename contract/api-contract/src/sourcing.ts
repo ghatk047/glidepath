@@ -9,6 +9,7 @@ import { IsoDate, MemberKey, OneLine, ScenarioId } from './ids';
  * - `GET  /api/t/:tenant/sourcing/renewals?scenario=`    `RenewalCalendar`   (F6 renewal calendar)
  * - `GET  /api/t/:tenant/sourcing/benchmarks?scenario=`  `BenchmarkGap`      (F7 should-cost)
  * - `GET  /api/t/:tenant/sourcing/params[?scenario=]`    `SourcingParams`    (editable parameters)
+ * - `GET  /api/t/:tenant/sourcing/members?dim=`          `SourcingMembers`   (contract / benchmark rows to edit)
  * - `POST /api/t/:tenant/sourcing/consolidation`         `ConsolidationResult` (F8 optimizer)
  *
  * Units: money is `$M` (millions of US dollars, the model's unit); a `share`, `cut` or `rate` is a
@@ -229,6 +230,8 @@ export const SourcingParam = z
     min: z.number(),
     max: z.number(),
     step: z.number().positive(),
+    /** The member's `sort` (its place in the dimension); a structural change on the member writes it back. */
+    sort: z.number().int(),
   })
   .refine((p) => p.min <= p.value && p.value <= p.max, {
     message: 'value must lie in [min, max]',
@@ -239,6 +242,38 @@ export type SourcingParam = z.infer<typeof SourcingParam>;
 /** `GET /api/t/:tenant/sourcing/params`. */
 export const SourcingParams = z.object({ params: z.array(SourcingParam) });
 export type SourcingParams = z.infer<typeof SourcingParams>;
+
+// ---------------------------------------------------------------------------
+// Editable sourcing members (`contract`, `benchmark`) as stored rows
+// ---------------------------------------------------------------------------
+
+/** The data-only sourcing dimensions whose members the UI edits row by row. */
+export const SourcingMemberDim = z.enum(['contract', 'benchmark']);
+export type SourcingMemberDim = z.infer<typeof SourcingMemberDim>;
+
+/** `?dim=` of `GET /sourcing/members`. */
+export const SourcingMembersQuery = z.object({ dim: SourcingMemberDim });
+export type SourcingMembersQuery = z.infer<typeof SourcingMembersQuery>;
+
+/**
+ * One stored member row: exactly what a structural change on it carries as `value`
+ * (`{ label, attrs, sort, active }`), plus its key. `attrs` is every attribute the member holds.
+ */
+export const SourcingMember = z.object({
+  key: MemberKey,
+  label: z.string(),
+  attrs: z.record(z.string(), z.json()),
+  sort: z.number().int(),
+  active: z.boolean(),
+});
+export type SourcingMember = z.infer<typeof SourcingMember>;
+
+/** `GET /api/t/:tenant/sourcing/members?dim=`: the tenant's members of `dim`, active or not, in member order. */
+export const SourcingMembers = z.object({
+  dim: SourcingMemberDim,
+  members: z.array(SourcingMember),
+});
+export type SourcingMembers = z.infer<typeof SourcingMembers>;
 
 // ---------------------------------------------------------------------------
 // F8 · Vendor consolidation optimizer
