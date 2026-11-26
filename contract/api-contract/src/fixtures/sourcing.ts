@@ -201,10 +201,12 @@ export const sourcingRouteFixtures = {
           fromKey: null,
           to: 'Northwind Services',
           toKey: 'northwind',
+          pool: 'consulting',
           spendMoved: 10,
           annualSaving: 1.2,
           oneTimeCost: 0.6,
           paybackMonths: 6,
+          netBenefit: 4.2,
         },
       ],
       totals: {
@@ -220,6 +222,7 @@ export const sourcingRouteFixtures = {
       topVendorShareAfter: 0.7,
       binding: [{ param: 'concentration_cap', label: 'Largest vendor share cap', value: 0.7 }],
       params: { concentration_cap: 0.7, consolidation_discount: 0.12, min_vendors: 2 },
+      exact: true,
     },
   },
 } satisfies SourcingRouteFixtures;

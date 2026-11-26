@@ -128,7 +128,7 @@ export async function loadDimensionMembers(tx: TenantTx, dims: readonly string[]
   return { rows, members };
 }
 
-/** The current tenant's `contract`, `benchmark`, `sourcing_param` and `vendor_bucket` members (SRC-02; @glidepath/domain SOURCING_DIMENSIONS). */
+/** The current tenant's `contract`, `benchmark`, `sourcing_param`, `vendor_bucket` and `consolidation_scope` members (SRC-02; @glidepath/domain SOURCING_DIMENSIONS). */
 export async function loadSourcingMembers(tx: TenantTx): Promise<DimensionMembersRead> {
   tenantScope(tx, 'loadSourcingMembers');
   return loadDimensionMembers(tx, SOURCING_DIMENSIONS);

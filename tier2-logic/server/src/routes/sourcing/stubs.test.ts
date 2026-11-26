@@ -8,8 +8,8 @@ import { aa, aaId, ana, captureLogger, unreachableDb } from '../../app/testing/f
 
 /**
  * SRC-05: the sourcing and plan routers mount behind auth + tenant middleware. Every route needs a session; the
- * routes not yet built (consolidation, SRC-10; the business case, SRC-17) answer 501. SRC-07's GETs are covered by
- * sourcing.pg.test.ts.
+ * routes not yet built (the business case, SRC-17) answer 501. SRC-07's GETs and the consolidation optimizer
+ * (SRC-10) are covered by sourcing.pg.test.ts.
  */
 const withTenant: WithTenant = (_t, _u, fn) => fn({} as TenantTx);
 
@@ -25,7 +25,7 @@ function app(signedIn: boolean) {
 }
 
 const routes = [...Object.values(sourcingRoutes), ...Object.values(planRoutes)];
-const stubs = [sourcingRoutes.sourcingConsolidation, ...Object.values(planRoutes)];
+const stubs = [...Object.values(planRoutes)];
 const urlOf = (path: string) => `http://localhost${path.replace(':tenant', aa)}?scenario=sc-1`;
 const request = (method: string, path: string) =>
   new Request(urlOf(path), {
@@ -46,7 +46,7 @@ describe('SRC-05 sourcing and plan routers (stubs)', () => {
     expect(res.status).toBe(501);
     expect(res.headers.get('content-type')).toContain(PROBLEM_CONTENT_TYPE);
     const problem = Problem.parse(await res.json());
-    expect(problem.detail).toMatch(/lands with SRC-(10|17)/);
+    expect(problem.detail).toMatch(/lands with SRC-17/);
   });
 
   it('a non-member gets 404, not the stub', async () => {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createDb, schema, withTenant } from '@glidepath/data-access';
 
 /**
- * Test support: the AA sourcing members (tier3-data/seed/aa/sourcing.json: contract, benchmark, sourcing_param, vendor_bucket)
+ * Test support: the AA sourcing members (tier3-data/seed/aa/sourcing.json: contract, benchmark, sourcing_param, vendor_bucket, consolidation_scope)
  * written into a test database as the owner role, the way read/testing/aa-db.ts writes the other tenant members
  * (the compose seed loads them through applyChangeset, worker `seedTenant`).
  */
@@ -13,7 +13,7 @@ export interface SourcingSeedMember {
   label: string;
   [attr: string]: unknown;
 }
-export type SourcingSeedDims = Record<'contract' | 'benchmark' | 'sourcing_param' | 'vendor_bucket', SourcingSeedMember[]>;
+export type SourcingSeedDims = Record<'contract' | 'benchmark' | 'sourcing_param' | 'vendor_bucket' | 'consolidation_scope', SourcingSeedMember[]>;
 
 const SEED_FILE = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../../../../../tier3-data/seed/aa/sourcing.json');
 

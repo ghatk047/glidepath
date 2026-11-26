@@ -132,6 +132,11 @@ describe('sourcing.spec: schema rules', () => {
     expect(ok(ConsolidationRequest, { scenarioId: 'sc-1', params: { concentration_cap: 'x' } })).toBe(false);
     const c = fx.sourcingConsolidation.response;
     expect(ok(ConsolidationResult, { ...c, moves: [{ ...c.moves[0]!, paybackMonths: null }] })).toBe(true);
+    // every move names its pool and its net benefit; the result says whether the plan is proven optimal
+    const without = <T extends object>(o: T, k: keyof T): object => Object.fromEntries(Object.entries(o).filter(([key]) => key !== k));
+    expect(ok(ConsolidationResult, { ...c, moves: [without(c.moves[0]!, 'pool')] })).toBe(false);
+    expect(ok(ConsolidationResult, { ...c, moves: [without(c.moves[0]!, 'netBenefit')] })).toBe(false);
+    expect(ok(ConsolidationResult, without(c, 'exact'))).toBe(false);
   });
 
   it('business case: payback, IRR and ROI are nullable; the horizon is not empty', () => {

@@ -108,7 +108,7 @@ describe('migrate entry on pg-local', () => {
         sql`select distinct dim_key from dimension_member order by dim_key`,
       );
       // SRC-02: plus the sourcing dimensions of sourcing.json
-      expect(r.rows.map((x) => x.dim_key)).toEqual(['benchmark', 'contract', 'domain', 'lever', 'lgroup', 'sourcing_param', 'vendor', 'vendor_bucket', 'vp']);
+      expect(r.rows.map((x) => x.dim_key)).toEqual(['benchmark', 'consolidation_scope', 'contract', 'domain', 'lever', 'lgroup', 'sourcing_param', 'vendor', 'vendor_bucket', 'vp']);
       const v = await tx.execute<{ dim_key: string }>(
         sql`select distinct dim_key from v_dimension_members where tenant_id is null order by dim_key`,
       );

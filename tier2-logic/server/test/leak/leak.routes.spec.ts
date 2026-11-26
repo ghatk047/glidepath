@@ -449,7 +449,7 @@ const CASES: Record<string, (p: Probe) => Promise<void>> = {
     await p.foreign('search', 'GET', (s) => at(s, '/search?q=vendor'));
   },
 
-  // ----- sourcing (SRC-07) and plan: views of a scenario; consolidation and the business case still answer 501
+  // ----- sourcing (SRC-07, SRC-10) and plan: views of a scenario; the business case still answers 501
   'GET /api/t/:tenant/sourcing/vendors': async (p) => sourcingCase(p, 'vendors'),
   'GET /api/t/:tenant/sourcing/renewals': async (p) => {
     const r = await p.own('renewals', 'ana', 'GET', own(`/sourcing/renewals?scenario=${A.fork}`));
@@ -464,9 +464,12 @@ const CASES: Record<string, (p: Probe) => Promise<void>> = {
     await p.foreign('sourcing params', 'GET', (s) => at(s, '/sourcing/params'));
   },
   'POST /api/t/:tenant/sourcing/consolidation': async (p) => {
-    // 501 until SRC-10: it reads nothing, so it can return nothing of anyone's; a non-member still gets 404.
-    await p.own('consolidation (not built yet)', 'ana', 'POST', own('/sourcing/consolidation'), json({ scenarioId: A.fork }), [501]);
-    for (const t of OTHERS) await p.own(`consolidation naming tenant ${t}'s scenario (not built yet)`, 'ana', 'POST', own('/sourcing/consolidation'), json({ scenarioId: other[t].fork }), [501]);
+    // SRC-10: the optimizer over the scenario's spend cube; other tenants' scenarios are refused like the views.
+    await p.own('consolidation', 'ana', 'POST', own('/sourcing/consolidation'), json({ scenarioId: A.fork }));
+    await p.own('consolidation by a member of the copy too, with an override', 'max', 'POST', own('/sourcing/consolidation'), json({ scenarioId: A.presetC, params: { max_moves: 2 } }));
+    for (const t of OTHERS) {
+      for (const id of [other[t].fork, other[t].presetC]) await p.aimed('consolidation', 'POST', (s) => at(s, '/sourcing/consolidation'), json({ scenarioId: id }), t, [id]);
+    }
     await p.foreign('consolidation', 'POST', (s) => at(s, '/sourcing/consolidation'), json({ scenarioId: A.fork }));
   },
   'GET /api/t/:tenant/plan/business-case': async (p) => {

@@ -93,3 +93,22 @@ export {
 // SOL-05: VP-feasible plan (min-risk mix with per-VP bars; maximin VP coverage when infeasible).
 export { vpFeasible } from './vp-feasible';
 export { VP_COVERAGE, leximin, withPerVp } from './problems/vp-feasible';
+// SRC-10: vendor consolidation optimizer (F8).
+export {
+  CONSOLIDATION_PARAMS,
+  ConsolidationParamError,
+  DEFAULT_NODE_LIMIT,
+  SPEND_EPS,
+  annuityFactor,
+  consolidate,
+  paybackMonths,
+  resolveConsolidationParams,
+} from './sourcing/consolidation';
+export type {
+  ConsolidationBindingResult,
+  ConsolidationInput,
+  ConsolidationMoveResult,
+  ConsolidationOutcome,
+  ConsolidationParamRow,
+  ConsolidationVendor,
+} from './sourcing/consolidation';

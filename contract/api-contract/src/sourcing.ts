@@ -247,7 +247,7 @@ export type SourcingParams = z.infer<typeof SourcingParams>;
 /**
  * `POST /api/t/:tenant/sourcing/consolidation`: run the optimizer on the scenario's spend cube.
  * `params` overrides `sourcing_param` values for this run only (what-if, nothing is written);
- * absent keys take the members' values.
+ * absent keys take the members' values. Only pools listed as `consolidation_scope` members are considered.
  */
 export const ConsolidationRequest = z.object({
   scenarioId: ScenarioId,
@@ -261,6 +261,8 @@ export const ConsolidationMove = z.object({
   fromKey: MemberKey.nullable(),
   to: OneLine,
   toKey: MemberKey.nullable(),
+  /** `pool` member the spend moves in (a move stays inside one pool the receiving vendor already serves). */
+  pool: MemberKey,
   /** Annual spend moved, $M. */
   spendMoved: Money,
   /** Annual saving of the move, $M. */
@@ -269,6 +271,8 @@ export const ConsolidationMove = z.object({
   oneTimeCost: Money,
   /** Months for the saving to repay the one-time cost; 0 when there is none, null when never. */
   paybackMonths: z.number().nonnegative().nullable(),
+  /** Net benefit over the business-case horizon, $M: NPV of the savings at the discount rate less the one-time cost. */
+  netBenefit: Money,
 });
 export type ConsolidationMove = z.infer<typeof ConsolidationMove>;
 
@@ -302,5 +306,7 @@ export const ConsolidationResult = z.object({
   binding: z.array(ConsolidationBinding),
   /** The parameter values the run used (members merged with the request's overrides). */
   params: z.record(SourcingParamKey, z.number()),
+  /** True when the optimizer's search finished inside its budget: no plan of moves does better. */
+  exact: z.boolean(),
 });
 export type ConsolidationResult = z.infer<typeof ConsolidationResult>;

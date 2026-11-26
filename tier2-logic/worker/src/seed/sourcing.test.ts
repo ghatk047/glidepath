@@ -221,6 +221,7 @@ describe('missingSourcingMembers', () => {
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, contract: [{ id: 'a' }] } })).toThrow(/label/);
     // vendor_bucket (added later) may be left out: no members
     expect(parseSourcingSeed(structuredClone(ok)).dimensions.vendor_bucket).toEqual([]);
+    expect(parseSourcingSeed(structuredClone(ok)).dimensions.consolidation_scope).toEqual([]);
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, vendor_bucket: [{ id: 'v' }] } })).toThrow(/label/);
     const dup = [{ id: 'a', label: 'A' }, { id: 'a', label: 'B' }];
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, benchmark: dup } })).toThrow(/twice/);
@@ -236,5 +237,20 @@ describe('vendor_bucket (SRC-06)', () => {
       expect(str(b, 'reason').length, b.id).toBeGreaterThan(0);
       expect([...lines.values()].some((l) => isThirdPartyLine(l) && str(l, 'vendor') === str(b, 'vendor_name')), b.id).toBe(true);
     }
+  });
+});
+
+describe('consolidation_scope (SRC-10)', () => {
+  it('names third-party services pools only, each once, with a reason; software, cloud, hardware and telecom are out', () => {
+    const scope = sourcing.dimensions.consolidation_scope;
+    expect(scope.length).toBeGreaterThan(0);
+    const pools = scope.map((m) => str(m, 'pool'));
+    expect(new Set(pools).size).toBe(pools.length);
+    for (const m of scope) {
+      expect(thirdParty.has(str(m, 'pool')), m.id).toBe(true);
+      expect(str(m, 'reason').length, m.id).toBeGreaterThan(0);
+    }
+    expect(pools).toContain('si_contingent');
+    for (const goods of ['software', 'cloud', 'dc_hardware', 'network', 'end_user']) expect(pools).not.toContain(goods);
   });
 });

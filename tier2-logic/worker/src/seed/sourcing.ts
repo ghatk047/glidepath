@@ -1,6 +1,6 @@
 /**
  * SRC-01/SRC-02: the tenant's sourcing seed, `tier3-data/seed/<tenant>/sourcing.json`: members of the
- * data-only tenant dimensions `contract`, `benchmark`, `sourcing_param` and `vendor_bucket` (@glidepath/domain
+ * data-only tenant dimensions `contract`, `benchmark`, `sourcing_param`, `vendor_bucket` and `consolidation_scope` (@glidepath/domain
  * SOURCING_DIMENSIONS). Not part of the spec seed (docs/spec stays read-only) nor of the model
  * definitions' content hash: the engine never reads these members.
  */
@@ -23,14 +23,14 @@ export interface SourcingSeed {
 }
 
 /** Dimensions a sourcing.json may leave out (added after SRC-01): read as no members. */
-const OPTIONAL_DIMENSIONS: ReadonlySet<string> = new Set(['vendor_bucket']);
+const OPTIONAL_DIMENSIONS: ReadonlySet<string> = new Set(['vendor_bucket', 'consolidation_scope']);
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v);
 
 /**
  * Checks the shape of a parsed sourcing.json: format, the sourcing dimensions, members with id and label.
- * `vendor_bucket` may be absent (an older file) and then reads as an empty list.
+ * `vendor_bucket` and `consolidation_scope` may be absent (an older file) and then read as empty lists.
  */
 export function parseSourcingSeed(raw: unknown, where = SOURCING_SEED_FILE): SourcingSeed {
   const fail = (msg: string): never => {

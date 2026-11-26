@@ -1103,6 +1103,20 @@
         "vendor_name": "Long-tail SI",
         "reason": "Long tail of small system integrators: the consolidation pool, not one vendor"
       }
+    ],
+    "consolidation_scope": [
+      {
+        "id": "cs_si_contingent",
+        "label": "SI & contingent labour",
+        "pool": "si_contingent",
+        "reason": "Project and run work of small integrators and staffing firms can be re-bid to a preferred SI or managed-service provider under its rate card: the work moves, not a licence or an asset"
+      },
+      {
+        "id": "cs_consulting",
+        "label": "Consulting & professional services",
+        "pool": "consulting",
+        "reason": "Advisory and professional-services work is people-based and can be routed to a preferred services firm's rate card when one already serves the pool"
+      }
     ]
   }
 }

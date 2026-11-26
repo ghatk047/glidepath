@@ -1,5 +1,7 @@
 import {
   BenchmarkGap,
+  ConsolidationRequest,
+  ConsolidationResult,
   RenewalCalendar,
   SourcingParams,
   SourcingParamsQuery,
@@ -29,8 +31,10 @@ import {
   vendorSpend,
 } from '@glidepath/domain';
 import type { LineItemColumns, SourcingLine, ViewEvaluation } from '@glidepath/domain';
+import { ConsolidationParamError, consolidate, resolveConsolidationParams } from '@glidepath/solvers';
 import type { Context, Hono } from 'hono';
 import { ApiError } from '../../app/problem';
+import { consolidationScope, consolidationVendors } from './consolidation';
 import type { AppEnv } from '../../app/tenant';
 import { engineInputs } from '../explain/explain';
 import { ModelCache } from '../explain/model-cache';
@@ -46,14 +50,6 @@ export interface SourcingRoutesDeps {
   specBundle: SpecBundleSource;
 }
 
-const notYet = (): never => {
-  throw new ApiError({
-    status: 501,
-    title: 'Not implemented',
-    detail: 'The consolidation optimizer lands with SRC-10.',
-  });
-};
-
 const NO_SCENARIO = 'No such scenario in this tenant. Check the scenario id.';
 
 function json(c: Context<AppEnv>, body: unknown): Response {
@@ -67,6 +63,9 @@ async function guarded<T>(fn: () => Promise<T>): Promise<T> {
   } catch (err) {
     if (err instanceof SourcingDataError) {
       throw new ApiError({ status: 422, title: 'Sourcing data incomplete', detail: `${err.message}.` });
+    }
+    if (err instanceof ConsolidationParamError) {
+      throw new ApiError({ status: 422, title: 'Sourcing parameters not usable', detail: `${err.message}.` });
     }
     throw err;
   }
@@ -106,9 +105,9 @@ async function loadScenario(tx: TenantTx, scenarioId: string, deps: SourcingRout
 /**
  * `/api/t/:tenant/sourcing/*` (SRC-07, contract `sourcingRoutes`): the vendor spend cube, the renewal calendar,
  * the should-cost benchmarks and the sourcing parameters of a scenario, computed by @glidepath/domain over the
- * scenario's evaluation and the tenant's `contract`, `benchmark` and `sourcing_param` members. Behind the auth
- * and tenant middleware; bodies are validated against their contract schemas before they are sent. The
- * consolidation optimizer (SRC-10) still answers 501.
+ * scenario's evaluation and the tenant's `contract`, `benchmark` and `sourcing_param` members, and the vendor
+ * consolidation optimizer (SRC-10, @glidepath/solvers) over the scenario's spend cube. Behind the auth and tenant
+ * middleware; bodies are validated against their contract schemas before they are sent.
  */
 export function registerSourcingRoutes(app: Hono<AppEnv>, deps: SourcingRoutesDeps): void {
   const r = sourcingRoutes;
@@ -179,5 +178,32 @@ export function registerSourcingRoutes(app: Hono<AppEnv>, deps: SourcingRoutesDe
     return json(c, SourcingParams.parse({ params }));
   });
 
-  app.post(r.sourcingConsolidation.path, notYet);
+  /**
+   * Runs the optimizer on the scenario's spend cube, in the pools of the tenant's `consolidation_scope` members,
+   * with the tenant's parameters merged with the request's overrides (this run only, nothing is written). Checks in this order: the body (contract, 422), the scenario
+   * (another tenant's or none: 404, whatever the overrides), then the overrides and parameters (422 naming each).
+   */
+  app.post(r.sourcingConsolidation.path, async (c) => {
+    TenantParams.parse(c.req.param());
+    const req = ConsolidationRequest.parse(await c.req.json());
+    const { tx } = c.get('tenant');
+    const s = await loadScenario(tx, req.scenarioId, deps, models);
+    const result = await guarded(async () => {
+      const members = readSourcingParams(s.sourcing.members['sourcing_param'] ?? []).params;
+      const params = resolveConsolidationParams(members, req.params ?? {});
+      const cube = vendorSpend({
+        scenarioId: req.scenarioId,
+        lines: s.lines,
+        members: s.members.members,
+        contracts: s.sourcing.members['contract'] ?? [],
+        buckets: s.sourcing.members['vendor_bucket'] ?? [],
+      });
+      return consolidate({
+        vendors: consolidationVendors(cube, s.lines, s.members.members),
+        eligiblePools: consolidationScope(s.sourcing.members['consolidation_scope'] ?? []),
+        params,
+      });
+    });
+    return json(c, ConsolidationResult.parse({ scenarioId: req.scenarioId, ...result }));
+  });
 }
