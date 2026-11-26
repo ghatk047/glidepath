@@ -60,7 +60,7 @@ const anchorEl = (selector: string) => {
 };
 
 describe('steps table', () => {
-  it('matches plan 4.2: 14 steps, ids, modules, placements', () => {
+  it('matches plan 4.2 and SRC-20: 24 steps, ids, modules, placements', () => {
     expect(TOUR_STEPS.map((s) => [s.id, s.module, s.placement])).toEqual([
       ['bar', 'cockpit', 'right'],
       ['baseline', 'baseline', 'right'],
@@ -69,8 +69,18 @@ describe('steps table', () => {
       ['vps', 'vps', 'top'],
       ['path', 'path', 'top'],
       ['odds', 'path', 'left'],
+      ['frontier', 'path', 'left'],
+      ['spend', 'sourcing', 'right'],
+      ['renewals', 'sourcing', 'left'],
+      ['benchmarks', 'sourcing', 'right'],
+      ['consolidation', 'sourcing', 'left'],
+      ['breakeven', 'plan', 'right'],
+      ['stress', 'plan', 'left'],
+      ['case', 'plan', 'right'],
+      ['waves', 'plan', 'left'],
       ['market', 'market', 'right'],
       ['handover', 'cockpit', 'left'],
+      ['solve', 'cockpit', 'bottom'],
       ['excel', 'excel', 'bottom'],
       ['airlines', 'airlines', 'top'],
       ['wizard', 'wizard', 'bottom'],
@@ -85,15 +95,25 @@ describe('steps table', () => {
       '.gp-vps-rows',
       '.gp-path-actions',
       '[data-testid="path-odds"]',
+      '[data-testid="path-scatter"]',
+      '[data-tour="sourcing-vendors"]',
+      '[data-tour="sourcing-renewals"]',
+      '[data-tour="sourcing-benchmarks"]',
+      '[data-tour="sourcing-consolidation"]',
+      '[data-tour="plan-breakeven"]',
+      '[data-tour="plan-stress"]',
+      '[data-tour="plan-business-case"]',
+      '[data-tour="plan-wave"]',
       '[data-testid="market-trace"]',
       '[data-testid="cockpit-inputs"]',
+      '.gp-cockpit-bar',
       '[data-module="excel"] .gp-xl-chips',
       '[data-testid="airlines-grid"]',
       '[data-wizard-stepper]',
       '[data-wizard-optimize]',
       '[data-tour-button]',
     ]);
-    expect(TOUR_VERSION).toBe('2');
+    expect(TOUR_VERSION).toBe('3');
     for (const s of TOUR_STEPS) if (s.module) expect(MODULE_IDS).toContain(s.module);
   });
 
@@ -117,6 +137,31 @@ describe('steps table', () => {
         if (raw === 'tenant') continue;
         expect(parsePlaceholder(raw).node, s.id).toMatch(/^(res|base|br|vp)\.[a-z0-9_]+$/);
       }
+    }
+  });
+
+  it('the Sourcing and Plan chapters open on their first step; the close stays last', () => {
+    expect(TOUR_CHAPTERS.sourcing).toBe('spend');
+    expect(TOUR_CHAPTERS.plan).toBe('breakeven');
+    expect(TOUR_STEPS.at(-1)!.id).toBe('restart');
+    const ids = TOUR_STEPS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('every new step anchor exists in its module source', () => {
+    const root = `${dirname(fileURLToPath(import.meta.url))}/../../`;
+    const src = (dir: string) =>
+      readdirSync(`${root}${dir}`)
+        .filter((n) => /\.tsx?$/.test(n) && !n.includes('.test.'))
+        .map((n) => readFileSync(`${root}${dir}/${n}`, 'utf8'))
+        .join('\n');
+    const NEW = ['frontier', 'spend', 'renewals', 'benchmarks', 'consolidation', 'breakeven', 'stress', 'case', 'waves', 'solve'];
+    for (const id of NEW) {
+      const s = TOUR_STEPS.find((x) => x.id === id)!;
+      const code = src(`modules/${s.module}`);
+      const attr = /^\[(data-[a-z-]+)="([^"]+)"\]$/.exec(s.anchor!);
+      if (attr) expect(code, id).toContain(`${attr[1]}="${attr[2]}"`);
+      else expect(code, id).toContain(s.anchor!.slice(1));
     }
   });
 

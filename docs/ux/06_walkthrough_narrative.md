@@ -25,10 +25,14 @@ Script for the Friday 4 December 2026 demo (20 minutes), for the live app with t
 | 5 | 8:00 | VPs | `vps` | Every VP is short today. |
 | 6 | 10:00 | Path | `path` | The least risky path leaves people levers alone. |
 | 7 | 12:30 | Path · odds | `odds` | At their own confidence, even full stretch rarely clears. |
+| 7b | after 7 | Path · frontier | `frontier` | The curve is the most net for each level of risk. |
+| S | optional | Sourcing | `spend`, `renewals`, `benchmarks`, `consolidation` | Spend, renewal dates, price gaps, fewer vendors. |
+| P | optional | Plan | `breakeven`, `stress`, `case`, `waves` | How much slack, which shocks, what it costs, in what order. |
 | 8 | 14:00 | Market | `market` | About nine cents of EPS, a dollar a share. |
 | 9 | 16:00 | Cockpit | `handover` | Every number is yours to change. |
 | 10 | 18:00 | Excel | `excel` | Work in Excel; the app shows what changed. |
 | 11 | 19:30 | Airlines | `airlines` | AA is the first airline on it, not the only one. |
+| 9b | after 9 | Cockpit | `solve` | Click a number, choose Solve for this. |
 | W | (replaces 4–6) | Build | `wizard`, `optimize` | Pick, tune, set policy, find a path. |
 | – | close | any | `restart` | Restart the tour from the top bar. |
 
@@ -102,6 +106,41 @@ Script for the Friday 4 December 2026 demo (20 minutes), for the live app with t
 - **Check:** `solver_demo_results.json`, `monte_carlo_C` and `monte_carlo_D`.
 - **Fallback:** If odds are not pre-run, say "I ran this before the meeting" and open the pre-run result. Never wait on screen for 2,000 trials in front of the room.
 
+## Beat 7b · Savings vs risk (after beat 7, 1 min)
+
+- **Screen:** Path, Savings vs risk panel.
+- **Tour step:** `frontier` (anchor `path-scatter`).
+- **Do:** Point at the curve, then at where the current plan sits against it.
+- **Say:** "Every point on this curve is the most net AA can get for that much risk. A plan below the curve is leaving savings on the table. A plan above it does not exist."
+- **Live values:** read off the panel; the curve is a solver run.
+- **Fallback:** If the curve is still drawing, talk to the points already shown.
+
+## Sourcing chapter (VP Procurement, optional, 4 min, between beat 7b and beat 8)
+
+Open from the rail, or `tourStore.getState().startAt('sourcing')`. The numbers are the tenant's contract data: read them off the screen, none is an engine node.
+
+| Step | Tour step id | Anchor | Do | Say |
+|---|---|---|---|---|
+| Spend by vendor | `spend` | `sourcing-vendors` | Sort by spend. Open the top vendor. | "Start where the money is. Who we pay, by category and by contract." |
+| Renewal calendar | `renewals` | `sourcing-renewals` | Point at the next renewals and the notice dates. | "A saving only counts if we act before the notice date. This is the calendar a negotiator works to." |
+| Should-cost | `benchmarks` | `sourcing-benchmarks` | Point at the largest gap to benchmark. | "What we pay against what the market says it should cost. The gap is the negotiating room." |
+| Consolidation | `consolidation` | `sourcing-consolidation` | Run the optimizer. | "Fewer vendors can buy better prices. It also concentrates risk. The optimizer shows the trade." |
+
+- **Fallback:** If a panel is empty, the tenant has no contract data loaded: say so and skip the chapter.
+
+## Plan chapter (VP IT, optional, 4 min, after the Sourcing chapter)
+
+Open from the rail, or `startAt('plan')`. All values come from tier 2; read them off the screen.
+
+| Step | Tour step id | Anchor | Do | Say |
+|---|---|---|---|---|
+| Breakeven | `breakeven` | `plan-breakeven` | Point at the levers with the least slack. | "How far can each lever fall short before we miss the bar? These have the least room." |
+| Stress tests | `stress` | `plan-stress` | Change a shock size. | "Slower delivery, higher prices. Change the size of the shock and watch net absorb it." |
+| Business case | `case` | `plan-business-case` | Read across cost, savings and payback. | "The same plan, the way finance reads it: one-time cost, savings by year, payback." |
+| Wave planner | `waves` | `plan-wave` | Run the planner. | "The order the levers go live in, within capacity. The best order lands savings soonest." |
+
+- **Fallback:** If a solve is slow, see "When a job is slow" below.
+
 ## Beat 8 · Shareholders (14:00, 2 min)
 
 - **Screen:** Market.
@@ -121,6 +160,14 @@ Script for the Friday 4 December 2026 demo (20 minutes), for the live app with t
 - **Live nodes:** `g.target_net` [100], `g.ot_out_share` [0.5], `res.tot_ot_it` [19.55], `res.net` [119.29], `br.eps27` [0.0912].
 - **Check:** Outside funding at 0% and at 100% swings net by about ±$19.6M (`res.tot_ot_it` 19.55); EPS does not move (05, "Who pays the one-time?").
 - **Fallback:** If the MD hesitates, offer: "Try outside funding at one hundred percent." Reset to C afterwards.
+
+## Beat 9b · Solve for this (after beat 9, 1 min)
+
+- **Screen:** Cockpit.
+- **Tour step:** `solve` (anchor `.gp-cockpit-bar`, the "of bar" number). The tour cannot open the edit popover, so the step points at the control that does, and the card says to click it.
+- **Do:** Click the bar number. In the popover choose Solve for this. Read the value found, then Apply or Escape.
+- **Say:** "Any number you can edit, you can solve backwards. Tell the app the goal, and it finds the value. If it cannot get there, it says so and shows the closest it can."
+- **Fallback:** If the solve does not return, close the popover with Escape: nothing was changed.
 
 ## Beat 10 · Excel (18:00, 1.5 min)
 
