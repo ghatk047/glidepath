@@ -7,13 +7,18 @@ import type { JobContext, JobPayload } from '../../runtime';
 export const QUEUE_MIN_RISK_MIX = 'solver.min_risk_mix';
 export const QUEUE_VP_FEASIBLE = 'solver.vp_feasible';
 export const QUEUE_MONTE_CARLO = 'solver.monte_carlo';
+/** SRC-15: the wave planner (SRC-14), a core queue. */
+export const QUEUE_WAVE_PLAN = 'solver.wave_plan';
 /** Registered only with the `pareto` flag (SOL-09). */
 export const QUEUE_PARETO = 'solver.pareto';
 /** Registered only with the `sobol` flag (SOL-10): `sensitivity` with method `sobol`. */
 export const QUEUE_SENSITIVITY = 'solver.sensitivity';
 
 /** Problems whose result is saved as a scenario (UX 02 section 3: "a solver run lands as a new scenario"). */
-export const SAVING_PROBLEMS: readonly string[] = ['min_risk_mix', 'vp_feasible'];
+export const SAVING_PROBLEMS: readonly string[] = ['min_risk_mix', 'vp_feasible', 'wave_plan'];
+
+/** Problems whose `infeasible` plan is not saved (a wave plan that breaches a cap is no plan to open). */
+export const FEASIBLE_ONLY_PROBLEMS: readonly string[] = ['wave_plan'];
 
 /** What the handlers use of the runtime's JobContext (tests pass a plain object). */
 export type SolverJobContext = Pick<

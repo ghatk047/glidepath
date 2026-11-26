@@ -1,5 +1,5 @@
 /**
- * Solver jobs (JOB-03): `solver.min_risk_mix`, `solver.vp_feasible`, `solver.monte_carlo`, and, behind the
+ * Solver jobs (JOB-03): `solver.min_risk_mix`, `solver.vp_feasible`, `solver.monte_carlo`, `solver.wave_plan` (SRC-15), and, behind the
  * `JOB_SOLVER_PARETO` / `JOB_SOLVER_SOBOL` flags, `solver.pareto` and `solver.sensitivity`. Importing this
  * module registers them; tests import `runSolverJob` and `registerSolverHandlers` and pass their own deps.
  */
@@ -21,6 +21,8 @@ export {
   QUEUE_PARETO,
   QUEUE_SENSITIVITY,
   QUEUE_VP_FEASIBLE,
+  QUEUE_WAVE_PLAN,
+  FEASIBLE_ONLY_PROBLEMS,
   SAVING_PROBLEMS,
   SolverJobError,
   solverFlagsFromEnv,

@@ -11,6 +11,7 @@ import {
   QUEUE_PARETO,
   QUEUE_SENSITIVITY,
   QUEUE_VP_FEASIBLE,
+  QUEUE_WAVE_PLAN,
   solverFlagsFromEnv,
 } from './types';
 import type { SolverFlags, SolverJobDeps, SolverJobPayload } from './types';
@@ -25,6 +26,7 @@ export const CORE_QUEUES: readonly QueueDef[] = [
   { queue: QUEUE_MIN_RISK_MIX, handler: { problem: 'min_risk_mix' } },
   { queue: QUEUE_VP_FEASIBLE, handler: { problem: 'vp_feasible' } },
   { queue: QUEUE_MONTE_CARLO, handler: { problem: 'monte_carlo' } },
+  { queue: QUEUE_WAVE_PLAN, handler: { problem: 'wave_plan' } },
 ];
 /** Queues that wait for their solver: SOL-09 (pareto) and SOL-10 (Sobol), each behind a flag. */
 export const PARETO_QUEUE: QueueDef = { queue: QUEUE_PARETO, handler: { problem: 'pareto' } };
@@ -41,7 +43,7 @@ export const solverQueues = (flags: SolverFlags = NO_FLAGS): string[] => defsFor
 
 /**
  * Registers the solver handlers on `registry`: `solver.min_risk_mix`, `solver.vp_feasible`,
- * `solver.monte_carlo`, and with the flags `solver.pareto` (SOL-09) and `solver.sensitivity` (SOL-10, Sobol
+ * `solver.monte_carlo`, `solver.wave_plan` (SRC-15), and with the flags `solver.pareto` (SOL-09) and `solver.sensitivity` (SOL-10, Sobol
  * only). `deps` is resolved on the first job, so importing the module touches no spec files.
  */
 export function registerSolverHandlers(

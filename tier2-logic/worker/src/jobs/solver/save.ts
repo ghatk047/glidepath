@@ -14,6 +14,7 @@ export const SOLVER_KIND = 'solver' as const;
 const LABELS: Readonly<Record<string, string>> = {
   min_risk_mix: 'Min-risk mix',
   vp_feasible: 'All-VP feasible plan',
+  wave_plan: 'Wave plan',
 };
 
 /** The solver's cell `lev.start[L03]` as a draft change: variable id and member key (`''` for a scalar). */

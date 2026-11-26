@@ -1045,7 +1045,7 @@
       },
       {
         "id": "quarterly_onetime_cap_musd",
-        "label": "One-time cost cap per quarter",
+        "label": "One-time cost charged to IT, cap per quarter",
         "value": 10,
         "unit": "$M",
         "min": 2,

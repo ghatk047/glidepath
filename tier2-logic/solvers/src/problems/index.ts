@@ -2,8 +2,7 @@
  * The package's problem implementations, one per `solvers.json` problem id. Each later SOL item replaces
  * its entry; until then the entry rejects with NOT_IMPLEMENTED naming the item.
  */
-import { SolverError } from '../errors';
-import type { ProblemSolver, ProblemTable } from '../run';
+import type { ProblemTable } from '../run';
 import type { ProblemId } from '../types';
 import { breakevenProblem, goalSeekProblem } from './goal-seek';
 import { monteCarlo } from './monte-carlo';
@@ -22,12 +21,6 @@ export const PENDING_PROBLEMS: Readonly<Record<ProblemId, string>> = {
   wave_plan: 'SRC-14',
 };
 
-const pending =
-  <P extends ProblemId>(problem: P): ProblemSolver<P> =>
-  () => {
-    throw new SolverError('NOT_IMPLEMENTED', `${problem} lands with ${PENDING_PROBLEMS[problem]}`);
-  };
-
 export const PROBLEMS: ProblemTable = {
   goal_seek: goalSeekProblem,
   breakeven: breakevenProblem,
@@ -38,5 +31,5 @@ export const PROBLEMS: ProblemTable = {
   monte_carlo: monteCarlo,
   sensitivity: async (run, params) => (await import('./sensitivity')).sensitivity(run, params),
   stress_presets: async (run, params) => (await import('./stress')).stressPresetsProblem(run, params),
-  wave_plan: pending('wave_plan'),
+  wave_plan: async (run, params) => (await import('./wave-plan')).wavePlanProblem(run, params),
 };

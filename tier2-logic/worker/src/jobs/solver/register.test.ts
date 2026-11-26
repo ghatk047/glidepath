@@ -10,7 +10,7 @@ describe('solver queue registration (JOB-03)', () => {
   it('pareto/sobol queues are registered only when SOL-09/10 exist (feature flag)', () => {
     const off = new HandlerRegistry();
     registerSolverHandlers(off, deps);
-    expect(off.queues()).toEqual(['solver.min_risk_mix', 'solver.monte_carlo', 'solver.vp_feasible']);
+    expect(off.queues()).toEqual(['solver.min_risk_mix', 'solver.monte_carlo', 'solver.vp_feasible', 'solver.wave_plan']);
     expect(off.get('solver.pareto')).toBeUndefined();
     expect(off.get('solver.sensitivity')).toBeUndefined();
     expect(solverQueues(NO_FLAGS).sort()).toEqual(off.queues());
@@ -28,7 +28,16 @@ describe('solver queue registration (JOB-03)', () => {
       'solver.pareto',
       'solver.sensitivity',
       'solver.vp_feasible',
+      'solver.wave_plan',
     ]);
+  });
+
+  it('solver.wave_plan (SRC-15) is a core queue: registered with or without the flags', () => {
+    for (const flags of [NO_FLAGS, { pareto: true, sobol: true }]) {
+      const reg = new HandlerRegistry();
+      registerSolverHandlers(reg, deps, flags);
+      expect(reg.get('solver.wave_plan')).toBeDefined();
+    }
   });
 
   it('the flags come from the environment only, off by default', () => {
