@@ -19,7 +19,7 @@ export const planCss = [
   '/* web modules/plan: generated from tokens in src/modules/plan/styles.ts */',
   `.gp-plan-error { display: flex; align-items: center; justify-content: space-between; gap: ${rem(8)}; }`,
   // breakeven, business case and wave rows
-  `.gp-plan-be { grid-template-columns: minmax(0, 1fr) ${rem(52)} ${rem(56)} ${rem(80)} ${rem(112)}; }`,
+  `.gp-plan-be { grid-template-columns: minmax(0, 1fr) ${rem(52)} ${rem(72)} ${rem(80)} ${rem(112)}; }`,
   `.gp-plan-bc { grid-template-columns: minmax(0, 1fr) ${rem(54)} ${rem(54)} ${rem(58)} ${rem(46)} ${rem(46)} ${rem(46)}; }`,
   `.gp-plan-wmove { grid-template-columns: minmax(0, 1fr) ${rem(80)} ${rem(28)}; }`,
   // stress: shock chips and the diverging-bar table
@@ -31,7 +31,11 @@ export const planCss = [
   `.gp-plan-stress { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--type-s-size); color: var(--ink-2); }`,
   `.gp-plan-stress th, .gp-plan-stress td { padding: ${rem(4)} ${rem(4)}; border-bottom: ${line}; text-align: left; font-weight: 400; }`,
   `.gp-plan-stress thead th { color: var(--ink-3); font: var(--type-xs-weight) var(--type-xs-size)/1.2 ${mono}; letter-spacing: var(--type-xs-tracking); text-transform: uppercase; }`,
-  `.gp-plan-stress thead th:first-child { width: 34%; }`,
+  `.gp-plan-stress thead th:first-child { width: 28%; }`,
+  `.gp-plan-stress thead th.gp-plan-scale-col { width: ${rem(84)}; }`,
+  `.gp-plan-scale .gp-stepper { height: ${rem(22)}; }`,
+  `.gp-plan-scale .gp-stepper button { width: ${rem(18)}; height: ${rem(20)}; font-size: var(--type-xs-size); }`,
+  `.gp-plan-scale .gp-stepper input { width: ${rem(40)}; font-size: var(--type-xs-size); }`,
   `.gp-plan-stress tr:last-child > * { border-bottom: 0; }`,
   `.gp-plan-div { --s: max(var(--hi), calc(var(--lo) * -1), 0.000001); position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: ${rem(2)}; }`,
   `.gp-plan-div::before { content: ''; height: ${rem(8)}; border-radius: var(--radius-pill); background: var(--track); grid-area: 1 / 1; }`,

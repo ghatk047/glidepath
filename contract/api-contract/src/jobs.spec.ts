@@ -283,7 +283,7 @@ describe('jobs.spec: solver-runs (POST, POST quick, GET, DELETE) for every solve
     ]);
   });
 
-  it('rejects malformed params (unknown problem, bad cell, bad bounds, empty presets)', () => {
+  it('rejects malformed params (unknown problem, bad cell, bad bounds, blank preset name, scale out of range)', () => {
     const run = (spec: unknown) => ok(SolverRunRequest, { scenarioId: 'sc-1', spec });
     expect(run({ problem: 'optimize', params: {} })).toBe(false);
     expect(
@@ -295,7 +295,13 @@ describe('jobs.spec: solver-runs (POST, POST quick, GET, DELETE) for every solve
         params: { var: 'a[]', output: 'b[]', target: 0, bounds: [2, 1] },
       }),
     ).toBe(false);
-    expect(run({ problem: 'stress_presets', params: { presets: [] } })).toBe(false);
+    // SRC-18: an empty or absent list means every shock; a blank name or a scale outside [0, 3] is refused.
+    expect(run({ problem: 'stress_presets', params: { presets: [] } })).toBe(true);
+    expect(run({ problem: 'stress_presets', params: {} })).toBe(true);
+    expect(run({ problem: 'stress_presets', params: { presets: [' '] } })).toBe(false);
+    expect(run({ problem: 'stress_presets', params: { scales: { a: 1.5 } } })).toBe(true);
+    expect(run({ problem: 'stress_presets', params: { scales: { a: 3.5 } } })).toBe(false);
+    expect(run({ problem: 'stress_presets', params: { scales: { a: -1 } } })).toBe(false);
     expect(run({ problem: 'min_risk_mix', params: { constraints: [{ id: 'bounds' }] } })).toBe(
       false,
     );

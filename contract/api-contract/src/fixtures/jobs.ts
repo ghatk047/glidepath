@@ -25,6 +25,9 @@ type ProblemFixture<P extends ProblemId> = {
 
 const diagnostics = { iterations: 14, ms: 212 };
 
+/** A stress shock's `set` as the catalog carries it (variable id → value or signed text). */
+const shock = (set: Record<string, number | string>) => set;
+
 /** One `SolverSpec` and one `SolverResult` per problem id (`solvers.json` + `extensionProblems`). */
 export const solverProblemFixtures = {
   goal_seek: {
@@ -55,7 +58,16 @@ export const solverProblemFixtures = {
         problem: 'breakeven',
         rows: [
           { cell: 'lev.L03.pct[]', current: 0.2, needed: 0.31, min: 0, max: 0.4, feasible: true },
-          { cell: 'lev.L08.cut[]', current: 0.1, needed: null, min: 0, max: 0.2, feasible: false },
+          {
+            cell: 'lev.L08.cut[]',
+            current: 0.1,
+            needed: null,
+            min: 0,
+            max: 0.2,
+            feasible: false,
+            best: 0.2,
+            bestOutput: -3.4,
+          },
         ],
       },
     },
@@ -232,9 +244,14 @@ export const solverProblemFixtures = {
         presets: [
           {
             name: 'GCC hiring freeze',
+            scale: 1,
             outputs: { 'res.net[]': 104.2 },
             delta: { 'res.net[]': -15.1 },
           },
+        ],
+        catalog: [
+          { name: 'GCC hiring freeze', set: shock({ 'lev.L03.pct': 0 }) },
+          { name: 'Fixture shock', set: shock({ 'corp.jet_direct': '+0.30' }), shift: { 'lev.start': 3 } },
         ],
       },
     },

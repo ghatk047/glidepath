@@ -1,28 +1,48 @@
 import type { CSSProperties } from 'react';
-import type { CellKey, NodeDef } from '@glidepath/api-contract';
+import { STRESS_SCALE_MAX, STRESS_SCALE_MIN, type CellKey, type NodeDef } from '@glidepath/api-contract';
+import { Stepper } from '@glidepath/ui/inputs/controls';
+import { parseNumber } from '@glidepath/ui/inputs/editable';
+import { fmt } from '@glidepath/ui/format';
 import { GlassPanel } from '@glidepath/ui/glass';
-import { COPY, STRESS_COLUMNS, STRESS_PRESETS } from './copy';
+import { COPY, SCALE_STEP, STRESS_COLUMNS } from './copy';
 import { RunError, RunStatus, signedByNode, splitCell } from './parts';
 import type { PlanRun } from './usePlanRun';
 
+type Catalog = readonly { name: string; set?: Record<string, number | string>; shift?: Record<string, number> }[];
+
+/** A shock's definition as tier 2 wrote it, for its chip's title: `lev.L03.pct = 0 · lev.start +3`. */
+const definition = (c: Catalog[number]): string =>
+  [
+    ...Object.entries(c.set ?? {}).map(([id, v]) => `${id} = ${String(v)}`),
+    ...Object.entries(c.shift ?? {}).map(([id, v]) => `${id} ${fmt.fte(v, { signed: true })}`),
+  ].join(' · ');
+
 /**
- * F3 · Stress tests: tier 2's quick `stress_presets` run over the chosen named shocks. Each shock shows the
- * deltas tier 2 reports (`detail.presets[].delta`, keyed by wire cell: net, gap, EPS) as diverging bars with
- * their values; bar lengths are CSS from tier 2's numbers (`--d` over the column's largest swing). Shocks are
- * toggled on and off and the run asked again; their sizes are tier 2's (the contract takes names only).
+ * F3 · Stress tests: tier 2's quick `stress_presets` run. The shocks are tier 2's (`detail.catalog`, every shock
+ * with its definition); chips switch one off or on and a stepper sets each shock's size (a run parameter,
+ * `scales[name]`, 1 = as written), and the run is asked again. Each shock shows the deltas tier 2 reports
+ * (`detail.presets[].delta`: net, gap, EPS, risk-adjusted net) as diverging bars with their values; bar lengths
+ * are CSS from tier 2's numbers (`--d` over the column's largest swing).
  */
 export function StressPanel({
   tile,
   nodes,
-  chosen,
-  onChoose,
+  catalog,
+  off,
+  scales,
+  onToggle,
+  onScale,
 }: {
   tile: PlanRun;
   nodes: readonly NodeDef[] | undefined;
-  /** Shock names in the current question (spec order). */
-  chosen: readonly string[];
-  /** A new set of shock names: the run is asked again. */
-  onChoose(next: readonly string[]): void;
+  /** Every shock tier 2 knows (from the last result); empty until the first run answers. */
+  catalog: Catalog;
+  /** Shocks switched off. */
+  off: ReadonlySet<string>;
+  /** Sizes the viewer set, by shock name (absent = 1). */
+  scales: Readonly<Record<string, number>>;
+  onToggle(name: string): void;
+  onScale(name: string, scale: number): void;
 }) {
   const detail = tile.result?.detail?.problem === 'stress_presets' ? tile.result.detail : null;
   const presets = detail?.presets ?? [];
@@ -41,11 +61,8 @@ export function StressPanel({
     scale.set(cell, { hi, lo });
   }
   const nodeOf = (cell: string) => nodes?.find((n) => n.id === splitCell(cell).id);
-  const toggle = (name: string) => {
-    const on = chosen.includes(name);
-    if (on && chosen.length === 1) return;
-    onChoose(STRESS_PRESETS.filter((n) => (n === name ? !on : chosen.includes(n))));
-  };
+  let onCount = 0;
+  for (const c of catalog) if (!off.has(c.name)) onCount++;
 
   return (
     <GlassPanel
@@ -56,22 +73,28 @@ export function StressPanel({
       loading={!detail && !tile.error}
     >
       <div className="gp-src-body">
-        <ul className="gp-plan-chips" aria-label={COPY.presets} title={COPY.sizesFixed}>
-          {STRESS_PRESETS.map((name) => (
-            <li key={name}>
-              <button
-                type="button"
-                className="gp-plan-chip"
-                aria-pressed={chosen.includes(name)}
-                disabled={tile.busy}
-                data-preset-toggle={name}
-                onClick={() => toggle(name)}
-              >
-                {name}
-              </button>
-            </li>
-          ))}
-        </ul>
+        {catalog.length > 0 && (
+          <ul className="gp-plan-chips" aria-label={COPY.presets}>
+            {catalog.map((c) => {
+              const on = !off.has(c.name);
+              return (
+                <li key={c.name}>
+                  <button
+                    type="button"
+                    className="gp-plan-chip"
+                    aria-pressed={on}
+                    title={definition(c)}
+                    disabled={tile.busy || (on && onCount === 1)}
+                    data-preset-toggle={c.name}
+                    onClick={() => onToggle(c.name)}
+                  >
+                    {c.name}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
         <RunError tile={tile} />
         {detail && (
           <div className={tile.busy ? 'gp-src-scroll gp-src-stale' : 'gp-src-scroll'}>
@@ -79,6 +102,9 @@ export function StressPanel({
               <thead>
                 <tr>
                   <th scope="col">Shock</th>
+                  <th scope="col" className="gp-plan-scale-col">
+                    {COPY.scale}
+                  </th>
                   {cells.map((cell) => (
                     <th key={cell} scope="col" title={nodeOf(cell)?.label ?? cell}>
                       {STRESS_COLUMNS[cell] ?? nodeOf(cell)?.label ?? cell}
@@ -92,6 +118,19 @@ export function StressPanel({
                     <th scope="row" className="gp-src-name" title={p.name}>
                       {p.name}
                     </th>
+                    <td className="gp-plan-scale" data-scale={p.name}>
+                      <Stepper
+                        variableId={`stress.scale[${p.name}]`}
+                        label={`${COPY.scale} · ${p.name}`}
+                        value={scales[p.name] ?? p.scale ?? 1}
+                        step={SCALE_STEP}
+                        min={STRESS_SCALE_MIN}
+                        max={STRESS_SCALE_MAX}
+                        format={(v) => fmt.mult(v)}
+                        parse={parseNumber}
+                        onChange={(v) => onScale(p.name, v)}
+                      />
+                    </td>
                     {cells.map((cell) => {
                       const d = p.delta[cell];
                       const s = scale.get(cell)!;

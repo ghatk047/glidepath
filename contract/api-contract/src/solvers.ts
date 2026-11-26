@@ -210,9 +210,18 @@ export const WavePlanParams = z.object({
   levers: z.array(MemberKey).min(1).optional(),
 });
 
-/** Named corporate-driver shocks, by name; tier 2 holds their definitions. */
+/** Bounds of a stress shock's scale (a schema limit: 0 = no shock, 3 = three times the written shock). */
+export const STRESS_SCALE_MIN = 0;
+export const STRESS_SCALE_MAX = 3;
+
+/**
+ * Named corporate-driver shocks, by name; tier 2 holds their definitions (and lists them in the result's
+ * `detail.catalog`). `presets` absent or empty = every shock. `scales`: the size of a shock by name, a
+ * multiplier on its moves from the start point (absent = 1, the shock as written).
+ */
 export const StressPresetsParams = z.object({
-  presets: z.array(z.string().trim().min(1)).min(1),
+  presets: z.array(z.string().trim().min(1)).optional(),
+  scales: z.record(z.string().trim().min(1), z.number().min(STRESS_SCALE_MIN).max(STRESS_SCALE_MAX)).optional(),
 });
 
 const spec = <P extends string, S extends z.ZodType>(problem: P, params: S) =>
@@ -344,6 +353,13 @@ export const SolverDetail = z.discriminatedUnion('problem', [
         min: z.number().nullable(),
         max: z.number().nullable(),
         feasible: z.boolean(),
+        /**
+         * A row that is not feasible: the value in its range (the registry range when it has none) whose output
+         * comes closest to the target, and that output (`res.gap[]` by default); null on a feasible row. Absent
+         * on runs stored before SRC-18.
+         */
+        best: z.number().nullable().optional(),
+        bestOutput: z.number().nullable().optional(),
       }),
     ),
   }),
@@ -408,7 +424,29 @@ export const SolverDetail = z.discriminatedUnion('problem', [
   }),
   z.object({
     problem: z.literal('stress_presets'),
-    presets: z.array(z.object({ name: z.string().min(1), outputs: Outputs, delta: Outputs })),
+    presets: z.array(
+      z.object({
+        name: z.string().min(1),
+        /** The scale the shock ran at (1 = as written); absent on runs stored before SRC-18. */
+        scale: z.number().optional(),
+        outputs: Outputs,
+        delta: Outputs,
+      }),
+    ),
+    /**
+     * Every shock tier 2 knows, in spec order, with its definition as written in `solvers.json` (variable ids →
+     * value, or signed text such as `"+0.30"`; `shift`: months or units added). Labels for tier 1, never applied
+     * there. Absent on runs stored before SRC-18.
+     */
+    catalog: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          set: z.record(z.string(), z.union([z.number(), z.string()])).optional(),
+          shift: z.record(z.string(), z.number()).optional(),
+        }),
+      )
+      .optional(),
   }),
   z.object({
     problem: z.literal('wave_plan'),

@@ -1,5 +1,5 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { DimKey } from '@glidepath/api-contract';
+import type { DimKey, SolverDetail } from '@glidepath/api-contract';
 import { GlassPanel } from '@glidepath/ui/glass';
 import { useBindContext } from '../../bind';
 import { dataKeys, useApiClient, useBundle, useMembers, useServerState } from '../../data';
@@ -9,7 +9,7 @@ import { terminal, useSolverRun } from '../path/useSolverRun';
 import { sourcingCss } from '../sourcing/styles';
 import { BreakevenPanel } from './BreakevenPanel';
 import { BusinessCasePanel } from './BusinessCasePanel';
-import { COPY, STRESS_PRESETS, breakevenSpec, stressSpec, waveSpec } from './copy';
+import { COPY, breakevenSpec, stressSpec, waveSpec } from './copy';
 import { StressPanel } from './StressPanel';
 import { planCss } from './styles';
 import { usePlanReads } from './usePlanReads';
@@ -24,11 +24,10 @@ const PANELS = [
   { id: 'waves', label: COPY.waves },
 ] as const;
 
+type StressCatalog = NonNullable<Extract<SolverDetail, { problem: 'stress_presets' }>['catalog']>;
+
 /** The lever dimension (spec id). */
 const LEVER_DIM = 'lever' as DimKey;
-
-/** Look-up key of the stress run: every shock of the spec (the contract needs at least one name). */
-const STRESS_LOOKUP = JSON.stringify(stressSpec(STRESS_PRESETS).params);
 
 function Frame({ children }: { children: ReactNode }) {
   return (
@@ -88,17 +87,38 @@ function Screen() {
     ask: { quick: true, spec: breakevenSpec },
   });
 
-  const [chosen, setChosen] = useState<readonly string[]>(STRESS_PRESETS);
-  const stressAsk = useMemo(() => ({ quick: true as const, spec: stressSpec(chosen) }), [chosen]);
+  // Stress: every shock tier 2 knows, minus those switched off, each at the size the viewer set. A new choice is
+  // a new look-up key, so the run is looked up and, when tier 2 holds none, asked (no write: run parameters).
+  const [off, setOff] = useState<ReadonlySet<string>>(() => new Set());
+  const [scales, setScales] = useState<Readonly<Record<string, number>>>({});
+  const [catalog, setCatalog] = useState<StressCatalog>([]);
+  const stressAsk = useMemo(() => {
+    const on = off.size === 0 ? null : catalog.filter((c) => !off.has(c.name)).map((c) => c.name);
+    return { quick: true as const, spec: stressSpec(on, scales) };
+  }, [off, scales, catalog]);
   const stress = usePlanRun(tenant, scenarioId, {
     problem: 'stress_presets',
     ask: stressAsk,
-    lookupParams: STRESS_LOOKUP,
+    lookupParams: JSON.stringify(stressAsk.spec.params),
   });
-  const choose = (next: readonly string[]) => {
-    setChosen(next);
-    void stress.start({ quick: true, spec: stressSpec(next) });
-  };
+  const stressDetail = stress.result?.detail?.problem === 'stress_presets' ? stress.result.detail : null;
+  const known = stressDetail?.catalog;
+  useEffect(() => {
+    if (known) setCatalog(known);
+  }, [known]);
+  const toggle = (name: string) =>
+    setOff((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  const rescale = (name: string, value: number) =>
+    setScales((prev) => {
+      const rest = Object.fromEntries(Object.entries(prev).filter(([k]) => k !== name));
+      // 1 is the shock as written: the parameter is left out.
+      return value === 1 ? rest : { ...rest, [name]: value };
+    });
 
   const wave = usePlanRun(tenant, scenarioId, {
     problem: 'wave_plan',
@@ -144,8 +164,16 @@ function Screen() {
 
   return (
     <Frame>
-      <BreakevenPanel tile={breakeven} variables={bundle.data?.variables} levers={levers} />
-      <StressPanel tile={stress} nodes={bundle.data?.nodes} chosen={chosen} onChoose={choose} />
+      <BreakevenPanel tile={breakeven} variables={bundle.data?.variables} levers={levers} nodes={bundle.data?.nodes} />
+      <StressPanel
+        tile={stress}
+        nodes={bundle.data?.nodes}
+        catalog={catalog}
+        off={off}
+        scales={scales}
+        onToggle={toggle}
+        onScale={rescale}
+      />
       <BusinessCasePanel read={reads.businessCase} params={params} onCommitted={reload} />
       <WavePanel
         tile={wave}

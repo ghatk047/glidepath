@@ -200,9 +200,11 @@ export interface SensitivityParams {
   readonly samples?: number;
 }
 
-/** `stress_presets`: named shocks of `solvers.json`, by name. */
+/** `stress_presets`: named shocks of `solvers.json`, by name (absent or empty = every shock). */
 export interface StressPresetsParams {
-  readonly presets: readonly string[];
+  readonly presets?: readonly string[];
+  /** Size of a shock by name, a multiplier on its moves from the start point (default 1, non-negative; the contract caps it). */
+  readonly scales?: Readonly<Record<string, number>>;
 }
 
 /** `wave_plan` (SRC-14): start months (`lev.start`) under a quarterly one-time cap and launch capacity. */
@@ -253,6 +255,12 @@ export interface SolverDetailMap {
       readonly min: number | null;
       readonly max: number | null;
       readonly feasible: boolean;
+      /**
+       * When the row is not feasible: the value in its range (the registry range when it has none) whose output
+       * comes closest to the target, and that output; null on a feasible row.
+       */
+      readonly best: number | null;
+      readonly bestOutput: number | null;
     }[];
   };
   readonly scenario_blend: { readonly lambda: number | null };
@@ -303,8 +311,16 @@ export interface SolverDetailMap {
   readonly stress_presets: {
     readonly presets: readonly {
       readonly name: string;
+      /** The scale the shock ran at (1 = as written). */
+      readonly scale: number;
       readonly outputs: Readonly<Record<CellKey, number>>;
       readonly delta: Readonly<Record<CellKey, number>>;
+    }[];
+    /** Every shock the model knows, in spec order, with its definition (variable ids → value or shift). */
+    readonly catalog: readonly {
+      readonly name: string;
+      readonly set?: Readonly<Record<string, number | string>>;
+      readonly shift?: Readonly<Record<string, number>>;
     }[];
   };  readonly wave_plan: {
     readonly levers: readonly { readonly lever: string; readonly from: number; readonly to: number; readonly quarter: number }[];

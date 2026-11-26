@@ -74,6 +74,9 @@ export function usePlanRun(tenant: TenantSlug, scenarioId: ScenarioId, options: 
   const looked = useRef<string | null>(null);
   const askRef = useRef(ask);
   askRef.current = ask;
+  // The newest key: an answer to an older question (choices changed meanwhile) is dropped.
+  const latest = useRef(key);
+  latest.current = key;
 
   const mine = held && held.scope === scope ? held : null;
   const run = mine?.run ?? null;
@@ -88,7 +91,7 @@ export function usePlanRun(tenant: TenantSlug, scenarioId: ScenarioId, options: 
         const answered = q.quick
           ? await api.solverRunQuick({ params: { tenant }, body: { scenarioId, spec: q.spec, save: false } })
           : await api.solverRunStart({ params: { tenant }, body: { scenarioId, spec: q.spec, save: false } });
-        setHeld((prev) => hold(prev, scope, key, answered, true));
+        if (latest.current === key) setHeld((prev) => hold(prev, scope, key, answered, true));
       } catch (e) {
         setError(lineOf(e));
       } finally {

@@ -44,7 +44,6 @@ import { useCommit, type CommitQueue } from '../../commit';
 import { DataProvider, createDataClient, createServerState } from '../../data';
 import { GlobalLayout } from '../../global/shell';
 import { createSessionClient } from '../../session';
-import { STRESS_PRESETS } from './copy';
 import Plan from './index';
 import { byVariable, capPct, signedByNode } from './parts';
 
@@ -64,7 +63,7 @@ const run = (problem: 'breakeven' | 'stress_presets' | 'wave_plan', extra: objec
 // Breakeven: one row reachable in range, one only outside it, one by no value (served out of order).
 const beFx = solverRunFixtures.breakeven.result!;
 const BE_ROWS = [
-  { cell: 'lev.L08.cut[]', current: 0.1, needed: null, min: 0, max: 0.2, feasible: false },
+  { cell: 'lev.L08.cut[]', current: 0.1, needed: null, min: 0, max: 0.2, feasible: false, best: 0.2, bestOutput: -3.4 },
   { cell: 'lev.L17.cola[]', current: 0.2, needed: 0.9, min: 0, max: 0.6, feasible: false },
   { cell: 'lev.L03.pct[]', current: 0.2, needed: 0.31, min: 0, max: 0.4, feasible: true },
 ];
@@ -73,16 +72,22 @@ const BREAKEVEN = run('breakeven', {
   result: { ...beFx, status: 'optimal', metrics: { feasible: 1, rows: 3 }, detail: { problem: 'breakeven', rows: BE_ROWS } },
 });
 
-// Stress: two shocks with the three outputs tier 2 reports.
+// Stress: tier 2's catalog of three shocks; each run answers the ones asked, with the four outputs it reports.
 const stFx = solverRunFixtures.stress_presets.result!;
+const CATALOG = [
+  { name: 'Shock A', set: { 'lev.L03.pct': 0 } as Record<string, number | string> },
+  { name: 'Shock B', set: { 'corp.jet_direct': '+0.30' } as Record<string, number | string> },
+  { name: 'Shock C', shift: { 'lev.start': 3 } },
+];
 const SHOCKS = [
-  { name: STRESS_PRESETS[0]!, outputs: { 'res.net[]': 104.2, 'res.gap[]': -10.1, 'br.eps27[]': 0.21 }, delta: { 'res.net[]': -15.1, 'res.gap[]': -15.1, 'br.eps27[]': -0.03 } },
-  { name: STRESS_PRESETS[1]!, outputs: { 'res.net[]': 112.4, 'res.gap[]': -1.9, 'br.eps27[]': 0.23 }, delta: { 'res.net[]': -6.9, 'res.gap[]': -6.9, 'br.eps27[]': -0.01 } },
+  { name: 'Shock A', scale: 1, outputs: { 'res.net[]': 104.2, 'res.gap[]': -10.1, 'br.eps27[]': 0.21, 'res.risk[]': 90.1 }, delta: { 'res.net[]': -15.1, 'res.gap[]': -15.1, 'br.eps27[]': -0.03, 'res.risk[]': -12.2 } },
+  { name: 'Shock B', scale: 1, outputs: { 'res.net[]': 112.4, 'res.gap[]': -1.9, 'br.eps27[]': 0.23, 'res.risk[]': 97.4 }, delta: { 'res.net[]': -6.9, 'res.gap[]': -6.9, 'br.eps27[]': -0.01, 'res.risk[]': -5.5 } },
+  { name: 'Shock C', scale: 1, outputs: { 'res.net[]': 110.0, 'res.gap[]': -4.3, 'br.eps27[]': 0.22, 'res.risk[]': 95.0 }, delta: { 'res.net[]': -9.3, 'res.gap[]': -9.3, 'br.eps27[]': -0.02, 'res.risk[]': -7.9 } },
 ];
 const STRESS = run('stress_presets', {
   quick: true,
-  spec: { problem: 'stress_presets', params: { presets: [...STRESS_PRESETS] } },
-  result: { ...stFx, detail: { problem: 'stress_presets', presets: SHOCKS } },
+  spec: { problem: 'stress_presets', params: {} },
+  result: { ...stFx, detail: { problem: 'stress_presets', presets: SHOCKS, catalog: CATALOG } },
 });
 
 const WAVE = run('wave_plan', { spec: { problem: 'wave_plan', params: { quarterlyOneTimeCap: 10, maxLaunchesPerQuarter: 5 } } });
@@ -184,11 +189,12 @@ function serve(opts: ServeOpts = {}): Served {
       const body = (await request.json()) as QuickSolverRunRequest;
       served.quicks.push(body);
       if (body.spec.problem === 'stress_presets') {
-        const names = body.spec.params.presets;
+        const { presets: names, scales = {} } = body.spec.params;
+        const asked = SHOCKS.filter((s) => !names?.length || names.includes(s.name)).map((s) => ({ ...s, scale: scales[s.name] ?? 1 }));
         return HttpResponse.json({
           ...STRESS,
           spec: body.spec,
-          result: { ...STRESS.result!, detail: { problem: 'stress_presets', presets: SHOCKS.filter((s) => names.includes(s.name)) } },
+          result: { ...STRESS.result!, detail: { problem: 'stress_presets', presets: asked, catalog: CATALOG } },
         });
       }
       return HttpResponse.json(BREAKEVEN);
@@ -316,8 +322,9 @@ describe('F1 breakeven', () => {
     expect(rows.map((r) => r.dataset['standing'])).toEqual(['reachable', 'beyond', 'none']);
     expect(rows[0]!.querySelector('[data-needed]')?.textContent).toBe(byVariable(varDef('lev.L03.pct'), 0.31));
     expect(rows[1]!.querySelector('[data-needed]')?.textContent).toBe(byVariable(varDef('lev.L17.cola'), 0.9));
-    expect(rows[2]!.textContent).toContain('not reachable in range');
-    expect(rows[2]!.querySelector('[data-needed]')?.textContent).toBe('—');
+    // No value closes it: tier 2's best value in range and the gap it leaves.
+    expect(rows[2]!.querySelector('[data-best]')?.textContent).toBe(`best ${byVariable(varDef('lev.L08.cut'), 0.2)}`);
+    expect(rows[2]!.querySelector('[data-best-gap]')?.textContent).toBe(`gap ${signedByNode(nodeDef('res.gap'), -3.4)}`);
     expect(within(p).getByTestId('plan-breakeven-count').textContent).toBe(fmt.fte(1));
   });
 
@@ -329,12 +336,16 @@ describe('F1 breakeven', () => {
 });
 
 describe('F3 stress tests', () => {
-  it("runs every spec shock; each shows tier 2's deltas as diverging bars with values", async () => {
+  it("runs every shock tier 2 knows (no names); each shows tier 2's deltas, risk-adjusted net included, as diverging bars", async () => {
     const t = await mount();
     const asks = t.quicks.filter((q) => q.spec.problem === 'stress_presets');
-    expect(asks.map((q) => q.spec.params)).toEqual([{ presets: [...STRESS_PRESETS] }]);
-    expect(t.lookups.find((q) => q['problem'] === 'stress_presets')?.['params']).toBe(JSON.stringify({ presets: STRESS_PRESETS }));
+    expect(asks.map((q) => q.spec.params)).toEqual([{}]);
+    expect(t.lookups.find((q) => q['problem'] === 'stress_presets')?.['params']).toBe('{}');
     const p = panel('stress');
+    // The chips are tier 2's catalog, titled with each definition.
+    expect([...p.querySelectorAll<HTMLElement>('[data-preset-toggle]')].map((b) => b.dataset['presetToggle'])).toEqual(CATALOG.map((c) => c.name));
+    expect(p.querySelector('[data-preset-toggle="Shock B"]')?.getAttribute('title')).toBe('corp.jet_direct = +0.30');
+    expect(p.querySelector('thead')?.textContent).toContain('Δ Risk-adj');
     for (const s of SHOCKS) {
       const row = p.querySelector(`[data-preset="${s.name}"]`)!;
       for (const [cell, d] of Object.entries(s.delta)) {
@@ -349,11 +360,25 @@ describe('F3 stress tests', () => {
   it('toggling a shock off asks tier 2 again with the remaining names', async () => {
     const t = await mount();
     const p = panel('stress');
-    fireEvent.click(p.querySelector(`[data-preset-toggle="${STRESS_PRESETS[0]!}"]`)!);
+    fireEvent.click(p.querySelector('[data-preset-toggle="Shock A"]')!);
     await t.until(() => expect(t.quicks.filter((q) => q.spec.problem === 'stress_presets')).toHaveLength(2));
     const last = t.quicks.filter((q) => q.spec.problem === 'stress_presets').at(-1)!;
-    expect(last.spec.params).toEqual({ presets: STRESS_PRESETS.slice(1) });
-    await t.until(() => expect(p.querySelectorAll('[data-preset]')).toHaveLength(1));
+    expect(last.spec.params).toEqual({ presets: ['Shock B', 'Shock C'] });
+    await t.until(() => expect(p.querySelectorAll('[data-preset]')).toHaveLength(2));
+    expect(p.querySelector('[data-preset-toggle="Shock A"]')?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it("a shock's size stepper reruns with that scale (a run parameter, nothing committed)", async () => {
+    const t = await mount();
+    const p = panel('stress');
+    fireEvent.click(within(p).getByRole('button', { name: 'Increase Size · Shock B' }));
+    await t.until(() => expect(t.quicks.filter((q) => q.spec.problem === 'stress_presets')).toHaveLength(2));
+    const last = t.quicks.filter((q) => q.spec.problem === 'stress_presets').at(-1)!;
+    expect(last.spec.params).toEqual({ scales: { 'Shock B': 1.25 } });
+    await t.until(() =>
+      expect(within(p).getByRole('textbox', { name: 'Size · Shock B' })).toHaveProperty('value', fmt.mult(1.25)),
+    );
+    expect(t.posts).toHaveLength(0);
   });
 });
 

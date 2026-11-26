@@ -5,32 +5,36 @@ import type { QuickSolverSpec, SolverSpec } from '@glidepath/api-contract';
  * numbers here are display choices (the percent cap), never business values.
  */
 
-/**
- * The named shocks of `solvers.json` (`problems[stress_presets].examples[].name`), verbatim and in spec order.
- * Tier 2 holds their definitions; the contract (`StressPresetsParams`) asks for at least one name and offers no
- * list route, so the names are spec ids here, like Path's `BLEND_PAIR`.
- */
-export const STRESS_PRESETS: readonly string[] = [
-  'GCC hiring freeze',
-  'Vendors win COLA',
-  'Programme starts in Q2',
-  'All one-time costs on IT',
-  'Fuel +30c',
-];
-
 /** Short column words for the stress outputs tier 2 reports (wire cell keys); others read their node label. */
 export const STRESS_COLUMNS: Readonly<Record<string, string>> = {
   'res.net[]': 'Δ Net',
   'res.gap[]': 'Δ Gap',
   'br.eps27[]': 'Δ EPS',
+  'res.risk[]': 'Δ Risk-adj',
 };
+
+/** The breakeven output (tier 2's default, `res.gap[]`): its node formats a row's best-value gap. */
+export const BREAKEVEN_OUTPUT_NODE = 'res.gap';
+
+/** Step of a shock's scale stepper (a UI choice; the bounds are the contract's `STRESS_SCALE_MIN/MAX`). */
+export const SCALE_STEP = 0.25;
 
 /** Breakeven: every lever-intensity input against `res.gap[] = 0`, all tier 2's defaults. */
 export const breakevenSpec = { problem: 'breakeven', params: {} } as const satisfies QuickSolverSpec;
 
-export const stressSpec = (presets: readonly string[]): QuickSolverSpec => ({
+/**
+ * The stress question: every shock tier 2 knows unless some are switched off (`on`: the names to run, `null` =
+ * all), each at its scale (absent = as written). Shock names come from tier 2's `detail.catalog`.
+ */
+export const stressSpec = (
+  on: readonly string[] | null,
+  scales: Readonly<Record<string, number>>,
+): QuickSolverSpec => ({
   problem: 'stress_presets',
-  params: { presets: [...presets] },
+  params: {
+    ...(on === null ? {} : { presets: [...on] }),
+    ...(Object.keys(scales).length === 0 ? {} : { scales: { ...scales } }),
+  },
 });
 
 /** Wave plan: tier 2 fills the caps and the window from the tenant's `wave_plan` parameters. */
@@ -56,6 +60,8 @@ export const COPY = {
   failed: 'The run failed',
   stale: 'from earlier inputs',
   noRun: 'No run on this scenario yet.',
+  best: 'best',
+  scale: 'Size',
   notReachable: 'not reachable in range',
   beyondRange: 'outside range',
   reachable: 'reachable',

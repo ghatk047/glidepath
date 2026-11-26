@@ -1,9 +1,9 @@
-import type { Member, SolverDetail, VariableDef } from '@glidepath/api-contract';
+import type { Member, NodeDef, SolverDetail, VariableDef } from '@glidepath/api-contract';
 import { fmt } from '@glidepath/ui/format';
 import { GlassPanel } from '@glidepath/ui/glass';
 import { Tag } from '../sourcing/parts';
-import { COPY } from './copy';
-import { RunError, RunStatus, byVariable, splitCell } from './parts';
+import { BREAKEVEN_OUTPUT_NODE, COPY } from './copy';
+import { RunError, RunStatus, byVariable, signedByNode, splitCell } from './parts';
 import type { PlanRun } from './usePlanRun';
 
 type Row = Extract<SolverDetail, { problem: 'breakeven' }>['rows'][number];
@@ -19,17 +19,21 @@ const leverOf = (id: string): string | null => /^lev\.([^.]+)\./.exec(id)?.[1] ?
 /**
  * F1 · Breakeven by lever: tier 2's quick `breakeven` run (each lever-intensity input goal-sought alone to
  * `res.gap[] = 0`). Rows as tier 2 sent them, grouped reachable → outside range → not reachable; each shows the
- * current value, the value needed and the range searched, formatted by the registry unit.
+ * current value, the value needed and the range searched, formatted by the registry unit. A row no value closes
+ * shows tier 2's best value in range and the gap it leaves.
  */
 export function BreakevenPanel({
   tile,
   variables,
   levers,
+  nodes,
 }: {
   tile: PlanRun;
   variables: readonly VariableDef[] | undefined;
   levers: readonly Member[] | undefined;
+  nodes: readonly NodeDef[] | undefined;
 }) {
+  const gapNode = nodes?.find((n) => n.id === BREAKEVEN_OUTPUT_NODE);
   const detail = tile.result?.detail?.problem === 'breakeven' ? tile.result.detail : null;
   const rows = detail
     ? [...detail.rows].sort((a, b) => {
@@ -90,7 +94,13 @@ export function BreakevenPanel({
                     </span>
                     <span className="gp-src-num gp-src-sub">{byVariable(def, r.current)}</span>
                     <span className="gp-src-num" data-needed>
-                      {byVariable(def, r.needed)}
+                      {s === 'none' && r.best != null ? (
+                        <span className="gp-src-sub" data-best title="Closest value in range">
+                          {COPY.best} {byVariable(def, r.best)}
+                        </span>
+                      ) : (
+                        byVariable(def, r.needed)
+                      )}
                     </span>
                     <span className="gp-src-num gp-src-sub">
                       {byVariable(def, r.min)}–{byVariable(def, r.max)}
@@ -98,7 +108,14 @@ export function BreakevenPanel({
                     <span>
                       {s === 'reachable' && <Tag tone="pos">{COPY.reachable}</Tag>}
                       {s === 'beyond' && <Tag tone="warn">{COPY.beyondRange}</Tag>}
-                      {s === 'none' && <Tag tone="neg">{COPY.notReachable}</Tag>}
+                      {s === 'none' &&
+                        (r.bestOutput != null ? (
+                          <Tag tone="neg" title={`${COPY.notReachable}: the best value leaves this gap`}>
+                            <span data-best-gap>gap {signedByNode(gapNode, r.bestOutput)}</span>
+                          </Tag>
+                        ) : (
+                          <Tag tone="neg">{COPY.notReachable}</Tag>
+                        ))}
                     </span>
                   </li>
                 );
