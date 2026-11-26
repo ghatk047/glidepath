@@ -72,13 +72,13 @@ export function BusinessCasePanel({
             <div className="gp-src-scroll" tabIndex={0} role="group" aria-label={COPY.scrollBusinessCase}>
               <ol className="gp-src-list" aria-label="Business case by lever, highest NPV first">
                 <li className="gp-src-row gp-plan-bc gp-src-head" aria-hidden="true">
-                  <span>Lever</span>
-                  <span className="gp-src-num">One-time</span>
-                  <span className="gp-src-num">Run-rate</span>
-                  <span className="gp-src-num">NPV</span>
-                  <span className="gp-src-num">Payback</span>
-                  <span className="gp-src-num">IRR</span>
-                  <span className="gp-src-num">ROI</span>
+                  <span title="Lever">Lever</span>
+                  <span className="gp-src-num" title="One-time cost">One-time</span>
+                  <span className="gp-src-num" title="Run-rate saving per year">Run-rate</span>
+                  <span className="gp-src-num" title="Net present value">NPV</span>
+                  <span className="gp-src-num" title="Payback (months)">Payback</span>
+                  <span className="gp-src-num" title="Internal rate of return">IRR</span>
+                  <span className="gp-src-num" title="Return on investment">ROI</span>
                 </li>
                 {rows.map((r) => (
                   <li key={r.lever} className="gp-src-row gp-plan-bc" data-lever={r.lever}>

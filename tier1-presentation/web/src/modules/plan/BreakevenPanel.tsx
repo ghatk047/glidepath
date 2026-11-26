@@ -74,10 +74,10 @@ export function BreakevenPanel({
           <div className={tile.busy ? 'gp-src-scroll gp-src-stale' : 'gp-src-scroll'} tabIndex={0} role="group" aria-label={COPY.scrollBreakeven}>
             <ol className="gp-src-list" aria-label="Value each lever needs alone to close the gap">
               <li className="gp-src-row gp-plan-be gp-src-head" aria-hidden="true">
-                <span>Lever input</span>
-                <span className="gp-src-num">Now</span>
-                <span className="gp-src-num">Needed</span>
-                <span className="gp-src-num">Range</span>
+                <span title="Lever input">Lever input</span>
+                <span className="gp-src-num" title="Current value">Now</span>
+                <span className="gp-src-num" title="Value needed to reach the bar">Needed</span>
+                <span className="gp-src-num" title="Allowed range">Range</span>
                 <span />
               </li>
               {rows.map((r) => {

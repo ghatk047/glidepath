@@ -21,11 +21,12 @@ coverage
 **/coverage
 
 # Docs and specs (the AA seed is copied into tier3-data/seed by DATA-08, not read from docs/).
-# Except the two spec files the read routes load (SPEC_DIR=/app/spec in the image, FIX-04).
+# Except the spec files the read routes load (SPEC_DIR=/app/spec in the image, FIX-04).
 docs
 !docs/spec/variables.json
 !docs/spec/formula_graph.json
 !docs/spec/excel_template.json
+!docs/spec/solvers.json
 
 # Tests and fixtures
 e2e

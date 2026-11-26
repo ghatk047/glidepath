@@ -101,8 +101,8 @@ export function StressPanel({
             <table className="gp-plan-stress" aria-label="Effect of each shock">
               <thead>
                 <tr>
-                  <th scope="col">Shock</th>
-                  <th scope="col" className="gp-plan-scale-col">
+                  <th scope="col" title="Shock">Shock</th>
+                  <th scope="col" className="gp-plan-scale-col" title={COPY.scale}>
                     {COPY.scale}
                   </th>
                   {cells.map((cell) => (

@@ -98,11 +98,11 @@ export function ConsolidationPanel({
             <div className="gp-src-scroll">
               <ol className="gp-src-list" aria-label="Moves">
                 <li className="gp-src-row gp-src-move gp-src-head" aria-hidden="true">
-                  <span>Move</span>
-                  <span className="gp-src-num">Spend</span>
-                  <span className="gp-src-num">Save/yr</span>
-                  <span className="gp-src-num">Payback</span>
-                  <span className="gp-src-num">Net</span>
+                  <span title="Consolidation move">Move</span>
+                  <span className="gp-src-num" title="Spend moved">Spend</span>
+                  <span className="gp-src-num" title="Saving per year">Save/yr</span>
+                  <span className="gp-src-num" title="Payback (months)">Payback</span>
+                  <span className="gp-src-num" title="Net saving">Net</span>
                 </li>
                 {d.moves.map((m, i) => (
                   <li key={`${m.from}-${m.to}-${m.pool}-${i}`} className="gp-src-row gp-src-move" data-move={i}>

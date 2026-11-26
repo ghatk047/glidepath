@@ -215,7 +215,7 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
     title: 'Solve for this',
     about:
       'Any editable number can be solved backwards: tell the app the goal and it finds the input value.',
-    body: 'Click this number, then choose Solve for this to close the gap.',
+    body: 'Click the bar, then choose Solve for this to find the target that closes the gap.',
   },
   {
     id: 'excel',

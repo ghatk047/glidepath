@@ -103,12 +103,12 @@ export function RenewalsPanel({
             <div className="gp-src-scroll">
               <ul className="gp-src-list" aria-label="Renewals">
                 <li className="gp-src-row gp-src-renewal gp-src-head" aria-hidden="true">
-                  <span>Status</span>
-                  <span>Contract</span>
-                  <span className="gp-src-num">Notice</span>
-                  <span className="gp-src-num">Value</span>
-                  <span className="gp-src-num">Cut</span>
-                  <span className="gp-src-num">Capture</span>
+                  <span title="Status">Status</span>
+                  <span title="Contract">Contract</span>
+                  <span className="gp-src-num" title="Notice (days to renewal)">Notice</span>
+                  <span className="gp-src-num" title="Annual contract value">Value</span>
+                  <span className="gp-src-num" title="Target cut">Cut</span>
+                  <span className="gp-src-num" title="Capture in the plan year">Capture</span>
                 </li>
                 {rows.map((r) => (
                   <Fragment key={r.contract}>

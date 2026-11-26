@@ -81,11 +81,11 @@ export function BenchmarksPanel({
             <div className="gp-src-scroll">
               <ul className="gp-src-list" aria-label="Benchmarked lines">
                 <li className="gp-src-row gp-src-bench gp-src-head" aria-hidden="true">
-                  <span>Line</span>
-                  <span>p25 · median · p75</span>
-                  <span className="gp-src-num">Unit cost</span>
-                  <span className="gp-src-num">Gap</span>
-                  <span className="gp-src-num">Opp.</span>
+                  <span title="Benchmark line">Line</span>
+                  <span title="25th percentile · median · 75th percentile">p25 · median · p75</span>
+                  <span className="gp-src-num" title="Unit cost">Unit cost</span>
+                  <span className="gp-src-num" title="Gap to the median benchmark">Gap</span>
+                  <span className="gp-src-num" title="Opportunity">Opp.</span>
                 </li>
                 {d.rows.map((r) => {
                   const id = `${r.benchmark}-${r.line}`;

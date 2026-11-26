@@ -148,6 +148,7 @@ interface MountOptions {
 
 function serve(options: MountOptions = {}) {
   const posts: ChangesetRequest[] = [];
+  const quicks: unknown[] = [];
   const solverStarts: SolverRunRequest[] = [];
   const solverLookups: Record<string, string>[] = [];
   const solverGets: string[] = [];
@@ -243,7 +244,7 @@ function serve(options: MountOptions = {}) {
       });
     }),
   );
-  return { posts, solverStarts, solverLookups, solverGets, solverCancels };
+  return { posts, quicks, solverStarts, solverLookups, solverGets, solverCancels };
 }
 
 async function mount(options: MountOptions = {}) {
@@ -366,6 +367,47 @@ describe('MOD-01 Cockpit hero', () => {
     await t.debounce();
     await t.until(() => {
       expect(t.posts.at(-1)?.changes[0]).toMatchObject({ key: TARGET_VARIABLE, value: next });
+    });
+  });
+
+  it('SRC-19 the Cockpit bar popover offers Solve for this on g.target_net; Apply commits through the popover', async () => {
+    const t = await mount();
+    await loaded(t);
+    const value = defOf(TARGET_VARIABLE).max!;
+    server.use(
+      http.post(`${BASE}${apiRoutes.solverRunQuick.path}`, async ({ request }) => {
+        t.quicks.push(await request.json());
+        return HttpResponse.json({
+          ...solverRunFixtures.goal_seek,
+          result: {
+            ...solverRunFixtures.goal_seek.result!,
+            status: 'feasible',
+            detail: { problem: 'goal_seek', value, output: 0, reachable: true },
+          },
+        });
+      }),
+    );
+    fireEvent.click(
+      within(panel('cockpit-net')).getByRole('button', { name: /Edit the net target/ }),
+    );
+    await screen.findByRole('dialog');
+    const strip = () => document.querySelector<HTMLElement>('[data-tour="solve-for-this"]')!;
+    fireEvent.click(within(strip()).getByRole('button', { name: 'Solve for this' }));
+    await t.until(() => {
+      expect(t.quicks).toHaveLength(1);
+      expect(within(strip()).getByTestId('solve-result').textContent).toContain('Value found');
+    });
+    expect(t.quicks[0]).toMatchObject({
+      spec: {
+        problem: 'goal_seek',
+        params: { var: `${TARGET_VARIABLE}[]`, output: 'res.gap[]', target: 0 },
+      },
+    });
+    expect(t.posts).toHaveLength(0);
+    fireEvent.click(within(strip()).getByRole('button', { name: 'Apply' }));
+    await t.debounce();
+    await t.until(() => {
+      expect(t.posts.at(-1)?.changes[0]).toMatchObject({ key: TARGET_VARIABLE, value });
     });
   });
 
@@ -938,10 +980,12 @@ describe('MOD-02 Cockpit tiles', () => {
     });
     await t.settle();
     // one look-up per tile, no params; no POST (so no queued run to cancel) and no DELETE
-    expect([...t.solverLookups].sort((a, b) => a['problem']!.localeCompare(b['problem']!))).toEqual([
-      { scenarioId: SCENARIO, problem: 'min_risk_mix' },
-      { scenarioId: SCENARIO, problem: 'monte_carlo' },
-    ]);
+    expect([...t.solverLookups].sort((a, b) => a['problem']!.localeCompare(b['problem']!))).toEqual(
+      [
+        { scenarioId: SCENARIO, problem: 'min_risk_mix' },
+        { scenarioId: SCENARIO, problem: 'monte_carlo' },
+      ],
+    );
     expect(t.solverStarts).toEqual([]);
     expect(t.solverCancels).toEqual([]);
     expect(t.solverGets).toEqual([]);
