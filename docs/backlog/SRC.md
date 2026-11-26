@@ -66,7 +66,7 @@ title: "AA sourcing seed: contracts, benchmarks, sourcing parameters"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: B
 model: opus
 effort: high
@@ -98,7 +98,7 @@ title: "Load the sourcing dimensions; structural edits on them pass applyChanges
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: B
 model: opus
 effort: xhigh
@@ -128,7 +128,7 @@ title: "Contract: sourcing and plan modules, sourcing and plan schemas, wave_pla
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: opus
 effort: high
@@ -158,7 +158,7 @@ title: "Web registry: Sourcing and Plan routes, rail entries and stubs"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -185,7 +185,7 @@ title: "Server: sourcing and plan routers registered (stubs)"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: B
 model: sonnet
 effort: medium
@@ -210,7 +210,7 @@ title: "Vendor spend cube view"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -238,7 +238,7 @@ title: "Server: sourcing routes (vendors, renewals, benchmarks, consolidation)"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -265,7 +265,7 @@ title: "Renewal calendar computation"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -291,7 +291,7 @@ title: "Should-cost benchmark gap computation"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: sonnet
 effort: high
@@ -318,7 +318,7 @@ title: "Vendor consolidation optimizer"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -345,7 +345,7 @@ title: "Sourcing module: spend cube, renewals, benchmarks, consolidation"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: opus
 effort: high
@@ -373,7 +373,7 @@ title: "Pareto frontier solver"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -401,7 +401,7 @@ title: "Frontier curve in Path's Savings vs risk panel"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: sonnet
 effort: medium
@@ -426,7 +426,7 @@ title: "Wave planner solver"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: opus
 effort: xhigh
@@ -454,7 +454,7 @@ title: "Server and worker: wave_plan runs as a solver job"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -479,7 +479,7 @@ title: "Lever business case view (NPV, payback, IRR, ROI)"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: A
 model: opus
 effort: high
@@ -506,7 +506,7 @@ title: "Server: plan routes (business case)"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: B
 model: sonnet
 effort: high
@@ -531,7 +531,7 @@ title: "Plan module: breakeven, stress tests, business case, wave planner"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: opus
 effort: high
@@ -559,7 +559,7 @@ title: "Solve for this: goal seek from the edit popover"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: sonnet
 effort: high
@@ -585,7 +585,7 @@ title: "Tour v3: steps for the ten features"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: C
 model: sonnet
 effort: medium
@@ -610,7 +610,7 @@ title: "E2E, a11y and desktop fit for Sourcing and Plan"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: done
 stream: D
 model: sonnet
 effort: high
@@ -635,7 +635,7 @@ title: "Integration and full regression"
 epic: SRC
 milestone: M4
 priority: must
-status: todo
+status: review
 stream: D
 model: opus
 effort: high
