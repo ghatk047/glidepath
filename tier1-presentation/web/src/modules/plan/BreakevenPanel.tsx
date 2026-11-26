@@ -71,7 +71,7 @@ export function BreakevenPanel({
       <div className="gp-src-body">
         <RunError tile={tile} />
         {detail && (
-          <div className={tile.busy ? 'gp-src-scroll gp-src-stale' : 'gp-src-scroll'}>
+          <div className={tile.busy ? 'gp-src-scroll gp-src-stale' : 'gp-src-scroll'} tabIndex={0} role="group" aria-label={COPY.scrollBreakeven}>
             <ol className="gp-src-list" aria-label="Value each lever needs alone to close the gap">
               <li className="gp-src-row gp-plan-be gp-src-head" aria-hidden="true">
                 <span>Lever input</span>
@@ -92,17 +92,27 @@ export function BreakevenPanel({
                       {name}
                       <span className="gp-src-sub"> · {def?.label ?? id}</span>
                     </span>
-                    <span className="gp-src-num gp-src-sub">{byVariable(def, r.current)}</span>
-                    <span className="gp-src-num" data-needed>
-                      {s === 'none' && r.best != null ? (
-                        <span className="gp-src-sub" data-best title="Closest value in range">
-                          {COPY.best} {byVariable(def, r.best)}
-                        </span>
-                      ) : (
-                        byVariable(def, r.needed)
-                      )}
+                    <span className="gp-src-num gp-src-sub" title={byVariable(def, r.current)}>
+                      {byVariable(def, r.current)}
                     </span>
-                    <span className="gp-src-num gp-src-sub">
+                    {s === 'none' && r.best != null ? (
+                      <span
+                        className="gp-src-num gp-src-sub"
+                        data-needed
+                        data-best
+                        title={`Closest value in range: ${byVariable(def, r.best)}`}
+                      >
+                        {COPY.best} {byVariable(def, r.best)}
+                      </span>
+                    ) : (
+                      <span className="gp-src-num" data-needed title={byVariable(def, r.needed)}>
+                        {byVariable(def, r.needed)}
+                      </span>
+                    )}
+                    <span
+                      className="gp-src-num gp-src-sub"
+                      title={`${byVariable(def, r.min)}–${byVariable(def, r.max)}`}
+                    >
                       {byVariable(def, r.min)}–{byVariable(def, r.max)}
                     </span>
                     <span>

@@ -4,7 +4,7 @@
  * HTML report. Pure: no IO (the files are read and written in `visual-report.ts` and the spec).
  */
 
-/** The nine modules of the rail (contract ids), in site-map order. */
+/** The eleven modules of the rail (contract ids), in site-map order. */
 export const MODULES = [
   'cockpit',
   'wizard',
@@ -12,6 +12,8 @@ export const MODULES = [
   'levers',
   'vps',
   'path',
+  'sourcing',
+  'plan',
   'market',
   'excel',
   'airlines',
@@ -67,6 +69,8 @@ const UX_NAME: Readonly<Record<VisualModule, string>> = {
   levers: 'levers',
   vps: 'vps',
   path: 'solver', // the pack's "solver" render is the Path module
+  sourcing: 'sourcing', // SRC: the pack has no render of it
+  plan: 'plan', // SRC: the pack has no render of it
   market: 'market',
   excel: 'data', // the pack's "data" render is the Excel module
   airlines: 'airlines',
@@ -83,7 +87,7 @@ export interface Shot {
 export const shotKey = (module: VisualModule, theme: VisualTheme, width: VisualWidth) =>
   `${module}-${theme}-${width}`;
 
-/** All 9 x 2 x 2 shots, theme and width outermost so one browser context serves a run of them. */
+/** All 11 x 2 x 2 shots, theme and width outermost so one browser context serves a run of them. */
 export function allShots(): Shot[] {
   const shots: Shot[] = [];
   for (const theme of THEMES)
@@ -93,7 +97,7 @@ export function allShots(): Shot[] {
   return shots;
 }
 
-/** The UX pack render file name for a shot (it may not exist: the pack has 17 of the 36). */
+/** The UX pack render file name for a shot (it may not exist: the pack has 13 of the 44). */
 export const uxRenderName = (s: Pick<Shot, 'module' | 'theme' | 'width'>) =>
   `${UX_NAME[s.module]}-${THEME_TONE[s.theme]}-${s.width}.jpg`;
 
@@ -307,7 +311,7 @@ export function buildReport(entries: readonly ReportEntry[], meta: ReportMeta): 
 <h1>Visual baselines (G11)</h1>
 <p class="lede">Each screen as the app draws it (Baseline) beside the UX pack's render of the same screen (<code>docs/ux/screens/</code>). On first approval the reviewer reads the pairs here and decides. Later runs compare with the approved baseline at a colour tolerance of ${PIXEL_THRESHOLD} and at most ${MAX_DIFF_PIXELS} pixels differing.</p>
 <table data-slot="summary">
-<tr><th>Screens (9 modules × 2 themes × 2 widths)</th><td data-count="total">${s.total}</td></tr>
+<tr><th>Screens (11 modules × 2 themes × 2 widths)</th><td data-count="total">${s.total}</td></tr>
 <tr><th>With a UX pack render</th><td data-count="with-render">${s.withRender}</td></tr>
 <tr><th>Without a render in the pack</th><td data-count="without-render">${s.withoutRender}</td></tr>
 <tr><th>First approvals this run</th><td data-count="approved">${s.approved}</td></tr>

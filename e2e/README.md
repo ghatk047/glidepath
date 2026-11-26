@@ -70,7 +70,7 @@ GP_A11Y_CHROMIUM=/opt/pw-browsers/chromium pnpm e2e:a11y -- --trace off   # name
 locked preset C, each screen after its numbers have drawn):
 
 1. `axe_each_module_in_both_themes_has_zero_serious_violations`: axe-core (all rules, real layout and colours, so
-   colour contrast is measured) on each of the eight modules in Cruise and Daylight, plus Cockpit with the edit popover,
+   colour contrast is measured) on each of the eleven modules in Cruise and Daylight, plus Cockpit with the edit popover,
    trace drawer, changeset tray and command palette open. Fails on any `serious` or `critical` violation; lower impacts
    are printed. Reduced motion is emulated so colours are measured at rest.
 2. `lighthouse_accessibility_at_least_95_on_cockpit_levers_path`: Lighthouse (snapshot mode, accessibility category)
@@ -99,7 +99,7 @@ budget stays the smoke's. Serial, one signed-in page:
 2. `edits_persist_across_reload`: one registry step on the net target in its popover commits, tier
    2 forks `Custom (from C)`, and after `page.reload()` the fork, its edits count, its changeset
    row and every number are back; locked preset C is still at 0 edits and still golden.
-3. `global_layer_works_…`: rail (8 modules, tenant monogram, routing), flight strip (its five
+3. `global_layer_works_…`: rail (11 modules, tenant monogram, routing), flight strip (its five
    cells off Cockpit, golden C), scenario bar (switch to A → the spec's A numbers), edit popover
    (the registry's min / max / step), trace drawer (`res.net`, tier 2's words and upstream chain),
    ⌘K (button and shortcut, a spec id ranked by `GET /search`).
@@ -118,7 +118,7 @@ pnpm e2e:visual -- --update           # approve: write the baselines that are mi
 ```
 
 `visual/visual.spec.ts` (own config `playwright.visual.config.ts`, driver `visual.mjs`; same stack and sign-in as the
-smoke) takes a full-page screenshot of each of the 8 modules of preset C in 2 themes (`cruise`, `daylight`; set the way the
+smoke) takes a full-page screenshot of each of the 11 modules of preset C in 2 themes (`cruise`, `daylight`; set the way the
 toggle stores it, `glidepath.theme`) at 2 widths (1440 and 390 CSS px), device scale 2 and reduced motion, like the UX pack's
 renders. 32 tests, titled `<module>-<theme>-<width>`, each `toHaveScreenshot` against
 `visual/baselines/chromium-<platform>/<module>-<theme>-<width>.png` (committed, one set per platform because fonts and

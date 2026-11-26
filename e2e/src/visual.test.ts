@@ -31,13 +31,13 @@ function png(width: number, height: number): Buffer {
 }
 
 describe('the screenshot matrix (G11)', () => {
-  it('is 9 modules x 2 themes x 2 widths with unique keys', () => {
+  it('is 11 modules x 2 themes x 2 widths with unique keys', () => {
     const shots = allShots();
-    expect(MODULES).toHaveLength(9);
+    expect(MODULES).toHaveLength(11);
     expect(THEMES).toHaveLength(2);
     expect(WIDTHS).toEqual([1440, 390]);
-    expect(shots).toHaveLength(36);
-    expect(new Set(shots.map((s) => s.key)).size).toBe(36);
+    expect(shots).toHaveLength(44);
+    expect(new Set(shots.map((s) => s.key)).size).toBe(44);
     expect(shots[0]!.key).toBe('cockpit-cruise-1440');
   });
 
@@ -51,7 +51,7 @@ describe('the screenshot matrix (G11)', () => {
     expect(name('vps', 'cruise', 390)).toBe('vps-dark-390.jpg');
   });
 
-  it('finds a render in docs/ux/screens/ for 13 of the 36 screens (the other four files of the pack are design pages)', () => {
+  it('finds a render in docs/ux/screens/ for 13 of the 44 screens (the other four files of the pack are design pages)', () => {
     const files = new Set(readdirSync(uxScreensDir));
     const have = allShots().filter((s) => files.has(uxRenderName(s)));
     // the pack also holds four design pages (comps, ia, mood, story) that are not modules
@@ -140,8 +140,8 @@ describe('writing the report from files (report generated)', () => {
     );
     expect(file).toBe(join(dir, 'report', 'index.html'));
     expect(readFileSync(file, 'utf8')).toBe(html);
-    expect(entries).toHaveLength(36);
-    expect(html.match(/<section class="shot"/g)).toHaveLength(36);
+    expect(entries).toHaveLength(44);
+    expect(html.match(/<section class="shot"/g)).toHaveLength(44);
     // every screen the pack has a render of shows that render beside the baseline, and the file is there
     const withRender = entries.filter((e) => e.render);
     expect(withRender).toHaveLength(13);

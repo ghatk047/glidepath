@@ -8,6 +8,8 @@ import { useApiClient } from '../../data';
 export const SOLVE_OUTPUT = 'res.gap';
 /** Target of the output: tier 2's own definition of "on the bar" (a spec constant, not a business number). */
 const SOLVE_TARGET = 0;
+/** Space between the popover and the strip, CSS px (layout only). */
+const POP_GAP = 6;
 
 export const SOLVE_COPY = {
   action: 'Solve for this',
@@ -19,9 +21,21 @@ export const SOLVE_COPY = {
   failed: 'The solve failed.',
 } as const;
 
-/** Variable kinds a goal seek makes sense for (not simulation draws); types must be numeric. */
-export const solvable = (d: { type: string; kind: string }): boolean =>
-  (d.type === 'number' || d.type === 'int') && (d.kind === 'decision' || d.kind === 'estimate');
+/**
+ * Inputs a goal seek makes sense for: numeric, not a simulation draw, and with a registry range for tier 2 to
+ * search (`goal_seek` bounds default to the variable's min/max). Any kind otherwise (F2: "any input"), so the
+ * net target (`fact_or_estimate`) behind the Cockpit bar is offered as the tour says.
+ */
+export const solvable = (d: {
+  type: string;
+  kind: string;
+  min?: number | null;
+  max?: number | null;
+}): boolean =>
+  (d.type === 'number' || d.type === 'int') &&
+  d.kind !== 'simulation' &&
+  typeof d.min === 'number' &&
+  typeof d.max === 'number';
 
 type State =
   | { phase: 'idle' }
@@ -57,14 +71,20 @@ export function SolveForThis({
   const [state, setState] = useState<State>({ phase: 'idle' });
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const live = useRef(0);
+  const strip = useRef<HTMLDivElement>(null);
 
-  // hang the strip under the popover it belongs to (the popover is fixed-positioned by the ui kit)
+  // hang the strip under the popover it belongs to (the popover is fixed-positioned by the ui kit); on a
+  // short screen with no room under it, above it. `top` is set inline because the kit's `.gp-pop` clamps
+  // `--gp-pop-y` to a full popover's height, which pushed the strip up over the popover at 1280x720.
   useLayoutEffect(() => {
     const host = document.querySelector<HTMLElement>('.gp-pop[role="dialog"]');
     const r = host?.getBoundingClientRect();
-    if (r && (pos === null || pos.x !== r.left || pos.y !== r.bottom + 6)) {
-      setPos({ x: r.left, y: r.bottom + 6 });
-    }
+    if (!r) return;
+    const h = strip.current?.closest('.gp-solve')?.getBoundingClientRect().height ?? 0;
+    const below = r.bottom + POP_GAP;
+    const above = r.top - POP_GAP - h;
+    const y = below + h <= window.innerHeight - POP_GAP || above < POP_GAP ? below : above;
+    if (pos === null || pos.x !== r.left || pos.y !== y) setPos({ x: r.left, y });
   });
 
   const solve = () => {
@@ -104,6 +124,7 @@ export function SolveForThis({
   if (pos) {
     style['--gp-pop-x'] = `${pos.x}px`;
     style['--gp-pop-y'] = `${pos.y}px`;
+    style.top = `${pos.y}px`;
   }
 
   return (
@@ -119,6 +140,7 @@ export function SolveForThis({
       style={style}
     >
       <div
+        ref={strip}
         className="gp-pop-actions"
         style={{ marginTop: 0, justifyContent: 'space-between', alignItems: 'center' }}
       >
@@ -132,7 +154,7 @@ export function SolveForThis({
             <ComputeFlow active variant="inline" />
           </div>
         ) : (
-          <button type="button" className="gp-btn" data-variant="ghost" onClick={solve}>
+          <button type="button" className="gp-btn" data-variant="ghost" style={{ whiteSpace: 'nowrap' }} onClick={solve}>
             {SOLVE_COPY.action}
           </button>
         )}

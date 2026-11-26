@@ -44,6 +44,10 @@ export function RenewalsPanel({
   // Timeline bars are scaled to the busiest month of tier 2's window (picked, not computed).
   let vmax = 1;
   for (const m of d?.byMonth ?? []) if (m.annualValue > vmax) vmax = m.annualValue;
+  // Axis labels: every January, and the first month unless a January follows within two (the labels would collide).
+  const firstJan = d ? d.byMonth.findIndex((m) => m.month.endsWith('-01')) : -1;
+  const labelled = (month: string, i: number) =>
+    month.endsWith('-01') || (i === 0 && (firstJan < 0 || firstJan > 2));
 
   return (
     <GlassPanel
@@ -92,7 +96,7 @@ export function RenewalsPanel({
                   style={{ '--v': m.annualValue } as CSSProperties}
                 >
                   <i />
-                  {(i === 0 || m.month.endsWith('-01')) && <b>{monthLabel(m.month)}</b>}
+                  {labelled(m.month, i) && <b>{monthLabel(m.month)}</b>}
                 </li>
               ))}
             </ol>

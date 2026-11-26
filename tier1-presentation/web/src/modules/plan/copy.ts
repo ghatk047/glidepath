@@ -51,6 +51,9 @@ export const GROUP = { businessCase: 'business_case', wavePlan: 'wave_plan' } as
 
 export const COPY = {
   module: 'Plan',
+  scrollBreakeven: 'Breakeven rows (scrolls)',
+  scrollBusinessCase: 'Business case rows (scrolls)',
+  scrollWaves: 'Wave plan details (scrolls)',
   breakeven: 'Breakeven by lever',
   stress: 'Stress tests',
   businessCase: 'Business case',

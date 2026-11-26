@@ -164,7 +164,7 @@ export function WavePanel({
                 ))}
               </ul>
             )}
-            <div className="gp-src-scroll">
+            <div className="gp-src-scroll" tabIndex={0} role="group" aria-label={COPY.scrollWaves}>
               <ol className="gp-src-list" aria-label="Start month moves">
                 {moved.map((l) => (
                   <li key={l.lever} className="gp-src-row gp-plan-wmove" data-wave-move={l.lever}>

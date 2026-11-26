@@ -61,7 +61,7 @@ describe('golden-based expectations', () => {
 describe('the tour table follows the app source (plan §4.2)', () => {
   const steps = webSrc('global', 'tour', 'steps.ts');
   const defs = [...steps.matchAll(/id: '([a-z]+)',\s+module: (null|'[a-z]+'),\s+anchor: (null|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"),/g)];
-  it('has the same 14 ids, screens and anchors in the same order', () => {
+  it('has the same 24 ids, screens and anchors in the same order', () => {
     expect(defs).toHaveLength(TOUR_STEP_SPECS.length);
     defs.forEach((m, i) => {
       const spec = TOUR_STEP_SPECS[i]!;

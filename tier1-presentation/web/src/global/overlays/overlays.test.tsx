@@ -41,6 +41,7 @@ import {
   traceContent,
   type OverlayController,
 } from './index';
+import { solvable } from './SolveForThis';
 
 // ---------------------------------------------------------------------------------------------
 // Fixtures: spec ids verbatim, values read from the generated fixtures (never typed in).
@@ -631,6 +632,20 @@ describe('SRC-19: Solve for this (goal seek from the edit popover)', () => {
     );
     expect(within(solveStrip()!).queryByRole('button', { name: 'Apply' })).toBeNull();
     expect(t.posts).toHaveLength(0);
+  });
+
+  it('is offered for the net target behind the Cockpit bar (a fact_or_estimate input with a range)', async () => {
+    const def = vars.get('g.target_net')!;
+    expect(def.kind).toBe('fact_or_estimate');
+    expect(solvable(def)).toBe(true);
+    await open('g.target_net');
+    expect(solveStrip()).not.toBeNull();
+  });
+
+  it('is not offered for simulation draws or inputs without a registry range', () => {
+    expect(solvable({ type: 'number', kind: 'simulation', min: 0, max: 1 })).toBe(false);
+    expect(solvable({ type: 'number', kind: 'estimate', min: null, max: null })).toBe(false);
+    expect(solvable({ type: 'bool', kind: 'decision', min: 0, max: 1 })).toBe(false);
   });
 
   it('is not offered for toggles, enums or outputs', async () => {

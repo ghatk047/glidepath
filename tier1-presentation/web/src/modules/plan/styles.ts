@@ -20,7 +20,8 @@ export const planCss = [
   `.gp-plan-error { display: flex; align-items: center; justify-content: space-between; gap: ${rem(8)}; }`,
   // breakeven, business case and wave rows
   `.gp-plan-be { grid-template-columns: minmax(0, 1fr) ${rem(52)} ${rem(72)} ${rem(80)} ${rem(112)}; }`,
-  `.gp-plan-bc { grid-template-columns: minmax(0, 1fr) ${rem(54)} ${rem(54)} ${rem(58)} ${rem(46)} ${rem(46)} ${rem(46)}; }`,
+  `.gp-plan-be > [data-needed] { overflow: hidden; text-overflow: ellipsis; }`,
+  `.gp-plan-bc { grid-template-columns: minmax(0, 1fr) ${rem(62)} ${rem(62)} ${rem(58)} ${rem(58)} ${rem(46)} ${rem(46)}; }`,
   `.gp-plan-wmove { grid-template-columns: minmax(0, 1fr) ${rem(80)} ${rem(28)}; }`,
   // stress: shock chips and the diverging-bar table
   `.gp-plan-chips { display: flex; flex-wrap: wrap; gap: ${rem(4)}; margin: 0; padding: 0; list-style: none; }`,

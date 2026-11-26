@@ -266,7 +266,7 @@ test.describe('QA-07 accessibility (G12)', () => {
           await expect(page.locator('[data-tour-card]')).toBeVisible();
           if (module === 'wizard') {
             // step 12 of the tour lives on the wizard
-            while ((await page.locator('[data-tour]').getAttribute('data-tour-step')) !== 'wizard') {
+            while ((await page.locator('[data-tour-step]').getAttribute('data-tour-step')) !== 'wizard') {
               await page.locator('[data-tour-next]').click();
             }
             await expect(page.locator('[data-tour-spotlight]')).toBeVisible();

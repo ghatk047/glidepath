@@ -5,7 +5,7 @@
 | Route | Answer | Source |
 |---|---|---|
 | `GET nodes/:cell/explain?scenario=` | `ExplainResponse` | engine `explain` + `upstream` over the scenario's resolved inputs and pins |
-| `GET search?q=&limit=` | `SearchResponse`, at most 9 ranked results | model bundle labels + tenant members (tier 3) + the 8 screens |
+| `GET search?q=&limit=` | `SearchResponse`, at most 9 ranked results | model bundle labels + tenant members (tier 3) + the 11 screens |
 
 ## Explain
 
@@ -16,7 +16,7 @@
 
 ## Search
 
-- Indexed: every variable (`input`, 194 in the AA model), every node with `output` (`node`, 98), the tenant's `lever` and `line` members (`loadMembers`: RLS scopes them to the caller's tenant), and the 8 screens. Intermediate (non-output) nodes are not offered.
+- Indexed: every variable (`input`, 194 in the AA model), every node with `output` (`node`, 98), the tenant's `lever` and `line` members (`loadMembers`: RLS scopes them to the caller's tenant), and the 11 screens. Intermediate (non-output) nodes are not offered.
 - Matching: every query token must match the label, id, group or hint; a whole label word or id part beats a prefix, which beats a substring, which beats group text; exact id or label gets a bonus. Ties: lever, input, node, line, screen, then label, id. `limit` can only narrow below 9.
 - `module` is where Enter jumps, from the spec layer (levers -> `levers`, corporate/pnl/bridge/valuation -> `market`, results/target -> `cockpit`, baseline -> `baseline`, vp -> `vps`, simulation -> `path`). A line's `unit` is the unit of node `base.pool_outlay`.
 

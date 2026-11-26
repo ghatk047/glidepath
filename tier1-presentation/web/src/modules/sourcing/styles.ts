@@ -49,7 +49,7 @@ export const sourcingCss = [
   `.gp-src-row[data-muted] { opacity: .6; }`,
   `.gp-src-row[data-muted] .gp-src-name { font-style: italic; color: var(--ink-2); }`,
   // vendors
-  `.gp-src-vendor { grid-template-columns: ${rem(18)} minmax(0, 11rem) minmax(0, 1fr) ${rem(56)} ${rem(44)}; }`,
+  `.gp-src-vendor { grid-template-columns: ${rem(18)} minmax(0, 1.4fr) minmax(${rem(60)}, 1fr) ${rem(56)} ${rem(44)}; }`,
   `.gp-src-rank { color: var(--ink-3); font: var(--type-xs-weight) var(--type-xs-size)/1 ${mono}; text-align: right; }`,
   `.gp-src-bar { position: relative; height: ${rem(8)}; border-radius: var(--radius-pill); background: var(--track); overflow: hidden; }`,
   `.gp-src-bar > i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--accent); width: clamp(0%, calc(var(--share) / var(--top) * 100%), 100%); transition: width ${ease}; }`,
@@ -91,20 +91,24 @@ export const sourcingCss = [
   // consolidation
   `.gp-src-move { grid-template-columns: minmax(0, 1fr) ${rem(52)} ${rem(52)} ${rem(46)} ${rem(54)}; }`,
   `.gp-src-arrow { color: var(--ink-3); padding: 0 ${rem(4)}; }`,
+  `.gp-src-head > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
   `.gp-src-head { color: var(--ink-3); font: var(--type-xs-weight) var(--type-xs-size)/1.2 ${mono}; letter-spacing: var(--type-xs-tracking); text-transform: uppercase; border-bottom: ${line}; }`,
   `.gp-src-binding { display: flex; flex-wrap: wrap; gap: ${rem(4)}; align-items: center; margin: 0; padding: 0; list-style: none; }`,
   `.gp-src-compute { position: relative; display: inline-block; overflow: hidden; width: ${rem(56)}; height: ${rem(16)}; }`,
   `.gp-src-stale { opacity: .55; transition: opacity ${ease}; }`,
   `@media (prefers-reduced-motion: reduce) { .gp-src-bar > i, .gp-src-month > i, .gp-src-stale { transition: none; } }`,
   // desktop: the screen is a 2x2 grid that fits the viewport (1280x720, 1920x1080); lists scroll inside
-  // their panels. The offset is the shell's top bar and padding (global/shell/styles.ts, desktop).
+  // their panels. The offset is the shell's top bar, its padding (14 top, 112 bottom for the flight strip,
+  // global/shell/styles.ts, desktop) and the module's own padding; the short desktop has 10 on top.
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-src { height: calc(100vh - ${rem(184)}); grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }`,
+  `  .gp-src { height: calc(100vh - ${rem(220)}); grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }`,
   `  .gp-src > .gp-panel { overflow: hidden; }`,
   `}`,
   // short desktop (1280x720): tighter tiles and rows so the lists keep room to scroll
   `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-src { height: calc(100vh - ${rem(205)}); }`,
   `  .gp-src-body { gap: ${rem(6)}; }`,
+  `  .gp-src-kpis { grid-template-columns: repeat(auto-fit, minmax(${rem(68)}, 1fr)); gap: ${rem(4)}; }`,
   `  .gp-src-kpi { padding: ${rem(2)} ${rem(6)}; }`,
   `  .gp-src-kpi dd { font-size: var(--type-s-size); }`,
   `  .gp-src-timeline { height: ${rem(30)}; }`,

@@ -69,7 +69,7 @@ export function BusinessCasePanel({
                 { id: 'roi', label: 'ROI', value: capPct(t.roi) },
               ]}
             />
-            <div className="gp-src-scroll">
+            <div className="gp-src-scroll" tabIndex={0} role="group" aria-label={COPY.scrollBusinessCase}>
               <ol className="gp-src-list" aria-label="Business case by lever, highest NPV first">
                 <li className="gp-src-row gp-plan-bc gp-src-head" aria-hidden="true">
                   <span>Lever</span>
