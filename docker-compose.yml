@@ -146,6 +146,7 @@ services:
       <<: *logic-env
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env (see .env.example)}
       JOB_CONCURRENCY: ${JOB_CONCURRENCY:-}
+      JOB_SOLVER_PARETO: ${JOB_SOLVER_PARETO:-1}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       AI_MAX_TOKENS_PER_JOB: ${AI_MAX_TOKENS_PER_JOB:-}
     networks: [data, egress]
