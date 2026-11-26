@@ -154,7 +154,9 @@ export const COPY = {
   savingsRisk: 'Savings vs risk',
   savingsUnit: '$M',
   savingsChart: 'Net savings versus risk exposure',
-  frontierNote: 'Dashed line: frontier sketch between solved points',
+  frontierNote: 'Line: frontier through solved bars; ringed point is the current bar',
+  frontierPoint: (bar: string, net: string, risk: string) =>
+    `Bar ${bar}: net ${net}, risk exposure ${risk}`,
   barLineLabel: (value: string) => `Bar ${value}`,
 
   // Odds (4)

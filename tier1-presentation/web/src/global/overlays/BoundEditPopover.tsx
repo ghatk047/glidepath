@@ -14,6 +14,7 @@ import { formatFor, parseFor, useBindContext, useNode, useVariable } from '../..
 import { useCommitState } from '../../commit';
 import { useApiClient, useInputs } from '../../data';
 import type { PopoverTarget } from './controller';
+import { SolveForThis, solvable } from './SolveForThis';
 
 /** Source chip of an output (a formula node has no registry source). */
 export const OUTPUT_SOURCE = 'Calculated';
@@ -73,6 +74,7 @@ interface Common {
 
 /** Input: the definition `useVariable` returns; edits preview and commit, Reset clears the cell. */
 function InputPopover({ variable, member, anchor, onClose }: Common & { variable: string }) {
+  const ctx = useBindContext();
   const v = useVariable(variable, member);
   const [committed, setCommitted] = useState(false);
   const warnings = useWarnings(v.cell, committed);
@@ -80,31 +82,43 @@ function InputPopover({ variable, member, anchor, onClose }: Common & { variable
   if (!d) return null;
   const value = num(v.value);
   const parse = parseFor(d.unit, d.percentScale);
+  const commitValue = (next: number) => {
+    v.preview(next);
+    setCommitted(true);
+    void v.commit(next).catch(ignore);
+  };
   return (
-    <EditPopover
-      mode="input"
-      label={labelOf(d.label, member)}
-      unit={d.unit}
-      // no registry range: the slider sits on the value; the field still takes any number
-      min={d.min ?? value}
-      max={d.max ?? value}
-      step={d.step ?? NO_STEP}
-      source={d.source}
-      confidence={d.confidence}
-      defaultValue={num(d.default)}
-      warnings={warnings}
-      value={value}
-      format={formatFor(undefined, d.unit, d.step, d.percentScale)}
-      {...(parse ? { parse } : {})}
-      onChange={(next) => {
-        v.preview(next);
-        setCommitted(true);
-        void v.commit(next).catch(ignore);
-      }}
-      onReset={() => void v.commit(null).catch(ignore)}
-      onClose={onClose}
-      anchor={anchor}
-    />
+    <>
+      <EditPopover
+        mode="input"
+        label={labelOf(d.label, member)}
+        unit={d.unit}
+        // no registry range: the slider sits on the value; the field still takes any number
+        min={d.min ?? value}
+        max={d.max ?? value}
+        step={d.step ?? NO_STEP}
+        source={d.source}
+        confidence={d.confidence}
+        defaultValue={num(d.default)}
+        warnings={warnings}
+        value={value}
+        format={formatFor(undefined, d.unit, d.step, d.percentScale)}
+        {...(parse ? { parse } : {})}
+        onChange={commitValue}
+        onReset={() => void v.commit(null).catch(ignore)}
+        onClose={onClose}
+        anchor={anchor}
+      />
+      {v.def && solvable(v.def) && (
+        <SolveForThis
+          tenant={ctx.tenant}
+          scenarioId={ctx.scenarioId}
+          cell={v.cell}
+          format={formatFor(undefined, d.unit, d.step, d.percentScale)}
+          onApply={commitValue}
+        />
+      )}
+    </>
   );
 }
 

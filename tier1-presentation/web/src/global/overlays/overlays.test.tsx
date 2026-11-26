@@ -17,12 +17,14 @@ import {
   TenantSlug,
   apiRoutes,
   type ChangesetRequest,
+  type QuickSolverRunRequest,
   type SearchResult,
 } from '@glidepath/api-contract';
 import {
   coreRouteFixtures,
   createMockSession,
   presetSnapshot,
+  solverRunFixtures,
   specFixtures,
 } from '@glidepath/api-contract/testing';
 import { MAX_RESULTS } from '@glidepath/ui/overlays/palette';
@@ -147,11 +149,14 @@ afterAll(() => server.close());
 
 /** Rule warnings the double answers each commit with (tier 2's, verbatim). */
 let applyWarnings: unknown[] = [];
+/** What the quick-run route answers (a `goal_seek` run); tests set it. */
+let quickAnswer: object = solverRunFixtures.goal_seek;
 
 function serve() {
   const searches: { q: string; limit: string | null; scenario: string | null }[] = [];
   const explains: { cell: string; scenario: string | null }[] = [];
   const posts: ChangesetRequest[] = [];
+  const quicks: QuickSolverRunRequest[] = [];
   server.use(
     http.get(`${BASE}${apiRoutes.me.path}`, () => HttpResponse.json(fx.me.response)),
     http.get(`${BASE}${apiRoutes.tenants.path}`, () =>
@@ -178,6 +183,10 @@ function serve() {
       explains.push({ cell, scenario: new URL(request.url).searchParams.get('scenario') });
       return HttpResponse.json(explain);
     }),
+    http.post(`${BASE}${apiRoutes.solverRunQuick.path}`, async ({ request }) => {
+      quicks.push((await request.json()) as QuickSolverRunRequest);
+      return HttpResponse.json(quickAnswer);
+    }),
     http.post(`${BASE}${apiRoutes.changesetApply.path}`, async ({ request }) => {
       const body = (await request.json()) as ChangesetRequest;
       posts.push(body);
@@ -190,7 +199,7 @@ function serve() {
       });
     }),
   );
-  return { searches, explains, posts };
+  return { searches, explains, posts, quicks };
 }
 
 /** The app's route shape around `GlobalLayout` + `GlobalOverlays`, as MOD-01 wires them. */
@@ -567,5 +576,71 @@ describe('WEB-10: the edit popover shows and parses both percent scales', () => 
     );
     expect(content.value).toBe('3.0%');
     expect(content.upstream?.[0]?.value).toBe('10.0%');
+  });
+});
+
+describe('SRC-19: Solve for this (goal seek from the edit popover)', () => {
+  const found = (reachable: boolean, value: number) => ({
+    ...solverRunFixtures.goal_seek,
+    result: {
+      ...solverRunFixtures.goal_seek.result!,
+      status: reachable ? 'feasible' : 'unreachable',
+      detail: { problem: 'goal_seek', value, output: reachable ? 0 : -3.2, reachable },
+    },
+  });
+  const solveStrip = () => document.querySelector<HTMLElement>('[data-tour="solve-for-this"]');
+  const open = async (variable: string) => {
+    const t = await mount('levers');
+    act(() => t.controller.openPopover({ kind: 'input', variable }));
+    await t.until(() => expect(popover()).not.toBeNull());
+    return t;
+  };
+
+  it('runs goal_seek on res.gap = 0 for the open input and Apply commits the value found', async () => {
+    const def = vars.get(LEVER_VAR)!;
+    const value = def.max!;
+    quickAnswer = found(true, value);
+    const t = await open(LEVER_VAR);
+    fireEvent.click(within(solveStrip()!).getByRole('button', { name: 'Solve for this' }));
+    await waitFor(() => expect(t.quicks).toHaveLength(1));
+    expect(t.quicks[0]!.spec).toEqual({
+      problem: 'goal_seek',
+      params: { var: `${LEVER_VAR}[]`, output: 'res.gap[]', target: 0 },
+    });
+    await t.until(() =>
+      expect(within(solveStrip()!).getByTestId('solve-result').textContent).toContain(
+        'Value found',
+      ),
+    );
+    expect(t.posts).toHaveLength(0); // nothing committed until Apply
+    fireEvent.click(within(solveStrip()!).getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(t.posts).toHaveLength(1), { timeout: 3000 });
+    expect(t.posts[0]!.changes).toEqual([
+      { target: 'variable', key: LEVER_VAR, member: '', value },
+    ]);
+  });
+
+  it('says "not reachable in range" with tier 2\'s best value and offers no Apply', async () => {
+    quickAnswer = found(false, vars.get(LEVER_VAR)!.max!);
+    const t = await open(LEVER_VAR);
+    fireEvent.click(within(solveStrip()!).getByRole('button', { name: 'Solve for this' }));
+    await t.until(() =>
+      expect(within(solveStrip()!).getByTestId('solve-result').textContent).toContain(
+        'Not reachable in range. Best value:',
+      ),
+    );
+    expect(within(solveStrip()!).queryByRole('button', { name: 'Apply' })).toBeNull();
+    expect(t.posts).toHaveLength(0);
+  });
+
+  it('is not offered for toggles, enums or outputs', async () => {
+    const t = await mount('levers');
+    act(() => t.controller.openPopover({ kind: 'input', variable: 'g.absorb_growth' }));
+    await t.until(() => expect(popover()).not.toBeNull());
+    expect(solveStrip()).toBeNull();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    act(() => t.controller.openPopover({ kind: 'output', node: OUTPUT }));
+    await t.until(() => expect(popover()?.dataset['mode']).toBe('output'));
+    expect(solveStrip()).toBeNull();
   });
 });
