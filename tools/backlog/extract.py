@@ -46,7 +46,7 @@ ENUMS = {
 TIERS = {1, 2, 3, "contract", "ops"}
 GATES = {f"G{i}" for i in range(1, 15)}
 EPIC_FILES = ["FND", "OPS", "CON", "SPEC", "ENG", "DATA", "DOM", "API", "JOB", "SOL", "XL", "AI",
-              "UI", "WEB", "MOD", "QA", "INT", "WIZ", "UIX"]
+              "UI", "WEB", "MOD", "QA", "INT", "WIZ", "UIX", "SRC"]
 ID_RE = re.compile(r"^([A-Z]+)-(\d{2})$")
 KEY_RE = re.compile(r"^([a-z_]+):(.*)$")
 FENCE_OPEN = re.compile(r"^```yaml\s*$")
