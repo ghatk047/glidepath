@@ -1,6 +1,6 @@
 /**
  * SRC-01/SRC-02: the tenant's sourcing seed, `tier3-data/seed/<tenant>/sourcing.json`: members of the
- * data-only tenant dimensions `contract`, `benchmark` and `sourcing_param` (@glidepath/domain
+ * data-only tenant dimensions `contract`, `benchmark`, `sourcing_param` and `vendor_bucket` (@glidepath/domain
  * SOURCING_DIMENSIONS). Not part of the spec seed (docs/spec stays read-only) nor of the model
  * definitions' content hash: the engine never reads these members.
  */
@@ -22,10 +22,16 @@ export interface SourcingSeed {
   readonly [key: string]: unknown;
 }
 
+/** Dimensions a sourcing.json may leave out (added after SRC-01): read as no members. */
+const OPTIONAL_DIMENSIONS: ReadonlySet<string> = new Set(['vendor_bucket']);
+
 const isObject = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === 'object' && !Array.isArray(v);
 
-/** Checks the shape of a parsed sourcing.json: format, the three dimensions, members with id and label. */
+/**
+ * Checks the shape of a parsed sourcing.json: format, the sourcing dimensions, members with id and label.
+ * `vendor_bucket` may be absent (an older file) and then reads as an empty list.
+ */
 export function parseSourcingSeed(raw: unknown, where = SOURCING_SEED_FILE): SourcingSeed {
   const fail = (msg: string): never => {
     throw new Error(`seed: ${where}: ${msg}`);
@@ -37,6 +43,7 @@ export function parseSourcingSeed(raw: unknown, where = SOURCING_SEED_FILE): Sou
   const unknown = Object.keys(dims).filter((d) => !(SOURCING_DIMENSIONS as readonly string[]).includes(d));
   if (unknown.length > 0) fail(`unknown dimension ${unknown.join(', ')}`);
   for (const dim of SOURCING_DIMENSIONS) {
+    if (dims[dim] === undefined && OPTIONAL_DIMENSIONS.has(dim)) dims[dim] = [];
     const members = dims[dim];
     if (!Array.isArray(members)) return fail(`dimensions.${dim} must be an array`);
     const ids = new Set<string>();

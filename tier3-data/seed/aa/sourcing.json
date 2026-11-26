@@ -1083,6 +1083,26 @@
         "step": 1,
         "group": "wave_plan"
       }
+    ],
+    "vendor_bucket": [
+      {
+        "id": "vb_various",
+        "label": "Various (aggregate)",
+        "vendor_name": "Various",
+        "reason": "Many small counterparties booked under one name: no single vendor to negotiate or concentrate on"
+      },
+      {
+        "id": "vb_various_firms",
+        "label": "Various firms (aggregate)",
+        "vendor_name": "Various firms",
+        "reason": "Several consulting firms booked under one name: no single vendor"
+      },
+      {
+        "id": "vb_long_tail_si",
+        "label": "Long-tail SI (aggregate)",
+        "vendor_name": "Long-tail SI",
+        "reason": "Long tail of small system integrators: the consolidation pool, not one vendor"
+      }
     ]
   }
 }

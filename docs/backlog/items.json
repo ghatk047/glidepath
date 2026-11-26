@@ -6723,7 +6723,7 @@
     "acceptance": [
       "each benchmarked line shows unit cost vs the chosen percentile, gap per unit and opportunity in $M (test)",
       "lines already at or below the benchmark contribute zero (test)",
-      "headroom = opportunity minus the savings the scenario's levers already take on those pools (test)"
+      "headroom = capturable opportunity minus the scenario's lever savings allocated to the benchmarked lines (each pool's lev.eff spread over its lines pro-rata by outlay) (test)"
     ],
     "gates": [
       "G1",

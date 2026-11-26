@@ -31,7 +31,7 @@ import { missingSourcingMembers, type SourcingSeed } from './sourcing';
 export interface TenantSeedOptions {
   readonly slug: string;
   readonly seed: TenantSeed;
-  /** The tenant's sourcing.json (SRC-01): contract, benchmark and sourcing_param members; none when absent. */
+  /** The tenant's sourcing.json (SRC-01): contract, benchmark, sourcing_param and vendor_bucket members; none when absent. */
   readonly sourcing?: SourcingSeed | null;
   readonly bundle: ModelBundle;
   readonly modelVersionId: string;
@@ -94,7 +94,7 @@ function seedModelCache(): ModelCache<CompiledModel> {
  * 2. the five presets as locked scenario rows (DOM-04 owns scenario ops, so rows go in through the
  *    store port's createScenario, like the DOM-03 seed test);
  * 3. through `applyChangeset` with origin `seed`: the tenant's members and lines, its sourcing members
- *    (SRC-02: contract, benchmark, sourcing_param; data the engine never reads) and its variable
+ *    (SRC-02: contract, benchmark, sourcing_param, vendor_bucket; data the engine never reads) and its variable
  *    defaults (one changeset), then each preset's values (one changeset per preset), each recomputed
  *    so the preset has its `calc_run` (04 §2 step 6, ADR-007; `GET /scenarios/:id/calc`);
  * 4. `line_item_lever` rows (the port has no write for them).

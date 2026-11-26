@@ -56,7 +56,7 @@ async function rejection<E extends Error>(p: Promise<unknown>): Promise<E> {
 
 describe('sourcingRowEntries (pure)', () => {
   it('names the three sourcing dimensions; nothing else is one', () => {
-    expect(SOURCING_DIMENSIONS).toEqual(['contract', 'benchmark', 'sourcing_param']);
+    expect(SOURCING_DIMENSIONS).toEqual(['contract', 'benchmark', 'sourcing_param', 'vendor_bucket']);
     expect(SOURCING_DIMENSIONS.every(isSourcingDimension)).toBe(true);
     expect(isSourcingDimension('vendor')).toBe(false);
     expect(fx.bundle.dimensions.map((d) => d.id).filter(isSourcingDimension)).toEqual([]);

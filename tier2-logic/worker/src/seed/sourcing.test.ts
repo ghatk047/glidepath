@@ -39,7 +39,7 @@ const isThirdPartyLine = (l: Member | undefined): boolean =>
   l !== undefined && l.in_scope === 1 && thirdParty.has(str(l, 'pool'));
 
 describe('sourcing.json (SRC-01)', () => {
-  it('is read with the aa seed, holds the three sourcing dimensions, and is not one of the spec seed files', () => {
+  it('is read with the aa seed, holds the four sourcing dimensions, and is not one of the spec seed files', () => {
     expect(sourcing).not.toBeNull();
     expect(Object.keys(sourcing.dimensions).sort()).toEqual([...SOURCING_DIMENSIONS].sort());
     for (const dim of SOURCING_DIMENSIONS) expect(sourcing.dimensions[dim].length, dim).toBeGreaterThan(0);
@@ -219,7 +219,22 @@ describe('missingSourcingMembers', () => {
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, vendor: [] } })).toThrow(/unknown dimension vendor/);
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, contract: [{ label: 'x' }] } })).toThrow(/string id/);
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, contract: [{ id: 'a' }] } })).toThrow(/label/);
+    // vendor_bucket (added later) may be left out: no members
+    expect(parseSourcingSeed(structuredClone(ok)).dimensions.vendor_bucket).toEqual([]);
+    expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, vendor_bucket: [{ id: 'v' }] } })).toThrow(/label/);
     const dup = [{ id: 'a', label: 'A' }, { id: 'a', label: 'B' }];
     expect(() => parseSourcingSeed({ ...ok, dimensions: { ...ok.dimensions, benchmark: dup } })).toThrow(/twice/);
+  });
+});
+
+describe('vendor_bucket (SRC-06)', () => {
+  it('lists exactly the aggregate vendor names of the coverage rule, each named by in-scope third-party lines, with a reason', () => {
+    const coverage = (sourcing as unknown as { coverage: { aggregate_vendor_names: string[] } }).coverage;
+    const buckets = sourcing.dimensions.vendor_bucket;
+    expect(buckets.map((b) => str(b, 'vendor_name')).sort()).toEqual([...coverage.aggregate_vendor_names].sort());
+    for (const b of buckets) {
+      expect(str(b, 'reason').length, b.id).toBeGreaterThan(0);
+      expect([...lines.values()].some((l) => isThirdPartyLine(l) && str(l, 'vendor') === str(b, 'vendor_name')), b.id).toBe(true);
+    }
   });
 });

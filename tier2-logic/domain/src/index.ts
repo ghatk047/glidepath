@@ -221,3 +221,5 @@ export type {
   ViewPayloads,
   VpsDomainOutlayView,
 } from './views';
+// SRC-06, SRC-08, SRC-09: sourcing views (vendor spend cube, renewal calendar, should-cost benchmarks).
+export * from './sourcing';

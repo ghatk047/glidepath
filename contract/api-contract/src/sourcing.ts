@@ -48,6 +48,8 @@ export const VendorSpendRow = z.object({
   vendorKey: MemberKey.nullable(),
   /** `vendor.preferred` of the member (false when `vendorKey` is null). */
   preferred: z.boolean(),
+  /** An aggregate bucket such as "Various" (`vendor_bucket` member): listed after every named vendor and left out of HHI, top-5 share and the vendor count. */
+  aggregate: z.boolean(),
   /** Annual spend, $M (sum of qty x unit cost over its lines). */
   spend: Money,
   /** spend / third-party total. */

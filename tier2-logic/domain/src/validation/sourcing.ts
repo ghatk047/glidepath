@@ -1,5 +1,6 @@
 /**
- * SRC-02: the sourcing dimensions `contract`, `benchmark` and `sourcing_param` (docs/backlog/SRC.md,
+ * SRC-02: the sourcing dimensions `contract`, `benchmark`, `sourcing_param` and `vendor_bucket` (aggregate
+ * vendor names such as 'Various', which the spend cube keeps out of concentration) (docs/backlog/SRC.md,
  * "Data decisions"). They are tenant data, not part of the model: the spec's formula graph does not
  * define them, no formula expands over them and the engine never sees them, so editing one moves no
  * number and leaves the members hash and every calc_run input hash as they are. Their members carry
@@ -11,7 +12,7 @@ import type { ValidationEntry } from './catalog';
 import { toCellKey } from './state';
 
 /** The sourcing dimensions, in seed order. */
-export const SOURCING_DIMENSIONS = ['contract', 'benchmark', 'sourcing_param'] as const;
+export const SOURCING_DIMENSIONS = ['contract', 'benchmark', 'sourcing_param', 'vendor_bucket'] as const;
 export type SourcingDimension = (typeof SOURCING_DIMENSIONS)[number];
 
 /** The dimension holding the sourcing parameters (value, unit, min, max, step, group; label column). */
