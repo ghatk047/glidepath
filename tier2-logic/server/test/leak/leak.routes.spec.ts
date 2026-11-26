@@ -449,7 +449,7 @@ const CASES: Record<string, (p: Probe) => Promise<void>> = {
     await p.foreign('search', 'GET', (s) => at(s, '/search?q=vendor'));
   },
 
-  // ----- sourcing (SRC-07, SRC-10) and plan: views of a scenario; the business case still answers 501
+  // ----- sourcing (SRC-07, SRC-10) and plan (SRC-17): views of a scenario
   'GET /api/t/:tenant/sourcing/vendors': async (p) => sourcingCase(p, 'vendors'),
   'GET /api/t/:tenant/sourcing/renewals': async (p) => {
     const r = await p.own('renewals', 'ana', 'GET', own(`/sourcing/renewals?scenario=${A.fork}`));
@@ -473,9 +473,12 @@ const CASES: Record<string, (p: Probe) => Promise<void>> = {
     await p.foreign('consolidation', 'POST', (s) => at(s, '/sourcing/consolidation'), json({ scenarioId: A.fork }));
   },
   'GET /api/t/:tenant/plan/business-case': async (p) => {
-    // 501 until SRC-17, as above.
-    await p.own('business case (not built yet)', 'ana', 'GET', own(`/plan/business-case?scenario=${A.fork}`), undefined, [501]);
-    for (const t of OTHERS) await p.own(`business case of tenant ${t}'s scenario (not built yet)`, 'ana', 'GET', own(`/plan/business-case?scenario=${other[t].fork}`), undefined, [501]);
+    // SRC-17: the lever business case of a scenario; other tenants' scenarios are refused like the sourcing views.
+    await p.own('business case', 'ana', 'GET', own(`/plan/business-case?scenario=${A.fork}`));
+    await p.own('business case by a member of the copy too', 'max', 'GET', own(`/plan/business-case?scenario=${A.presetC}`));
+    for (const t of OTHERS) {
+      for (const id of [other[t].fork, other[t].presetC]) await p.aimed('business case', 'GET', (s) => at(s, `/plan/business-case?scenario=${id}`), undefined, t, [id]);
+    }
     await p.foreign('business case', 'GET', (s) => at(s, `/plan/business-case?scenario=${A.fork}`));
   },
 

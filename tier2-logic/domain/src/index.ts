@@ -223,3 +223,5 @@ export type {
 } from './views';
 // SRC-06, SRC-08, SRC-09: sourcing views (vendor spend cube, renewal calendar, should-cost benchmarks).
 export * from './sourcing';
+// SRC-16: the lever business case (NPV, payback, IRR, ROI).
+export * from './plan';
