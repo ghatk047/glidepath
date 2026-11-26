@@ -12,3 +12,5 @@ export type { GlobalSeed, SeedInputs } from './files';
 export { seedIds, uuidV5 } from './ids';
 export { PARITY_FORMAT, PARITY_KEY, ParityReportError, readParityReports, recordParity } from './parity';
 export type { ParityRecord, ParityTally, RecordParityOptions } from './parity';
+export { SOURCING_SEED_FILE, SOURCING_SEED_FORMAT, missingSourcingMembers, parseSourcingSeed, readSourcingSeed } from './sourcing';
+export type { SourcingSeed } from './sourcing';

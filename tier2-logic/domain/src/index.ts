@@ -72,6 +72,12 @@ export {
   vr07RetiredApps,
   vr09LineItemKeys,
   vr10CorpInputYears,
+  // SRC-02: data-only tenant dimensions (contract, benchmark, sourcing_param).
+  SOURCING_DIMENSIONS,
+  SOURCING_PARAM_DIM,
+  SOURCING_PARAM_NUMBERS,
+  isSourcingDimension,
+  sourcingRowEntries,
   // DOM-05: output rules on an evaluation, and the preview of a what-if session.
   MANAGED_SERVICES_NODE,
   OUTPUT_RULES,
@@ -94,6 +100,7 @@ export type {
   RuleDef,
   RuleId,
   Severity,
+  SourcingDimension,
   ValidationEntry,
   ValidationState,
 } from './validation';

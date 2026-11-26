@@ -64,6 +64,8 @@ import type {
 } from './ports';
 import { resolveInputs, type InputValueRow, type NodeOverrideRow } from './resolve';
 import {
+  isSourcingDimension,
+  sourcingRowEntries,
   toCellKey,
   validateInputs,
   vr04RegistryBounds,
@@ -720,6 +722,24 @@ const STRUCTURAL_OPS: Readonly<Record<StructuralChange['op'], ChangeRowOp>> = {
 const isTenantDim = (d: DimensionDef | undefined): boolean =>
   d !== undefined && d.scope.split('+').includes('tenant');
 
+/**
+ * The members the rules and the engine see: without the sourcing dimensions (SRC-02). A store that
+ * serves only the model's dimensions (data-access joins dimension_def) gets its own object back, so
+ * its members hash stays cached.
+ */
+function engineMembers(members: TenantMembers): TenantMembers {
+  const keys = Object.keys(members);
+  if (!keys.some(isSourcingDimension)) return members;
+  return Object.fromEntries(keys.filter((d) => !isSourcingDimension(d)).map((d) => [d, members[d]!]));
+}
+
+/**
+ * Dimensions a structural change may write: the model's tenant dimensions and the sourcing
+ * dimensions (SRC-02), which are tenant rows the model does not define.
+ */
+const isWritableDim = (dims: ReadonlyMap<DimId, DimensionDef>, dim: DimId): boolean =>
+  isTenantDim(dims.get(dim)) || isSourcingDimension(dim);
+
 /** JSON equality, object keys in any order. */
 function sameJson(a: JsonValue, b: JsonValue): boolean {
   if (a === b) return true;
@@ -774,7 +794,7 @@ async function planChanges<R>(
   const writes: (Write | undefined)[] = [];
 
   const inputs = await tx.loadInputs(scenarioId);
-  const stored = await tx.loadMembers();
+  const stored = engineMembers(await tx.loadMembers());
   const indexed = draft.changes.map((change, index) => ({ change, index }));
 
   // Structural rows first: the value checks and the rules see the post-change members.
@@ -784,7 +804,7 @@ async function planChanges<R>(
   );
   const rowsOf = new Map<DimId, Map<MemberId, JsonObject>>();
   for (const { change } of structural) {
-    if (rowsOf.has(change.key) || !isTenantDim(dimensions.get(change.key))) continue;
+    if (rowsOf.has(change.key) || !isWritableDim(dimensions, change.key)) continue;
     const keys = [
       ...new Set(
         structural.filter((x) => x.change.key === change.key).map((x) => x.change.member_key),
@@ -815,14 +835,6 @@ async function planChanges<R>(
     }
     if (c.new_value === null) rows.delete(c.member_key);
     else rows.set(c.member_key, c.new_value);
-    const list = members.get(c.key) ?? [];
-    members.set(c.key, list);
-    const at = list.findIndex((m) => m.id === c.member_key);
-    const next =
-      c.new_value === null ? null : memberOfRow(c.key, c.member_key, c.new_value, list[at]);
-    if (at >= 0 && next !== null) list[at] = next;
-    else if (at >= 0) list.splice(at, 1);
-    else if (next !== null) list.push(next);
     const rowTarget = changeRowTarget(c, scenarioId) as MemberWrite['target'];
     planned[index] = {
       change: c,
@@ -840,10 +852,28 @@ async function planChanges<R>(
         row: c.new_value,
       },
     };
+    if (isSourcingDimension(c.key)) {
+      // Data only: checked as stored (a partial `set` updates the columns it names), never part of
+      // the members the rules and the engine see, so the members hash and input hashes stay put.
+      if (c.new_value !== null) {
+        rejected.push(...sourcingRowEntries(c.key, c.member_key, { ...current, ...c.new_value }));
+      }
+      continue;
+    }
+    const list = members.get(c.key) ?? [];
+    members.set(c.key, list);
+    const at = list.findIndex((m) => m.id === c.member_key);
+    const next =
+      c.new_value === null ? null : memberOfRow(c.key, c.member_key, c.new_value, list[at]);
+    if (at >= 0 && next !== null) list[at] = next;
+    else if (at >= 0) list.splice(at, 1);
+    else if (next !== null) list.push(next);
   }
-  // Without a structural change the post-change members are the stored ones, as loaded: the same object
-  // keeps its members hash (`membersHashOf`) and the ModelCache key without hashing again.
-  const postMembers: TenantMembers = structural.length === 0 ? stored : Object.fromEntries(members);
+  // Without a structural change on a model dimension the post-change members are the stored ones, as
+  // loaded: the same object keeps its members hash (`membersHashOf`) and the ModelCache key without
+  // hashing again. Sourcing rows never count (SRC-02).
+  const modelStructural = structural.some((x) => !isSourcingDimension(x.change.key));
+  const postMembers: TenantMembers = modelStructural ? Object.fromEntries(members) : stored;
   const idsOf = new Map<DimId, Set<MemberId>>();
   const hasMember = (dim: DimId, id: MemberId): boolean => {
     let ids = idsOf.get(dim);

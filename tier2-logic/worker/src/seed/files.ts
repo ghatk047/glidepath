@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadModelBundle, sha256Hex, type ModelBundle, type TenantSeed } from '@glidepath/spec';
 import { readTenantSeed } from '@glidepath/spec/node';
+import { readSourcingSeed, type SourcingSeed } from './sourcing';
 
 /** The two spec files the global model definitions come from (copied from docs/spec to tier3-data/seed). */
 export const GLOBAL_SEED_FILES = ['variables.json', 'formula_graph.json'] as const;
@@ -48,6 +49,8 @@ export interface SeedInputs {
   readonly tenant: TenantSeed;
   /** The tenant folder's slug (`aa`). */
   readonly slug: string;
+  /** The tenant folder's sourcing.json (SRC-01), null when it has none. Not in the content hash. */
+  readonly sourcing: SourcingSeed | null;
 }
 
 const readText = (path: string): string => readFileSync(path, 'utf8');
@@ -68,6 +71,7 @@ export async function readSeedInputs(tier3Data: string, slug: string): Promise<S
   return {
     slug,
     tenant,
+    sourcing: readSourcingSeed(tenantDir),
     global: {
       bundle,
       variables,

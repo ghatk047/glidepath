@@ -108,3 +108,11 @@ export type { OutputEvaluation, OutputRule, OutputRuleId, OutputState } from './
 export { RULE_TOLERANCE, toCellKey } from './state';
 export type { ValidationState } from './state';
 export { CORPORATE_LAYER, vr10CorpInputYears } from './vr10';
+export {
+  SOURCING_DIMENSIONS,
+  SOURCING_PARAM_DIM,
+  SOURCING_PARAM_NUMBERS,
+  isSourcingDimension,
+  sourcingRowEntries,
+} from './sourcing';
+export type { SourcingDimension } from './sourcing';

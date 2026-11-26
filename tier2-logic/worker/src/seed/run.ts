@@ -95,6 +95,7 @@ export async function runMigrate(o: MigrateRunOptions): Promise<MigrateRunReport
     const tenant = await seedTenant(handle.db, {
       slug: inputs.slug,
       seed: inputs.tenant,
+      sourcing: inputs.sourcing,
       bundle: inputs.global.bundle,
       modelVersionId: modelDefs.modelVersionId,
       ...(o.demoUserEmail === undefined ? {} : { demoUserEmail: o.demoUserEmail }),
