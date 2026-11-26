@@ -17,6 +17,7 @@ import type {
   SolverSpec,
   SolverStatus,
 } from './types';
+import { EXTENSION_PROBLEMS, PROBLEM_IDS } from './types';
 
 /** One spec fixture per problem id: the compiler checks each against `SolverSpec`. */
 const fixtures = {
@@ -41,6 +42,10 @@ const fixtures = {
   },
   sensitivity: { problem: 'sensitivity', params: { method: 'tornado', outputs: ['res.net'], range: { mode: 'registry' } } },
   stress_presets: { problem: 'stress_presets', params: { presets: ['GCC hiring freeze'] } },
+  wave_plan: {
+    problem: 'wave_plan',
+    params: { window: { from: 1, to: 9 }, quarterlyOneTimeCap: 8, maxLaunchesPerQuarter: 3, objective: 'net', levers: ['L03'] },
+  },
 } as const satisfies { [P in ProblemId]: Extract<SolverSpec, { problem: P }> };
 
 const result: SolverResult<'goal_seek'> = {
@@ -59,7 +64,10 @@ describe('SOL-01 types: SolverResult, Change and per-problem params for every so
     const spec = readRepoJson<{ problems: { id: string }[] }>('docs/spec/solvers.json');
     const ids = spec.problems.map((p) => p.id);
     expect([...ProblemIds]).toEqual(ids);
-    expect(Object.keys(fixtures)).toEqual(ids);
+    // solvers.json's problems, then the product's own (SRC-03: wave_plan), as in the contract's ProblemId.
+    expect([...EXTENSION_PROBLEMS]).toEqual(['wave_plan']);
+    expect([...PROBLEM_IDS]).toEqual([...ids, ...EXTENSION_PROBLEMS]);
+    expect(Object.keys(fixtures)).toEqual([...ids, ...EXTENSION_PROBLEMS]);
     for (const [id, f] of Object.entries(fixtures)) expect(f.problem).toBe(id);
 
     expectTypeOf<keyof SolverParamsMap>().toEqualTypeOf<ProblemId>();

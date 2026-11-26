@@ -31,3 +31,9 @@ export {
   type ApiRouteFixtures,
   type JobRouteFixtures,
 } from '../fixtures/jobs';
+export {
+  planRouteFixtures,
+  sourcingRouteFixtures,
+  type PlanRouteFixtures,
+  type SourcingRouteFixtures,
+} from '../fixtures/sourcing';

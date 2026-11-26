@@ -6,7 +6,7 @@ import { themeNames, type ThemeName } from '@glidepath/ui/tokens';
  * way a violation is worded in a failing assertion. The browser work is in `a11y/a11y.spec.ts`.
  */
 
-/** The eight modules (contract ids) and the two themes (token ids): G12 runs every pair. */
+/** The eleven modules (contract ids) and the two themes (token ids): G12 runs every pair. */
 export const A11Y_MODULES: readonly AppModule[] = AppModule.options;
 export const A11Y_THEMES: readonly ThemeName[] = themeNames;
 

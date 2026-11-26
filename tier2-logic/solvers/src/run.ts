@@ -8,7 +8,6 @@
  * what its problem may move (04 §1: estimates never move).
  */
 import type { BatchInput, BatchResult, CellKey, Change as EngineChange, Evaluation } from '@glidepath/engine';
-import { ProblemIds } from '@glidepath/spec/generated';
 import { DECISION_SETS, decisionSet, decisionSets, isHeld, type DecisionVariable } from './decision-sets';
 import { SolverCancelled, SolverError } from './errors';
 import type { SolverModel } from './model';
@@ -25,6 +24,7 @@ import type {
   SolverResult,
   SolverSpec,
 } from './types';
+import { PROBLEM_IDS } from './types';
 
 /** A problem implementation: runs on `run` (its model, abort, progress) and returns its outcome. */
 export type ProblemSolver<P extends ProblemId> = (
@@ -159,6 +159,8 @@ const MOVES: { readonly [P in ProblemId]: MovePolicy<P> } = {
   monte_carlo: () => false,
   sensitivity: () => false,
   stress_presets: (cell, _p, ctx) => ctx.input(cell),
+  // SRC-14: start months only (`lev.start`, decision set lever_timing) of the levers it may move.
+  wave_plan: (cell, _p, ctx) => cell.startsWith('lev.start[') && ctx.movable().has(cell),
 };
 
 /** Variable id of a cell key (`lev.start[L03]` → `lev.start`). */
@@ -204,7 +206,7 @@ export async function runSolver<P extends ProblemId>(
   options: RunOptions = {},
 ): Promise<SolverResult<P>> {
   const problem = spec.problem;
-  if (!(ProblemIds as readonly string[]).includes(problem)) {
+  if (!(PROBLEM_IDS as readonly string[]).includes(problem)) {
     throw new SolverError('BAD_PARAMS', `unknown problem ${String(problem)}`);
   }
   const solve = (options.problems?.[problem] ?? PROBLEMS[problem]) as ProblemSolver<P>;

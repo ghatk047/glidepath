@@ -309,13 +309,13 @@ const commit = async (change: Change) => {
 // ---------------------------------------------------------------------------------------------
 
 describe('AC1: rail, tenant monogram, scenario bar from /scenarios, switching', () => {
-  it('rail lists the 9 modules (Build second) and the tenant monogram opens Airlines', async () => {
+  it('rail lists the 11 modules (Build second) and the tenant monogram opens Airlines', async () => {
     const t = await mount(`/${tenant}/${PRESET_C}/levers`);
     const nav = await screen.findByRole('navigation', { name: 'Modules' });
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => a.textContent)).toEqual(MODULE_IDS.map((id) => MODULE_COPY[id].label));
     expect(links).toHaveLength(MODULE_IDS.length);
-    expect(links).toHaveLength(9);
+    expect(links).toHaveLength(11);
     expect(links[1]!.textContent).toBe(MODULE_COPY.wizard.label);
     expect(within(nav).getByRole('link', { current: 'page' }).textContent).toBe(
       MODULE_COPY.levers.label,

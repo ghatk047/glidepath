@@ -36,7 +36,7 @@ const entryChunk = () => Object.values(manifest).find((c) => c.isEntry)!;
 const base = (file: string) => file.split('/').pop()!;
 
 describe('build manifest', () => {
-  it('has one chunk per module: 9 distinct module chunks', () => {
+  it('has one chunk per module: 11 distinct module chunks', () => {
     const chunks = moduleChunks();
     expect(chunks.map((c) => /\/modules\/([a-z]+)\//.exec(c.src!)![1]).sort()).toEqual(
       [...MODULE_IDS].sort(),
@@ -54,7 +54,7 @@ describe('build manifest', () => {
   it('preloads the cockpit, levers and path (and only those)', () => {
     expect([...PRELOADED_MODULES]).toEqual(['cockpit', 'levers', 'path']);
     // The registry points every module at a dynamic import, so the entry chunk can load any
-    // of the nine; the three preloaded ones are requested after first paint.
+    // of the eleven; the three preloaded ones are requested after first paint.
     const text = readFileSync(join(outDir, entryChunk().file), 'utf8');
     for (const c of moduleChunks()) expect(text).toContain(base(c.file));
   });

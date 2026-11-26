@@ -9,9 +9,22 @@
  * converts between the two.
  */
 import type { CellKey, Change as EngineChange } from '@glidepath/engine';
-import type { ProblemId } from '@glidepath/spec/generated';
+import { ProblemIds } from '@glidepath/spec/generated';
+import type { ProblemId as SpecProblemId } from '@glidepath/spec/generated';
 
-export type { CellKey, ProblemId };
+/**
+ * Problems the product adds beyond `solvers.json` (read-only), as in the contract's `extensionProblems`:
+ * `wave_plan`, the SRC epic's wave planner (SRC-14).
+ */
+export const EXTENSION_PROBLEMS = ['wave_plan'] as const;
+
+/** `solvers.json` problem ids, then {@link EXTENSION_PROBLEMS}. */
+export type ProblemId = SpecProblemId | (typeof EXTENSION_PROBLEMS)[number];
+
+/** Every problem id the package answers, in contract order. */
+export const PROBLEM_IDS: readonly ProblemId[] = [...ProblemIds, ...EXTENSION_PROBLEMS];
+
+export type { CellKey };
 
 /** `solvers.json` `decision_variable_sets` keys: which inputs an optimiser may move. */
 export type DecisionSetId = 'lever_intensity' | 'lever_timing' | 'lever_switch' | 'funding';
@@ -192,6 +205,18 @@ export interface StressPresetsParams {
   readonly presets: readonly string[];
 }
 
+/** `wave_plan` (SRC-14): start months (`lev.start`) under a quarterly one-time cap and launch capacity. */
+export interface WavePlanParams {
+  /** Start-month window (1 = Jan 2027); absent = the registry bounds of `lev.start`. */
+  readonly window?: { readonly from: number; readonly to: number };
+  /** Cap on one-time cost per quarter of 2027, $M. */
+  readonly quarterlyOneTimeCap?: number;
+  readonly maxLaunchesPerQuarter?: number;
+  readonly objective?: 'net' | 'risk_adjusted';
+  /** `lever` members the planner may move; absent = every active lever. */
+  readonly levers?: readonly string[];
+}
+
 /** Parameters of each problem id. */
 export interface SolverParamsMap {
   readonly goal_seek: GoalSeekParams;
@@ -203,6 +228,7 @@ export interface SolverParamsMap {
   readonly monte_carlo: MonteCarloParams;
   readonly sensitivity: SensitivityParams;
   readonly stress_presets: StressPresetsParams;
+  readonly wave_plan: WavePlanParams;
 }
 
 /** One problem and its parameters (`solver_run.spec`). */
@@ -280,6 +306,18 @@ export interface SolverDetailMap {
       readonly outputs: Readonly<Record<CellKey, number>>;
       readonly delta: Readonly<Record<CellKey, number>>;
     }[];
+  };  readonly wave_plan: {
+    readonly levers: readonly { readonly lever: string; readonly from: number; readonly to: number; readonly quarter: number }[];
+    readonly quarters: readonly {
+      readonly quarter: number;
+      readonly oneTime: number;
+      readonly launches: number;
+      readonly cap: number | null;
+      readonly launchCap: number | null;
+    }[];
+    /** CY27 net (`res.net`), $M, at the start point and under the plan. */
+    readonly netBefore: number;
+    readonly netAfter: number;
   };
 }
 

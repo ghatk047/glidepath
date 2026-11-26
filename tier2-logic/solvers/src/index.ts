@@ -35,7 +35,9 @@ export type {
   SolverStatus,
   StressPresetsParams,
   VpFeasibleParams,
+  WavePlanParams,
 } from './types';
+export { EXTENSION_PROBLEMS, PROBLEM_IDS } from './types';
 export type { ReferenceScenario, SolverModel } from './model';
 export { ALL_VPS_KEY, referenceMetricKeys } from './problems/reference-points';
 export {

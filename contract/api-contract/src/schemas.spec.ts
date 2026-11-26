@@ -132,9 +132,9 @@ describe('schemas.spec: enums match docs/spec/schema.json', () => {
 });
 
 describe('schemas.spec: app modules', () => {
-  it('AppModule.options has nine ids, wizard second', () => {
+  it('AppModule.options has eleven ids, wizard second, sourcing and plan after path', () => {
     expect([...AppModule.options]).toEqual([
-      'cockpit', 'wizard', 'baseline', 'levers', 'vps', 'path', 'market', 'excel', 'airlines',
+      'cockpit', 'wizard', 'baseline', 'levers', 'vps', 'path', 'sourcing', 'plan', 'market', 'excel', 'airlines',
     ]);
   });
   it('SearchResult parses for every module including wizard', () => {
