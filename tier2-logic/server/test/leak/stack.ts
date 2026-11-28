@@ -81,7 +81,10 @@ async function seedThreeTenants(test: TestDatabase): Promise<void> {
       C: { ...aa, tenant: { ...aa.tenant, id: SLUG.C, name: COPY_NAME } },
     } as const;
     for (const t of ['A', 'B', 'C'] as const) {
-      await seedTenant(owner.db, { slug: SLUG[t], seed: seeds[t], bundle: inputs.global.bundle, modelVersionId: defs.modelVersionId });
+      // SRC-07: tenant A and its copy carry the reference sourcing members (contract, benchmark, sourcing_param);
+      // tenant B has none of its own seed, and adds a contract of its own in act().
+      const sourcing = t === 'B' ? null : inputs.sourcing;
+      await seedTenant(owner.db, { slug: SLUG[t], seed: seeds[t], sourcing, bundle: inputs.global.bundle, modelVersionId: defs.modelVersionId });
     }
     await owner.db.insert(schema.app_user).values(Object.values(USERS).map((u) => ({ id: u.id, email: u.email, name: u.name })));
     for (const u of Object.values(USERS) as LeakUser[]) {

@@ -102,6 +102,18 @@ async function linkFor(email: string, before: number): Promise<string> {
   throw new Error(`no sign-in link for ${email}`);
 }
 
+/** A `contract` member only `slug` holds, with words and numbers of its own (SRC-07 sourcing routes). */
+const ownContract = (slug: string) => ({
+  label: `${slug}-only contract`,
+  attrs: {
+    vendor_name: `${slug}-only supplier`, vendor: null, category: `${slug}-only category`, lines: [], start_month: '2025-06',
+    term_months: 36, renewal_month: '2027-06', notice_days: 90, escalator_pct: 0.03, auto_renew: 0, target_cut_pct: 0.07,
+    source: `${slug}-only source`, confidence: 'L',
+  },
+  sort: 999,
+  active: true,
+});
+
 /**
  * A tenant uses the routes on its own data, as its own user: edits, a pin, a relabel, an undo, a copy, solver
  * runs, an export, an upload and its apply, and the two tables no route writes yet.
@@ -141,6 +153,8 @@ async function act(client: LeakClient, b: Browser, t: TenantName, o: { preset: s
         { target: 'override', key: 'res.net', member: '', value: EDIT[t].pin, note: `${slug}-only pin` },
         { target: 'variable', key: 'g.target_pct', member: '', value: EDIT[t].pct },
         { target: 'structural', key: 'vendor', member: vendor.key, value: relabelled },
+        // SRC-07: a contract of the tenant's own (the sourcing routes read the contract members).
+        { target: 'structural', key: 'contract', member: `c_${slug.replace(/-/g, '_')}_only`, value: ownContract(slug) },
       ],
     })),
     200,
@@ -265,6 +279,18 @@ beforeAll(async () => {
 afterAll(async () => {
   await stack?.close();
 });
+
+/**
+ * A sourcing view (SRC-07) of tenant A's scenario, by its owner and by a member of the copy; the same view of B's
+ * and C's scenarios under tenant A's path, and on their own paths by a non-member: the 404 of an unknown id.
+ */
+async function sourcingCase(p: Probe, view: 'vendors' | 'renewals' | 'benchmarks'): Promise<void> {
+  await p.own(`sourcing ${view}`, 'ana', 'GET', own(`/sourcing/${view}?scenario=${A.fork}`));
+  await p.own(`sourcing ${view} by a member of the copy too`, 'max', 'GET', own(`/sourcing/${view}?scenario=${A.presetC}`));
+  for (const t of OTHERS) {
+    for (const id of [other[t].fork, other[t].presetC]) await p.aimed(`sourcing ${view}`, 'GET', (s) => at(s, `/sourcing/${view}?scenario=${id}`), undefined, t, [id]);
+  }
+}
 
 // ---------------------------------------------------------------------------------- the cases, one per route
 
@@ -421,6 +447,46 @@ const CASES: Record<string, (p: Probe) => Promise<void>> = {
       await p.own(`search '${q}'`, 'ana', 'GET', own(`/search?q=${encodeURIComponent(q)}`));
     }
     await p.foreign('search', 'GET', (s) => at(s, '/search?q=vendor'));
+  },
+
+  // ----- sourcing (SRC-07, SRC-10) and plan (SRC-17): views of a scenario
+  'GET /api/t/:tenant/sourcing/vendors': async (p) => sourcingCase(p, 'vendors'),
+  'GET /api/t/:tenant/sourcing/renewals': async (p) => {
+    const r = await p.own('renewals', 'ana', 'GET', own(`/sourcing/renewals?scenario=${A.fork}`));
+    expect((r.json as { renewals: { contract: string }[] }).renewals.map((x) => x.contract)).toContain('c_aa_only');
+    await sourcingCase(p, 'renewals');
+  },
+  'GET /api/t/:tenant/sourcing/benchmarks': async (p) => sourcingCase(p, 'benchmarks'),
+  'GET /api/t/:tenant/sourcing/params': async (p) => {
+    await p.own('sourcing params', 'ana', 'GET', own('/sourcing/params'));
+    await p.own('sourcing params of a scenario', 'max', 'GET', own(`/sourcing/params?scenario=${A.fork}`));
+    for (const t of OTHERS) for (const id of [other[t].fork, other[t].presetC]) await p.aimed('sourcing params', 'GET', (s) => at(s, `/sourcing/params?scenario=${id}`), undefined, t, [id]);
+    await p.foreign('sourcing params', 'GET', (s) => at(s, '/sourcing/params'));
+  },
+  'GET /api/t/:tenant/sourcing/members': async (p) => {
+    // SRC-11: the stored contract and benchmark rows; tenant members, so only the tenant's own (its own contract among them).
+    const r = await p.own('sourcing contract members', 'ana', 'GET', own('/sourcing/members?dim=contract'));
+    expect((r.json as { members: { key: string }[] }).members.map((x) => x.key)).toContain('c_aa_only');
+    await p.own('sourcing benchmark members by a member of the copy too', 'max', 'GET', own('/sourcing/members?dim=benchmark'));
+    for (const dim of ['contract', 'benchmark']) await p.foreign(`sourcing ${dim} members`, 'GET', (s) => at(s, `/sourcing/members?dim=${dim}`));
+  },
+  'POST /api/t/:tenant/sourcing/consolidation': async (p) => {
+    // SRC-10: the optimizer over the scenario's spend cube; other tenants' scenarios are refused like the views.
+    await p.own('consolidation', 'ana', 'POST', own('/sourcing/consolidation'), json({ scenarioId: A.fork }));
+    await p.own('consolidation by a member of the copy too, with an override', 'max', 'POST', own('/sourcing/consolidation'), json({ scenarioId: A.presetC, params: { max_moves: 2 } }));
+    for (const t of OTHERS) {
+      for (const id of [other[t].fork, other[t].presetC]) await p.aimed('consolidation', 'POST', (s) => at(s, '/sourcing/consolidation'), json({ scenarioId: id }), t, [id]);
+    }
+    await p.foreign('consolidation', 'POST', (s) => at(s, '/sourcing/consolidation'), json({ scenarioId: A.fork }));
+  },
+  'GET /api/t/:tenant/plan/business-case': async (p) => {
+    // SRC-17: the lever business case of a scenario; other tenants' scenarios are refused like the sourcing views.
+    await p.own('business case', 'ana', 'GET', own(`/plan/business-case?scenario=${A.fork}`));
+    await p.own('business case by a member of the copy too', 'max', 'GET', own(`/plan/business-case?scenario=${A.presetC}`));
+    for (const t of OTHERS) {
+      for (const id of [other[t].fork, other[t].presetC]) await p.aimed('business case', 'GET', (s) => at(s, `/plan/business-case?scenario=${id}`), undefined, t, [id]);
+    }
+    await p.foreign('business case', 'GET', (s) => at(s, `/plan/business-case?scenario=${A.fork}`));
   },
 
   // ----- solvers
@@ -582,7 +648,7 @@ describe('three tenants (aa, zz, a copy); every REST route and the WS session as
     const empty = OTHERS.flatMap((t) => [...w.last[t]].filter(([, d]) => d.startsWith('0:')).map(([name]) => `${t}.${name}`));
     expect(empty, 'tenant tables without a row of B or C: make the other tenants write one in act()').toEqual([]);
     expect([...w.markers.uuids.keys()]).toEqual(expect.arrayContaining([TENANT_ID.B, TENANT_ID.C, other.B.fork, other.C.fork, other.C.presetC, other.C.queuedRun]));
-    expect([...w.markers.strings.keys()]).toEqual(expect.arrayContaining(['Zz Synthetic Test Airline', COPY_NAME, SLUG.C, 'zz-only renamed', 'aa-copy-only vendor']));
+    expect([...w.markers.strings.keys()]).toEqual(expect.arrayContaining(['Zz Synthetic Test Airline', COPY_NAME, SLUG.C, 'zz-only renamed', 'aa-copy-only vendor', 'zz-only supplier', 'aa-copy-only supplier', 'zz-only contract']));
     expect([...w.markers.numbers.keys()]).toEqual(expect.arrayContaining([EDIT.B.pin, EDIT.C.pin, EDIT.C.def]));
   });
 

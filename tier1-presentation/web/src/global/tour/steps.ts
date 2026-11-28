@@ -2,7 +2,7 @@ import type { TourPlacement } from '@glidepath/ui/overlays/tour';
 import type { ModuleId } from '../../app/modules';
 
 /** Bump to show the Tour button's dot again after the copy changes. */
-export const TOUR_VERSION = '2';
+export const TOUR_VERSION = '3';
 
 export interface TourStepDef {
   /** Narrative id (`06_walkthrough_narrative.md` is keyed by it). */
@@ -25,7 +25,7 @@ export interface TourStepDef {
   body: string;
 }
 
-/** The 14 steps (07 §4.2). Steps 1 to 11 follow storyline beats 1 to 11. */
+/** The 24 steps (07 §4.2 plus SRC-20). Steps follow storyline beats; Sourcing and Plan sit after Path. */
 export const TOUR_STEPS: readonly TourStepDef[] = [
   {
     id: 'bar',
@@ -98,6 +98,96 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
     body: 'If each lever only delivers its confidence, how often is the bar cleared?',
   },
   {
+    id: 'frontier',
+    module: 'path',
+    anchor: '[data-testid="path-scatter"]',
+    placement: 'left',
+    title: 'Savings vs risk',
+    about:
+      'Savings vs risk plots each plan by net savings and risk, with a curve of the best trade-offs.',
+    body: 'Each point on the curve is the most net for that much risk.',
+  },
+  {
+    id: 'spend',
+    module: 'sourcing',
+    anchor: '[data-tour="sourcing-vendors"]',
+    placement: 'right',
+    title: 'Spend by vendor',
+    about:
+      'Sourcing is the procurement view. The spend cube shows who is paid how much, by category and contract.',
+    body: 'Start with the vendors that carry the most spend.',
+  },
+  {
+    id: 'renewals',
+    module: 'sourcing',
+    anchor: '[data-tour="sourcing-renewals"]',
+    placement: 'left',
+    title: 'Renewal calendar',
+    about:
+      'The renewal calendar shows when each contract can next be renegotiated, and how much notice is needed.',
+    body: 'A saving only counts if the notice date is not missed.',
+  },
+  {
+    id: 'benchmarks',
+    module: 'sourcing',
+    anchor: '[data-tour="sourcing-benchmarks"]',
+    placement: 'right',
+    title: 'Should-cost',
+    about:
+      'Should-cost compares what each contract pays with market benchmarks, to show where the price gap is.',
+    body: 'The gap to the benchmark is the negotiating room.',
+  },
+  {
+    id: 'consolidation',
+    module: 'sourcing',
+    anchor: '[data-tour="sourcing-consolidation"]',
+    placement: 'left',
+    title: 'Consolidation',
+    about:
+      'The consolidation optimizer tests moving spend to fewer vendors, trading volume discounts against concentration risk.',
+    body: 'Fewer vendors can mean better prices, and more dependence.',
+  },
+  {
+    id: 'breakeven',
+    module: 'plan',
+    anchor: '[data-tour="plan-breakeven"]',
+    placement: 'right',
+    title: 'Breakeven',
+    about:
+      'Plan is the IT leadership view. Breakeven asks how far one lever can fall short before the bar is missed.',
+    body: 'See how much slack each lever has before the plan fails.',
+  },
+  {
+    id: 'stress',
+    module: 'plan',
+    anchor: '[data-tour="plan-stress"]',
+    placement: 'left',
+    title: 'Stress tests',
+    about:
+      'Stress tests apply a shock, such as slower delivery or higher prices, and show what it does to net.',
+    body: 'Change a shock size and see the plan absorb it.',
+  },
+  {
+    id: 'case',
+    module: 'plan',
+    anchor: '[data-tour="plan-business-case"]',
+    placement: 'right',
+    title: 'Business case',
+    about:
+      'The business case turns the plan into cost, savings and payback over the years, as finance would read it.',
+    body: 'Savings, one-time cost and payback in one view.',
+  },
+  {
+    id: 'waves',
+    module: 'plan',
+    anchor: '[data-tour="plan-wave"]',
+    placement: 'left',
+    title: 'Wave planner',
+    about:
+      'The wave planner sequences the levers into delivery waves that respect capacity and dependencies.',
+    body: 'Pick the order that lands savings soonest.',
+  },
+  {
     id: 'market',
     module: 'market',
     anchor: '[data-testid="market-trace"]',
@@ -116,6 +206,16 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
     about:
       'Your inputs are the few numbers leadership sets. Change one and the whole app follows.',
     body: 'Outside funding and the target are yours to change.',
+  },
+  {
+    id: 'solve',
+    module: 'cockpit',
+    anchor: '.gp-cockpit-bar',
+    placement: 'bottom',
+    title: 'Solve for this',
+    about:
+      'Any editable number can be solved backwards: tell the app the goal and it finds the input value.',
+    body: 'Click the bar, then choose Solve for this to find the target that closes the gap.',
   },
   {
     id: 'excel',
@@ -176,6 +276,8 @@ export const TOUR_STEPS: readonly TourStepDef[] = [
 export const TOUR_CHAPTERS = {
   main: 'bar',
   levers: 'levers',
+  sourcing: 'spend',
+  plan: 'breakeven',
   wizard: 'wizard',
   close: 'restart',
 } as const satisfies Record<string, string>;

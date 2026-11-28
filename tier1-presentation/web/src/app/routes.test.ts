@@ -2,7 +2,9 @@
 import { createMemoryHistory, isNotFound } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';
 import { AppModule, type ApiClient } from '@glidepath/api-contract';
-import { MODULE_IDS } from './modules';
+import { cleanup, render, screen } from '@testing-library/react';
+import { createElement } from 'react';
+import { MODULE_IDS, loadModule } from './modules';
 import { createAppRouter, defaultAppServices } from './router';
 import { parseViewSearch } from './search';
 
@@ -19,9 +21,23 @@ async function open(url: string) {
 const leaf = (router: Awaited<ReturnType<typeof open>>) => router.state.matches.at(-1)!;
 
 describe('route parsing', () => {
-  it('has exactly the 9 modules of the contract, in IA order', () => {
+  it('has exactly the 11 modules of the contract, in IA order', () => {
     expect(MODULE_IDS).toEqual(AppModule.options);
-    expect(MODULE_IDS).toHaveLength(9);
+    expect(MODULE_IDS).toHaveLength(11);
+  });
+
+  it.each([
+    ['sourcing', 'sourcing-grid', 'Vendor spend'],
+    ['plan', 'plan-grid', 'Business case'],
+  ] as const)('/:tenant/:scenario/%s renders its chunk (SRC-04 skeleton)', async (module, testId, panel) => {
+    const router = await open(`/ZZ/C/${module}`);
+    expect(leaf(router).params).toEqual({ tenant: 'ZZ', scenario: 'C', module });
+    const { default: Screen } = await loadModule(module);
+    render(createElement(Screen));
+    const grid = screen.getByTestId(testId);
+    expect(grid.querySelectorAll('.gp-panel').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: panel })).toBeTruthy();
+    cleanup();
   });
 
   it.each(MODULE_IDS)('parses /:tenant/:scenario/%s', async (module) => {

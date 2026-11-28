@@ -1,4 +1,4 @@
-import { membersHashOf } from '@glidepath/domain';
+import { SOURCING_DIMENSIONS, membersHashOf } from '@glidepath/domain';
 import type { AttrValue, Member, TenantMembers } from '@glidepath/spec';
 import { sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
@@ -89,6 +89,49 @@ async function readMembers(tx: TenantTx, tenantId: string): Promise<MembersSnaps
   deepFreeze(members);
   // membersHashOf remembers the hash of a frozen object: the domain's ModelCache key reuses it.
   return Object.freeze({ rows, members, membersHash: membersHashOf(members) });
+}
+
+/** Members of tenant dimensions the model does not define (SRC-02), as `loadDimensionMembers` reads them. */
+export interface DimensionMembersRead {
+  /** Every member, active or not, in member order (`sort`, then member_key), dimension by dimension. */
+  readonly rows: readonly DimensionMemberRow[];
+  /** The active members per requested dimension, `{ id, label, ...attrs }`, in member order; [] when none. */
+  readonly members: Readonly<Record<string, readonly Member[]>>;
+}
+
+/**
+ * The current tenant's own members (dimension_member) of `dims`, whether or not the pinned model
+ * defines them. `loadMembers` serves only the model's dimensions (the engine's members and the members
+ * hash); this read is for the data-only dimensions, such as the sourcing ones (`loadSourcingMembers`).
+ * Not cached: a few dozen rows by primary key prefix.
+ */
+export async function loadDimensionMembers(tx: TenantTx, dims: readonly string[]): Promise<DimensionMembersRead> {
+  const { tenantId } = tenantScope(tx, 'loadDimensionMembers');
+  const members: Record<string, Member[]> = Object.fromEntries(dims.map((d) => [d, []]));
+  if (dims.length === 0) return { rows: [], members };
+  const res = await tx.execute<Raw>(sql`
+    select m.dim_key, m.member_key, m.label, m.attrs, m.sort, m.active, 'tenant' as origin
+    from dimension_member m
+    where m.tenant_id = ${tenantId}::uuid
+      and m.dim_key in (${sql.join(dims.map((d) => sql`${d}`), sql`, `)})
+    order by m.dim_key collate "C", m.sort, m.member_key collate "C"`);
+  const rows: DimensionMemberRow[] = res.rows.map((r) => ({
+    dim_key: r.dim_key,
+    member_key: r.member_key,
+    label: r.label,
+    attrs: r.attrs ?? {},
+    sort: num(r.sort),
+    active: r.active,
+    origin: 'tenant',
+  }));
+  for (const r of rows) if (r.active) members[r.dim_key]!.push({ ...r.attrs, id: r.member_key, label: r.label });
+  return { rows, members };
+}
+
+/** The current tenant's `contract`, `benchmark`, `sourcing_param`, `vendor_bucket` and `consolidation_scope` members (SRC-02; @glidepath/domain SOURCING_DIMENSIONS). */
+export async function loadSourcingMembers(tx: TenantTx): Promise<DimensionMembersRead> {
+  tenantScope(tx, 'loadSourcingMembers');
+  return loadDimensionMembers(tx, SOURCING_DIMENSIONS);
 }
 
 /** Freezes `v` and everything it holds (plain objects and arrays, as JSON from the driver). */

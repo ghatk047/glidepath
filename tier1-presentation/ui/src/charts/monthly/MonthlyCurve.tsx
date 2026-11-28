@@ -57,11 +57,13 @@ export function MonthlyCurve({
   const monthName = (i: number) => MONTH_NAMES[i] ?? String(i + 1);
   const perMonth = (i: number, value: number) => `${monthName(i)} ${fmt.money(value)}/mo`;
 
-  // labels from the bottom band up; one closer than the minimum gap to the last kept label is dropped
+  // labels from the bottom band up; a band too thin to hold its label, or one closer than the
+  // minimum gap to the last kept label, is dropped
   const crowded = new Set<number>();
   let lastY: number | null = null;
   for (const [bi, b] of g.bands.map((b, i) => [i, b] as const).sort((x, y) => y[1].labelY - x[1].labelY)) {
-    if (lastY !== null && Math.abs(lastY - b.labelY) < O.familyLabelMinGap) crowded.add(bi);
+    if (b.labelRoom < O.familyLabelMinBand) crowded.add(bi);
+    else if (lastY !== null && Math.abs(lastY - b.labelY) < O.familyLabelMinGap) crowded.add(bi);
     else lastY = b.labelY;
   }
 

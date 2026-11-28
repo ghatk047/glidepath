@@ -58,7 +58,15 @@ export function toEngineSpec(spec: QuickSolverSpec): EngineSolverSpec {
         },
       };
     }
-    case 'stress_presets':
-      return { problem: 'stress_presets', params: { presets: [...spec.params.presets] } };
+    case 'stress_presets': {
+      const p = spec.params;
+      return {
+        problem: 'stress_presets',
+        params: {
+          ...(p.presets === undefined ? {} : { presets: [...p.presets] }),
+          ...(p.scales === undefined ? {} : { scales: { ...p.scales } }),
+        },
+      };
+    }
   }
 }

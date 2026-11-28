@@ -57,6 +57,19 @@ import {
   ReconfigRequest,
 } from './ai';
 import { MarketRefreshRequest, MarketRefreshResult } from './market';
+import {
+  BenchmarkGap,
+  ConsolidationRequest,
+  ConsolidationResult,
+  RenewalCalendar,
+  SourcingMembers,
+  SourcingMembersQuery,
+  SourcingParams,
+  SourcingParamsQuery,
+  SourcingQuery,
+  VendorSpend,
+} from './sourcing';
+import { BusinessCase, PlanQuery } from './plan';
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
@@ -321,10 +334,86 @@ export type JobRouteId = keyof typeof jobRoutes;
 export type JobRoute<Id extends JobRouteId> = (typeof jobRoutes)[Id];
 
 /**
- * Every REST route of the contract, by id: what `createClient()` and `assertContract()` cover:
- * the CON-01 core routes and the CON-03 job routes.
+ * Sourcing module routes (SRC-03, features F5-F8): tier-2 views over the spend cube, contracts,
+ * benchmarks and `sourcing_param` members, and the consolidation optimizer (computes; writes nothing).
  */
-export const apiRoutes = { ...coreRoutes, ...jobRoutes } as const satisfies Record<
+export const sourcingRoutes = {
+  sourcingVendors: {
+    method: 'GET',
+    path: '/api/t/:tenant/sourcing/vendors',
+    status: 200,
+    params: TenantParams,
+    query: SourcingQuery,
+    response: VendorSpend,
+  },
+  sourcingRenewals: {
+    method: 'GET',
+    path: '/api/t/:tenant/sourcing/renewals',
+    status: 200,
+    params: TenantParams,
+    query: SourcingQuery,
+    response: RenewalCalendar,
+  },
+  sourcingBenchmarks: {
+    method: 'GET',
+    path: '/api/t/:tenant/sourcing/benchmarks',
+    status: 200,
+    params: TenantParams,
+    query: SourcingQuery,
+    response: BenchmarkGap,
+  },
+  sourcingParams: {
+    method: 'GET',
+    path: '/api/t/:tenant/sourcing/params',
+    status: 200,
+    params: TenantParams,
+    query: SourcingParamsQuery,
+    response: SourcingParams,
+  },
+  sourcingMembers: {
+    method: 'GET',
+    path: '/api/t/:tenant/sourcing/members',
+    status: 200,
+    params: TenantParams,
+    query: SourcingMembersQuery,
+    response: SourcingMembers,
+  },
+  sourcingConsolidation: {
+    method: 'POST',
+    path: '/api/t/:tenant/sourcing/consolidation',
+    status: 200,
+    params: TenantParams,
+    body: ConsolidationRequest,
+    response: ConsolidationResult,
+  },
+} as const satisfies Record<string, RouteDef>;
+
+export type SourcingRouteId = keyof typeof sourcingRoutes;
+
+/** Plan module routes (SRC-03, feature F9). F1, F3 and F10 run through the solver-run routes. */
+export const planRoutes = {
+  planBusinessCase: {
+    method: 'GET',
+    path: '/api/t/:tenant/plan/business-case',
+    status: 200,
+    params: TenantParams,
+    query: PlanQuery,
+    response: BusinessCase,
+  },
+} as const satisfies Record<string, RouteDef>;
+
+export type PlanRouteId = keyof typeof planRoutes;
+
+/**
+ * Every REST route of the contract, by id: what `createClient()` and `assertContract()` cover:
+ * the CON-01 core routes, the CON-03 job routes and the SRC-03 sourcing and plan routes.
+ */
+export const apiRoutes = {
+  ...coreRoutes,
+  ...jobRoutes,
+  ...sourcingRoutes,
+  ...planRoutes,
+} as const satisfies Record<
   string,
   RouteDef
 >;

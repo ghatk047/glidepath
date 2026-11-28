@@ -19,6 +19,8 @@ beforeAll(async () => {
 
 const run = (names: string[], m: SolverModel = model) =>
   runSolver(m, { problem: 'stress_presets', params: { presets: names } }, { yield: noYield });
+const stressPresets = (m: SolverModel, params: { presets?: string[]; scales?: Record<string, number> }, o = { yield: noYield }) =>
+  runSolver(m, { problem: 'stress_presets', params }, o);
 
 /** Oracle: apply the preset's changes with the scalar incremental engine. */
 function oracle(preset: StressPreset) {
@@ -54,7 +56,8 @@ describe('SOL-08 each named shock is applied as changes and evaluated, returning
         expect(d.outputs[o]).toBeCloseTo(want[o]!, 9);
         expect(d.delta[o]).toBeCloseTo(want[o]! - model.base.get(o), 9);
       }
-      expect(Object.keys(d.delta)).toEqual(['res.net', 'res.gap', 'br.eps27']);
+      expect(Object.keys(d.delta)).toEqual(['res.net', 'res.gap', 'br.eps27', 'res.risk']);
+      expect(d.scale).toBe(1);
       // A real shock moves the plan (the preset is not a no-op), and one preset returns its changes.
       expect(r.changes.length).toBeGreaterThan(0);
       // (Fuel is a corporate driver: it can move EPS but not the IT net.)
@@ -93,6 +96,46 @@ describe('SOL-08 each named shock is applied as changes and evaluated, returning
       for (const o of STRESS_OUTPUTS) expect(p.outputs[o]).toBeCloseTo(alone.outputs[o]!, 9);
     }
     expect(all.metrics['res.net']).toBe(model.base.get('res.net'));
+  });
+});
+
+describe('SRC-18 shock sizes, the catalog and the risk-adjusted net', () => {
+  it('the result lists every shock with its definition, whatever was asked', async () => {
+    const r = await run([specPresets[1]!.name]);
+    expect(r.detail!.catalog.map((p) => p.name)).toEqual(specPresets.map((p) => p.name));
+    expect(r.detail!.catalog[0]).toEqual({ name: specPresets[0]!.name, ...(specPresets[0]!.set ? { set: specPresets[0]!.set } : {}), ...(specPresets[0]!.shift ? { shift: specPresets[0]!.shift } : {}) });
+  });
+
+  it('a scale multiplies each move from the start point; 1 is the shock as written, 0 no shock', () => {
+    const fuel = specPresets.find((p) => p.name === 'Fuel +30c')!;
+    const at = (k: number) => presetChanges(model, fuel, k);
+    expect(at(1)).toEqual(presetChanges(model, fuel));
+    for (const c of at(2).filter((x) => x.cell.startsWith('corp.jet_direct['))) {
+      expect(c.value).toBeCloseTo(Math.min(4.5, model.base.get(c.cell) + 0.6), 9);
+    }
+    for (const c of at(0)) expect(c.value).toBeCloseTo(model.base.get(c.cell), 12);
+    // Discrete cells stay whole and in range: a Q2 start shifted by 1.5 × 3 months.
+    const q2 = specPresets.find((p) => p.name === 'Programme starts in Q2')!;
+    for (const c of presetChanges(model, q2, 1.5).filter((x) => x.cell.startsWith('lev.start['))) {
+      expect(Number.isInteger(c.value)).toBe(true);
+      expect(c.value).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it('scales reach the run: a half shock moves net less than the written one (a set to 0 cannot go further); bad scales are refused', async () => {
+    const name = 'GCC hiring freeze';
+    const once = (await run([name])).detail!.presets[0]!;
+    const half = (await stressPresets(model, { presets: [name], scales: { [name]: 0.5 } })).detail!.presets[0]!;
+    expect(half.scale).toBe(0.5);
+    expect(Math.abs(half.delta['res.net']!)).toBeLessThan(Math.abs(once.delta['res.net']!));
+    expect(Math.abs(half.delta['res.net']!)).toBeGreaterThan(0);
+    // Doubling a shock that already sets its inputs to the registry floor is held at the floor.
+    const twice = (await stressPresets(model, { presets: [name], scales: { [name]: 2 } })).detail!.presets[0]!;
+    expect(twice.delta['res.net']).toBeCloseTo(once.delta['res.net']!, 9);
+    await expect(stressPresets(model, { presets: [name], scales: { [name]: -1 } })).rejects.toMatchObject({ code: 'BAD_PARAMS' });
+    await expect(stressPresets(model, { scales: { nope: 1 } })).rejects.toMatchObject({ code: 'BAD_PARAMS' });
+    // Absent presets = every shock.
+    expect((await stressPresets(model, {}, { yield: noYield })).detail!.presets).toHaveLength(specPresets.length);
   });
 });
 

@@ -27,6 +27,9 @@ export const MONTHLY_OFFSETS = {
   familyLabelBaseline: 4,
   /** Closest two family labels may sit (about one label height); a crowded label is left out. */
   familyLabelMinGap: 11,
+  /** Thinnest band (at the right edge) a label fits inside; a label on a thinner band would sit on
+   * the band edges and the selected line, so it is left out (name stays in the tooltip). */
+  familyLabelMinBand: 11,
   endDotRadius: 4,
 } as const;
 /** Family colour slots, cycled by family order (prototype: seq-3, seq-2, accent). */
@@ -93,6 +96,8 @@ export interface MonthlyBandGeometry extends StackedBand {
   path: string;
   /** Screen y of the band's right-edge middle (direct label). */
   labelY: number;
+  /** Band thickness at the right edge (user units): room for the direct label. */
+  labelRoom: number;
 }
 
 export interface MonthlyGeometry {
@@ -138,6 +143,7 @@ export function monthlyGeometry(
       path: `${along.join('')}${back.join('')}Z`,
       // direct label sits mid-band at the right edge
       labelY: last >= 0 ? (y(b.lower[last]!) + y(b.upper[last]!)) / 2 : MONTHLY_PLOT.bottom,
+      labelRoom: last >= 0 ? Math.abs(y(b.lower[last]!) - y(b.upper[last]!)) : 0,
     };
   });
 

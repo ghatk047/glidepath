@@ -72,6 +72,7 @@ export function ChargebackPanel({
   return (
     <GlassPanel
       level={1}
+      className="gp-vps-charge"
       header={{
         label: 'Chargeback · shared infrastructure',
         status: <span className="gp-vps-ss">usage key</span>,

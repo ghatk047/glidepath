@@ -125,7 +125,7 @@ describe('GET nodes/:cell/explain', () => {
 });
 
 describe('GET search?q=', () => {
-  it('indexes 194 inputs, 17 levers, 98 output nodes, tenant lines and 8 screens', async () => {
+  it('indexes 194 inputs, 17 levers, 98 output nodes, tenant lines and 11 screens', async () => {
     const spec = await specBundle();
     const seed = await aaSeed();
     const lines = (seed.dimensionMembers.line ?? []).length;
@@ -142,13 +142,13 @@ describe('GET search?q=', () => {
     for (const v of spec.variables) expect(await probe(v.id, 'input'), v.id).toBeDefined();
     for (const n of spec.nodes.filter((x) => x.output)) expect(await probe(n.id, 'node'), n.id).toBeDefined();
     for (const l of seed.dimensionMembers.lever ?? []) expect(await probe(l.id, 'lever'), l.id).toBeDefined();
-    for (const s of ['cockpit', 'baseline', 'levers', 'vps', 'path', 'market', 'excel', 'airlines']) {
+    for (const s of ['cockpit', 'wizard', 'baseline', 'levers', 'vps', 'path', 'sourcing', 'plan', 'market', 'excel', 'airlines']) {
       expect(await probe(s, 'screen'), s).toBeDefined();
     }
     expect(kinds.get('input')).toBe(194);
     expect(kinds.get('node')).toBe(98);
     expect(kinds.get('lever')).toBe(17);
-    expect(kinds.get('screen')).toBe(8);
+    expect(kinds.get('screen')).toBe(11);
     // A non-output node is not offered.
     const inner = spec.nodes.find((n) => !n.output)!;
     expect((await searchOf(inner.id)).results.find((r) => r.id === inner.id)).toBeUndefined();

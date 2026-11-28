@@ -70,7 +70,7 @@ GP_A11Y_CHROMIUM=/opt/pw-browsers/chromium pnpm e2e:a11y -- --trace off   # name
 locked preset C, each screen after its numbers have drawn):
 
 1. `axe_each_module_in_both_themes_has_zero_serious_violations`: axe-core (all rules, real layout and colours, so
-   colour contrast is measured) on each of the eight modules in Cruise and Daylight, plus Cockpit with the edit popover,
+   colour contrast is measured) on each of the eleven modules in Cruise and Daylight, plus Cockpit with the edit popover,
    trace drawer, changeset tray and command palette open. Fails on any `serious` or `critical` violation; lower impacts
    are printed. Reduced motion is emulated so colours are measured at rest.
 2. `lighthouse_accessibility_at_least_95_on_cockpit_levers_path`: Lighthouse (snapshot mode, accessibility category)
@@ -99,7 +99,7 @@ budget stays the smoke's. Serial, one signed-in page:
 2. `edits_persist_across_reload`: one registry step on the net target in its popover commits, tier
    2 forks `Custom (from C)`, and after `page.reload()` the fork, its edits count, its changeset
    row and every number are back; locked preset C is still at 0 edits and still golden.
-3. `global_layer_works_…`: rail (8 modules, tenant monogram, routing), flight strip (its five
+3. `global_layer_works_…`: rail (11 modules, tenant monogram, routing), flight strip (its five
    cells off Cockpit, golden C), scenario bar (switch to A → the spec's A numbers), edit popover
    (the registry's min / max / step), trace drawer (`res.net`, tier 2's words and upstream chain),
    ⌘K (button and shortcut, a spec id ranked by `GET /search`).
@@ -118,19 +118,25 @@ pnpm e2e:visual -- --update           # approve: write the baselines that are mi
 ```
 
 `visual/visual.spec.ts` (own config `playwright.visual.config.ts`, driver `visual.mjs`; same stack and sign-in as the
-smoke) takes a full-page screenshot of each of the 8 modules of preset C in 2 themes (`cruise`, `daylight`; set the way the
-toggle stores it, `glidepath.theme`) at 2 widths (1440 and 390 CSS px), device scale 2 and reduced motion, like the UX pack's
-renders. 32 tests, titled `<module>-<theme>-<width>`, each `toHaveScreenshot` against
-`visual/baselines/chromium-<platform>/<module>-<theme>-<width>.png` (committed, one set per platform because fonts and
-rasterisation differ between a Linux container and a Mac). The pixel threshold is in `src/visual.ts`: colour tolerance 0.1 and
-at most 100 pixels differing (absolute, not a share: a share of a tall 2x page hides a reordered chip). During capture the
-harness injects `CAPTURE_CSS` (`src/visual.ts`): the floating flight strip (`.gp-hud`) is hidden and the phone bottom nav is put in
-the flow, because full-page capture would otherwise draw fixed elements mid-page over panel headers. Product code is untouched. Without `--update` a missing baseline fails; it is never written silently.
+smoke) takes a full-page screenshot of each of the 11 modules of preset C in 2 themes (`cruise`, `daylight`; set the way the
+toggle stores it, `glidepath.theme`) on the presenter's 2 screens, the 1280x720 laptop and the 1920x1080 monitor the demo runs
+on full screen (no phone width: phones are out of scope), at device scale 2 and reduced motion, like the UX pack's renders.
+44 screen tests plus the report test, titled `<module>-<theme>-<width>`, each `toHaveScreenshot` against
+`visual/baselines/chromium-<platform>/<module>-<theme>-<width>.png` (`<width>` is 1280 or 1920; committed, one set per platform
+because fonts and rasterisation differ between a Linux container and a Mac). Because the capture is full page, a baseline taller
+than its screen (1440 or 2160 device px) is a page that scrolls on that screen. The pixel threshold is in `src/visual.ts`: colour
+tolerance 0.1 and at most 100 pixels differing (absolute, not a share: a share of a tall 2x page hides a reordered chip). During
+capture the harness injects `CAPTURE_CSS` (`src/visual.ts`): the floating flight strip (`.gp-hud`) is hidden, because full-page
+capture would otherwise draw it mid-page over panel headers, and live backdrop blur is switched off, because with it the Excel
+capture (one of the screens that get real blur layers) moved by a device pixel from run to run (the blur sits over the pre-blurred sky,
+so the capture looks the same). Product code is untouched. Without `--update` a missing baseline
+fails; it is never written silently.
 
 The last test, `visual_report_generated_beside_the_ux_screens`, writes the reviewer's report
 `visual-report/index.html` (git-ignored; the folder holds the images and can be zipped): every baseline beside the render of
-the same screen in `docs/ux/screens/` (13 of the 32 screens have one: Path is the pack's `solver`, Excel its `data`), the
-page-height difference between the two, and for a failed comparison this run's capture and the pixel diff. That is the first
+the same screen in `docs/ux/screens/` (the pack drew its desktop renders at 1440 px, and both screen sizes are shown beside
+that render: 22 of the 44 screens have one; Path is the pack's `solver`, Excel its `data`), the page-height difference between
+the two, and for a failed comparison this run's capture and the pixel diff. That is the first
 approval of G11: the reviewer reads the pairs, and a screen that differs from its render is recorded, not "fixed" in the pack.
 `src/visual.ts` (matrix, file names, report page) and `src/visual-report.ts` (files) are unit-tested without a stack.
 

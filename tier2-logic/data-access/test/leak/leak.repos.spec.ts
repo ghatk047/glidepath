@@ -157,6 +157,9 @@ const CASES: Record<string, Entry> = {
   // read repositories (DATA-05)
   loadModelDefs: tenant(read([])),
   loadMembers: tenant(read([])),
+  // SRC-02: data-only dimensions (takes dimension keys, not ids: nothing to aim at tenant B)
+  loadDimensionMembers: tenant(read([['vp', 'lgroup']])),
+  loadSourcingMembers: tenant(read([], [], { ownMayBeEmpty: true })),
   listScenarios: tenant(read([])),
   getScenario: tenant(read([SCN.root], [[GC_B], [twinB(SCN.root!)]])),
   loadEditsCounts: tenant(read([Object.values(SCN)], [[[GC_B, twinB(SCN.root!)]]])),

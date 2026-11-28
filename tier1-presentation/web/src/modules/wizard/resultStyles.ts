@@ -26,9 +26,10 @@ export const resultCss = [
   `.gp-wzr-timing { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: ${rem(8)}; }`,
   `.gp-wzr-timing-row { display: flex; align-items: center; flex-wrap: wrap; gap: ${rem(8)}; }`,
   `.gp-wzr-lever { flex: 1 1 100%; color: var(--ink); font-size: var(--type-s-size); }`,
-  // desktop (UIX-01): one line per lever (name, start, ramp) in a list that scrolls inside its panel
+  // desktop (UIX-01): one line per lever (name, start, ramp) in a list that fills its panel and scrolls
+  // inside it (the step fits the viewport, styles.ts)
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-wzr-timing { gap: ${rem(4)}; max-height: calc(100vh - ${rem(330)}); min-height: ${rem(200)}; overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-wzr-timing { gap: ${rem(4)}; flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }`,
   `  .gp-wzr-timing-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: ${rem(6)}; }`,
   `  .gp-wzr-timing-row .gp-wzr-lever { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`,
   `}`,

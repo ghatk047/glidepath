@@ -79,6 +79,7 @@ export default function Levers() {
         <GlassPanel
           as="section"
           span={4}
+          className="gp-lv-levers"
           header={{ label: 'Levers', labelAs: 'h2' }}
           loading={families.payload === undefined}
         >

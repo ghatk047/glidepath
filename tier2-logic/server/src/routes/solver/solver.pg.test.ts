@@ -127,7 +127,21 @@ describe('POST solver-runs/quick runs the short solvers on the session model', (
     const run = await asRun(await quick({ problem: 'stress_presets', params: { presets: ['Vendors win COLA', 'GCC hiring freeze'] } }));
     const detail = run.result!.detail as Extract<NonNullable<SolverRun['result']>['detail'], { problem: 'stress_presets' }>;
     expect(detail.presets.map((p) => p.name)).toEqual(['Vendors win COLA', 'GCC hiring freeze']);
-    expect(Object.keys(detail.presets[0]!.outputs)).toEqual(expect.arrayContaining(['res.net[]', 'res.gap[]']));
+    expect(Object.keys(detail.presets[0]!.outputs)).toEqual(expect.arrayContaining(['res.net[]', 'res.gap[]', 'res.risk[]']));
+  });
+
+  it('SRC-18 stress_presets: no names = every shock with the catalog; a scale is a run parameter', async () => {
+    const all = await asRun(await quick({ problem: 'stress_presets', params: {} }));
+    const d = all.result!.detail as Extract<NonNullable<SolverRun['result']>['detail'], { problem: 'stress_presets' }>;
+    expect(d.catalog!.map((p) => p.name)).toEqual(d.presets.map((p) => p.name));
+    expect(d.presets.length).toBeGreaterThan(1);
+    const name = d.presets[0]!.name;
+    const half = await asRun(await quick({ problem: 'stress_presets', params: { presets: [name], scales: { [name]: 0.5 } } }));
+    const h = half.result!.detail as typeof d;
+    expect(h.presets[0]!.scale).toBe(0.5);
+    const net = (x: typeof d.presets[number]) => (x.delta as Record<string, number>)['res.net[]']!;
+    expect(Math.abs(net(h.presets[0]!))).toBeLessThan(Math.abs(net(d.presets[0]!)));
+    expect((await quick({ problem: 'stress_presets', params: { scales: { [name]: 9 } } })).status).toBe(422);
   });
 
   it('a run is stored: GET answers it, and the worker-side rows carry the kind', async () => {

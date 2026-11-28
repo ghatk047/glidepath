@@ -17,13 +17,16 @@ export interface IndexEntry {
   extra: string;
 }
 
-/** The eight screens of the IA (02 §1, §4); `hint` is the question each module answers. */
+/** The eleven screens of the IA (02 §1, §4; WIZ and SRC add Build, Sourcing and Plan); `hint` is the question each module answers. */
 const SCREENS: readonly { id: AppModule; label: string; hint: string }[] = [
   { id: 'cockpit', label: 'Cockpit', hint: 'Can we reach the bar?' },
+  { id: 'wizard', label: 'Build', hint: 'Which levers make a plan, step by step?' },
   { id: 'baseline', label: 'Baseline', hint: 'Where is the money, and what can move?' },
   { id: 'levers', label: 'Levers', hint: 'What does each lever give, and when?' },
   { id: 'vps', label: 'VPs', hint: 'Is each VP on the hook fairly?' },
   { id: 'path', label: 'Path', hint: 'What is the least risky way there?' },
+  { id: 'sourcing', label: 'Sourcing', hint: 'Who do we pay, and where is the room to negotiate?' },
+  { id: 'plan', label: 'Plan', hint: 'Does each lever pay back, and when can it start?' },
   { id: 'market', label: 'Market', hint: 'What is it worth to shareholders?' },
   { id: 'excel', label: 'Excel', hint: 'Can my team work offline?' },
   { id: 'airlines', label: 'Airlines', hint: 'Can this run for another airline?' },
@@ -57,7 +60,7 @@ const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 /**
  * The ⌘K index: every input and output node of the model bundle (labels, units, groups from the
  * bundle), the levers and baseline lines among the tenant's dimension members (tier 3, the caller's
- * tenant only) and the eight screens. Nodes that are not outputs (intermediate formulas) are not offered.
+ * tenant only) and the eleven screens. Nodes that are not outputs (intermediate formulas) are not offered.
  */
 export function buildIndex(bundle: BundleResponse, members: MembersSnapshot): IndexEntry[] {
   const out: IndexEntry[] = [];

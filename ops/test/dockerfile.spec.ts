@@ -92,12 +92,16 @@ describe('Dockerfile', () => {
     // XL-08: the worker's Excel jobs also read the template from SPEC_DIR.
     const excelDeps = readFileSync(join(REPO_ROOT, 'tier2-logic/worker/src/jobs/excel/deps.ts'), 'utf8');
     const excelFiles = [...excelDeps.matchAll(/join\(specDir\(\), '([\w.]+\.json)'\)/g)].map((m) => m[1]!);
-    const specFiles = [...new Set([...loaderFiles, ...excelFiles])];
+    // The stress routes read the named shocks from SPEC_DIR.
+    const solverModel = readFileSync(join(REPO_ROOT, 'tier2-logic/server/src/routes/solver/model.ts'), 'utf8');
+    const solverFiles = [...solverModel.matchAll(/SPEC_DIR[^\n]*?'([\w.]+\.json)'/g)].map((m) => m[1]!);
+    const specFiles = [...new Set([...loaderFiles, ...excelFiles, ...solverFiles])];
     const runtimeInstructions = ins.slice(ins.lastIndexOf(ins.filter((i) => i.startsWith('FROM ')).at(-1)!));
 
-    it('the loader reads exactly variables.json and formula_graph.json; the Excel jobs add excel_template.json', () => {
+    it('the loader reads exactly variables.json and formula_graph.json; the Excel jobs add excel_template.json; the stress routes add solvers.json', () => {
       expect(loaderFiles.sort()).toEqual(['formula_graph.json', 'variables.json']);
       expect(excelFiles).toEqual(['excel_template.json']);
+      expect(solverFiles).toEqual(['solvers.json']);
       for (const f of specFiles) expect(existsSync(join(REPO_ROOT, 'docs/spec', f)), f).toBe(true);
     });
 

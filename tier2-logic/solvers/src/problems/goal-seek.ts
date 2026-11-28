@@ -188,22 +188,31 @@ interface RowPlan {
 interface RowFound {
   readonly needed: number | null;
   readonly feasible: boolean;
+  /** Not feasible: the closest value found in the row's range (else the wider range) and its output. */
+  readonly best: number | null;
+  readonly bestOutput: number | null;
 }
 
 const sameRange = (a: readonly [number, number] | null, b: readonly [number, number] | null): boolean =>
   a !== null && b !== null && a[0] === b[0] && a[1] === b[1];
 
-/** Searches the row's range, then the wider range when the first does not reach the target. */
+/**
+ * Searches the row's range, then the wider range when the first does not reach the target. A row the first
+ * range cannot close reports that range's closest value as `best` (the wider range's when it has no range).
+ */
 function* rowSearch(plan: RowPlan, target: number): Generator<readonly number[], RowFound, readonly number[]> {
+  let closest: SeekResult | null = null;
   if (plan.range !== null) {
     const r = yield* seek(plan.range[0], plan.range[1], target);
-    if (r.reachable) return { needed: r.value, feasible: true };
+    if (r.reachable) return { needed: r.value, feasible: true, best: null, bestOutput: null };
+    closest = r;
   }
   if (plan.wider !== null && !sameRange(plan.range, plan.wider)) {
     const r = yield* seek(plan.wider[0], plan.wider[1], target);
-    if (r.reachable) return { needed: r.value, feasible: false };
+    closest ??= r;
+    if (r.reachable) return { needed: r.value, feasible: false, best: closest.value, bestOutput: closest.output };
   }
-  return { needed: null, feasible: false };
+  return { needed: null, feasible: false, best: closest?.value ?? null, bestOutput: closest?.output ?? null };
 }
 
 function registryRange(v: Pick<VariableDef, 'min' | 'max'>): readonly [number, number] | null {
@@ -249,6 +258,8 @@ export const breakevenProblem: ProblemSolver<'breakeven'> = async (run, params) 
     min: plan.range?.[0] ?? null,
     max: plan.range?.[1] ?? null,
     feasible: found?.feasible ?? false,
+    best: found?.best ?? null,
+    bestOutput: found?.bestOutput ?? null,
   });
   const outcome = (rows: readonly BreakevenRow[]): SolverOutcome<'breakeven'> => {
     const feasible = rows.filter((r) => r.feasible).length;

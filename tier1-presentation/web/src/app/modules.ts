@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 import { AppModule } from '@glidepath/api-contract';
 
-/** The nine modules, in site-map order (IA §1). The list itself is owned by the contract. */
+/** The eleven modules, in site-map order (IA §1; SRC adds Sourcing and Plan after Path). The list itself is owned by the contract. */
 export const MODULE_IDS = AppModule.options;
 export type ModuleId = AppModule;
 
@@ -20,6 +20,8 @@ export const moduleLoaders: Record<ModuleId, ModuleLoader> = {
   levers: () => import('../modules/levers'),
   vps: () => import('../modules/vps'),
   path: () => import('../modules/path'),
+  sourcing: () => import('../modules/sourcing'),
+  plan: () => import('../modules/plan'),
   market: () => import('../modules/market'),
   excel: () => import('../modules/excel'),
   airlines: () => import('../modules/airlines'),

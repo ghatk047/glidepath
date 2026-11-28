@@ -72,6 +72,12 @@ export {
   vr07RetiredApps,
   vr09LineItemKeys,
   vr10CorpInputYears,
+  // SRC-02: data-only tenant dimensions (contract, benchmark, sourcing_param).
+  SOURCING_DIMENSIONS,
+  SOURCING_PARAM_DIM,
+  SOURCING_PARAM_NUMBERS,
+  isSourcingDimension,
+  sourcingRowEntries,
   // DOM-05: output rules on an evaluation, and the preview of a what-if session.
   MANAGED_SERVICES_NODE,
   OUTPUT_RULES,
@@ -94,6 +100,7 @@ export type {
   RuleDef,
   RuleId,
   Severity,
+  SourcingDimension,
   ValidationEntry,
   ValidationState,
 } from './validation';
@@ -214,3 +221,7 @@ export type {
   ViewPayloads,
   VpsDomainOutlayView,
 } from './views';
+// SRC-06, SRC-08, SRC-09: sourcing views (vendor spend cube, renewal calendar, should-cost benchmarks).
+export * from './sourcing';
+// SRC-16: the lever business case (NPV, payback, IRR, ROI).
+export * from './plan';

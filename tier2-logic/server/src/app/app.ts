@@ -13,7 +13,9 @@ import type { AiRoutesDeps } from '../routes/ai';
 import { registerExcelRoutes } from '../routes/excel';
 import type { ExcelRoutesDeps } from '../routes/excel';
 import { registerExplainRoutes } from '../routes/explain';
+import { registerPlanRoutes } from '../routes/plan';
 import { registerReadRoutes } from '../routes/read';
+import { registerSourcingRoutes } from '../routes/sourcing';
 import { registerSolverRoutes } from '../routes/solver';
 import type { SolverRoutesDeps } from '../routes/solver';
 import { afterCommitMiddleware, registerWriteRoutes } from '../routes/write';
@@ -148,6 +150,9 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   registerWriteRoutes(app, { specBundle, ...(hub ? { hub } : {}) });
   registerExplainRoutes(app, { specBundle });
   registerMarketRoutes(app, { specBundle });
+  // SRC-05: sourcing and plan routers (stubs until SRC-07 / SRC-17 fill their folders).
+  registerSourcingRoutes(app, { specBundle });
+  registerPlanRoutes(app, { specBundle });
   if (deps.excel) registerExcelRoutes(app, deps.excel);
   if (deps.ai) {
     registerAiRoutes(app, {

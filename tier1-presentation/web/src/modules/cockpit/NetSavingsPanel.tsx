@@ -5,7 +5,8 @@ import { fmt } from '@glidepath/ui/format';
 import { GlassPanel, Skeleton } from '@glidepath/ui/glass';
 import { StatusChip } from '@glidepath/ui/hud';
 import { EditPopover, parseNumber } from '@glidepath/ui/inputs/editable';
-import { Value, useNode, useVariable } from '../../bind';
+import { Value, useBindContext, useNode, useVariable } from '../../bind';
+import { SolveForThis, solvable } from '../../global/overlays/SolveForThis';
 import { COPY, NET_NODES, TARGET_VARIABLE } from './copy';
 import { gaugeMax } from './scale';
 
@@ -29,6 +30,7 @@ const heroFormat = (v: number) => fmt.money(v).replace(/M$/, '');
 function BarTarget() {
   const bar = useNode(NET_NODES.bar);
   const target = useNode(NET_NODES.target);
+  const ctx = useBindContext();
   const v = useVariable(TARGET_VARIABLE);
   const d = v.definition;
   const ref = useRef<HTMLButtonElement>(null);
@@ -42,6 +44,10 @@ function BarTarget() {
     d.step !== null &&
     typeof value === 'number';
   const fail = () => undefined; // the commit queue (WEB-05) surfaces errors in the shell
+  const commitTarget = (next: number) => {
+    v.preview(next);
+    void v.commit(next).catch(fail);
+  };
 
   return (
     <>
@@ -66,26 +72,34 @@ function BarTarget() {
         canEdit &&
         typeof document !== 'undefined' &&
         createPortal(
-          <EditPopover
-            label={d.label}
-            unit={d.unit}
-            min={d.min!}
-            max={d.max!}
-            step={d.step!}
-            source={d.source}
-            confidence={d.confidence}
-            defaultValue={d.default ?? Number.NaN}
-            value={value}
-            format={(n) => fmt.money(n)}
-            parse={parseNumber}
-            anchor={ref.current}
-            onChange={(next) => {
-              v.preview(next);
-              void v.commit(next).catch(fail);
-            }}
-            onReset={() => void v.commit(null).catch(fail)}
-            onClose={() => setOpen(false)}
-          />,
+          <>
+            <EditPopover
+              label={d.label}
+              unit={d.unit}
+              min={d.min!}
+              max={d.max!}
+              step={d.step!}
+              source={d.source}
+              confidence={d.confidence}
+              defaultValue={d.default ?? Number.NaN}
+              value={value}
+              format={(n) => fmt.money(n)}
+              parse={parseNumber}
+              anchor={ref.current}
+              onChange={commitTarget}
+              onReset={() => void v.commit(null).catch(fail)}
+              onClose={() => setOpen(false)}
+            />
+            {v.def && solvable(v.def) && (
+              <SolveForThis
+                tenant={ctx.tenant}
+                scenarioId={ctx.scenarioId}
+                cell={v.cell}
+                format={(n) => fmt.money(n)}
+                onApply={commitTarget}
+              />
+            )}
+          </>,
           document.body,
         )}
     </>

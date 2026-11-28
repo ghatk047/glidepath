@@ -2,7 +2,7 @@ import { runSolver } from '@glidepath/solvers';
 import type { SolverResult } from '@glidepath/solvers';
 import type { JsonValue } from '@glidepath/domain';
 import { loadSolverInput } from './load';
-import { SAVING_PROBLEMS, SolverJobError } from './types';
+import { FEASIBLE_ONLY_PROBLEMS, SAVING_PROBLEMS, SolverJobError } from './types';
 import type { SolverJobContext, SolverJobDeps, StoredSolverResult } from './types';
 import { recordResult, saveAsScenario } from './save';
 import type { SavedScenario } from './save';
@@ -32,7 +32,7 @@ const SOLVE_END = 0.95;
  * the tenant's members in one transaction, build the `SolverModel` (compiled models are cached per process),
  * run the pure solver outside any transaction with the job's signal and progress, then in a second
  * transaction save the result:
- * - `min_risk_mix` and `vp_feasible`: a new scenario of kind `solver` through `applyChangeset` with origin
+ * - `min_risk_mix`, `vp_feasible` and `wave_plan` (SRC-15; a feasible plan only): a new scenario of kind `solver` through `applyChangeset` with origin
  *   `solver` (unless the payload says `save: false`, the run was cancelled, or nothing moved); the ranked moves
  *   and binding constraints stay in `solver_run.result`, and `result_scenario_id` points at the scenario;
  * - every other problem (`monte_carlo`, `pareto`, `sensitivity`): the result only, no scenario.
@@ -67,7 +67,11 @@ export async function runSolverJob(
   })) as SolverResult;
 
   const wantsSave = SAVING_PROBLEMS.includes(spec.problem) && ctx.payload.save !== false;
-  const worthSaving = result.status !== 'cancelled' && result.changes.length > 0 && !ctx.signal.aborted;
+  const worthSaving =
+    result.status !== 'cancelled' &&
+    !(result.status === 'infeasible' && FEASIBLE_ONLY_PROBLEMS.includes(spec.problem)) &&
+    result.changes.length > 0 &&
+    !ctx.signal.aborted;
   let saved: SavedScenario | null = null;
   let saveError: string | undefined;
 

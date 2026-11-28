@@ -6,6 +6,7 @@ import {
   type Db,
 } from '@glidepath/data-access';
 import {
+  SOURCING_DIMENSIONS,
   applyChangeset,
   recomputeHook,
   type ChangesetDraft,
@@ -25,10 +26,13 @@ import {
   tenantDimensions,
 } from './drafts';
 import { SEED_ACTOR_EMAIL, SEED_ACTOR_NAME, seedIds } from './ids';
+import { missingSourcingMembers, type SourcingSeed } from './sourcing';
 
 export interface TenantSeedOptions {
   readonly slug: string;
   readonly seed: TenantSeed;
+  /** The tenant's sourcing.json (SRC-01): contract, benchmark, sourcing_param, vendor_bucket and consolidation_scope members; none when absent. */
+  readonly sourcing?: SourcingSeed | null;
   readonly bundle: ModelBundle;
   readonly modelVersionId: string;
   /** DEMO_USER_EMAIL: a fictitious user created with an owner membership; none when empty. */
@@ -89,7 +93,8 @@ function seedModelCache(): ModelCache<CompiledModel> {
  * 1. the tenant row, the seed-loader user, the demo user + owner membership, `source` rows;
  * 2. the five presets as locked scenario rows (DOM-04 owns scenario ops, so rows go in through the
  *    store port's createScenario, like the DOM-03 seed test);
- * 3. through `applyChangeset` with origin `seed`: the tenant's members and lines and its variable
+ * 3. through `applyChangeset` with origin `seed`: the tenant's members and lines, its sourcing members
+ *    (SRC-02: contract, benchmark, sourcing_param, vendor_bucket, consolidation_scope; data the engine never reads) and its variable
  *    defaults (one changeset), then each preset's values (one changeset per preset), each recomputed
  *    so the preset has its `calc_run` (04 §2 step 6, ADR-007; `GET /scenarios/:id/calc`);
  * 4. `line_item_lever` rows (the port has no write for them).
@@ -246,12 +251,19 @@ export async function seedTenant(db: Db, o: TenantSeedOptions): Promise<TenantSe
         const rows = keys.length === 0 ? new Map() : await t.loadMemberRows(dim, keys);
         existing.set(dim, new Set(rows.keys()));
       }
+      for (const dim of SOURCING_DIMENSIONS) {
+        const keys = (o.sourcing?.dimensions[dim] ?? []).map((m) => m.id);
+        const rows = keys.length === 0 ? new Map() : await t.loadMemberRows(dim, keys);
+        existing.set(dim, new Set(rows.keys()));
+      }
       const defaults = (await t.loadInputs(null)).defaults;
       const version = (await t.changesSince(null, 0)).length;
       return { existing, defaults, version };
     });
+    const sourcingChanges = o.sourcing ? missingSourcingMembers(o.sourcing, state.existing) : [];
     const defaultChanges = [
       ...missingMembers(seed, bundle, state.existing, (code) => seedIds.source(slug, code)),
+      ...sourcingChanges,
       ...missingDefaults(seed, new Set(state.defaults.map((r) => cellId(r.var_key, r.member_key)))),
     ];
     if (defaultChanges.length > 0) {
@@ -264,6 +276,7 @@ export async function seedTenant(db: Db, o: TenantSeedOptions): Promise<TenantSe
       await applyChangeset(store, draft, { actor, bundle, now: () => now().toISOString() });
       add('changeset (tenant defaults)', 1);
       add('changes (tenant defaults)', defaultChanges.length);
+      add('sourcing members', sourcingChanges.length);
     }
 
     // ---- 3b. each preset's values: one changeset per preset that differs, recomputed (calc_run)

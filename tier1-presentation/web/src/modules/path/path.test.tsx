@@ -305,6 +305,12 @@ const paretoRun = {
   },
 };
 
+/** What the harness answers a pareto POST with by default: done, no points (so no curve). */
+const emptyParetoRun = {
+  ...paretoRun,
+  result: { ...paretoRun.result!, detail: { problem: 'pareto' as const, points: [] } },
+};
+
 type Lookup = { run: object | null; current: boolean; trials: number | null };
 const noneLookup = (problem: string): Lookup => ({
   run: null,
@@ -331,6 +337,7 @@ afterAll(() => server.close());
 interface Served {
   posts: ChangesetRequest[];
   starts: SolverRunRequest[];
+  paretoStarts: SolverRunRequest[];
   quicks: QuickSolverRunRequest[];
   lookupQueries: Record<string, string>[];
 }
@@ -349,6 +356,8 @@ function serve(
 ): Served {
   const posts: ChangesetRequest[] = [];
   const starts: SolverRunRequest[] = [];
+  // the Savings-vs-risk panel starts its own pareto run on load (SRC-13); kept apart from the Path flow's `starts`
+  const paretoStarts: SolverRunRequest[] = [];
   const quicks: QuickSolverRunRequest[] = [];
   const lookupQueries: Record<string, string>[] = [];
   let saved = false;
@@ -415,6 +424,10 @@ function serve(
     }),
     http.post(`${BASE}${apiRoutes.solverRunStart.path}`, async ({ request }) => {
       const body = (await request.json()) as SolverRunRequest;
+      if (body.spec.problem === 'pareto') {
+        paretoStarts.push(body);
+        return HttpResponse.json(extra.analysis?.['pareto'] ?? emptyParetoRun, { status: 201 });
+      }
       starts.push(body);
       if (body.save) {
         saved = true;
@@ -444,7 +457,7 @@ function serve(
       return HttpResponse.json(byId ?? get());
     }),
   );
-  return { posts, starts, quicks, lookupQueries };
+  return { posts, starts, paretoStarts, quicks, lookupQueries };
 }
 
 async function mount(
@@ -734,7 +747,9 @@ describe('WIZ-08: the compute indicator while a path is found', () => {
     await t.until(() => {
       const flow = screen.getByTestId('path-flow').querySelector('.gp-compute');
       expect(flow!.getAttribute('data-variant')).toBe('field');
-      expect(screen.getByTestId('path-flow').parentElement!.textContent).toContain('Finding a path…');
+      expect(screen.getByTestId('path-flow').parentElement!.textContent).toContain(
+        'Finding a path…',
+      );
     });
     await t.mock.replay([
       {
@@ -926,6 +941,94 @@ describe('AC-MOD07-1: savings vs risk scatter', () => {
     expect(
       t.lookupQueries.some((q) => q['problem'] === 'pareto' && q['scenarioId'] === SCENARIO),
     ).toBe(true);
+  });
+});
+
+describe('SRC-13: frontier line through tier 2 pareto points', () => {
+  const unordered = [
+    { bar: 140, net: 166.9, risk: 54.8, oneTime: 20, feasible: true, scenarioId: null },
+    { bar: 999, net: 1, risk: 2, oneTime: 20, feasible: false, scenarioId: null },
+    { bar: ref.bar, net: 143.0, risk: 42.0, oneTime: 20, feasible: true, scenarioId: null },
+    { bar: 100, net: 119.3, risk: 37.3, oneTime: 20, feasible: true, scenarioId: null },
+  ];
+  const run = (status: 'done' | 'running') => ({
+    ...paretoRun,
+    status,
+    result:
+      status === 'done'
+        ? { ...paretoRun.result!, detail: { problem: 'pareto' as const, points: unordered } }
+        : null,
+  });
+
+  it('draws feasible points in ascending bar order, omits infeasible bars, marks the current plan, labels each point', async () => {
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { lookups: { [`${SCENARIO}|pareto`]: { run: run('done'), current: true, trials: null } } },
+    );
+    fireEvent.click(find());
+    await t.until(() => expect(point('Path')).toBeTruthy());
+    await t.until(() =>
+      expect(scatter().querySelectorAll('[data-part="frontier-point"]')).toHaveLength(3),
+    );
+    const dots = [...scatter().querySelectorAll<HTMLElement>('[data-part="frontier-point"]')];
+    expect(dots.map((d) => d.dataset['bar'])).toEqual(
+      ['100', String(ref.bar), '140'].sort((a, b) => Number(a) - Number(b)),
+    );
+    expect(dots.some((d) => d.dataset['bar'] === '999')).toBe(false);
+    // the current plan is the point whose bar equals res.bar
+    const current = dots.filter((d) => d.dataset['current'] !== undefined);
+    expect(current).toHaveLength(1);
+    expect(current[0]!.dataset['bar']).toBe(String(ref.bar));
+    // tooltip carries bar, net and risk exposure
+    const tip = current[0]!.querySelector('title')!.textContent!;
+    expect(tip).toContain('Bar');
+    expect(tip).toContain('net');
+    expect(tip).toContain('risk exposure');
+    // the line runs through the same points, in the same order
+    const poly = scatter().querySelector('[data-part="frontier"]')!.getAttribute('points')!;
+    expect(poly.split(' ')).toHaveLength(3);
+    // reference points still drawn
+    expect(point('C')).toBeTruthy();
+  });
+
+  it('starts the pareto run once when none is current, and shows the math running', async () => {
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { analysis: { pareto: run('running') } },
+    );
+    fireEvent.click(find());
+    await t.until(() => expect(screen.getByTestId('path-frontier-flow')).toBeTruthy());
+    expect(t.paretoStarts).toHaveLength(1);
+    expect(t.paretoStarts[0]!.save).toBe(false);
+    await t.settle();
+    expect(t.paretoStarts).toHaveLength(1);
+  });
+
+  it('does not start a run when the look-up is current', async () => {
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { lookups: { [`${SCENARIO}|pareto`]: { run: run('done'), current: true, trials: null } } },
+    );
+    fireEvent.click(find());
+    await t.until(() =>
+      expect(scatter().querySelectorAll('[data-part="frontier-point"]')).toHaveLength(3),
+    );
+    expect(t.paretoStarts).toHaveLength(0);
+  });
+
+  it('shows the math running while the pareto job runs', async () => {
+    const t = await mount(
+      () => donePath,
+      () => donePath,
+      { lookups: { [`${SCENARIO}|pareto`]: { run: run('running'), current: true, trials: null } } },
+    );
+    fireEvent.click(find());
+    await t.until(() => expect(point('Path')).toBeTruthy());
+    await t.until(() => expect(screen.getByTestId('path-frontier-flow')).toBeTruthy());
+    expect(scatter().querySelector('[data-part="frontier"]')).toBeNull();
   });
 });
 

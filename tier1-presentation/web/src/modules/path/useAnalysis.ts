@@ -43,7 +43,9 @@ export interface Analysis {
 const lineOf = (e: unknown): string =>
   e instanceof ApiError ? e.problem.detail : e instanceof Error ? e.message : 'The run failed';
 
-type Ask = { readonly quick: false; readonly spec: SolverSpec } | { readonly quick: true; readonly spec: QuickSolverSpec };
+type Ask =
+  | { readonly quick: false; readonly spec: SolverSpec }
+  | { readonly quick: true; readonly spec: QuickSolverSpec };
 
 export interface AnalysisOptions {
   /** The problem the look-up and the run ask for. */
@@ -52,6 +54,11 @@ export interface AnalysisOptions {
   ask: Ask;
   /** Parameters JSON for the look-up key (tier 2's defaults when absent, the warmer's key). */
   lookupParams?: string;
+  /**
+   * Start `ask` once per scenario/problem/params when the look-up finds no run computed from the
+   * present inputs (none, or `current` false). Off by default; a refused POST is not retried.
+   */
+  autoStart?: boolean;
 }
 
 interface Held {
@@ -66,7 +73,7 @@ export function useAnalysis(
   scenarioId: ScenarioId,
   options: AnalysisOptions,
 ): Analysis {
-  const { problem, ask, lookupParams } = options;
+  const { problem, ask, lookupParams, autoStart = false } = options;
   const api = useApiClient();
   const [held, setHeld] = useState<Held | null>(null);
   const [current, setCurrent] = useState(false);
@@ -74,6 +81,7 @@ export function useAnalysis(
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const looked = useRef<string | null>(null);
+  const startRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const mine = held && held.scenarioId === scenarioId && held.problem === problem ? held : null;
   const run = mine?.run ?? null;
@@ -87,7 +95,11 @@ export function useAnalysis(
     api
       .solverRunLookup({
         params: { tenant },
-        query: { scenarioId, problem, ...(lookupParams === undefined ? {} : { params: lookupParams }) },
+        query: {
+          scenarioId,
+          problem,
+          ...(lookupParams === undefined ? {} : { params: lookupParams }),
+        },
       })
       .then((found) => {
         if (looked.current !== lookKey) return;
@@ -101,9 +113,14 @@ export function useAnalysis(
           );
           setCurrent(found.current);
         }
+        if (autoStart && !(found.run && found.run.spec.problem === problem && found.current)) {
+          void startRef.current();
+        }
       })
-      .catch(() => undefined);
-  }, [api, tenant, scenarioId, problem, lookupParams, lookKey]);
+      .catch(() => {
+        if (autoStart && looked.current === lookKey) void startRef.current();
+      });
+  }, [api, tenant, scenarioId, problem, lookupParams, lookKey, autoStart]);
 
   // When the job ends, read the run with its result (once), as the Path result does.
   useEffect(() => {
@@ -123,8 +140,14 @@ export function useAnalysis(
     setError(null);
     try {
       const next = ask.quick
-        ? await api.solverRunQuick({ params: { tenant }, body: { scenarioId, spec: ask.spec, save: false } })
-        : await api.solverRunStart({ params: { tenant }, body: { scenarioId, spec: ask.spec, save: false } });
+        ? await api.solverRunQuick({
+            params: { tenant },
+            body: { scenarioId, spec: ask.spec, save: false },
+          })
+        : await api.solverRunStart({
+            params: { tenant },
+            body: { scenarioId, spec: ask.spec, save: false },
+          });
       setHeld({ scenarioId, problem, run: next });
       setCurrent(true);
     } catch (e) {
@@ -134,6 +157,7 @@ export function useAnalysis(
     }
   }, [api, tenant, scenarioId, problem, ask]);
 
+  startRef.current = start;
   const active = run !== null && !terminal(run.status);
   return {
     run,

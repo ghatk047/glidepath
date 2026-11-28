@@ -1,7 +1,8 @@
 import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createDb, loadResolvedInputs, schema, sql, withTenant, type DbHandle } from '@glidepath/data-access';
+import { createChangesetStore, createDb, loadMembers, loadResolvedInputs, loadSourcingMembers, schema, sql, withTenant, type DbHandle } from '@glidepath/data-access';
+import { SOURCING_DIMENSIONS, applyChangeset, ChangesetRejectedError } from '@glidepath/domain';
 import { start, stop, type PgLocalInstance } from '@glidepath/pg-local';
 import { seedToTenantData } from '@glidepath/spec';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -106,7 +107,8 @@ describe('migrate entry on pg-local', () => {
       const r = await tx.execute<{ dim_key: string }>(
         sql`select distinct dim_key from dimension_member order by dim_key`,
       );
-      expect(r.rows.map((x) => x.dim_key)).toEqual(['domain', 'lever', 'lgroup', 'vendor', 'vp']);
+      // SRC-02: plus the sourcing dimensions of sourcing.json
+      expect(r.rows.map((x) => x.dim_key)).toEqual(['benchmark', 'consolidation_scope', 'contract', 'domain', 'lever', 'lgroup', 'sourcing_param', 'vendor', 'vendor_bucket', 'vp']);
       const v = await tx.execute<{ dim_key: string }>(
         sql`select distinct dim_key from v_dimension_members where tenant_id is null order by dim_key`,
       );
@@ -117,7 +119,9 @@ describe('migrate entry on pg-local', () => {
   it('loads tier3-data/seed/aa through applyChangeset with origin seed: members, lines, sources, defaults, presets and their values', async () => {
     const { dimensionMembers } = inputs.tenant;
     expect(await count('line_item')).toBe(dimensionMembers.line!.length);
-    const nMembers = ['domain', 'vp', 'vendor', 'lgroup', 'lever'].reduce((a, d) => a + dimensionMembers[d]!.length, 0);
+    const nMembers =
+      ['domain', 'vp', 'vendor', 'lgroup', 'lever'].reduce((a, d) => a + dimensionMembers[d]!.length, 0) +
+      SOURCING_DIMENSIONS.reduce((a, d) => a + inputs.sourcing!.dimensions[d].length, 0);
     expect(await count('dimension_member')).toBe(nMembers);
     expect(await count('line_item_lever')).toBe(
       dimensionMembers.line!.reduce((a, m) => a + (m.lever_ids as unknown[]).length, 0),
@@ -145,6 +149,53 @@ describe('migrate entry on pg-local', () => {
       );
       expect(msgs.rows[0]!.n).toBeGreaterThan(0);
     });
+  });
+
+  it('SRC-02: loads sourcing.json in the tenant-defaults changeset; loadSourcingMembers serves it, loadMembers (the engine) does not', async () => {
+    await inTenant(async (tx) => {
+      const read = await loadSourcingMembers(tx);
+      for (const dim of SOURCING_DIMENSIONS) {
+        expect(read.members[dim]!.map((m) => m.id), dim).toEqual(inputs.sourcing!.dimensions[dim].map((m) => m.id));
+      }
+      const rate = read.members.sourcing_param!.find((m) => m.id === 'discount_rate')!;
+      expect(rate).toMatchObject({ label: 'Discount rate', group: 'business_case', unit: '%' });
+      const c = read.members.contract![0]!;
+      expect(c).toEqual(inputs.sourcing!.dimensions.contract[0]);
+      const snap = await loadMembers(tx);
+      expect(Object.keys(snap.members).filter((d) => (SOURCING_DIMENSIONS as readonly string[]).includes(d))).toEqual([]);
+    });
+  });
+
+  it('SRC-02: a sourcing_param edit through applyChangeset commits and leaves the members hash and the preset calc_runs as they are; out of range is rejected', async () => {
+    const { bundle } = inputs.global;
+    const before = await inTenant(async (tx) => ({
+      hash: (await loadMembers(tx)).membersHash,
+      runs: (await tx.select({ id: schema.calc_run.scenario_id, h: schema.calc_run.input_hash }).from(schema.calc_run)).sort((a, b) => a.id.localeCompare(b.id)),
+    }));
+    const edit = (value: number) =>
+      inTenant(async (tx) => {
+        const store = createChangesetStore(tx);
+        const version = await store.transaction(async (t) => (await t.changesSince(null, 0)).length);
+        const row = await store.transaction(async (t) => (await t.loadMemberRows('sourcing_param', ['discount_rate'])).get('discount_rate')!);
+        const attrs = { ...(row.attrs as Record<string, number>), value };
+        return applyChangeset(
+          store,
+          { origin: 'api', scenario_id: null, base_scenario_version: version, changes: [{ target: 'structural', key: 'sourcing_param', member_key: 'discount_rate', op: 'set', new_value: { attrs } }] },
+          { actor: SYSTEM_USER, bundle },
+        );
+      });
+    const applied = await edit(0.1);
+    expect(applied.changeset.status).toBe('applied');
+    await expect(edit(0.5)).rejects.toBeInstanceOf(ChangesetRejectedError);
+    await inTenant(async (tx) => {
+      expect((await loadSourcingMembers(tx)).members.sourcing_param!.find((m) => m.id === 'discount_rate')!.value).toBe(0.1);
+      expect((await loadMembers(tx)).membersHash).toBe(before.hash);
+      const runs = (await tx.select({ id: schema.calc_run.scenario_id, h: schema.calc_run.input_hash }).from(schema.calc_run)).sort((a, b) => a.id.localeCompare(b.id));
+      expect(runs).toEqual(before.runs);
+    });
+    // a rerun does not reset the edited member (users own it); put it back for the tests below
+    expect((await run()).tenant!.written).toEqual({});
+    await edit(inputs.sourcing!.dimensions.sourcing_param.find((m) => m.id === 'discount_rate')!.value as number);
   });
 
   it('marks only the seed default_scenario as is_default (WEB-12)', async () => {

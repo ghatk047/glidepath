@@ -46,6 +46,10 @@ Treemap (#20): the Baseline screen "Where the money is" panel (CY26 outlay, grou
 - Accessibility: the SVG is a named `group`. With `onSelect`, each group is a focusable `button`
   with `aria-pressed`, named "{label} $x, n lines"; without it, a named `group`. Each cell is an
   `img` named "{line} $x {category}". Chips are `aria-hidden` duplicates.
+- `fit` (UIX-01): the chart fills the box CSS gives it (`.gp-treemap-fit`, height 100%) instead of keeping
+  the 800 × 500 shape. A ResizeObserver reads the drawn size and the viewBox follows it in CSS px, so the
+  groups re-tile to the box's shape and labels keep their size; until the first measure (or without
+  ResizeObserver) the default box is used. Baseline uses it so the treemap fits a screen with no page scroll.
 - `lineLabels` maps line keys to `{label, detail}` (the view carries keys only; default: the key).
   The legend (category swatches) belongs to the panel header, not the chart.
 - CSS is generated from tokens (`styles.ts`) and injected with a hoisted `<style href precedence>`.

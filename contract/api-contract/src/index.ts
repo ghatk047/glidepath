@@ -8,6 +8,8 @@ export * from './solvers';
 export * from './excel';
 export * from './ai';
 export * from './market';
+export * from './sourcing';
+export * from './plan';
 export * from './routes';
 export * from './ws';
 export { ContractError } from './http';

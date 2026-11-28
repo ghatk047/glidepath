@@ -142,7 +142,7 @@ test.describe('Demo storyline: wizard segment (QA-05, WIZ-11)', () => {
       await page.keyboard.press('ArrowRight');
       await expect(page.locator('[data-tour][data-tour-step="optimize"]')).toBeAttached();
       await page.keyboard.press('Escape');
-      await expect(page.locator('[data-tour]')).toHaveCount(0);
+      await expect(page.locator('[data-tour-step]')).toHaveCount(0);
     } finally {
       await page.close();
     }

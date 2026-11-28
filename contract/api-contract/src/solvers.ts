@@ -25,7 +25,13 @@ import { JobProgressFraction, JobStatus } from './ws';
  * tier 1 sends only what the user chose.
  */
 
-/** `solvers.json` `problems[].id`. */
+/**
+ * Problems the product adds beyond `solvers.json` (which is read-only): `wave_plan`, the SRC epic's
+ * wave planner (F10). Listed after the spec's ids in `ProblemId`.
+ */
+export const extensionProblems = ['wave_plan'] as const;
+
+/** `solvers.json` `problems[].id`, in spec order, then `extensionProblems`. */
 export const ProblemId = z.enum([
   'goal_seek',
   'breakeven',
@@ -36,6 +42,7 @@ export const ProblemId = z.enum([
   'monte_carlo',
   'sensitivity',
   'stress_presets',
+  ...extensionProblems,
 ]);
 export type ProblemId = z.infer<typeof ProblemId>;
 
@@ -176,9 +183,45 @@ export const SensitivityParams = z.object({
   /** Sobol sample size N. */
   samples: z.number().int().positive().optional(),
 });
-/** Named corporate-driver shocks, by name; tier 2 holds their definitions. */
+/** `wave_plan.objective`: CY27 net (`res.net[]`), or net less the risk exposure of the plan. */
+export const WavePlanObjective = z.enum(['net', 'risk_adjusted']);
+export type WavePlanObjective = z.infer<typeof WavePlanObjective>;
+
+/** A month of 2027, as `lev.start` holds it (1 = Jan). */
+const StartMonth = z.number().int().min(1).max(12);
+
+/**
+ * Wave planner (SRC-14): choose each lever's start month (`lev.start[lever]`, decision set
+ * `lever_timing`) to maximise `objective` under a quarterly one-time budget and a launch capacity.
+ * Absent fields take tier 2's defaults (the `sourcing_param` members and the registry bounds).
+ */
+export const WavePlanParams = z.object({
+  /** Start-month window every lever must start in; absent = the registry bounds of `lev.start`. */
+  window: z
+    .object({ from: StartMonth, to: StartMonth })
+    .refine((w) => w.from <= w.to, { message: 'window.from must be ≤ window.to' })
+    .optional(),
+  /** Cap on one-time cost incurred per quarter of 2027, $M. */
+  quarterlyOneTimeCap: z.number().nonnegative().optional(),
+  /** Most levers that may start in one quarter. */
+  maxLaunchesPerQuarter: z.number().int().positive().optional(),
+  objective: WavePlanObjective.optional(),
+  /** Levers (`lever` members) the planner may move; absent = every active lever. */
+  levers: z.array(MemberKey).min(1).optional(),
+});
+
+/** Bounds of a stress shock's scale (a schema limit: 0 = no shock, 3 = three times the written shock). */
+export const STRESS_SCALE_MIN = 0;
+export const STRESS_SCALE_MAX = 3;
+
+/**
+ * Named corporate-driver shocks, by name; tier 2 holds their definitions (and lists them in the result's
+ * `detail.catalog`). `presets` absent or empty = every shock. `scales`: the size of a shock by name, a
+ * multiplier on its moves from the start point (absent = 1, the shock as written).
+ */
 export const StressPresetsParams = z.object({
-  presets: z.array(z.string().trim().min(1)).min(1),
+  presets: z.array(z.string().trim().min(1)).optional(),
+  scales: z.record(z.string().trim().min(1), z.number().min(STRESS_SCALE_MIN).max(STRESS_SCALE_MAX)).optional(),
 });
 
 const spec = <P extends string, S extends z.ZodType>(problem: P, params: S) =>
@@ -195,6 +238,7 @@ export const SolverSpec = z.discriminatedUnion('problem', [
   spec('monte_carlo', MonteCarloParams),
   spec('sensitivity', SensitivityParams),
   spec('stress_presets', StressPresetsParams),
+  spec('wave_plan', WavePlanParams),
 ]);
 export type SolverSpec = z.infer<typeof SolverSpec>;
 
@@ -309,6 +353,13 @@ export const SolverDetail = z.discriminatedUnion('problem', [
         min: z.number().nullable(),
         max: z.number().nullable(),
         feasible: z.boolean(),
+        /**
+         * A row that is not feasible: the value in its range (the registry range when it has none) whose output
+         * comes closest to the target, and that output (`res.gap[]` by default); null on a feasible row. Absent
+         * on runs stored before SRC-18.
+         */
+        best: z.number().nullable().optional(),
+        bestOutput: z.number().nullable().optional(),
       }),
     ),
   }),
@@ -373,7 +424,56 @@ export const SolverDetail = z.discriminatedUnion('problem', [
   }),
   z.object({
     problem: z.literal('stress_presets'),
-    presets: z.array(z.object({ name: z.string().min(1), outputs: Outputs, delta: Outputs })),
+    presets: z.array(
+      z.object({
+        name: z.string().min(1),
+        /** The scale the shock ran at (1 = as written); absent on runs stored before SRC-18. */
+        scale: z.number().optional(),
+        outputs: Outputs,
+        delta: Outputs,
+      }),
+    ),
+    /**
+     * Every shock tier 2 knows, in spec order, with its definition as written in `solvers.json` (variable ids →
+     * value, or signed text such as `"+0.30"`; `shift`: months or units added). Labels for tier 1, never applied
+     * there. Absent on runs stored before SRC-18.
+     */
+    catalog: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          set: z.record(z.string(), z.union([z.number(), z.string()])).optional(),
+          shift: z.record(z.string(), z.number()).optional(),
+        }),
+      )
+      .optional(),
+  }),
+  z.object({
+    problem: z.literal('wave_plan'),
+    /** Every planned lever: start month before and after (`lev.start`), and its quarter after (1-4). */
+    levers: z.array(
+      z.object({
+        lever: MemberKey,
+        from: StartMonth,
+        to: StartMonth,
+        quarter: z.number().int().min(1).max(4),
+      }),
+    ),
+    /** The four quarters of 2027 under the plan: one-time $M and launches against their caps. */
+    quarters: z.array(
+      z.object({
+        quarter: z.number().int().min(1).max(4),
+        oneTime: z.number(),
+        launches: z.number().int().nonnegative(),
+        /** The quarterly one-time cap applied, $M; null when uncapped. */
+        cap: z.number().nullable(),
+        /** The launch capacity applied; null when uncapped. */
+        launchCap: z.number().int().nonnegative().nullable(),
+      }),
+    ),
+    /** CY27 net (`res.net[]`), $M, at the start point and under the plan. */
+    netBefore: z.number(),
+    netAfter: z.number(),
   }),
 ]);
 export type SolverDetail = z.infer<typeof SolverDetail>;

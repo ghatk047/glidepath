@@ -4,6 +4,7 @@ import type { ReconfigJob } from '../ai';
 import type { ProblemId, SolverResult, SolverRun, SolverSpec } from '../solvers';
 import type { ApiRouteId, apiRoutes, jobRoutes, JobRouteId } from '../routes';
 import { coreRouteFixtures, type RouteFixture } from './core';
+import { planRouteFixtures, sourcingRouteFixtures } from './sourcing';
 
 /**
  * CON-03 wire fixtures: one per job route, one spec + result per solver problem id, and a
@@ -24,7 +25,10 @@ type ProblemFixture<P extends ProblemId> = {
 
 const diagnostics = { iterations: 14, ms: 212 };
 
-/** One `SolverSpec` and one `SolverResult` per `solvers.json` problem id. */
+/** A stress shock's `set` as the catalog carries it (variable id → value or signed text). */
+const shock = (set: Record<string, number | string>) => set;
+
+/** One `SolverSpec` and one `SolverResult` per problem id (`solvers.json` + `extensionProblems`). */
 export const solverProblemFixtures = {
   goal_seek: {
     spec: {
@@ -54,7 +58,16 @@ export const solverProblemFixtures = {
         problem: 'breakeven',
         rows: [
           { cell: 'lev.L03.pct[]', current: 0.2, needed: 0.31, min: 0, max: 0.4, feasible: true },
-          { cell: 'lev.L08.cut[]', current: 0.1, needed: null, min: 0, max: 0.2, feasible: false },
+          {
+            cell: 'lev.L08.cut[]',
+            current: 0.1,
+            needed: null,
+            min: 0,
+            max: 0.2,
+            feasible: false,
+            best: 0.2,
+            bestOutput: -3.4,
+          },
         ],
       },
     },
@@ -231,10 +244,51 @@ export const solverProblemFixtures = {
         presets: [
           {
             name: 'GCC hiring freeze',
+            scale: 1,
             outputs: { 'res.net[]': 104.2 },
             delta: { 'res.net[]': -15.1 },
           },
         ],
+        catalog: [
+          { name: 'GCC hiring freeze', set: shock({ 'lev.L03.pct': 0 }) },
+          { name: 'Fixture shock', set: shock({ 'corp.jet_direct': '+0.30' }), shift: { 'lev.start': 3 } },
+        ],
+      },
+    },
+  },
+  wave_plan: {
+    spec: {
+      problem: 'wave_plan',
+      params: {
+        window: { from: 1, to: 9 },
+        quarterlyOneTimeCap: 8,
+        maxLaunchesPerQuarter: 3,
+        objective: 'net',
+        levers: ['L03', 'L05'],
+      },
+    },
+    result: {
+      problem: 'wave_plan',
+      status: 'feasible',
+      changes: [{ target: 'variable', key: 'lev.start', member: 'L03', value: 2 }],
+      ranked: [{ cell: 'lev.start[L03]', from: 4, to: 2, impact: 1.8 }],
+      binding: [{ constraint: 'quarterly_one_time_cap[1]', shadowPrice: 0.4 }],
+      metrics: { 'res.net[]': 121.8 },
+      diagnostics,
+      detail: {
+        problem: 'wave_plan',
+        levers: [
+          { lever: 'L03', from: 4, to: 2, quarter: 1 },
+          { lever: 'L05', from: 1, to: 1, quarter: 1 },
+        ],
+        quarters: [
+          { quarter: 1, oneTime: 8, launches: 2, cap: 8, launchCap: 3 },
+          { quarter: 2, oneTime: 0, launches: 0, cap: 8, launchCap: 3 },
+          { quarter: 3, oneTime: 0, launches: 0, cap: 8, launchCap: 3 },
+          { quarter: 4, oneTime: 0, launches: 0, cap: 8, launchCap: 3 },
+        ],
+        netBefore: 120,
+        netAfter: 121.8,
       },
     },
   },
@@ -614,8 +668,10 @@ export const jobRouteFixtures = {
   },
 } satisfies JobRouteFixtures;
 
-/** One fixture per route of `apiRoutes` (CON-01 core + CON-03 job routes). */
+/** One fixture per route of `apiRoutes` (CON-01 core + CON-03 job + SRC-03 sourcing and plan routes). */
 export const apiRouteFixtures = {
   ...coreRouteFixtures,
   ...jobRouteFixtures,
+  ...sourcingRouteFixtures,
+  ...planRouteFixtures,
 } satisfies ApiRouteFixtures;

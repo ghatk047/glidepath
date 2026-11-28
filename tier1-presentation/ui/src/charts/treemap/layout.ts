@@ -121,8 +121,12 @@ const rectOf = (n: HierarchyRectangularNode<Datum>): TreemapRect => ({
  * Two-level squarified treemap of a `baseline.groups` view: groups tile the viewBox with
  * `TREEMAP_GAPS.group` between them, each group's lines tile the group with `TREEMAP_GAPS.cell`
  * between them. Node values are the tier 2 values (d3 `treemap` reads `node.value`; no `sum`).
+ * `size` is the viewBox to tile (default the prototype's 800 x 500).
  */
-export function treemapLayout(view: TreemapView): TreemapGroupBox[] {
+export function treemapLayout(
+  view: TreemapView,
+  size: { width: number; height: number } = TREEMAP_VIEWBOX,
+): TreemapGroupBox[] {
   const root = hierarchy<Datum>(view, children);
   root.each((n: HierarchyNode<Datum>) => {
     (n as { value?: number }).value = valueOf(n.data);
@@ -130,7 +134,7 @@ export function treemapLayout(view: TreemapView): TreemapGroupBox[] {
   root.sort((a, b) => descending(a.value, b.value));
   const laid = treemap<Datum>()
     .tile(treemapSquarify)
-    .size([TREEMAP_VIEWBOX.width, TREEMAP_VIEWBOX.height])
+    .size([size.width, size.height])
     .paddingInner((n) => (n.depth === 0 ? TREEMAP_GAPS.group : TREEMAP_GAPS.cell))(root);
 
   return (laid.children ?? []).map((g): TreemapGroupBox => {

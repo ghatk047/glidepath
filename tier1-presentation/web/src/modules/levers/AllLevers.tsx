@@ -36,6 +36,7 @@ export function MonthlyPanel({ monthly, labels, selected }: MonthlyPanelProps) {
   return (
     <GlassPanel
       as="section"
+      className="gp-lv-month"
       header={{
         label: '2027 by month',
         status: <span className="gp-lv-eyebrow">$M / mo</span>,

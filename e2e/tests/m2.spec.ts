@@ -30,13 +30,16 @@ const STRIP: Readonly<Record<string, string>> = {
   risk: 'res.risk',
   eps27: 'br.eps27',
 };
-/** The eight modules of the rail (contract ids), as the shell lists them. */
+/** The eleven modules of the rail (contract ids), as the shell lists them. */
 const MODULES = [
   'cockpit',
+  'wizard',
   'baseline',
   'levers',
   'vps',
   'path',
+  'sourcing',
+  'plan',
   'market',
   'excel',
   'airlines',
@@ -191,7 +194,7 @@ test.describe('M2 walking skeleton on the compose stack (INT-03)', () => {
   });
 
   test('global_layer_works_rail_scenario_bar_flight_strip_edit_popover_trace_drawer_cmdk', async () => {
-    // rail: the eight modules, the tenant monogram (never a logo), routing without a reload
+    // rail: the eleven modules, the tenant monogram (never a logo), routing without a reload
     await expect(rail(page)).toBeVisible();
     for (const id of MODULES) {
       await expect(rail(page).locator(`a[data-item="${id}"]`), `rail has ${id}`).toBeVisible();

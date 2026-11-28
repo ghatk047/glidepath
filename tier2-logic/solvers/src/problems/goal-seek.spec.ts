@@ -157,6 +157,28 @@ describe('SOL-02 breakeven: one row per lever-intensity input with current, need
     expect(r.metrics.feasible).toBe(feasible);
   });
 
+  it('SRC-18: a row not feasible reports its best value in range and the output there; feasible rows none', async () => {
+    const r = await breakeven(model, {}, { yield: noYield });
+    const rows = r.detail!.rows;
+    expect(rows.some((x) => !x.feasible)).toBe(true);
+    rows.forEach((row, i) => {
+      const d = levers[i]!;
+      if (row.feasible) {
+        expect(row.best).toBeNull();
+        expect(row.bestOutput).toBeNull();
+        return;
+      }
+      // The closest value the decision range holds, and the gap it leaves (the engine's output there).
+      expect(row.best).not.toBeNull();
+      expect(row.best!).toBeGreaterThanOrEqual(d.lo);
+      expect(row.best!).toBeLessThanOrEqual(d.hi);
+      expect(row.bestOutput!).toBeCloseTo(outputAt(row.cell, row.best!), 9);
+      // No value of the range comes closer to the target than the best one (a coarse check on the ends).
+      const dist = (x: number) => Math.abs(outputAt(row.cell, x) - BREAKEVEN_TARGET);
+      expect(Math.abs(row.bestOutput! - BREAKEVEN_TARGET)).toBeLessThanOrEqual(Math.min(dist(d.lo), dist(d.hi)) + 1e-9);
+    });
+  });
+
   it('takes explicit inputs, inside or outside the set (registry range), and rejects bad ones', async () => {
     const estimate = model.bundle.variables.find(
       (v) => v.id.startsWith('lev.L') && v.kind === 'estimate' && v.dims.length === 0 && v.min !== null && v.max !== null,

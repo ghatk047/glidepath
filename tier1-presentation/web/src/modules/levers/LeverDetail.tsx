@@ -53,7 +53,7 @@ function Timing({ lever, monthly }: { lever: string; monthly: LeversMonthlyView 
   // The tallest month sets the cell scale; the fill itself is drawn by CSS from `--value / --max`.
   const top = series ? Math.max(...series) : undefined;
   return (
-    <section aria-label="Timing" data-stale={start.stale || undefined}>
+    <section className="gp-lv-timing" aria-label="Timing" data-stale={start.stale || undefined}>
       <div className="gp-lv-timing-head">
         <h3 className="gp-lv-eyebrow">Timing · 2027</h3>
         <label className="gp-lv-eyebrow" htmlFor={`gp-lv-start-${lever}`}>
@@ -118,6 +118,7 @@ export function LeverDetail({
       as="section"
       span={5}
       header={{ label: 'Lever detail', labelAs: 'h2' }}
+      className="gp-lv-detail"
       data-lever-detail={lever}
     >
       <div className="gp-lv-chips">

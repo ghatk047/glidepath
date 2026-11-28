@@ -18,7 +18,7 @@ A backlog item is done only when its gates pass in CI. The orchestrator merges n
 | G8 Perf budget | engine benches (03 §5), preview round trip p95 < 25 ms over WS, commit p95 < 150 ms on seeded DB | engine/api PRs, nightly | yes at +30% |
 | G9 E2E smoke | Playwright against the compose stack: load Cockpit C, drag target, switch scenario, edit a lever, undo | every PR (CI compose) | yes |
 | G10 Demo storyline | Playwright runs the 11 beats of `ux/05_demo_storyline.md` and asserts the quoted numbers | nightly, and before freeze | yes for release |
-| G11 Visual | Playwright screenshots of 8 modules × 2 themes × 2 widths vs approved baselines (pixel threshold), compared with `ux/screens/` on first approval | UI PRs | reviewer decides |
+| G11 Visual | Playwright screenshots of 11 modules × 2 themes × the presenter's 2 screens (1280×720, 1920×1080) vs approved baselines (pixel threshold), compared with `ux/screens/` on first approval | UI PRs | reviewer decides |
 | G12 A11y | axe-core on each module, zero serious violations | UI PRs | yes |
 
 ## 2. Test data

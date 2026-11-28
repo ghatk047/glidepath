@@ -99,7 +99,9 @@ function DomainRow({
 
   return (
     <li className="gp-vps-row" data-domain={domain.key}>
-      <span className="gp-vps-row-name">{domain.label}</span>
+      <span className="gp-vps-row-name" title={domain.label}>
+        {domain.label}
+      </span>
       <span className="gp-vps-row-outlay">
         <GlowText value={outlay}>{fmt.money(outlay)}</GlowText>
       </span>
@@ -147,6 +149,7 @@ export function OwnershipPanel({
     <GlassPanel
       level={1}
       span={7}
+      className="gp-vps-own"
       header={{
         label: 'Who owns what · drag to reassign',
         status: (

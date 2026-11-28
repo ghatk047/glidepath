@@ -1,5 +1,6 @@
 import type { ScenarioId, SolverDetail, SolverResult, TenantSlug } from '@glidepath/api-contract';
 import { fmt } from '@glidepath/ui/format';
+import { ComputeFlow } from '@glidepath/ui/compute';
 import { GlassPanel } from '@glidepath/ui/glass';
 import {
   BAR_CELL,
@@ -34,7 +35,8 @@ function points(metrics: SolverResult['metrics']): Point[] {
   const out: Point[] = [];
   const px = num(metrics[RISK_EXPOSURE]);
   const py = num(metrics[NET_CELL]);
-  if (px !== undefined && py !== undefined) out.push({ label: PATH_POINT, x: px, y: py, path: true });
+  if (px !== undefined && py !== undefined)
+    out.push({ label: PATH_POINT, x: px, y: py, path: true });
   for (const ref of SCATTER_REFS) {
     const x = num(metrics[RISK_REF(ref.key)]);
     const y = num(metrics[NET_REF(ref.key)]);
@@ -65,8 +67,8 @@ function span(values: readonly number[]): [number, number] {
 /**
  * Savings vs risk (4 cols): net savings against risk exposure. The labelled points (C, Path, the
  * all-VP optimum and D) are the (net, risk) pairs tier 2 reports on the Path run; the dashed bar
- * line is `res.bar`. A `pareto` run's points draw the frontier curve when one exists (post-demo),
- * hidden otherwise. Tier 1 only scales the values it is handed to the svg; it computes no savings.
+ * line is `res.bar`. A `pareto` run's feasible points (ascending bar) draw the frontier line, the point at the
+ * current `res.bar` marked, hidden when none exists. Tier 1 only scales the values it is handed to the svg; it computes no savings.
  */
 export function SavingsRiskPanel({
   tenant,
@@ -81,12 +83,20 @@ export function SavingsRiskPanel({
   const frontier = useAnalysis(tenant, scenarioId, {
     problem: 'pareto',
     ask: { quick: false, spec: frontierSpec },
+    autoStart: true,
   });
   const paretoDetail: Pareto | null =
     frontier.result?.detail?.problem === 'pareto' ? frontier.result.detail : null;
-  const curve = (paretoDetail?.points ?? []).filter(
-    (p) => p.feasible && num(p.risk) !== undefined && num(p.net) !== undefined,
-  );
+  // Tier 2's feasible points in ascending bar order (a sort by comparison; infeasible bars drop).
+  const curve = (paretoDetail?.points ?? [])
+    .filter(
+      (p) =>
+        p.feasible &&
+        num(p.bar) !== undefined &&
+        num(p.risk) !== undefined &&
+        num(p.net) !== undefined,
+    )
+    .sort((a, b) => (a.bar < b.bar ? -1 : a.bar > b.bar ? 1 : 0));
 
   const pts = result ? points(result.metrics) : [];
   const bar = result ? num(result.metrics[BAR_CELL]) : undefined;
@@ -122,46 +132,89 @@ export function SavingsRiskPanel({
       span={4}
       className="gp-path-scatter-panel"
       data-testid="path-scatter"
-      header={{ label: COPY.savingsRisk, status: <span className="gp-path-faint">{COPY.savingsUnit}</span> }}
+      header={{
+        label: COPY.savingsRisk,
+        status: <span className="gp-path-faint">{COPY.savingsUnit}</span>,
+      }}
     >
-      <svg
-        className="gp-path-scatter"
-        viewBox={`0 0 ${W} ${H}`}
-        role="img"
-        aria-label={hasData ? COPY.savingsChart : `${COPY.savingsChart}: no data yet`}
-        data-chart="scatter"
+      {/* aria-busy while the frontier job runs: the chart is about to change (a capture waits) */}
+      <div
+        className="gp-path-scatter-wrap"
+        style={{ position: 'relative' }}
+        aria-busy={frontier.busy ? true : undefined}
       >
-        <title>{COPY.savingsChart}</title>
-        <line className="gp-path-axis" x1={L} y1={T} x2={L} y2={H - B} />
-        <line className="gp-path-axis" x1={L} y1={H - B} x2={W - R} y2={H - B} />
-        {curvePts !== '' && (
-          <polyline className="gp-path-frontier" data-part="frontier" points={curvePts} />
+        {frontier.busy && (
+          <div
+            data-testid="path-frontier-flow"
+            style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+          >
+            <ComputeFlow active variant="field" />
+          </div>
         )}
-        {bar !== undefined && (
-          <g data-part="bar-line" data-value={bar}>
-            <line className="gp-path-bar-line" x1={L} y1={sy(bar)} x2={W - R} y2={sy(bar)} />
-            <text className="gp-path-bar-label" x={W - R} y={sy(bar) - 5} textAnchor="end">
-              {COPY.barLineLabel(fmt.money(bar))}
-            </text>
-          </g>
-        )}
-        {pts.map((p) => (
-          <g key={p.label} data-point={p.label} data-x={p.x} data-y={p.y}>
-            <circle
-              className="gp-path-dot"
-              data-path={p.path || undefined}
-              cx={sx(p.x)}
-              cy={sy(p.y)}
-              r={6}
-            >
-              <title>{`${p.label}: net ${fmt.money(p.y)}, risk ${fmt.money(p.x)}`}</title>
-            </circle>
-            <text className="gp-path-dot-label" x={sx(p.x) + 10} y={sy(p.y) + 4}>
-              {p.label}
-            </text>
-          </g>
-        ))}
-      </svg>
+        <svg
+          className="gp-path-scatter"
+          viewBox={`0 0 ${W} ${H}`}
+          role="img"
+          aria-label={hasData ? COPY.savingsChart : `${COPY.savingsChart}: no data yet`}
+          data-chart="scatter"
+        >
+          <title>{COPY.savingsChart}</title>
+          <line className="gp-path-axis" x1={L} y1={T} x2={L} y2={H - B} />
+          <line className="gp-path-axis" x1={L} y1={H - B} x2={W - R} y2={H - B} />
+          {curvePts !== '' && (
+            <polyline className="gp-path-frontier" data-part="frontier" points={curvePts} />
+          )}
+          {bar !== undefined && (
+            <g data-part="bar-line" data-value={bar}>
+              <line className="gp-path-bar-line" x1={L} y1={sy(bar)} x2={W - R} y2={sy(bar)} />
+              <text className="gp-path-bar-label" x={W - R} y={sy(bar) - 5} textAnchor="end">
+                {COPY.barLineLabel(fmt.money(bar))}
+              </text>
+            </g>
+          )}
+          {curve.map((p) => {
+            const isCurrent = bar !== undefined && p.bar === bar;
+            return (
+              <g
+                key={p.bar}
+                data-part="frontier-point"
+                data-bar={p.bar}
+                data-x={p.risk}
+                data-y={p.net}
+                data-current={isCurrent || undefined}
+              >
+                <circle
+                  className="gp-path-frontier-dot"
+                  data-current={isCurrent || undefined}
+                  cx={sx(p.risk)}
+                  cy={sy(p.net)}
+                  r={isCurrent ? 5 : 3}
+                >
+                  <title>
+                    {COPY.frontierPoint(fmt.money(p.bar), fmt.money(p.net), fmt.money(p.risk))}
+                  </title>
+                </circle>
+              </g>
+            );
+          })}
+          {pts.map((p) => (
+            <g key={p.label} data-point={p.label} data-x={p.x} data-y={p.y}>
+              <circle
+                className="gp-path-dot"
+                data-path={p.path || undefined}
+                cx={sx(p.x)}
+                cy={sy(p.y)}
+                r={6}
+              >
+                <title>{`${p.label}: net ${fmt.money(p.y)}, risk ${fmt.money(p.x)}`}</title>
+              </circle>
+              <text className="gp-path-dot-label" x={sx(p.x) + 10} y={sy(p.y) + 4}>
+                {p.label}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
       <p className="gp-path-faint gp-path-chart-note">{COPY.frontierNote}</p>
     </GlassPanel>
   );

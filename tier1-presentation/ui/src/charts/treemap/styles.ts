@@ -23,6 +23,8 @@ export const TREEMAP_SLOTS = 3;
 export const treemapCss = [
   '/* @glidepath/ui charts/treemap: generated from tokens in src/charts/treemap/styles.ts */',
   `.gp-treemap { display: block; width: 100%; height: auto; overflow: visible; font-variant-numeric: ${v('type.numerals')}; }`,
+  // fit: the box sets both sides and the viewBox follows it (the Treemap fit prop)
+  `.gp-treemap.gp-treemap-fit { height: 100%; min-height: 0; }`,
   `.gp-treemap text { pointer-events: none; }`,
   `.gp-treemap-group[role="button"] { cursor: pointer; outline: none; }`,
   `.gp-treemap-cell { transition: opacity ${motion}; }`,

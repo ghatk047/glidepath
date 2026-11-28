@@ -33,6 +33,7 @@ import { toEngineSpec } from './params';
 import { toContractResult } from './result';
 import { toSolverRun } from './run';
 import type { RunMeta } from './run';
+import { withTenantDefaults } from './wave-plan';
 
 /** 03 section 2: a short solver runs inside the `logic` process with a time limit of 2 s; longer is a worker job. */
 export const QUICK_LIMIT_MS = 2000;
@@ -106,7 +107,8 @@ const resultLabel = (problem: string): string => {
  *   session's model, 2 s limit. Within it: 200 with the finished `SolverRun` (`quick: true`). Over it, the run
  *   stops and the same spec is enqueued as a job (`solver.<problem>`): 202 with the queued `SolverRun`, whose id is the
  *   job id (an identical earlier result answers 200 at once, as `cached`).
- * - `POST solver-runs`: any problem, enqueued (cache first), 201 with the `SolverRun`; progress follows as WS `job`.
+ * - `POST solver-runs`: any problem, enqueued (cache first), 201 with the `SolverRun`; progress follows as WS `job`. A
+ *   `wave_plan` request's absent caps and window are filled from the tenant's `sourcing_param` members first.
  * - `GET solver-runs/lookup`: the newest finished run held for `(scenario, problem, params)`; reads only, never runs,
  *   enqueues or writes (the Cockpit tiles; API-13).
  * - `GET solver-runs/:id`: status, progress and, once finished, the result.
@@ -237,12 +239,14 @@ export function registerSolverRoutes(app: Hono<AppEnv>, deps: SolverRoutesDeps):
       const scenario = await getScenario(t.tx, req.scenarioId);
       if (scenario === null) throw noScenario();
       const meta: RunMeta = { quick: false, save: req.save === true, scenarioVersion: scenario.version };
+      // wave_plan: the tenant's caps fill what the request left out (SRC-15), so the stored spec says what was solved.
+      const spec = await withTenantDefaults(t.tx, req.spec);
       const submitted = await deps.submit({
         tenantId: t.tenantId,
         userId: t.userId,
         scenarioId: req.scenarioId,
-        kind: solverKind(req.spec.problem),
-        spec: withRun(req.spec, meta),
+        kind: solverKind(spec.problem),
+        spec: withRun(spec, meta),
         save: meta.save,
       });
       return c.json(toSolverRun(submitted.run), 201);
@@ -258,10 +262,12 @@ export function registerSolverRoutes(app: Hono<AppEnv>, deps: SolverRoutesDeps):
       const scenario = await getScenario(t.tx, query.scenarioId);
       if (scenario === null) throw noScenario();
       // The same parse a start request gets, so the params hash to the key the run was filed under.
-      const spec = SolverSpecSchema.parse({
+      const asked = SolverSpecSchema.parse({
         problem: query.problem,
         params: query.params === undefined ? {} : JSON.parse(query.params),
       });
+      // The defaults a start request gets (wave_plan), so `{}` finds the run filed with the tenant's caps.
+      const spec = await withTenantDefaults(t.tx, asked);
       const { run, current } = await findLatestRun(t.tx, query.scenarioId, spec, await inputHashOf(t.tx, query.scenarioId));
       const answer: SolverLookup = {
         run: run === null ? null : { ...toSolverRun(run), ...(current ? { scenarioVersion: scenario.version } : {}) },

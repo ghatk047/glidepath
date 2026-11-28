@@ -18,6 +18,10 @@
 - A finished quick run is stored (`solver_run`, `done`, the contract result in `result`) with its cache key, so GET answers it and an identical job later is a cache hit.
 - `save: true` (quick): when the status is `optimal` or `feasible` and the result has moves, a `solver` scenario below the start point is created with `createScenario` and the moves go in through `applyChangeset` with origin `solver`; `resultScenarioId` names it. Breakeven (alternatives, no moves) saves nothing. For worker jobs the worker saves, when the job data says `save: true` (API-13).
 
+## Wave plan (SRC-15)
+
+- `POST solver-runs` and `GET solver-runs/lookup` fill a `wave_plan` request's absent `quarterlyOneTimeCap`, `maxLaunchesPerQuarter` and `window` from the tenant's `sourcing_param` members (`quarterly_onetime_cap_musd`, `max_launches_per_quarter`, `earliest_start_month`..`latest_start_month`; `wave-plan.ts`) before the run is stored, so the stored spec, its cache key and the lookup carry the caps it was solved with; fields the request sent win, and the filled spec is checked against the contract again (422). The job runs on the worker's core queue `solver.wave_plan`; a feasible plan with `save: true` is saved as a `solver` scenario ("Wave plan (from C)"), an infeasible one is not.
+
 ## Contract readings
 
 - `solver_run` has no columns for `quick`, `save`, `scenarioVersion` or `inputHash`: the route stores `spec.run = {quick, save, scenarioVersion}` beside the spec (as JOB-02 keeps `spec.cache`); `inputHash` is `spec.cache.inputHash`. Runs without them read back as `quick: false`, `save: false`, version 0, hash null. `createdBy` is always null (no author column).
@@ -29,7 +33,7 @@
 
 ## Files
 
-`routes.ts` (handlers), `model.ts` (SolverModel and the solvers.json shocks), `params.ts`, `result.ts`, `run.ts` (row to `SolverRun`, the `spec.run` extras), `kinds.ts`.
+`routes.ts` (handlers), `model.ts` (SolverModel and the solvers.json shocks), `params.ts`, `result.ts`, `run.ts` (row to `SolverRun`, the `spec.run` extras), `kinds.ts`, `wave-plan.ts` (tenant defaults of a wave plan).
 
 ## Tests
 

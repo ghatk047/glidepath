@@ -8,7 +8,7 @@ import { expect, goldenOf, test } from './fixtures';
 
 /**
  * WIZ-11: the walkthrough tour in a browser against the compose stack (`docs/ux/07_wizard_tour_plan.md` §4, §6).
- * Start, Next / Back / Esc, the anchor of every one of the 14 steps found on its own screen, the
+ * Start, Next / Back / Esc, the anchor of every one of the 24 steps found on its own screen, the
  * `?tour=` deep link, and the plan's promises: it never auto-starts and never writes. Steps, screens and
  * anchors are the plan's table (`src/wizard.ts` keeps it, and its unit test pins it to the app's source);
  * numbers on the cards come from the spec bundle through the UI's `fmt`.
@@ -17,7 +17,7 @@ import { expect, goldenOf, test } from './fixtures';
  */
 
 const COUNT = TOUR_STEP_SPECS.length;
-const tour = (page: Page) => page.locator('[data-tour]');
+const tour = (page: Page) => page.locator('[data-tour-step]');
 const card = (page: Page) => page.locator('[data-tour-card]');
 const counter = (page: Page) => page.locator('.gp-tour-count');
 const stepIs = (page: Page, id: string) => expect(page.locator(`[data-tour][data-tour-step="${id}"]`)).toBeAttached();

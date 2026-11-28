@@ -70,6 +70,7 @@ export default function Baseline() {
             ),
           }}
           loading={!payload}
+          className="gp-bl-map"
           data-stale={groups.stale || undefined}
         >
           {payload && (
@@ -80,6 +81,7 @@ export default function Baseline() {
               selected={selected?.key ?? null}
               onSelect={(k) => nav.select(by, k)}
               title={`Treemap of CY26 IT outlay by ${GROUP_NOUN[by].toLowerCase()}`}
+              fit
             />
           )}
         </GlassPanel>

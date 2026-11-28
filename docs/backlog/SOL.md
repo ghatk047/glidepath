@@ -290,7 +290,7 @@ title: "Pareto frontier (job only)"
 epic: SOL
 milestone: POST
 priority: should
-status: todo
+status: review
 stream: A
 model: opus
 effort: xhigh

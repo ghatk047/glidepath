@@ -16,6 +16,7 @@ export const KIND_OF_PROBLEM: Readonly<Record<ProblemId, SolverRunKind>> = {
   monte_carlo: 'monte_carlo',
   sensitivity: 'sensitivity',
   stress_presets: 'sensitivity',
+  wave_plan: 'optimize',
 };
 
 export const solverKind = (problem: ProblemId): SolverRunKind => KIND_OF_PROBLEM[problem];

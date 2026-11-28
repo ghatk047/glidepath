@@ -1,5 +1,6 @@
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 
 /**
  * Market CSS (docs/ux/screens/market-dark-1440.jpg; prototype `.trace`, `.dial`, `.bars`),
@@ -31,11 +32,12 @@ export const marketCss = [
   `.gp-market-valuation-label { margin-right: auto; color: var(--ink); }`,
   `.gp-market-valuation-value { font: 400 var(--type-l-size)/1.1 ${num}; font-variant-numeric: var(--type-numerals); color: var(--ink); }`,
   // Adjusted EPS
-  `.gp-market-eps { position: relative; height: ${rem(300)}; padding-left: ${rem(40)}; }`,
+  // the tick gutter holds a negative label (−$0.5) on one line; grid lines start after it
+  `.gp-market-eps { position: relative; height: ${rem(300)}; padding-left: ${rem(48)}; }`,
   `.gp-market-eps-grid { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0 0 ${rem(26)} 0; }`,
-  `.gp-market-eps-grid li { position: absolute; left: 0; right: 0; top: var(--top); border-top: ${line}; }`,
-  `.gp-market-eps-grid li span { position: absolute; left: 0; top: -${rem(8)}; width: ${rem(32)}; text-align: right; ${eyebrow} }`,
-  `.gp-market-eps-bars { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0 0 0 ${rem(40)}; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: ${rem(14)}; }`,
+  `.gp-market-eps-grid li { position: absolute; left: ${rem(48)}; right: 0; top: var(--top); border-top: ${line}; }`,
+  `.gp-market-eps-grid li span { position: absolute; left: -${rem(48)}; top: -${rem(8)}; width: ${rem(42)}; text-align: right; white-space: nowrap; ${eyebrow} letter-spacing: normal; }`,
+  `.gp-market-eps-bars { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0 0 0 ${rem(48)}; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: ${rem(14)}; }`,
   `.gp-market-eps-bars > li { position: relative; min-width: 0; }`,
   `.gp-market-eps-bar { position: absolute; left: 18%; right: 18%; top: calc((100% - ${rem(26)}) * var(--bar-top) / 100); height: calc((100% - ${rem(26)}) * (var(--bar-end) - var(--bar-top)) / 100); background: var(--accent-2); opacity: .55; border-radius: var(--radius-small) var(--radius-small) 0 0; transition: top var(--motion-value) var(--motion-ease), height var(--motion-value) var(--motion-ease); }`,
   `.gp-market-eps-bars > li[data-negative] .gp-market-eps-bar { border-radius: 0 0 var(--radius-small) var(--radius-small); }`,
@@ -73,6 +75,41 @@ export const marketCss = [
   `  .gp-market-formulas, .gp-market-reset, .gp-market-more-toggle { min-height: ${TOUCH_TARGET}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) { .gp-market-eps-bar { transition: none; } }`,
+  // desktop (UIX-01): the screen fits the viewport with no page scroll. The trace chain on top;
+  // drivers and adjusted EPS fill the height below it; share price and More drivers share the
+  // right column (opened, More drivers widens and scrolls inside its panel); the EPS chart scales to its
+  // panel and the note is one line under the grid.
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-market > .gp-grid { grid-template-rows: auto auto minmax(0, 1fr); }`,
+  `  .gp-market [data-testid="market-trace"] { grid-column: 1 / -1; grid-row: 1; }`,
+  `  .gp-market [data-testid="market-drivers"] { grid-column: 1 / 6; grid-row: 2 / 4; }`,
+  `  .gp-market [data-testid="market-eps"] { grid-column: 6 / 10; grid-row: 2 / 4; }`,
+  `  .gp-market [data-testid="market-price"] { grid-column: 10 / 13; grid-row: 2; }`,
+  `  .gp-market [data-testid="market-more"] { grid-column: 10 / 13; grid-row: 3; }`,
+  `  .gp-market > .gp-grid > .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-market > .gp-grid > .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-market [data-testid="market-more"] > .gp-body, .gp-market [data-testid="market-drivers"] > .gp-body { overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-market-eps { flex: 1 1 0; min-height: ${rem(160)}; height: auto; }`,
+  `  .gp-market-driver { grid-template-columns: minmax(0, 1fr); }`,
+  `  .gp-market-cell { min-width: ${rem(96)}; }`,
+  `  .gp-market-note { max-width: none; margin-top: var(--space-gap); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
+  // More drivers open: the panel takes the space of Adjusted EPS and Share price (the trace chain on
+  // top keeps EPS and the share price in view) so its 91 drivers get room; closing it brings them back
+  `  .gp-market > .gp-grid:has(.gp-market-more-toggle[aria-expanded="true"]) [data-testid="market-more"] { grid-column: 6 / 13; grid-row: 2 / 4; }`,
+  `  .gp-market > .gp-grid:has(.gp-market-more-toggle[aria-expanded="true"]) :is([data-testid="market-eps"], [data-testid="market-price"]) { display: none; }`,
+  `  .gp-market > .gp-grid:has(.gp-market-more-toggle[aria-expanded="true"]) .gp-market-driver { grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); }`,
+  `}`,
+  // short desktop: smaller dials and tighter spacing in the drivers panel and the share price
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-market-dials { gap: ${rem(8)} ${rem(10)}; }`,
+  `  .gp-market-dial { gap: ${rem(4)}; }`,
+  `  .gp-market-valuation { margin-top: ${rem(10)}; padding-top: ${rem(10)}; }`,
+  `  .gp-market-price { gap: ${rem(8)}; }`,
+  `  .gp-market-fuel { margin-top: ${rem(10)}; padding-top: ${rem(10)}; }`,
+  `  .gp-market .gp-trace { padding: ${rem(2)} ${rem(2)} ${rem(4)}; }`,
+  `  .gp-market .gp-tnode { padding: ${rem(8)} ${rem(12)}; gap: ${rem(4)}; }`,
+  `  .gp-market .gp-dial svg { width: ${rem(56)}; height: ${rem(56)}; }`,
+  `}`,
 ].join('\n');
 
 /** Injects the market CSS once (React 19 hoists and de-duplicates `<style href precedence>`). */

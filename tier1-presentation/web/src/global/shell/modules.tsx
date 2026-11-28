@@ -2,7 +2,7 @@ import type { RailItem } from '@glidepath/ui/shell';
 import { MODULE_IDS, type ModuleId } from '../../app/modules';
 
 /**
- * Rail entries and screen titles of the nine modules (IA §1, prototype `NAV`). UX copy only:
+ * Rail entries and screen titles of the eleven modules (IA §1, prototype `NAV`). UX copy only:
  * module ids come from the contract (`AppModule`), labels and titles are the approved wording.
  */
 interface ModuleCopy {
@@ -44,6 +44,16 @@ export const MODULE_COPY: Readonly<Record<ModuleId, ModuleCopy>> = {
     label: 'Path',
     title: 'Find a path',
     icon: '<path d="M5 19c3 0 3-7 7-7s4-7 7-7"/><circle cx="5" cy="19" r="1.6"/><circle cx="19" cy="5" r="1.6"/>',
+  },
+  sourcing: {
+    label: 'Sourcing',
+    title: 'Spend & contracts',
+    icon: '<path d="M4 7h16v12H4z"/><path d="M9 7V5h6v2M4 12h16"/><path d="M11 12v2h2v-2"/>',
+  },
+  plan: {
+    label: 'Plan',
+    title: 'Plan & business case',
+    icon: '<path d="M4 5h16v15H4z"/><path d="M4 9h16M8 3v4M16 3v4"/><path d="M8 13h3M8 16h6"/>',
   },
   market: {
     label: 'Market',
@@ -90,7 +100,7 @@ export function Icon({ paths }: { paths: string }) {
 export const modulePath = (tenant: string, scenario: string, module: ModuleId): string =>
   `/${encodeURIComponent(tenant)}/${encodeURIComponent(scenario)}/${module}`;
 
-/** The rail's nine items, in site-map order. */
+/** The rail's eleven items, in site-map order. */
 export function railItems(tenant: string, scenario: string): RailItem[] {
   return MODULE_IDS.map((id) => ({
     id,

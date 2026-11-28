@@ -387,7 +387,7 @@ export type ExplainResponse = z.infer<typeof ExplainResponse>;
 // GET /api/t/:tenant/search?q=  (⌘K)
 // ---------------------------------------------------------------------------
 
-/** The nine app modules a result can jump to (07 §1); `wizard` is second, so the rail reads Cockpit, Build, ... */
+/** The eleven app modules a result can jump to (07 §1, SRC-03 adds `sourcing` and `plan` after `path`); `wizard` is second, so the rail reads Cockpit, Build, ... */
 export const AppModule = z.enum([
   'cockpit',
   'wizard',
@@ -395,6 +395,8 @@ export const AppModule = z.enum([
   'levers',
   'vps',
   'path',
+  'sourcing',
+  'plan',
   'market',
   'excel',
   'airlines',
