@@ -46,7 +46,8 @@ export const sourcingCss = [
   `.gp-src-name { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
   `.gp-src-num { text-align: right; font-variant-numeric: var(--type-numerals); white-space: nowrap; }`,
   `.gp-src-sub { color: var(--ink-3); font-size: var(--type-xs-size); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
-  `.gp-src-row[data-muted] { opacity: .6; }`,
+  // muted rows (a lever that cannot close the gap alone, the long-tail aggregate) say so with an
+  // italic name only: fading the whole row made a table of all-muted rows unreadable
   `.gp-src-row[data-muted] .gp-src-name { font-style: italic; color: var(--ink-2); }`,
   // vendors
   `.gp-src-vendor { grid-template-columns: ${rem(18)} minmax(0, 1.4fr) minmax(${rem(60)}, 1fr) ${rem(56)} ${rem(44)}; }`,

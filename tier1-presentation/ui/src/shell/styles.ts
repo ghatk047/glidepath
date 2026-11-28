@@ -3,6 +3,7 @@
  * docs/ux/prototype/src/styles.css (`.rail`, `.tenant-btn`, `.seg`). Sizes that have no design token
  * (the prototype's control metrics) are written in rem, from one helper, so tier 1 carries no raw px.
  */
+import { SHORT_DESKTOP_QUERY } from '../glass/styles';
 import { cssVar, defaultTheme, media, tokenValue, type TokenPath } from '../tokens';
 
 const v = (p: TokenPath) => cssVar[p];
@@ -68,6 +69,13 @@ export const shellCss = [
   `.gp-menu button { box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: ${rem(12)}; width: 100%; min-height: ${rem(36)}; padding: ${rem(6)} ${rem(10)}; border: 0; border-radius: ${v('radius.control')}; background: transparent; color: ${c('ink2')}; font: inherit; font-size: ${v('type.scale.s.size')}; text-align: left; cursor: pointer; }`,
   `.gp-menu button:hover { color: ${c('ink')}; background: ${c('glass2')}; }`,
   `.gp-menu button[aria-checked="true"] { color: ${c('ink')}; background: ${c('glass3')}; }`,
+  // ---- short desktop (a 1280x720 laptop): the rail's eleven modules fit the screen height, so
+  // the last one (Airlines) is not cut off at the bottom edge
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-rail { gap: ${rem(2)}; padding: ${rem(12)} 0; }`,
+  `  .gp-tenant-btn { margin-bottom: ${rem(10)}; }`,
+  `  .gp-rail-item { padding: ${rem(6)} 0 ${rem(4)}; }`,
+  `}`,
   // ---- phone: bottom bar scrolling inside itself; letters only; 44 touch targets
   `@media ${media.phone} {`,
   `  .gp-rail { position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: auto; height: auto; flex-direction: row; justify-content: flex-start; align-items: center; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; gap: ${rem(2)}; padding: ${rem(8)} max(${rem(10)}, env(safe-area-inset-right, 0)) calc(${rem(8)} + env(safe-area-inset-bottom, 0)) max(${rem(10)}, env(safe-area-inset-left, 0)); border-right: 0; border-top: ${hairline} ${c('hair')}; background: ${c('glass3')}; }`,

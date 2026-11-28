@@ -24,11 +24,12 @@ export const vpsCss = [
   `.gp-vps-card-head { display: flex; align-items: center; gap: ${rem(10)}; min-height: ${rem(28)}; }`,
   `.gp-vps-card-name { margin: 0; font-size: var(--type-m-size); font-weight: var(--type-m-weight); color: var(--ink); }`,
   `.gp-vps-dot { width: ${rem(10)}; height: ${rem(10)}; border-radius: ${rem(3)}; background: var(--vp-colour); flex: none; }`,
-  `.gp-vps-ss { margin-left: auto; padding: ${rem(4)} ${rem(12)}; border-radius: var(--radius-pill); border: ${line}; background: var(--glass-2); color: var(--ink-2); font-size: var(--type-s-size); }`,
+  `.gp-vps-ss { margin-left: auto; flex-shrink: 0; white-space: nowrap; padding: ${rem(4)} ${rem(12)}; border-radius: var(--radius-pill); border: ${line}; background: var(--glass-2); color: var(--ink-2); font-size: var(--type-s-size); }`,
   `.gp-vps-hero { font: var(--type-xl-weight) var(--type-xl-size)/1.1 var(--font-num), var(--font-ui), sans-serif; font-variant-numeric: var(--type-numerals); color: var(--ink); }`,
   `.gp-vps-bullet { --tick: 0.87; position: relative; height: ${rem(12)}; border-radius: var(--radius-pill); background: var(--track); }`,
   `.gp-vps-bullet-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--vp-colour); width: clamp(0%, calc(var(--net) / var(--bar) * var(--tick) * 100%), 100%); transition: width var(--motion-value) var(--motion-ease); }`,
-  `.gp-vps-bullet-tick { position: absolute; top: -${rem(4)}; bottom: -${rem(4)}; left: calc(var(--tick) * 100%); width: ${rem(2)}; background: var(--ink); }`,
+  // the tick reaches above the track only, so it never runs into the Net / Bar labels under it
+  `.gp-vps-bullet-tick { position: absolute; top: -${rem(6)}; bottom: 0; left: calc(var(--tick) * 100%); width: ${rem(2)}; background: var(--ink); }`,
   `.gp-vps-pair { display: flex; justify-content: space-between; gap: ${rem(8)}; color: var(--ink-2); font-size: var(--type-m-size); }`,
   `.gp-vps-pair strong { color: var(--ink); font-weight: 600; }`,
   `.gp-vps-card-foot { display: grid; grid-template-columns: 1fr 1fr; gap: ${rem(14)}; padding-top: ${rem(14)}; border-top: ${line}; }`,
@@ -80,11 +81,12 @@ export const vpsCss = [
   `  .gp-vps-btn { min-height: ${rem(44)}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) { .gp-vps-bullet-fill, [data-glow] { transition: none; } }`,
-  // desktop (UIX-01): the gap chip keeps to its card (the target column hugs its number), the
+  // desktop (UIX-01): the gap chip keeps to its card (its column takes the chip's width and the
+  // target column, whose growth line may wrap, gives way), the
   // pool and ownership rows lose some air so the screen fits a 1280x720 display
   `@media ${DESKTOP_QUERY} {`,
   `  .gp-vps-card { gap: ${rem(10)}; }`,
-  `  .gp-vps-card-foot { grid-template-columns: auto minmax(0, 1fr); gap: ${rem(10)}; padding-top: ${rem(10)}; }`,
+  `  .gp-vps-card-foot { grid-template-columns: minmax(0, 1fr) auto; gap: ${rem(10)}; padding-top: ${rem(10)}; }`,
   `  .gp-vps-card-foot > div + div { padding-left: ${rem(10)}; }`,
   `  .gp-vps-card-foot .gp-chip { max-width: 100%; }`,
   `  .gp-vps-row { padding: ${rem(5)} 0; }`,

@@ -31,11 +31,12 @@ export const marketCss = [
   `.gp-market-valuation-label { margin-right: auto; color: var(--ink); }`,
   `.gp-market-valuation-value { font: 400 var(--type-l-size)/1.1 ${num}; font-variant-numeric: var(--type-numerals); color: var(--ink); }`,
   // Adjusted EPS
-  `.gp-market-eps { position: relative; height: ${rem(300)}; padding-left: ${rem(40)}; }`,
+  // the tick gutter holds a negative label (−$0.5) on one line; grid lines start after it
+  `.gp-market-eps { position: relative; height: ${rem(300)}; padding-left: ${rem(48)}; }`,
   `.gp-market-eps-grid { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0 0 ${rem(26)} 0; }`,
-  `.gp-market-eps-grid li { position: absolute; left: 0; right: 0; top: var(--top); border-top: ${line}; }`,
-  `.gp-market-eps-grid li span { position: absolute; left: 0; top: -${rem(8)}; width: ${rem(32)}; text-align: right; ${eyebrow} }`,
-  `.gp-market-eps-bars { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0 0 0 ${rem(40)}; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: ${rem(14)}; }`,
+  `.gp-market-eps-grid li { position: absolute; left: ${rem(48)}; right: 0; top: var(--top); border-top: ${line}; }`,
+  `.gp-market-eps-grid li span { position: absolute; left: -${rem(48)}; top: -${rem(8)}; width: ${rem(42)}; text-align: right; white-space: nowrap; ${eyebrow} letter-spacing: normal; }`,
+  `.gp-market-eps-bars { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0 0 0 ${rem(48)}; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: ${rem(14)}; }`,
   `.gp-market-eps-bars > li { position: relative; min-width: 0; }`,
   `.gp-market-eps-bar { position: absolute; left: 18%; right: 18%; top: calc((100% - ${rem(26)}) * var(--bar-top) / 100); height: calc((100% - ${rem(26)}) * (var(--bar-end) - var(--bar-top)) / 100); background: var(--accent-2); opacity: .55; border-radius: var(--radius-small) var(--radius-small) 0 0; transition: top var(--motion-value) var(--motion-ease), height var(--motion-value) var(--motion-ease); }`,
   `.gp-market-eps-bars > li[data-negative] .gp-market-eps-bar { border-radius: 0 0 var(--radius-small) var(--radius-small); }`,

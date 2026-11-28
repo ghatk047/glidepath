@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // `pnpm e2e:visual -- --trace off` runs the QA-06 visual baselines (G11) against the compose stack:
-// 8 modules x 2 themes x 2 widths compared with the approved baselines at the pixel threshold.
+// 11 modules x 2 themes x 2 screens (1280x720, 1920x1080) compared with the approved baselines at the pixel threshold.
 // `pnpm e2e:visual -- --update` approves: it (re)writes the baselines that are missing or differ.
 // Either way the last test writes the reviewer's report, `visual-report/index.html`, with every
 // baseline beside the UX pack's render of the same screen. pnpm forwards the literal `--`, which

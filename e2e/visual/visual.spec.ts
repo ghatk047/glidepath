@@ -23,8 +23,9 @@ import {
 } from '../src/visual-report';
 
 /**
- * QA-06 (G11): a full-page screenshot of each of the 8 modules in 2 themes at 2 widths (1440 and
- * 390 CSS px, device scale 2 like the UX pack's renders), preset C, compared with the approved
+ * QA-06 (G11): a full-page screenshot of each of the 11 modules in 2 themes on the presenter's 2
+ * screens (1280x720 laptop and 1920x1080 monitor, CSS px, device scale 2 like the UX pack's
+ * renders), preset C, compared with the approved
  * baseline at the pixel threshold in `src/visual.ts`. Reduced motion is on, so the app settles
  * without number rolls or sky drift, and Playwright waits for two identical frames before it
  * compares. The theme is the viewer's stored choice (`glidepath.theme`), as the toggle writes it.
@@ -42,7 +43,10 @@ const mtime = (file: string) => (existsSync(file) ? statSync(file).mtimeMs : nul
 /** The module is drawn and tier 2's first values are in: no busy panel, no skeleton, fonts loaded. */
 async function settled(page: Page, label: string): Promise<void> {
   await expect(page.locator('.gp-module, [data-module]').first(), `${label} renders`).toBeVisible();
-  await expect(page.locator('[aria-busy="true"]'), `${label} has no busy panel`).toHaveCount(0);
+  // a cold stack may still be running a background job (the Path frontier): give it time
+  await expect(page.locator('[aria-busy="true"]'), `${label} has no busy panel`).toHaveCount(0, {
+    timeout: 45_000,
+  });
   await expect(page.locator('.gp-skel'), `${label} has no skeleton`).toHaveCount(0);
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.mouse.move(0, 0);
@@ -53,7 +57,7 @@ let presetC: string;
 /** What the running test is about, for the record written after it. */
 let current: { shot: Shot; before: number | null } | null = null;
 
-test.describe('visual baselines: 8 modules x 2 themes x 2 widths (G11)', () => {
+test.describe('visual baselines: 11 modules x 2 themes x 2 screens (G11)', () => {
   test.beforeAll(({ stack }) => {
     presetC = stack.presets.get('C')!.id;
   });
@@ -80,7 +84,7 @@ test.describe('visual baselines: 8 modules x 2 themes x 2 widths (G11)', () => {
 
   for (const theme of THEMES) {
     for (const width of WIDTHS) {
-      test.describe(`${theme} at ${width}px`, () => {
+      test.describe(`${theme} at ${width}x${VIEWPORT_HEIGHT[width]}`, () => {
         let context: BrowserContext;
         let page: Page;
 
@@ -113,9 +117,7 @@ test.describe('the reviewer report (G11 first approval)', () => {
   test('visual_report_generated_beside_the_ux_screens', () => {
     const { file, entries, html } = writeReport(defaultPaths());
     expect(existsSync(file), 'visual-report/index.html is written').toBe(true);
-    expect(entries, '8 modules x 2 themes x 2 widths').toHaveLength(
-      allShots().length,
-    );
+    expect(entries, '11 modules x 2 themes x 2 screens').toHaveLength(allShots().length);
     expect(html.match(/<section class="shot"/g)).toHaveLength(allShots().length);
     // every screen the UX pack has a render of is shown beside its baseline
     const withRender = entries.filter((e) => e.render);

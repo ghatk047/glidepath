@@ -117,7 +117,11 @@ export const cockpitCss = [
   `}`,
   `@media ${SHORT_DESKTOP_QUERY} {`,
   `  .gp-cockpit-net .gp-gauge { width: min(100%, ${rem(300)}); }`,
+  // the hero shrinks with the gauge, so its unit (M) clears the Bar tick on the arc
+  `  .gp-cockpit-net .gp-gauge-hero { font-size: ${rem(40)}; }`,
   `  .gp-cockpit-stats { padding-top: ${rem(14)}; }`,
+  // narrower columns: the labels keep to one line, and a value sits level with its neighbours
+  `  .gp-cockpit-stat { padding: 0 ${rem(12)}; justify-content: space-between; }`,
   `}`,
 ].join('\n');
 

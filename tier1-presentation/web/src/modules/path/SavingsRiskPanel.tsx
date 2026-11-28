@@ -137,7 +137,12 @@ export function SavingsRiskPanel({
         status: <span className="gp-path-faint">{COPY.savingsUnit}</span>,
       }}
     >
-      <div className="gp-path-scatter-wrap" style={{ position: 'relative' }}>
+      {/* aria-busy while the frontier job runs: the chart is about to change (a capture waits) */}
+      <div
+        className="gp-path-scatter-wrap"
+        style={{ position: 'relative' }}
+        aria-busy={frontier.busy ? true : undefined}
+      >
         {frontier.busy && (
           <div
             data-testid="path-frontier-flow"

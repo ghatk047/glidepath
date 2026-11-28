@@ -28,12 +28,19 @@ export const THEME_TONE: Readonly<Record<VisualTheme, 'dark' | 'light'>> = {
   daylight: 'light',
 };
 
-/** The two widths of the pack: desktop and phone (CSS px). */
-export const WIDTHS = [1440, 390] as const;
+/**
+ * The presenter's two screens (CSS px): the 1280x720 laptop and the 1920x1080 monitor the demo
+ * runs on full screen. Phones are out of scope (owner's direction), so there is no phone width.
+ */
+export const WIDTHS = [1280, 1920] as const;
 export type VisualWidth = (typeof WIDTHS)[number];
 
-/** Viewport heights; the screenshots are full page, so only the first paint depends on them. */
-export const VIEWPORT_HEIGHT: Readonly<Record<VisualWidth, number>> = { 1440: 900, 390: 844 };
+/** Viewport heights of the two screens; the screenshots are full page, so a page taller than
+ * this scrolls on that screen and shows as a taller baseline. */
+export const VIEWPORT_HEIGHT: Readonly<Record<VisualWidth, number>> = { 1280: 720, 1920: 1080 };
+
+/** The UX pack drew its desktop renders at 1440 px; both screens are compared with those. */
+export const UX_DESKTOP_WIDTH = 1440;
 
 /** The UX pack's renders are 2x full-page captures; the baselines are taken the same way. */
 export const DEVICE_SCALE_FACTOR = 2;
@@ -52,13 +59,16 @@ export const MAX_DIFF_PIXELS = 100;
  * Injected during capture only (never in the product). Full-page capture lays `position: fixed`
  * elements out against the first viewport, so they land mid-page and cover panel headers. The
  * floating Net/Bar/Gap flight strip (`.gp-hud`) is hidden (its values are on the screen anyway;
- * `visibility` keeps the layout). The phone bottom nav (`.gp-rail` at phone width) is put in the
- * flow so it is still captured, once, instead of floating over the content. The desktop rail is
- * sticky, draws at the top of the page and is left alone.
+ * `visibility` keeps the layout). Live backdrop blur is switched off: when few enough surfaces
+ * share the budget (Build, VPs, Market, Excel, Airlines) they get real backdrop-filter layers, and
+ * the Excel 1280 capture moved chips and borders by one device pixel from run to run although the
+ * layout boxes were identical; without the blur the captures are stable. The blur sits over the pre-blurred sky, so the capture
+ * looks the same without it. The desktop rail is sticky, draws at the top of the page and is left
+ * alone.
  */
 export const CAPTURE_CSS = `
 .gp-hud { visibility: hidden !important; }
-@media (max-width: 640px) { .gp-rail { position: static !important; } }
+.gp-panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 `;
 
 /** A module's name in the UX pack's file names. */
@@ -80,7 +90,7 @@ export interface Shot {
   module: VisualModule;
   theme: VisualTheme;
   width: VisualWidth;
-  /** `cockpit-cruise-1440`: the baseline's file stem and the test's title. */
+  /** `cockpit-cruise-1920`: the baseline's file stem and the test's title. */
   key: string;
 }
 
@@ -97,9 +107,10 @@ export function allShots(): Shot[] {
   return shots;
 }
 
-/** The UX pack render file name for a shot (it may not exist: the pack has 13 of the 44). */
-export const uxRenderName = (s: Pick<Shot, 'module' | 'theme' | 'width'>) =>
-  `${UX_NAME[s.module]}-${THEME_TONE[s.theme]}-${s.width}.jpg`;
+/** The UX pack's desktop render a shot is shown beside (it may not exist: the pack has 11 desktop
+ * renders, so 22 of the 44 shots have one). Both screen sizes pair with the same 1440 render. */
+export const uxRenderName = (s: Pick<Shot, 'module' | 'theme'>) =>
+  `${UX_NAME[s.module]}-${THEME_TONE[s.theme]}-${UX_DESKTOP_WIDTH}.jpg`;
 
 // ---------------------------------------------------------------------------------------------
 // Image sizes (PNG baselines, JPEG renders), read from the file headers.
@@ -267,11 +278,10 @@ nav { display:flex; flex-wrap:wrap; gap: 8px 16px; margin: 8px 0; } nav a { colo
 .status[data-status="approved"], .status[data-status="passed"] { color: var(--ok); } .status[data-status="failed"] { color: var(--bad); } .status[data-status="missing"], .status[data-status="unchecked"] { color: var(--warn); }
 .note { color: var(--muted); font-size: 13px; } .note[data-flag] { color: var(--warn); font-weight: 600; }
 .pair { display:grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); align-items:start; margin-top: 8px; }
-.pair.w390 { grid-template-columns: repeat(auto-fit, minmax(160px, 260px)); }
 figure { margin:0; min-width:0; } figcaption { font-size: 13px; color: var(--muted); margin-bottom: 4px; } figcaption small { margin-left: 6px; }
 img { display:block; width:100%; height:auto; border:1px solid var(--line); border-radius: 6px; background: var(--bg); }
 .empty { border:1px dashed var(--line); border-radius:6px; padding: 24px 12px; color: var(--muted); font-size: 13px; text-align:center; }
-@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } .pair.w390 { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); } }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
 `;
 
 const SCRIPT = `
@@ -311,7 +321,7 @@ export function buildReport(entries: readonly ReportEntry[], meta: ReportMeta): 
 <h1>Visual baselines (G11)</h1>
 <p class="lede">Each screen as the app draws it (Baseline) beside the UX pack's render of the same screen (<code>docs/ux/screens/</code>). On first approval the reviewer reads the pairs here and decides. Later runs compare with the approved baseline at a colour tolerance of ${PIXEL_THRESHOLD} and at most ${MAX_DIFF_PIXELS} pixels differing.</p>
 <table data-slot="summary">
-<tr><th>Screens (11 modules × 2 themes × 2 widths)</th><td data-count="total">${s.total}</td></tr>
+<tr><th>Screens (11 modules × 2 themes × 2 screen sizes)</th><td data-count="total">${s.total}</td></tr>
 <tr><th>With a UX pack render</th><td data-count="with-render">${s.withRender}</td></tr>
 <tr><th>Without a render in the pack</th><td data-count="without-render">${s.withoutRender}</td></tr>
 <tr><th>First approvals this run</th><td data-count="approved">${s.approved}</td></tr>

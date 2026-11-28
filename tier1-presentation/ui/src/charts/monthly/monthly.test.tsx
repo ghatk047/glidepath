@@ -127,6 +127,20 @@ describe('UI-17 MonthlyCurve (#26): structure', () => {
     );
   });
 
+  it('leaves out the label of a band too thin to hold it; the area keeps its name', () => {
+    const thin: LeversMonthlyView = {
+      families: [
+        { key: 'labour', values: [0, 2, 4, 6, 8, 10, 12, 12, 12, 12, 12, 12] },
+        { key: 'sliver', values: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2] },
+        { key: 'technology', values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 8, 8] },
+      ],
+      levers: [],
+    };
+    render(<MonthlyCurve series={thin} labels={{ ...LABELS, sliver: 'Sliver' }} />);
+    expect(qa('text[data-part="family-label"]').map((t) => t.textContent)).toEqual(['Labour', 'Technology']);
+    expect(q('path[data-family="sliver"]')!.getAttribute('aria-label')).toMatch(/^Sliver /);
+  });
+
   it('draws no line or dot when nothing (or an unknown lever) is selected', () => {
     render(<MonthlyCurve series={series()} />);
     expect(q('path[data-part="line"]')).toBeNull();
