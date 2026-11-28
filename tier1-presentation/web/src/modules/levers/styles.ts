@@ -1,4 +1,4 @@
-import { DESKTOP_QUERY } from '@glidepath/ui/glass';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem } from '@glidepath/ui/shell';
 
 /**
@@ -52,20 +52,47 @@ export const leversCss = [
   `.gp-lv-all-pair div { display: flex; flex-direction: column; gap: ${rem(4)}; }`,
   `.gp-lv-all-pair [data-value], .gp-lv-all-pair .gp-value { font-family: ${num}; font-size: var(--type-l-size); color: var(--ink); }`,
   `@media (prefers-reduced-motion: reduce) { .gp-lv-bar > i { transition: none; } }`,
-  // desktop (UIX-01): the 20 levers scroll inside their panel so the detail and the month chart
-  // stay beside them; display numbers are capped so they fit their column at 1280 px
+  // desktop (UIX-01): the screen fits the viewport with no page scroll. One row of three columns as
+  // tall as the screen allows: the 20 levers scroll inside their panel; the detail sets the
+  // confidence dial beside the sliders (and scrolls inside its panel if a lever has many); the month
+  // chart takes the rest of the right column. Display numbers are capped to fit their column at 1280 px.
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-lv-list-wrap { max-height: calc(100vh - ${rem(170)}); min-height: ${rem(300)}; overflow-y: auto; overscroll-behavior: contain; margin-right: calc(-1 * ${rem(8)}); padding-right: ${rem(8)}; }`,
+  `  .gp-module[data-module="levers"] > .gp-grid { grid-template-rows: minmax(0, 1fr); }`,
+  `  .gp-module[data-module="levers"] .gp-stack { min-height: 0; }`,
+  `  .gp-module[data-module="levers"] .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-module[data-module="levers"] .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-lv-month { flex: 1 1 0; }`,
+  `  .gp-lv-month .gp-monthly { flex: 1 1 0; min-height: 0; height: 100%; }`,
+  `  .gp-lv-list-wrap { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin-right: calc(-1 * ${rem(8)}); padding-right: ${rem(8)}; }`,
+  `  .gp-module[data-module="levers"] .gp-lv-detail > .gp-body { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: ${rem(18)}; align-content: start; overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-lv-detail > .gp-body > * { grid-column: 1 / -1; }`,
+  `  .gp-lv-detail > .gp-body > .gp-lv-conf { grid-column: 1; align-self: center; flex-direction: column; margin: 0; }`,
+  `  .gp-lv-detail > .gp-body > .gp-lv-sliders { grid-column: 2; margin: 0; }`,
+  `  .gp-lv-detail > .gp-body > .gp-lv-timing { margin-top: ${rem(10)}; }`,
   `  .gp-lv-family { margin: ${rem(10)} 0 ${rem(2)}; }`,
   `  .gp-lv-row { padding: ${rem(4)} ${rem(8)}; }`,
   `  .gp-lv-title { font-size: min(var(--type-xl-size), ${rem(30)}); margin-bottom: ${rem(10)}; }`,
   `  .gp-lv-kpis { gap: ${rem(8)}; margin-bottom: ${rem(12)}; }`,
   `  .gp-lv-kpi { padding: ${rem(10)} ${rem(12)}; }`,
   `  .gp-lv-kpi[data-hero="true"] [data-value], .gp-lv-kpi[data-hero="true"] .gp-value { font-size: min(var(--type-xl-size), ${rem(28)}); }`,
-  `  .gp-lv-sliders { gap: ${rem(10)}; margin-bottom: ${rem(12)}; }`,
-  `  .gp-lv-conf { margin-bottom: ${rem(10)}; }`,
+  `  .gp-lv-sliders { gap: ${rem(10)}; }`,
   `  .gp-lv-cell { height: ${rem(30)}; }`,
   `  .gp-lv-hyp { margin-top: ${rem(12)}; font-size: var(--type-s-size); }`,
   `  .gp-lv-all-hero { font-size: min(var(--type-hero-size), ${rem(46)}); white-space: nowrap; }`,
+  `}`,
+  // short desktop: smaller title and tiles, shorter month cells
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-lv-chips { margin-bottom: ${rem(6)}; }`,
+  `  .gp-lv-title { font-size: var(--type-l-size); margin-bottom: ${rem(8)}; }`,
+  `  .gp-lv-kpi { padding: ${rem(6)} ${rem(10)}; gap: ${rem(2)}; }`,
+  `  .gp-lv-kpis { margin-bottom: ${rem(8)}; }`,
+  `  .gp-lv-sliders { gap: ${rem(6)}; }`,
+  `  .gp-lv-cell { height: ${rem(22)}; }`,
+  `  .gp-lv-cells li { gap: ${rem(3)}; }`,
+  `  .gp-lv-timing-head { margin: ${rem(4)} 0; }`,
+  `  .gp-lv-hyp { margin-top: ${rem(8)}; }`,
+  `  .gp-lv-all-hero { font-size: min(var(--type-hero-size), ${rem(40)}); }`,
+  `  .gp-lv-all-sub { margin-bottom: ${rem(8)}; }`,
+  `  .gp-lv-all-pair { padding-top: ${rem(8)}; }`,
   `}`,
 ].join('\n');

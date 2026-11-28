@@ -1,5 +1,6 @@
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 
 /**
  * Airlines CSS (docs/ux/screens/airlines-dark-1440.jpg), token CSS vars only; metrics with no
@@ -71,6 +72,21 @@ export const airlinesCss = [
   `@media ${media.phone} {`,
   `  .gp-airlines-scopes { grid-template-columns: minmax(0, 1fr); }`,
   `  .gp-airlines-action, .gp-airlines-primary, .gp-airlines-plus { min-height: ${TOUCH_TARGET}; }`,
+  `}`,
+  // desktop (UIX-01): the screen fits the viewport with no page scroll. The airline tiles keep to
+  // their content; reconfigure and onboarding fill the height under them and scroll inside when a
+  // draft's review is long; the note runs the full width under the grid.
+  `@media ${DESKTOP_QUERY} {`,
+  `  .gp-airlines > .gp-grid { grid-template-rows: auto minmax(0, 1fr); }`,
+  `  .gp-airlines-tile { min-height: ${rem(170)}; }`,
+  `  .gp-airlines > .gp-grid > .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-airlines > .gp-grid > .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-airlines-note { max-width: none; margin-top: var(--space-gap); }`,
+  `}`,
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-airlines-tile { min-height: ${rem(150)}; gap: ${rem(6)}; }`,
+  `  .gp-airlines-steps { margin-top: ${rem(12)}; }`,
+  `  .gp-airlines-scopes { margin-top: ${rem(14)}; padding-top: ${rem(12)}; }`,
   `}`,
 ].join('\n');
 

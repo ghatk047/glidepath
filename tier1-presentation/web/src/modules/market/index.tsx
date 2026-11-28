@@ -28,7 +28,9 @@ export default function Market() {
         <SharePricePanel />
         <MoreDrivers />
       </Grid>
-      <p className="gp-market-note">{COPY.note}</p>
+      <p className="gp-market-note" title={COPY.note}>
+        {COPY.note}
+      </p>
     </main>
   );
 }

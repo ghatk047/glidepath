@@ -1,4 +1,4 @@
-import { DESKTOP_QUERY } from '@glidepath/ui/glass';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
 
@@ -95,13 +95,35 @@ export const pathCss = [
   `  .gp-path-head, .gp-path-stats { gap: ${rem(18)}; }`,
   `  .gp-path-btn, .gp-path-goal-value { min-height: ${TOUCH_TARGET}; }`,
   `}`,
-  // desktop (UIX-01): the goal panel's options and holds lose some air so the goal and the path
-  // panel fit a 1280x720 screen above the analysis row
+  // desktop (UIX-01): the screen fits the viewport with no page scroll. The goal runs down the left
+  // as tall as the screen; the path takes the top of the right side and the three analysis panels
+  // share the row under it. Panel bodies scroll inside when a long path does not fit, and the
+  // charts scale to their panel.
   `@media ${DESKTOP_QUERY} {`,
+  `  .gp-path > .gp-grid { grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr); }`,
+  `  .gp-path > .gp-grid > .gp-path-goal { grid-column: 1 / 4; grid-row: 1 / 3; }`,
+  `  .gp-path > .gp-grid > .gp-path-result-panel { grid-column: 4 / 13; grid-row: 1; }`,
+  `  .gp-path > .gp-grid > .gp-path-scatter-panel { grid-column: 4 / 7; grid-row: 2; }`,
+  `  .gp-path > .gp-grid > .gp-path-odds-panel { grid-column: 7 / 10; grid-row: 2; }`,
+  `  .gp-path > .gp-grid > .gp-path-tornado { grid-column: 10 / 13; grid-row: 2; }`,
+  `  .gp-path > .gp-grid > .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-path > .gp-grid > .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }`,
   `  .gp-path-goal .gp-radio-card { padding: ${rem(6)} ${rem(10)}; }`,
-  `  .gp-path-hold-row { padding: ${rem(6)} ${rem(12)}; }`,
-  // charts scale with their panel: on a wide screen the histogram would outgrow the row
-  `  .gp-path .gp-chart { max-height: 30vh; }`,
+  `  .gp-path-eyebrow { margin: ${rem(14)} 0 ${rem(6)}; }`,
+  `  .gp-path-hold-row { padding: ${rem(6)} ${rem(4)}; }`,
+  `  .gp-path-actions { margin-top: ${rem(14)}; }`,
+  `  .gp-path-odds { flex: 1 1 auto; min-height: 0; }`,
+  `  .gp-path .gp-chart, .gp-path-scatter, .gp-path-hist, .gp-path-tornado-chart { flex: 1 1 0; min-height: ${rem(60)}; height: 100%; max-height: none; }`,
+  `}`,
+  // short desktop: tighter options and holds so the whole goal stays in view
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-path-goal .gp-radio-card { padding: ${rem(3)} ${rem(8)}; }`,
+  `  .gp-path-eyebrow { margin: ${rem(10)} 0 ${rem(4)}; }`,
+  `  .gp-path-hold-row { padding: ${rem(3)} ${rem(4)}; }`,
+  `  .gp-path-actions { margin-top: ${rem(10)}; gap: ${rem(8)}; }`,
+  `  .gp-path-btn { min-height: ${rem(34)}; padding: 0 ${rem(12)}; }`,
+  `  .gp-path-head { gap: ${rem(20)}; }`,
+  `  .gp-path-moves-head { margin: ${rem(12)} 0 ${rem(4)}; }`,
   `}`,
 ].join('\n');
 

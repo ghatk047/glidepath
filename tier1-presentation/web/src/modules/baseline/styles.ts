@@ -1,5 +1,5 @@
 import { rem } from '@glidepath/ui/shell';
-import { DESKTOP_QUERY } from '@glidepath/ui/glass';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { media } from '@glidepath/ui/tokens';
 
 /**
@@ -49,11 +49,21 @@ export const baselineCss = [
   `.gp-bl-addr[data-addr="locked"]::before { background: var(--sequential-1); }`,
   `.gp-baseline button:focus-visible { ${focus} }`,
   `@media ${media.tablet} { .gp-bl-main { grid-template-columns: minmax(0, 1fr); } }`,
-  // desktop (UIX-01): the 70-odd line items scroll inside their panel under a sticky header, one
-  // line per row (long names end in an ellipsis; the cell's title has the full text)
+  // desktop (UIX-01): the screen fits the viewport with no page scroll. The KPI strip on top; the
+  // treemap and the group detail share the next row; the line items take the bottom row and their
+  // 70-odd rows scroll inside the panel under a sticky header, one line per row (long names end in
+  // an ellipsis; the cell's title has the full text). The treemap re-tiles to its panel's shape.
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-bl-strip { gap: ${rem(22)}; }`,
-  `  .gp-bl-table-wrap { max-height: calc(100vh - ${rem(150)}); min-height: ${rem(260)}; overflow: auto; overscroll-behavior: contain; }`,
+  `  .gp-module.gp-baseline { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); grid-template-rows: auto minmax(0, 1.15fr) minmax(0, 1fr); }`,
+  `  .gp-bl-strip { grid-column: 1 / -1; gap: ${rem(22)}; }`,
+  `  .gp-bl-main { display: contents; }`,
+  `  .gp-bl-lines { grid-column: 1 / -1; }`,
+  `  .gp-baseline > .gp-panel, .gp-bl-main > .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-baseline .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-bl-map .gp-treemap { flex: 1 1 0; }`,
+  `  .gp-bl-top { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: ${rem(6)}; margin-top: ${rem(10)}; }`,
+  `  .gp-bl-split { margin: ${rem(10)} 0; }`,
+  `  .gp-bl-table-wrap { flex: 1 1 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }`,
   `  .gp-bl-table { font-size: var(--type-s-size); table-layout: fixed; }`,
   `  .gp-bl-table th, .gp-bl-table td { padding: ${rem(7)} ${rem(8)}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
   `  .gp-bl-table thead th { position: sticky; top: 0; z-index: 1; background: color-mix(in srgb, var(--ground) 88%, transparent); }`,
@@ -64,7 +74,14 @@ export const baselineCss = [
   `  .gp-bl-table thead th:nth-child(5) { width: 6%; }`,
   `  .gp-bl-table thead th:nth-child(6) { width: 6%; }`,
   `  .gp-bl-table thead th:nth-child(7) { width: 14%; }`,
-  `  .gp-bl-top { gap: ${rem(6)}; margin-top: ${rem(10)}; }`,
-  `  .gp-bl-split { margin: ${rem(10)} 0; }`,
+  `}`,
+  // short desktop: tighter rows and a smaller headline so the table keeps several rows in view
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-module.gp-baseline { grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); }`,
+  `  .gp-bl-strip { gap: ${rem(18)}; }`,
+  `  .gp-bl-kpi[data-hero] strong { font-size: clamp(${rem(32)}, 2.8vw, ${rem(40)}); }`,
+  `  .gp-bl-name { margin-bottom: ${rem(4)}; }`,
+  `  .gp-bl-total { font-size: var(--type-l-size); }`,
+  `  .gp-bl-table th, .gp-bl-table td { padding: ${rem(5)} ${rem(8)}; }`,
   `}`,
 ].join('\n');

@@ -1,4 +1,4 @@
-import { useMemo, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { fmt } from '../../format';
 import { tipProps } from '../../overlays/drawer';
 import {
@@ -44,6 +44,37 @@ export interface TreemapProps {
   /** Accessible name of the chart, e.g. `Treemap of CY26 IT outlay by cost pool`. */
   title?: string;
   className?: string;
+  /**
+   * Fill the box the chart is given (CSS sets its width and height) instead of keeping the 800 x 500
+   * shape: the viewBox follows the drawn size in CSS px, so labels keep their size and the groups
+   * re-tile to the box's shape (UIX-01, screens that fit the viewport). Until measured, the default box.
+   */
+  fit?: boolean;
+}
+
+type Box = { width: number; height: number };
+/** Smallest box the chart re-tiles to (CSS px): below it the default shape is kept. */
+const MIN_FIT = 40;
+
+/** The element's drawn size, rounded, while `on`; null before the first measure or without ResizeObserver. */
+function useDrawnSize(on: boolean) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [box, setBox] = useState<Box | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!on || !el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const width = Math.round(el.clientWidth);
+      const height = Math.round(el.clientHeight);
+      if (width < MIN_FIT || height < MIN_FIT) return;
+      setBox((b) => (b && b.width === width && b.height === height ? b : { width, height }));
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    measure();
+    return () => ro.disconnect();
+  }, [on]);
+  return [ref, on ? box : null] as const;
 }
 
 /** Injects the chart CSS once (React 19 hoists and de-duplicates `<style href precedence>`). */
@@ -68,9 +99,12 @@ export function Treemap({
   lineLabels,
   title = 'Treemap of outlay by group',
   className,
+  fit = false,
 }: TreemapProps) {
-  // Layout depends on the view only: selection and hover never re-lay out the cells.
-  const boxes = useMemo(() => treemapLayout(groups), [groups]);
+  const [svgRef, drawn] = useDrawnSize(fit);
+  const size = drawn ?? TREEMAP_VIEWBOX;
+  // Layout depends on the view and the box only: selection and hover never re-lay out the cells.
+  const boxes = useMemo(() => treemapLayout(groups, size), [groups, size]);
   const slotOf = useMemo(() => {
     const index = new Map(colourBy.categories.map((cat, i) => [cat.key, i % TREEMAP_SLOTS]));
     const label = new Map(colourBy.categories.map((cat) => [cat.key, cat.label]));
@@ -97,8 +131,9 @@ export function Treemap({
     <>
       <TreemapStyles />
       <svg
-        className={className ? `gp-treemap ${className}` : 'gp-treemap'}
-        viewBox={`0 0 ${TREEMAP_VIEWBOX.width} ${TREEMAP_VIEWBOX.height}`}
+        ref={svgRef}
+        className={['gp-treemap', fit ? 'gp-treemap-fit' : '', className ?? ''].filter(Boolean).join(' ')}
+        viewBox={`0 0 ${size.width} ${size.height}`}
         role="group"
         aria-label={title}
       >

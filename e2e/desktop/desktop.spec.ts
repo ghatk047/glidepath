@@ -8,10 +8,11 @@ import { TOUR_STEP_SPECS } from '../src/wizard';
 
 /**
  * UIX-01: the app is shown full screen on a laptop (1280x720) and on a 1080p display. On every
- * module at both sizes: no text spills past the edge of its panel, no horizontal page scroll. SRC-21:
- * Sourcing and Plan also fit one screen, every tour step (24) is captured, and the Solve for this strip
- * stays on screen. The
- * captures and one JSON per screen (page height in screens, spills, clipped text) go to `DESKTOP_SHOTS_DIR`.
+ * module and every wizard step at both sizes: the screen fits the viewport with no page scroll
+ * (long lists scroll inside their panels), no text spills past the edge of its panel, no horizontal
+ * page scroll. Every tour step (24) is captured with its card on screen and its anchor in view, and
+ * the Solve for this strip stays on screen. The captures and one JSON per screen (page height in
+ * screens and in px, spills, clipped text) go to `DESKTOP_SHOTS_DIR`.
  */
 
 const VIEWPORTS = [
@@ -19,8 +20,8 @@ const VIEWPORTS = [
   { width: 1920, height: 1080 },
 ] as const;
 const OUT = resolve(process.env.DESKTOP_SHOTS_DIR ?? 'desktop-shots');
-/** Screens that must fit the viewport with no page scroll (SRC-21: Sourcing and Plan). */
-const ONE_SCREEN: ReadonlySet<string> = new Set(['sourcing', 'plan']);
+/** Page height a screen may exceed the viewport by (CSS px): sub-pixel rounding only, no scroll. */
+const FIT_TOLERANCE = 1;
 /** Input opened for the Solve for this check (spec id, verbatim). */
 const SOLVE_INPUT = 'g.target_net';
 
@@ -31,6 +32,9 @@ interface Spill {
 }
 interface Audit {
   screens: number;
+  /** `document.documentElement.scrollHeight` and `window.innerHeight`, CSS px. */
+  scrollHeight: number;
+  innerHeight: number;
   hScroll: boolean;
   spills: Spill[];
   clipped: Spill[];
@@ -106,6 +110,8 @@ function audit(): Audit {
   const de = document.documentElement;
   return {
     screens: Math.round((de.scrollHeight / window.innerHeight) * 100) / 100,
+    scrollHeight: de.scrollHeight,
+    innerHeight: window.innerHeight,
     hScroll: de.scrollWidth > de.clientWidth + 1,
     spills,
     clipped: clipped.filter((c, i, xs) => xs.findIndex((x) => x.text === c.text) === i),
@@ -162,10 +168,12 @@ test.describe('desktop fit (UIX-01)', () => {
         expect.soft(a.spills, `${key} text spills out of a panel`).toEqual([]);
         expect.soft(a.untitled, `${key} truncated text has no tooltip`).toEqual([]);
         expect.soft(a.clipped, `${key} text is cut off with no ellipsis`).toEqual([]);
+        // the screen fits one viewport: no page scroll (raw px, not the rounded `screens`)
+        expect.soft(a.scrollHeight, `${key} page scrolls (${a.screens} screens)`).toBeLessThanOrEqual(a.innerHeight + FIT_TOLERANCE);
         return a;
       };
 
-      // wizard steps 2 to 4 (step 1 is the module's default view)
+      // wizard steps 2 to 4 (step 1 is the module's default view), each fits one screen (check)
       test(`wizard-steps-${vp.width}`, async () => {
         await page.goto(`/${config.tenant}/${presetC}/wizard`);
         await settled(page);
@@ -190,7 +198,11 @@ test.describe('desktop fit (UIX-01)', () => {
           expect.soft(box.x >= 0 && box.y >= 0 && box.x + box.width <= vp.width && box.y + box.height <= vp.height, `${key} card inside the screen`).toBe(true);
           if (step.anchor) {
             const t = await page.locator(step.anchor).first().boundingBox();
+            // the anchor is on screen: with every screen fitted, no anchor sits below the fold
+            expect.soft(t, `${key} anchor ${step.anchor} is rendered`).not.toBeNull();
             if (t) {
+              const visible = t.width > 0 && t.height > 0 && t.x < vp.width && t.y < vp.height && t.x + t.width > 0 && t.y + t.height > 0;
+              expect.soft(visible, `${key} anchor ${step.anchor} in view`).toBe(true);
               const ix = Math.min(box.x + box.width, t.x + t.width) - Math.max(box.x, t.x);
               const iy = Math.min(box.y + box.height, t.y + t.height) - Math.max(box.y, t.y);
               const cover = ix > 0 && iy > 0 ? (ix * iy) / (t.width * t.height) : 0;
@@ -205,9 +217,7 @@ test.describe('desktop fit (UIX-01)', () => {
         test(key, async () => {
           await page.goto(`/${config.tenant}/${presetC}/${module}`);
           await settled(page);
-          const a = await check(key, true);
-          // SRC-21: the two SRC screens fit one screen at both sizes (their panels scroll inside)
-          if (ONE_SCREEN.has(module)) expect.soft(a.screens, `${key} page scrolls`).toBeLessThanOrEqual(1);
+          await check(key, true);
         });
       }
 

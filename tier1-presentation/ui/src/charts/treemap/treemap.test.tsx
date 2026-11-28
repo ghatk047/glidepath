@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Profiler } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { BaselineGroupsView } from '@glidepath/api-contract';
 import axe from 'axe-core';
 import { descending } from 'd3-array';
@@ -384,6 +384,45 @@ describe('UI-14 Treemap: scale, tooltips and props only', () => {
     rerender(<Treemap groups={v} colourBy={colour} selected="pool_2" />);
     expect(rects()).toEqual(first);
     expect(q('g[data-group="pool_2"]')!.hasAttribute('data-selected')).toBe(true);
+  });
+
+  it('fit: the groups tile the box the chart is drawn in (viewBox in CSS px), the default shape until measured', () => {
+    const v = view(30, 3);
+    // a size the layout is given tiles exactly that box
+    const boxes = treemapLayout(v, { width: 640, height: 220 });
+    expect(Math.max(...boxes.map((b) => b.x + b.width))).toBeCloseTo(640, 6);
+    expect(Math.max(...boxes.map((b) => b.y + b.height))).toBeCloseTo(220, 6);
+    // the drawn size comes from a ResizeObserver; before it reports, the 800 x 500 default
+    const observers: Array<() => void> = [];
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: () => void) {
+          observers.push(cb);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const width = vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(0);
+    const height = vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(0);
+    try {
+      render(<Treemap groups={v} colourBy={colourFor(v)} fit />);
+      const svg = q('svg.gp-treemap')!;
+      expect(svg.classList.contains('gp-treemap-fit')).toBe(true);
+      expect(svg.getAttribute('viewBox')).toBe(`0 0 ${TREEMAP_VIEWBOX.width} ${TREEMAP_VIEWBOX.height}`);
+      width.mockReturnValue(640);
+      height.mockReturnValue(220);
+      act(() => observers.forEach((cb) => cb()));
+      expect(svg.getAttribute('viewBox')).toBe('0 0 640 220');
+      const outlines = qa('rect.gp-treemap-outline').map(box);
+      expect(Math.max(...outlines.map((b) => b.x + b.w))).toBeCloseTo(640, 6);
+      expect(Math.max(...outlines.map((b) => b.y + b.h))).toBeCloseTo(220, 6);
+    } finally {
+      width.mockRestore();
+      height.mockRestore();
+      vi.unstubAllGlobals();
+    }
   });
 });
 

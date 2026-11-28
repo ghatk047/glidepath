@@ -1,4 +1,4 @@
-import { DESKTOP_QUERY } from '@glidepath/ui/glass';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
 
@@ -81,15 +81,41 @@ export const vpsCss = [
   `  .gp-vps-btn { min-height: ${rem(44)}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) { .gp-vps-bullet-fill, [data-glow] { transition: none; } }`,
-  // desktop (UIX-01): the gap chip keeps to its card (its column takes the chip's width and the
-  // target column, whose growth line may wrap, gives way), the
-  // pool and ownership rows lose some air so the screen fits a 1280x720 display
+  // desktop (UIX-01): the screen fits the viewport with no page scroll. Controls and the four VP
+  // cards on top; below, ownership, chargeback and "every VP clears?" stand side by side as tall as
+  // the screen allows, and the ownership and pool rows scroll inside their panels. The gap chip
+  // keeps to its card (its column takes the chip's width and the target column gives way).
   `@media ${DESKTOP_QUERY} {`,
+  `  .gp-content > .gp-vps { flex: 1 1 0; min-height: 0; }`,
+  `  .gp-vps > .gp-grid { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }`,
+  `  .gp-vps > .gp-grid > .gp-stack { display: contents; }`,
+  `  .gp-vps > .gp-grid .gp-vps-own { grid-column: 1 / 6; }`,
+  `  .gp-vps > .gp-grid .gp-vps-charge { grid-column: 6 / 10; }`,
+  `  .gp-vps > .gp-grid .gp-vps-feasible { grid-column: 10 / 13; }`,
+  `  .gp-vps > .gp-grid .gp-panel { grid-row: 1; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-vps > .gp-grid .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-vps-rows, .gp-vps-pools { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-vps-feasible > .gp-body { overflow-y: auto; overscroll-behavior: contain; }`,
+  // the legend wraps under the title instead of standing in a tall column beside it
+  `  .gp-vps-own .gp-panel-h { flex-wrap: wrap; }`,
+  `  .gp-vps-own .gp-panel-status { margin-left: 0; justify-content: flex-start; }`,
+  `  .gp-vps-own .gp-vps-legend { gap: ${rem(4)} ${rem(12)}; }`,
+  `  .gp-vps-row { grid-template-columns: minmax(0, 1fr) ${rem(64)} minmax(0, 1fr); gap: ${rem(10)}; padding: ${rem(5)} 0; }`,
+  `  .gp-vps-row-name { font-size: var(--type-s-size); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`,
   `  .gp-vps-card { gap: ${rem(10)}; }`,
   `  .gp-vps-card-foot { grid-template-columns: minmax(0, 1fr) auto; gap: ${rem(10)}; padding-top: ${rem(10)}; }`,
   `  .gp-vps-card-foot > div + div { padding-left: ${rem(10)}; }`,
   `  .gp-vps-card-foot .gp-chip { max-width: 100%; }`,
-  `  .gp-vps-row { padding: ${rem(5)} 0; }`,
-  `  .gp-vps-pool { padding: ${rem(5)} ${rem(14)}; }`,
+  `  .gp-vps-pool { padding: ${rem(5)} ${rem(6)}; }`,
+  `}`,
+  // short desktop: the VP cards lose air so the panels below keep their height
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-vps-card { gap: ${rem(6)}; }`,
+  `  .gp-vps-card-head { min-height: 0; }`,
+  `  .gp-vps-card-foot { padding-top: ${rem(6)}; }`,
+  `  .gp-vps-card-foot > div { gap: ${rem(2)}; }`,
+  `  .gp-vps-usage { margin: ${rem(8)} 0; min-height: ${rem(32)}; }`,
+  `  .gp-vps-pool { padding: ${rem(3)} ${rem(6)}; }`,
+  `  .gp-vps-row { padding: ${rem(3)} 0; }`,
   `}`,
 ].join('\n');

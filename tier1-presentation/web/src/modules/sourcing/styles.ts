@@ -99,15 +99,13 @@ export const sourcingCss = [
   `.gp-src-stale { opacity: .55; transition: opacity ${ease}; }`,
   `@media (prefers-reduced-motion: reduce) { .gp-src-bar > i, .gp-src-month > i, .gp-src-stale { transition: none; } }`,
   // desktop: the screen is a 2x2 grid that fits the viewport (1280x720, 1920x1080); lists scroll inside
-  // their panels. The offset is the shell's top bar, its padding (14 top, 112 bottom for the flight strip,
-  // global/shell/styles.ts, desktop) and the module's own padding; the short desktop has 10 on top.
+  // their panels. The grid fills the height the shell leaves the module (global/shell/styles.ts, desktop).
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-src { height: calc(100vh - ${rem(220)}); grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }`,
+  `  .gp-src { flex: 1 1 0; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; }`,
   `  .gp-src > .gp-panel { overflow: hidden; }`,
   `}`,
   // short desktop (1280x720): tighter tiles and rows so the lists keep room to scroll
   `@media ${SHORT_DESKTOP_QUERY} {`,
-  `  .gp-src { height: calc(100vh - ${rem(205)}); }`,
   `  .gp-src-body { gap: ${rem(6)}; }`,
   `  .gp-src-kpis { grid-template-columns: repeat(auto-fit, minmax(${rem(68)}, 1fr)); gap: ${rem(4)}; }`,
   `  .gp-src-kpi { padding: ${rem(2)} ${rem(6)}; }`,

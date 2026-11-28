@@ -40,7 +40,9 @@ function Move({ move, rank, def }: { move: RankedMove; rank: number; def?: Varia
       <span className="gp-cockpit-rank" aria-hidden="true">
         {String(rank).padStart(2, '0')}
       </span>
-      <span className="gp-cockpit-move-label">{label}</span>
+      <span className="gp-cockpit-move-label" title={label}>
+        {label}
+      </span>
       <span className="gp-cockpit-move-value">
         <span className="gp-cockpit-before">{from}</span> → {to}
       </span>

@@ -1,4 +1,4 @@
-import { DESKTOP_QUERY } from '@glidepath/ui/glass';
+import { DESKTOP_QUERY, SHORT_DESKTOP_QUERY } from '@glidepath/ui/glass';
 import { rem, TOUCH_TARGET } from '@glidepath/ui/shell';
 import { media } from '@glidepath/ui/tokens';
 
@@ -14,6 +14,12 @@ const mono = 'var(--font-mono), ui-monospace, monospace';
 const num = 'var(--font-num), var(--font-ui), system-ui, sans-serif';
 const eyebrow = `font: var(--type-xs-weight) var(--type-xs-size)/1.2 ${mono}; letter-spacing: var(--type-xs-tracking); text-transform: uppercase; color: var(--ink-3); margin: 0;`;
 const ease = 'var(--motion-value) var(--motion-ease)';
+/**
+ * Step 4 gauge width on desktop: the smaller of the panel's content width less room for the Bar
+ * label beside the arc, and what its height leaves under the header and the bar sum (the arc
+ * is 0.88 as tall as wide). `cq*` units are the panel's (a size container).
+ */
+const netGauge = `min(100cqw - ${rem(48)}, (100cqh - ${rem(92)}) * 1.13)`;
 
 export const wizardCss = [
   '/* web modules/wizard: generated from tokens in src/modules/wizard/styles.ts */',
@@ -130,14 +136,63 @@ export const wizardCss = [
   `  .gp-wz-row { column-gap: ${rem(8)}; }`,
   `  .gp-wz-row .gp-wz-conf { display: none; }`,
   `}`,
-  // desktop (UIX-01): the 20 levers of step 1 sit in two columns, family by family, so the step
-  // fits a 1280x720 screen; rows lose some air
+  // desktop (UIX-01): every step fits the viewport with no page scroll. Stepper and tape keep their
+  // height and the step fills the rest; panels are flex columns whose lists scroll inside. Step 1:
+  // the 20 levers sit in two columns, family by family, and scroll inside their panel. Step 3:
+  // target, funding and outlay stack on the left, timing in the middle, VP ownership on the right.
+  // Step 4: net against the bar and the VP split on top, risk and odds under them, the optimizer
+  // down the right; the gauge is sized from its panel's height.
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-wz-levers > .gp-body { columns: 2; column-gap: ${rem(24)}; }`,
+  `  .gp-wz-stage { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-wz-stage > [data-wizard-step] { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-wz-stage > [data-wizard-step] > .gp-grid { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }`,
+  `  .gp-wz-stage .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-wz-stage .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }`,
+  // step 1: two columns of levers at their natural height; the panel scrolls
+  `  .gp-wz-stage .gp-wz-levers { overflow-y: auto; overscroll-behavior: contain; }`,
+  `  .gp-wz-stage .gp-wz-levers > .gp-body { display: block; flex: none; overflow: visible; columns: 2; column-gap: ${rem(24)}; }`,
   `  .gp-wz-levers .gp-wz-group { break-inside: avoid; }`,
   `  .gp-wz-family { margin: ${rem(8)} 0 ${rem(2)}; }`,
   `  .gp-wz-row { padding: ${rem(3)} ${rem(6)}; column-gap: ${rem(10)}; }`,
   `  .gp-wz-fam-row { padding: ${rem(5)} 0; gap: ${rem(4)}; }`,
+  // step 3
+  `  .gp-wz-stage > [data-wizard-step="3"] { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto auto auto minmax(0, 1fr); gap: var(--space-gap); }`,
+  `  [data-wizard-step="3"] > .gp-grid, [data-wizard-step="3"] .gp-wzr-own, [data-wizard-step="3"] .gp-wzr-own > .gp-grid { display: contents; }`,
+  // four rows: the first is the ownership controls' height, so the ownership panel starts under them
+  `  [data-wizard-step="3"] [data-testid="wizard-target"] { grid-column: 1 / 5; grid-row: 1 / 3; }`,
+  `  [data-wizard-step="3"] [data-testid="wizard-funding"] { grid-column: 1 / 5; grid-row: 3; }`,
+  `  [data-wizard-step="3"] .gp-wzr-own > .gp-grid > .gp-panel:not(.gp-vps-own) { grid-column: 1 / 5; grid-row: 4; }`,
+  `  [data-wizard-step="3"] [data-testid="wizard-timing"] { grid-column: 5 / 9; grid-row: 1 / 5; }`,
+  `  [data-wizard-step="3"] .gp-wzr-own > .gp-vps-controls { grid-column: 9 / 13; grid-row: 1; align-self: start; gap: ${rem(8)} ${rem(14)}; }`,
+  `  [data-wizard-step="3"] .gp-wzr-own .gp-vps-own { grid-column: 9 / 13; grid-row: 2 / 5; }`,
+  `  [data-wizard-step="3"] .gp-vps-note { margin-left: 0; }`,
+  `  [data-wizard-step="3"] .gp-wzr-stack { flex: 1 1 auto; min-height: 0; }`,
+  `  [data-wizard-step="3"] .gp-vps-rows { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }`,
+  // step 4
+  `  .gp-wz-stage > [data-wizard-step="4"] > .gp-grid { grid-template-rows: minmax(0, 1fr) auto; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-net"] { grid-column: 1 / 5; grid-row: 1; container-type: size; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-vps"] { grid-column: 5 / 10; grid-row: 1; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-optimizer"] { grid-column: 10 / 13; grid-row: 1 / 3; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-risk"] { grid-column: 1 / 5; grid-row: 2; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-odds"] { grid-column: 5 / 10; grid-row: 2; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-net"] > .gp-body { overflow: hidden; justify-content: center; }`,
+  // the arc leaves room on its right for the Bar label (it is drawn just outside the arc)
+  `  [data-wizard-step="4"] [data-testid="wizard-net"] .gp-gauge { width: ${netGauge}; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-net"] .gp-gauge-hero { font-size: clamp(${rem(24)}, calc(${netGauge} * 0.15), ${rem(56)}); }`,
+  `}`,
+  // short desktop: tighter stepper, tape and lists
+  `@media ${SHORT_DESKTOP_QUERY} {`,
+  `  .gp-module.gp-wizard { gap: ${rem(10)}; }`,
+  `  .gp-wz-step, .gp-wz-btn { min-height: ${rem(34)}; }`,
+  `  .gp-panel.gp-wz-tape[data-pad] { padding: ${rem(8)} ${rem(16)}; }`,
+  `  .gp-wz-tape-act .gp-wz-btn { min-height: ${rem(34)}; }`,
+  `  .gp-wz-pick { min-height: ${rem(32)}; padding: ${rem(4)} ${rem(10)}; }`,
+  `  .gp-wz-kpis { margin-bottom: ${rem(12)}; }`,
+  `  .gp-wz-kpi { padding: ${rem(8)} ${rem(12)}; }`,
+  `  .gp-wz-sliders { gap: ${rem(10)}; margin-bottom: ${rem(10)}; }`,
+  `  [data-wizard-step="4"] [data-testid="wizard-net"] .gp-gauge-svg text { font-size: calc(var(--type-xs-size) * 1.45); }`,
+  `  [data-wizard-step="3"] .gp-wzr-stack { gap: ${rem(8)}; }`,
+  `  [data-wizard-step="3"] .gp-wzr-outlays { gap: ${rem(4)}; }`,
   `}`,
   `@media (prefers-reduced-motion: reduce) {`,
   `  .gp-wz-stage > [data-wizard-step] { animation: none; }`,

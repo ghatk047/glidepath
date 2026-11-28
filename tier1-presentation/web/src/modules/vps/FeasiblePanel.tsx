@@ -83,6 +83,7 @@ export function FeasiblePanel({
   return (
     <GlassPanel
       level={2}
+      className="gp-vps-feasible"
       header={{ label: 'Every VP clears?', status: <JobHeader id={feas.jobId} /> }}
     >
       {done ? (

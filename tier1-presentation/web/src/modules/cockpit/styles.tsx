@@ -106,22 +106,50 @@ export const cockpitCss = [
   `  .gp-cockpit-all, .gp-cockpit-bar, .gp-cockpit-primary, .gp-cockpit-go, .gp-cockpit-vp-name button { min-height: ${TOUCH_TARGET}; }`,
   `  .gp-cockpit-share-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }`,
   `}`,
-  // desktop (UIX-01): on a short screen the gauge gives up height so the first row fits
+  // desktop (UIX-01): the Cockpit fits the viewport with no page scroll. Three rows: Net savings,
+  // the outlay bridge and Fastest path; the four VP rings; Your inputs, Shareholder view and Odds.
+  // The bridge cell (bridge + inputs) dissolves so its two panels take their own places, every
+  // panel body is a flex column, and the charts (gauge, bridge, histogram) scale to their panel.
   `@media ${DESKTOP_QUERY} {`,
-  // the bridge scales with its panel: on a wide screen it would grow taller than the gauge
-  `  .gp-cockpit .gp-bridge { max-height: 36vh; }`,
-  // the three steppers share their columns: the number field gives way instead of the + spilling out
-  `  .gp-cockpit-inputs { gap: ${rem(14)}; }`,
+  `  .gp-cockpit .gp-grid { grid-template-rows: minmax(0, 1fr) auto auto; }`,
+  `  .gp-cockpit .gp-grid > .gp-stack { display: contents; }`,
+  `  .gp-cockpit [data-testid="cockpit-net"] { grid-column: 1 / 5; grid-row: 1; }`,
+  `  .gp-cockpit [data-testid="cockpit-bridge"] { grid-column: 5 / 10; grid-row: 1; }`,
+  `  .gp-cockpit [data-testid="cockpit-path"] { grid-column: 10 / 13; grid-row: 1; }`,
+  `  .gp-cockpit [data-testid="cockpit-vp"] { grid-row: 2; }`,
+  `  .gp-cockpit [data-testid="cockpit-inputs"] { grid-column: 1 / 6; grid-row: 3; }`,
+  `  .gp-cockpit [data-testid="cockpit-shareholder"] { grid-column: 6 / 10; grid-row: 3; }`,
+  `  .gp-cockpit [data-testid="cockpit-odds"] { grid-column: 10 / 13; grid-row: 3; }`,
+  `  .gp-cockpit .gp-grid .gp-panel { min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-cockpit .gp-grid .gp-panel > .gp-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }`,
+  // the gauge is sized from the panel's height (a size container): the arc, hero and stats fit
+  `  .gp-cockpit-net { container-type: size; }`,
+  `  .gp-cockpit-net .gp-gauge { width: min(100%, calc((100cqh - ${rem(160)}) * 1.13)); }`,
+  `  .gp-cockpit-net .gp-gauge-hero { font-size: clamp(${rem(28)}, calc((100cqh - ${rem(160)}) * 0.16), ${rem(56)}); }`,
+  `  .gp-cockpit .gp-bridge { flex: 1 1 0; min-height: 0; width: 100%; height: 100%; }`,
+  `  .gp-cockpit-odds-body { flex: 1 1 auto; min-height: 0; }`,
+  `  .gp-cockpit-hist { flex: 1 1 0; min-height: 0; height: 100%; }`,
+  // inputs: the two sliders share the first row, the steppers the second; the number field gives way
+  // instead of the + spilling out
+  `  .gp-cockpit-inputs { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: ${rem(14)}; }`,
+  `  .gp-cockpit-input { grid-column: span 3; }`,
+  `  .gp-cockpit-input:has(.gp-stepper) { grid-column: span 2; }`,
   `  .gp-cockpit-input .gp-stepper input { flex: 1 1 auto; width: 0; min-width: 0; }`,
   `  .gp-cockpit-input .gp-stepper button { flex: none; width: ${rem(28)}; }`,
   `}`,
+  // short desktop (1280x720): the first row takes more of the height, the Net savings stats stand
+  // beside the gauge instead of under it, and the gauge's labels keep a readable size
   `@media ${SHORT_DESKTOP_QUERY} {`,
-  `  .gp-cockpit-net .gp-gauge { width: min(100%, ${rem(300)}); }`,
-  // the hero shrinks with the gauge, so its unit (M) clears the Bar tick on the arc
-  `  .gp-cockpit-net .gp-gauge-hero { font-size: ${rem(40)}; }`,
-  `  .gp-cockpit-stats { padding-top: ${rem(14)}; }`,
-  // narrower columns: the labels keep to one line, and a value sits level with its neighbours
-  `  .gp-cockpit-stat { padding: 0 ${rem(12)}; justify-content: space-between; }`,
+  `  .gp-cockpit .gp-grid { grid-template-rows: minmax(0, 1.5fr) auto minmax(0, 1fr); }`,
+  `  .gp-cockpit .gp-grid .gp-cockpit-net > .gp-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: ${rem(12)}; }`,
+  `  .gp-cockpit-net .gp-gauge { width: min(100%, calc((100cqh - ${rem(76)}) * 1.13)); }`,
+  `  .gp-cockpit-net .gp-gauge-hero { font-size: clamp(${rem(28)}, calc((100cqh - ${rem(76)}) * 0.15), ${rem(40)}); }`,
+  `  .gp-cockpit-net .gp-gauge-svg text { font-size: calc(var(--type-xs-size) * 1.45); }`,
+  `  .gp-cockpit-net .gp-cockpit-stats { grid-template-columns: minmax(0, 1fr); gap: ${rem(14)}; margin: 0; padding: 0 0 0 ${rem(12)}; border-top: 0; border-left: ${line}; }`,
+  `  .gp-cockpit-net .gp-cockpit-stat, .gp-cockpit-net .gp-cockpit-stat:first-child { padding: 0; border-left: 0; }`,
+  `  .gp-cockpit-inputs { row-gap: ${rem(8)}; }`,
+  `  .gp-cockpit-input { gap: ${rem(6)}; }`,
+  `  .gp-cockpit-vp { gap: ${rem(8)}; }`,
   `}`,
 ].join('\n');
 

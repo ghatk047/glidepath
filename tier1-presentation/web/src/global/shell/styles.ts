@@ -12,6 +12,11 @@ import { media } from '@glidepath/ui/tokens';
 const line = `${rem(1)} solid var(--glass-line)`;
 const focus = `outline: ${rem(2)} solid var(--accent); outline-offset: ${rem(2)};`;
 const mono = 'var(--font-mono), ui-monospace, monospace';
+/**
+ * Room under the content for the floating flight strip on desktop: the strip is about 4rem tall plus
+ * a token gap of air on each side (UIX-01 fit; ui hud/styles.ts draws the strip one gap above the edge).
+ */
+export const FLIGHT_STRIP_CLEARANCE = `calc(var(--space-gap) * 2.5 + ${rem(64)})`;
 
 export const layoutCss = [
   '/* web global/shell: generated from tokens in src/global/shell/styles.ts */',
@@ -49,10 +54,19 @@ export const layoutCss = [
   `  .gp-hud-loading { left: 50%; transform: translateX(-50%); bottom: calc(${rem(82)} + env(safe-area-inset-bottom, 0)); }`,
   `}`,
   // desktop (UIX-01): title, scenarios and tools on one row; the search keeps its icon and ⌘K up to
-  // 100em = 1600 px (its label stays as the accessible name); less air above and below the content
+  // 100em = 1600 px (its label stays as the accessible name); less air above and below the content.
+  // Every screen fits one viewport (1280x720, 1920x1080) with no page scroll: the main column is
+  // the viewport's height, the top bar takes what it needs and the module fills the rest (its
+  // grid rows are fractions of that height and long lists scroll inside their panels). The bottom
+  // padding clears the floating flight strip (its height plus a gap either side); Cockpit hides the
+  // strip, so there the content runs down to one gap above the edge.
   `@media ${DESKTOP_QUERY} {`,
-  `  .gp-main { padding: ${rem(14)} max(${rem(24)}, env(safe-area-inset-right, 0)) ${rem(112)} ${rem(24)}; }`,
-  `  .gp-topbar { flex-wrap: nowrap; gap: ${rem(12)}; margin-bottom: var(--space-gap); }`,
+  `  .gp-main { box-sizing: border-box; height: 100vh; display: flex; flex-direction: column; padding: ${rem(14)} max(${rem(24)}, env(safe-area-inset-right, 0)) ${FLIGHT_STRIP_CLEARANCE} ${rem(24)}; }`,
+  `  .gp-app[data-module="cockpit"] .gp-main { padding-bottom: var(--space-gap); }`,
+  `  .gp-content { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }`,
+  `  .gp-content > .gp-module { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; padding: 0; }`,
+  `  .gp-module > .gp-grid { flex: 1 1 0; min-height: 0; }`,
+  `  .gp-topbar { flex: none; flex-wrap: nowrap; gap: ${rem(12)}; margin-bottom: var(--space-gap); }`,
   `  .gp-topbar h1 { white-space: nowrap; }`,
   `  .gp-tools { flex-wrap: nowrap; gap: ${rem(6)}; }`,
   `}`,
